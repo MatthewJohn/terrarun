@@ -20,6 +20,11 @@ class Workspace:
         """Return workspace by ID"""
         return cls(terrarun.organisation.Organisation(1), workspace_id)
 
+    @property
+    def auto_apply(self):
+        """Whether runs are auto-apply enabled"""
+        return False
+
     def __init__(self, organisation, workspace_id):
         """Store member variables."""
         self._organisation = organisation

@@ -7,6 +7,7 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
+from terrarun.run import Run
 from terrarun.workspace import Workspace
 
 
@@ -70,6 +71,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformConfigurationVersions,
             '/api/v2/configuration-versions/<string:configuration_version_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformRun,
+            '/api/v2/runs'
         )
 
         # Views
@@ -204,3 +209,48 @@ class ApiTerraformConfigurationVersionUpload(Resource):
             return {}, 404
 
         cv.process_upload(request.data)
+
+
+class ApiTerraformRun(Resource):
+    """Run interface."""
+
+    def post(self):
+        """Create a run."""
+
+        data = flask.request.get_json().get('data', {})
+        request_attributes = data.get('attributes', {})
+
+        print(request_attributes)
+        workspace_id = data.get('relationships', {}).get('workspace', {}).get('data', {}).get('id', None)
+        if not workspace_id:
+            return {}, 422
+
+        workspace = Workspace.get_by_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+
+        configuration_version_id = data.get('relationships', {}).get('configuration-version', {}).get('data', {}).get('id', None)
+        if not configuration_version_id:
+            return {}, 422
+
+        cv = ConfigurationVersion.get_by_id(configuration_version_id)
+        if not cv:
+            return {}, 404
+
+        create_attributes = {
+            'auto_apply': request_attributes.get('auto-apply', workspace.auto_apply),
+            'is_destroy': request_attributes.get('is-destroy', False),
+            'message': request_attributes.get('message', "Queued manually via the Terraform Enterprise API"),
+            'refresh': request_attributes.get('refresh', True),
+            'refresh_only': request_attributes.get('refresh-only', False),
+            'replace_addrs': request_attributes.get('replace-addrs'),
+            'target_addrs': request_attributes.get('target-addrs'),
+            'variables': request_attributes.get('variables', []),
+            'plan_only': request_attributes.get('plan-only', cv.plan_only),
+            'terraform_version': request_attributes.get('terraform-version'),
+            'allow_empty_apply': request_attributes.get('allow-empty-apply')
+        }
+
+        run = Run.create(cv, **create_attributes)
+        return run.get_api_details()

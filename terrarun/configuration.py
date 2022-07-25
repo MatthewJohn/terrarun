@@ -37,6 +37,11 @@ class ConfigurationVersion():
             cv.queue()
         return cv
 
+    @property
+    def plan_only(self):
+        """Return whether only a plan."""
+        return False
+
     def __init__(self, workspace, id_):
         """Store member variables."""
         self.speculative = False
