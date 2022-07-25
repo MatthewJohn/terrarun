@@ -332,6 +332,6 @@ class ApiTerraformPlans(Resource):
             if not plan:
                 return {}, 404
 
-            return plan.get_api_details()
+            return {"data": plan.get_api_details()}
 
         raise Exception('Need to return list of plans?')
