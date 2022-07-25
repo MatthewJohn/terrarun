@@ -1,5 +1,9 @@
 
+import os
+import subprocess
 from enum import Enum
+from tarfile import TarFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 
 class ConfigurationVersionStatus(Enum):
 
@@ -16,18 +20,50 @@ class ConfigurationVersion():
     CONFIGURATIONS = {}
 
     @classmethod
-    def create(cls, workspace):
+    def get_by_id(cls, id_):
+        """Obtain ConfigurationVersion instance by ID."""
+        if id_ in cls.CONFIGURATIONS:
+            return cls.CONFIGURATIONS[id_]
+        return None
+
+    @classmethod
+    def create(cls, workspace, auto_queue_runs=True, speculative=False):
         """Create configuration and return instance."""
         id_ = 'cv-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.CONFIGURATIONS)).zfill(2))
         cv = ConfigurationVersion(workspace=workspace, id_=id_)
         cls.CONFIGURATIONS[id_] = cv
+        cv.speculative = speculative
+        if auto_queue_runs:
+            cv.queue()
         return cv
 
     def __init__(self, workspace, id_):
         """Store member variables."""
+        self.speculative = False
         self._workspace = workspace
         self._id = id_
         self._status = ConfigurationVersionStatus.PENDING
+
+    def queue(self):
+        """Queue."""
+        self._status = ConfigurationVersionStatus.FETCHING
+
+    def process_upload(self, data):
+        """Handle upload of archive."""
+        with NamedTemporaryFile(delete=False) as temp_file:
+            tar_gz_file = temp_file.name
+
+        try:
+            with open(tar_gz_file, 'wb') as tar_gz_fh:
+                tar_gz_fh.write(data)
+                
+            with TemporaryDirectory() as extract_dir:
+                tar_file = TarFile.open(tar_gz_file, 'r')
+                tar_file.extractall(extract_dir)
+                print(subprocess.check_output(['bash', '-c', f'cat {extract_dir}/*']))
+        finally:
+            os.unlink(tar_gz_file)
+
 
     def get_upload_url(self):
         """Return URL for terraform to upload configuration."""
@@ -44,7 +80,7 @@ class ConfigurationVersion():
                     "error": None,
                     "error-message": None,
                     "source": "tfe-api",
-                    "speculative": False,
+                    "speculative": self.speculative,
                     "status": self._status.value,
                     "status-timestamps": {},
                     "upload-url": self.get_upload_url()

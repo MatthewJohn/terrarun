@@ -63,6 +63,10 @@ class Server(object):
             ApiTerraformConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
         )
+        self._api.add_resource(
+            ApiTerraformConfigurationVersionUpload,
+            '/api/v2/upload-configuration/<string:configuration_version_id>'
+        )
 
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
@@ -166,5 +170,22 @@ class ApiTerraformConfigurationVersions(Resource):
         attributes = data.get('attributes', {})
 
         workspace = Workspace.get_by_id(workspace_id)
-        cv = ConfigurationVersion.create(workspace=workspace)
+
+        cv = ConfigurationVersion.create(
+            workspace=workspace,
+            auto_queue_runs=attributes.get('auto-queue-runs', True),
+            speculative=attributes.get('speculative', False)
+        )
         return cv.get_api_details()
+
+
+class ApiTerraformConfigurationVersionUpload(Resource):
+    """Configuration version upload endpoint"""
+
+    def put(self, configuration_version_id):
+        """Handle upload of configuration version data."""
+        cv = ConfigurationVersion.get_by_id(configuration_version_id)
+        if not cv:
+            return {}, 404
+
+        cv.process_upload(request.data)
