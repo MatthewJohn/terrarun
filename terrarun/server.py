@@ -2,6 +2,8 @@
 from flask import Flask, make_response
 from flask_restful import Api, Resource
 
+from terrarun.auth import Auth
+
 
 class Server(object):
     """Manage web server and route requests"""
@@ -41,6 +43,12 @@ class Server(object):
             '/api/terraform/motd'
         )
 
+        # Views
+        self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
+
+    def _view_serve_settings_tokens(self):
+        """Return authentication tokens"""
+        return Auth().get_auth_token()
 
     def run(self, debug=None):
         """Run flask server."""
