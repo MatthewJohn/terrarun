@@ -4,6 +4,7 @@ from flask import Flask, make_response, request
 from flask_restful import Api, Resource
 
 from terrarun.auth import Auth
+from terrarun.organisation import Organisation
 
 
 class Server(object):
@@ -46,6 +47,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformAccountDetails,
             '/api/v2/account/details'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationEntitlementSet,
+            '/api/v2/organizations/<string:organisation_name>/entitlement-set'
         )
 
         # Views
@@ -120,3 +125,12 @@ class ApiTerraformAccountDetails(Resource):
             return user_account.get_account_api_data()
         else:
             return {}, 403
+
+
+class ApiTerraformOrganisationEntitlementSet(Resource):
+    """Organisation entitlement endpoint."""
+
+    def get(self, organisation_name):
+        """Return entitlement-set for organisation"""
+        organisation = Organisation.get_by_name(organisation_name)
+        return organisation.get_entitlement_set_api()
