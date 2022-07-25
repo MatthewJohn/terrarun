@@ -3,6 +3,8 @@ import subprocess
 from enum import Enum
 import queue
 
+import terrarun.plan
+
 
 class RunStatus(Enum):
 
@@ -72,6 +74,7 @@ class Run:
     def __init__(self, configuration_version, id_, **attributes):
         """Store member variables"""
         self._id = id_
+        self._plan = None
         self._configuration_version = configuration_version
         self._attributes = attributes
         self._status = RunStatus.PENDING
@@ -81,23 +84,10 @@ class Run:
     def execute_plan(self):
         """Execute terraform command"""
 
-        self._status = RunStatus.PLANNING
-        action = None
-        if  self._attributes.get('refresh_only'):
-            action = 'refresh'
-        else:
-            action = 'plan'
-
-        terraform_version = self._attributes.get('terraform_version')
-        command = [f'terraform-{terraform_version}', action]
-        print(self._attributes)
-        proc = subprocess.Popen(
-            command,
-            # stdout=subprocess.PIPE,
-            # stderr=subprocess.STDOUT,
-            cwd=self._configuration_version._extract_dir)
-        rc = proc.communicate()
-        if rc:
+        self._plan = terrarun.plan.Plan.create(self)
+        self._run._status = RunStatus.PLANNING
+        self._plan.execute()
+        if self._plan._status is terrarun.plan.PlanState.ERRORED:
             self._status = RunStatus.ERRORED
         else:
             self._status = RunStatus.PLANNED
@@ -139,7 +129,7 @@ class Run:
                     "can-override-policy-check": True
                 },
                 "refresh": False,
-                "refresh-only": self._attributes.get('refresh_only'),
+                "refresh-only": self._attributes.get('refresh_only', False),
                 "replace-addrs": None,
                 "variables": []
             },
@@ -150,13 +140,13 @@ class Run:
                 "cost-estimate": {},
                 "created-by": {},
                 "input-state-version": {},
-                "plan": {},
+                "plan": {'data': {'id': self._plan._id, 'type': 'plans'}} if self._plan is not None else {},
                 "run-events": {},
                 "policy-checks": {},
                 "workspace": {},
                 "workspace-run-alerts": {}
             },
             "links": {
-                "self": "/api/v2/runs/run-CZcmD7eagjhyX0vN"
+                "self": f"/api/v2/runs/{self._id}"
             }
         }
