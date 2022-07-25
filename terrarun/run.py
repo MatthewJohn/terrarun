@@ -2,6 +2,7 @@
 import subprocess
 from enum import Enum
 import queue
+from time import sleep
 
 import terrarun.plan
 
@@ -79,13 +80,14 @@ class Run:
         self._attributes = attributes
         self._status = RunStatus.PENDING
         self.__class__.WORKER_QUEUE.put(self)
-        self._status = RunStatus.PLAN_QUEUED
 
     def execute_plan(self):
         """Execute terraform command"""
-
+        sleep(30)
+        self._status = RunStatus.PLAN_QUEUED
         self._plan = terrarun.plan.Plan.create(self)
-        self._run._status = RunStatus.PLANNING
+
+        self._status = RunStatus.PLANNING
         self._plan.execute()
         if self._plan._status is terrarun.plan.PlanState.ERRORED:
             self._status = RunStatus.ERRORED

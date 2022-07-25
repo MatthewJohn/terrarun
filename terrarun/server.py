@@ -9,6 +9,7 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
+from terrarun.plan import Plan
 from terrarun.run import Run, RunStatus
 from terrarun.workspace import Workspace
 
@@ -86,6 +87,11 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformOrganisationQueue,
             '/api/v2/organizations/<string:organisation_name>/runs/queue'
+        )
+        self._api.add_resource(
+            ApiTerraformPlans,
+            '/api/v2/plans',
+            '/api/v2/plans/<string:plan_id>'
         )
 
         # Views
@@ -315,3 +321,18 @@ class ApiTerraformOrganisationQueue(Resource):
             return {}, 404
 
         return {"data": [run.get_api_details() for run in Run.RUNS.values()]}
+
+
+class ApiTerraformPlans(Resource):
+    """Interface for plans."""
+
+    def get(self, plan_id=None):
+        """Return information for plan(s)"""
+        if plan_id:
+            plan = Plan.get_by_id(plan_id)
+            if not plan:
+                return {}, 404
+
+            return plan.get_api_details()
+
+        raise Exception('Need to return list of plans?')

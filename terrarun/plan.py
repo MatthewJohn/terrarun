@@ -1,6 +1,7 @@
 
 
 from enum import Enum
+from time import sleep
 import terrarun.run
 import subprocess
 
@@ -53,17 +54,26 @@ class Plan:
 
         terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
         command = [f'terraform-{terraform_version}', action]
-        print(self._run._attributes)
 
         self._status = PlanState.RUNNING
 
-        proc = subprocess.Popen(
+        tf_init = subprocess.Popen(
+            [f'terraform-{terraform_version}', 'init'],
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.STDOUT,
+            cwd=self._run._configuration_version._extract_dir)
+        init_rc = tf_init.communicate()
+        if init_rc:
+            self._status = PlanState.ERRORED
+            return
+
+        plan_proc = subprocess.Popen(
             command,
             # stdout=subprocess.PIPE,
             # stderr=subprocess.STDOUT,
             cwd=self._run._configuration_version._extract_dir)
-        rc = proc.communicate()
-        if rc:
+        plan_rc = plan_proc.communicate()
+        if plan_rc:
             self._status = PlanState.ERRORED
         else:
             self._status = PlanState.FINISHED
@@ -97,7 +107,7 @@ class Plan:
                 }
             },
             "links": {
-            "self": f"/api/v2/plans/{self._id}",
-            "json-output": "/api/v2/plans/plan-8F5JFydVYAmtTjET/json-output"
+                "self": f"/api/v2/plans/{self._id}",
+                "json-output": f"/api/v2/plans/{self._id}/json-output"
             }
         }
