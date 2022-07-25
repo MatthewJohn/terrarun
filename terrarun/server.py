@@ -5,6 +5,7 @@ import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 
 from terrarun.auth import Auth
+from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
 from terrarun.workspace import Workspace
 
@@ -159,43 +160,11 @@ class ApiTerraformWorkspace(Resource):
 class ApiTerraformConfigurationVersions(Resource):
     """Workspace configuration version interface"""
 
-    resource_fields = {
-        'data': fields.Nested({
-            'type': fields.String(default='configuration-versions'),
-            'attributes': fields.Nested({
-                'auto-queue-runs': fields.Boolean(default=False),
-                'speculative': fields.Boolean(default=True)
-            }),
-        })
-    }
-
-    @marshal_with(resource_fields)
     def post(self, workspace_id):
         """Create configuration version"""
-        print(flask.request.get_json())
-        root_parser = reqparse.RequestParser()
-        # root_parser.add_argument(
-        #     'data', dest='data',
-        #     location='json',
-        #     required=False,
-        #     default={}
-        # )
-        # root_args = root_parser.parse_args()
-        # print(root_args.data)
-
-        # data_parser = reqparse.RequestParser()
-        # data_parser.add_argument('type', dest='type', default='configuration-versions', type=str, location=('data',))
-        # data_parser.add_argument('attributes', dest='attributes', type=dict, default={}, location=('data',))
-        # data_args = data_parser.parse_args(req=root_args)
-
-        # attributes_parser = reqparse.RequestParser()
-        # attributes_parser.add_argument('auto-queue-runs', type=fields.Boolean, default=False, location=('attributes',))
-        # attributes_parser.add_argument('speculative', type=fields.Boolean, default=True, location=('attributes',))
-        # attributes_args = attributes_parser.parse_args(req=data_args)
-
-        attribute_args = root_parser.parse_args()
-        print(dict(attribute_args))
+        data = flask.request.get_json().get('data', {})
+        attributes = data.get('attributes', {})
 
         workspace = Workspace.get_by_id(workspace_id)
-        workspace.create_configuration()
-        raise(adgadg)
+        cv = ConfigurationVersion.create(workspace=workspace)
+        return cv.get_api_details()
