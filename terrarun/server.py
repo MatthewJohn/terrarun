@@ -81,6 +81,10 @@ class Server(object):
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
         )
+        self._api.add_resource(
+            ApiTerraformOrganisationQueue,
+            '/api/v2/organizations/<string:organisation_name>/runs/queue'
+        )
 
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
@@ -281,3 +285,15 @@ class ApiTerraformWorkspaceRuns(Resource):
             return {}, 404
 
         return {"data": [run.get_api_details() for run in Run.get_runs_by_workspace(workspace)]}
+
+
+class ApiTerraformOrganisationQueue(Resource):
+    """Interface to obtain run queue for organisation"""
+
+    def get(self, organisation_name):
+        """Get list of runs queued"""
+        organisation = Organisation.get_by_name(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {"data": [run.get_api_details() for run in Run.RUNS.values()]}
