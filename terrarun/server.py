@@ -36,6 +36,10 @@ class Server(object):
             ApiTerraformPing,
             '/api/v2/ping'
         )
+        self._api.add_resource(
+            ApiTerraformMotd,
+            '/api/terraform/motd'
+        )
 
 
     def run(self, debug=None):
@@ -61,7 +65,8 @@ class ApiTerraformWellKnown(Resource):
             'state.v2': '/api/v2/',
             'tfe.v2': '/api/v2/',
             'tfe.v2.1': '/api/v2/',
-            'tfe.v2.2': '/api/v2/'
+            'tfe.v2.2': '/api/v2/',
+            'motd.v1': '/api/terraform/motd'
         }
 
 
@@ -74,3 +79,13 @@ class ApiTerraformPing(Resource):
         response = make_response({}, 204)
         response.headers['Content-Type'] = 'application/vnd.api+json'
         return response
+
+
+class ApiTerraformMotd(Resource):
+    """Return MOTD for terraform"""
+
+    def get(self):
+        """Return MOTD message."""
+        return {
+            'msg': 'This is a test Terrarun server\nNo functionality yet.'
+        }
