@@ -1,0 +1,8 @@
+
+stages:
+  - build
+
+build-job:       # This job runs in the build stage, which runs first.
+  stage: build
+  script:
+    - echo Nothing to do... yet
