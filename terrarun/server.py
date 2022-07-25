@@ -26,8 +26,12 @@ class Server(object):
 
     def _register_routes(self):
         """Register routes with flask."""
-        pass
 
+        # Terraform registry routes
+        self._api.add_resource(
+            ApiTerraformWellKnown,
+            '/.well-known/terraform.json'
+        )
 
     def run(self, debug=None):
         """Run flask server."""
@@ -42,3 +46,15 @@ class Server(object):
         self._app.secret_key = "abcefg"
 
         self._app.run(**kwargs)
+
+
+class ApiTerraformWellKnown(Resource):
+
+    def get(self):
+        """Return terraform well-known config"""
+        return {
+            'state.v2': '/api/v2/',
+            'tfe.v2': '/api/v2/',
+            'tfe.v2.1': '/api/v2/',
+            'tfe.v2.2': '/api/v2/'
+        }
