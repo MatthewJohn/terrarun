@@ -250,7 +250,6 @@ class ApiTerraformRun(Resource):
         run = Run.get_by_id(run_id)
         if not run:
             return {}, 404
-        print(run.get_api_details())
         return {"data": run.get_api_details()}
 
     def post(self, run_id=None):
@@ -261,7 +260,6 @@ class ApiTerraformRun(Resource):
 
         data = flask.request.get_json().get('data', {})
         request_attributes = data.get('attributes', {})
-        print(data)
 
         workspace_id = data.get('relationships', {}).get('workspace', {}).get('data', {}).get('id', None)
         if not workspace_id:
