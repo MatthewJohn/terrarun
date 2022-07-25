@@ -1,10 +1,11 @@
 
 import re
 from flask import Flask, make_response, request
-from flask_restful import Api, Resource
+from flask_restful import Api, Resource, reqparse, fields
 
 from terrarun.auth import Auth
 from terrarun.organisation import Organisation
+from terrarun.workspace import Workspace
 
 
 class Server(object):
@@ -53,8 +54,12 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/entitlement-set'
         )
         self._api.add_resource(
-            ApiTerraformOrganisationWorkspace,
+            ApiTerraformWorkspace,
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
+        )
+        self._api.add_resource(
+            ApiTerraformConfigurationVersions,
+            '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
         )
 
         # Views
@@ -140,7 +145,7 @@ class ApiTerraformOrganisationEntitlementSet(Resource):
         return organisation.get_entitlement_set_api()
 
 
-class ApiTerraformOrganisationWorkspace(Resource):
+class ApiTerraformWorkspace(Resource):
     """Organisation workspace details endpoint."""
 
     def get(self, organisation_name, workspace_name):
@@ -148,3 +153,29 @@ class ApiTerraformOrganisationWorkspace(Resource):
         organisation = Organisation.get_by_name(organisation_name)
         workspace = organisation.get_workspace_by_name(workspace_name)
         return workspace.get_api_details()
+
+
+class ApiTerraformConfigurationVersions(Resource):
+    """Workspace configuration version interface"""
+
+    def post(self, workspace_id):
+        """Create configuration version"""
+        post_parser = reqparse.RequestParser()
+        post_parser.add_argument(
+            'data', dest='data',
+            type=fields.Nested({
+                'type': fields.String(default='configuration-versions'),
+                'attributes': fields.Nested({
+                    'auto-queue-runs': fields.Boolean(default=True),
+                    'speculative': fields.Boolean(default=False),
+                })
+            }),
+            location='json',
+            required=False
+        )
+        args = post_parser.parse_args()
+        print(args)
+
+        workspace = Workspace.get_by_id(workspace_id)
+        workspace.create_configuration()
+        raise(adgadg)
