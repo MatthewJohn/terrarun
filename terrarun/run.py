@@ -40,6 +40,7 @@ class RunOperations:
 class Run:
 
     RUNS = {}
+    RUNS_BY_WORKSPACE = {}
 
     @classmethod
     def get_by_id(cls, id_):
@@ -54,8 +55,16 @@ class Run:
         id_ = 'run-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.RUNS)).zfill(2))
         run = cls(configuration_version=configuration_version, id_=id_, **attributes)
         cls.RUNS[id_] = run
+        if configuration_version._workspace._id not in cls.RUNS_BY_WORKSPACE:
+            cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id] = []
+        cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id].append(run)
 
         return run
+
+    @classmethod
+    def get_runs_by_workspace(cls, workspace):
+        """Return all runs for a given workspace"""
+        return cls.RUNS_BY_WORKSPACE.get(workspace._id, [])
 
     def __init__(self, configuration_version, id_, **attributes):
         """Store member variables"""
@@ -67,60 +76,58 @@ class Run:
     def get_api_details(self):
         """Return API details."""
         return {
-            "data": {
-                "id": self._id,
-                "type": "runs",
-                "attributes": {
-                    "actions": {
-                        "is-cancelable": True,
-                        "is-confirmable": False,
-                        "is-discardable": False,
-                        "is-force-cancelable": False
-                    },
-                    "canceled-at": None,
-                    "created-at": "2021-05-24T07:38:04.171Z",
-                    "has-changes": False,
-                    "auto-apply": False,
-                    "allow-empty-apply": False,
-                    "is-destroy": False,
-                    "message": "Custom message",
-                    "plan-only": False,
-                    "source": "tfe-api",
-                    "status-timestamps": {
-                        "plan-queueable-at": "2021-05-24T07:38:04+00:00"
-                    },
-                    "status": self._status.value,
-                    "trigger-reason": "manual",
-                    "target-addrs": None,
-                    "permissions": {
-                        "can-apply": True,
-                        "can-cancel": True,
-                        "can-comment": True,
-                        "can-discard": True,
-                        "can-force-execute": True,
-                        "can-force-cancel": True,
-                        "can-override-policy-check": True
-                    },
-                    "refresh": False,
-                    "refresh-only": False,
-                    "replace-addrs": None,
-                    "variables": []
+            "id": self._id,
+            "type": "runs",
+            "attributes": {
+                "actions": {
+                    "is-cancelable": True,
+                    "is-confirmable": False,
+                    "is-discardable": False,
+                    "is-force-cancelable": False
                 },
-                "relationships": {
-                    "apply": {},
-                    "comments": {},
-                    "configuration-version": {},
-                    "cost-estimate": {},
-                    "created-by": {},
-                    "input-state-version": {},
-                    "plan": {},
-                    "run-events": {},
-                    "policy-checks": {},
-                    "workspace": {},
-                    "workspace-run-alerts": {}
+                "canceled-at": None,
+                "created-at": "2021-05-24T07:38:04.171Z",
+                "has-changes": False,
+                "auto-apply": False,
+                "allow-empty-apply": False,
+                "is-destroy": False,
+                "message": "Custom message",
+                "plan-only": False,
+                "source": "tfe-api",
+                "status-timestamps": {
+                    "plan-queueable-at": "2021-05-24T07:38:04+00:00"
                 },
-                "links": {
-                    "self": "/api/v2/runs/run-CZcmD7eagjhyX0vN"
-                }
+                "status": self._status.value,
+                "trigger-reason": "manual",
+                "target-addrs": None,
+                "permissions": {
+                    "can-apply": True,
+                    "can-cancel": True,
+                    "can-comment": True,
+                    "can-discard": True,
+                    "can-force-execute": True,
+                    "can-force-cancel": True,
+                    "can-override-policy-check": True
+                },
+                "refresh": False,
+                "refresh-only": False,
+                "replace-addrs": None,
+                "variables": []
+            },
+            "relationships": {
+                "apply": {},
+                "comments": {},
+                "configuration-version": {},
+                "cost-estimate": {},
+                "created-by": {},
+                "input-state-version": {},
+                "plan": {},
+                "run-events": {},
+                "policy-checks": {},
+                "workspace": {},
+                "workspace-run-alerts": {}
+            },
+            "links": {
+                "self": "/api/v2/runs/run-CZcmD7eagjhyX0vN"
             }
         }

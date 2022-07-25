@@ -77,6 +77,10 @@ class Server(object):
             '/api/v2/runs',
             '/api/v2/runs/<string:run_id>'
         )
+        self._api.add_resource(
+            ApiTerraformWorkspaceRuns,
+            '/api/v2/workspaces/<string:workspace_id>/runs'
+        )
 
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
@@ -220,7 +224,7 @@ class ApiTerraformRun(Resource):
         run = Run.get_by_id(run_id)
         if not run:
             return {}, 404
-        return run.get_api_details()
+        return {"data": run.get_api_details()}
 
     def post(self, run_id=None):
         """Create a run."""
@@ -264,4 +268,16 @@ class ApiTerraformRun(Resource):
         }
 
         run = Run.create(cv, **create_attributes)
-        return run.get_api_details()
+        return {"data": run.get_api_details()}
+
+
+class ApiTerraformWorkspaceRuns(Resource):
+    """Interface to obtain workspace runs,"""
+
+    def get(self, workspace_id):
+        """Return all runs for a workspace."""
+        workspace = Workspace.get_by_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        return {"data": [run.get_api_details() for run in Run.get_runs_by_workspace(workspace)]}
