@@ -46,12 +46,12 @@ class UserAccount:
                 "relationships": {
                 "authentication-tokens": {
                     "links": {
-                    "related": "/api/v2/users/user-V3R563qtJNcExAkN/authentication-tokens"
+                        "related": "/api/v2/users/user-V3R563qtJNcExAkN/authentication-tokens"
                     }
                 }
                 },
                 "links": {
-                "self": "/api/v2/users/user-V3R563qtJNcExAkN"
+                    "self": "/api/v2/users/user-V3R563qtJNcExAkN"
                 }
             }
         }

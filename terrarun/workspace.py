@@ -1,5 +1,8 @@
 
 
+import terrarun.organisation
+
+
 class Workspace:
 
     _MOCK_WORKSPACES = {
@@ -11,6 +14,16 @@ class Workspace:
         workspace_id = "ws-qPhan8kDLymzv2uS"
         cls._MOCK_WORKSPACES[workspace_id] = workspace_name
         return cls(organisation, workspace_id)
+
+    @classmethod
+    def get_by_id(cls, workspace_id):
+        """Return workspace by ID"""
+        return cls(terrarun.organisation.Organisation(1), workspace_id)
+
+    @property
+    def auto_apply(self):
+        """Whether runs are auto-apply enabled"""
+        return False
 
     def __init__(self, organisation, workspace_id):
         """Store member variables."""
@@ -144,4 +157,4 @@ class Workspace:
                 },
                 "type": "workspaces"
             }
-            }
+        }
