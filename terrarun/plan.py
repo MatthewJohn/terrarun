@@ -41,6 +41,7 @@ class Plan:
         """Create run"""
         self._id = id_
         self._run = run
+        self._output = b""
 
     def execute(self):
         """Execute plan"""
@@ -56,26 +57,40 @@ class Plan:
 
         self._status = PlanState.RUNNING
 
-        tf_init = subprocess.Popen(
+        print('InIT STARTING!!!')
+        init_proc = subprocess.Popen(
             [f'terraform-{terraform_version}', 'init'],
-            # stdout=subprocess.PIPE,
-            # stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             cwd=self._run._configuration_version._extract_dir)
-        init_rc = tf_init.communicate()
+
+        for line in iter(init_proc.stdout.readline, ""):
+            self._output += line
+
+        init_rc = init_proc.communicate()
+        print('INIT FINISHED!!!')
         if init_rc:
+            print('INITN FAILED!!!')
             self._status = PlanState.ERRORED
             return
 
+        print('PLAN STARTING!!!')
         plan_proc = subprocess.Popen(
             command,
-            # stdout=subprocess.PIPE,
-            # stderr=subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             cwd=self._run._configuration_version._extract_dir)
+
+        for line in iter(plan_proc.stdout.readline, ""):
+            self._output += line
+
         plan_rc = plan_proc.communicate()
         if plan_rc:
             self._status = PlanState.ERRORED
         else:
             self._status = PlanState.FINISHED
+
+        print('PLAN COMPLETE!!!')
 
 
     def get_api_details(self):
@@ -98,12 +113,10 @@ class Plan:
                     "started-at": "2018-07-02T22:29:54+00:00",
                     "finished-at": "2018-07-02T22:29:58+00:00"
                 },
-                "log-read-url": f"/api/v2/plans/{self._id}/log"
+                "log-read-url": f"https://local-dev.dock.studio/api/v2/plans/{self._id}/log"
             },
             "relationships": {
-                "state-versions": {
-                    "data": []
-                }
+                "state-versions": {}
             },
             "links": {
                 "self": f"/api/v2/plans/{self._id}",

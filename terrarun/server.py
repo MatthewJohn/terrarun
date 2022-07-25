@@ -93,6 +93,10 @@ class Server(object):
             '/api/v2/plans',
             '/api/v2/plans/<string:plan_id>'
         )
+        self._api.add_resource(
+            ApiTerraformPlanLog,
+            '/api/v2/plans/<string:plan_id>/log'
+        )
 
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
@@ -333,3 +337,24 @@ class ApiTerraformPlans(Resource):
             return {"data": plan.get_api_details()}
 
         raise Exception('Need to return list of plans?')
+
+
+class ApiTerraformPlanLog(Resource):
+    """Interface to obtain logs from stream."""
+
+    def get(self, plan_id):
+        """Return information for plan(s)"""
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('offset', type=int, location='args')
+        parser.add_argument('limit', type=int, location='args')
+        args = parser.parse_args()
+        plan = Plan.get_by_id(plan_id)
+        if not plan:
+            return {}, 404
+
+        response = make_response(plan._output[args.offset:(args.offset+args.limit)])
+        print('Returning LOGS:')
+        print(plan._output[args.offset:(args.offset+args.limit)])
+        response.headers['Content-Type'] = 'text/plain'
+        return response
