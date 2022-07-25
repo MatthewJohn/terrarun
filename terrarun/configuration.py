@@ -63,7 +63,7 @@ class ConfigurationVersion():
                 print(subprocess.check_output(['bash', '-c', f'cat {extract_dir}/*']))
         finally:
             os.unlink(tar_gz_file)
-
+        self._status = ConfigurationVersionStatus.UPLOADED
 
     def get_upload_url(self):
         """Return URL for terraform to upload configuration."""

@@ -60,12 +60,16 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
         self._api.add_resource(
-            ApiTerraformConfigurationVersions,
+            ApiTerraformWorkspaceConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
         )
         self._api.add_resource(
             ApiTerraformConfigurationVersionUpload,
             '/api/v2/upload-configuration/<string:configuration_version_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformConfigurationVersions,
+            '/api/v2/configuration-versions/<string:configuration_version_id>'
         )
 
         # Views
@@ -161,7 +165,7 @@ class ApiTerraformWorkspace(Resource):
         return workspace.get_api_details()
 
 
-class ApiTerraformConfigurationVersions(Resource):
+class ApiTerraformWorkspaceConfigurationVersions(Resource):
     """Workspace configuration version interface"""
 
     def post(self, workspace_id):
@@ -176,6 +180,17 @@ class ApiTerraformConfigurationVersions(Resource):
             auto_queue_runs=attributes.get('auto-queue-runs', True),
             speculative=attributes.get('speculative', False)
         )
+        return cv.get_api_details()
+
+
+class ApiTerraformConfigurationVersions(Resource):
+    """Workspace configuration version interface"""
+
+    def get(self, configuration_version_id):
+        """Get configuration version details."""
+        cv = ConfigurationVersion.get_by_id(id_=configuration_version_id)
+        if not cv:
+            return {}, 404
         return cv.get_api_details()
 
 
