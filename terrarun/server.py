@@ -74,7 +74,8 @@ class Server(object):
         )
         self._api.add_resource(
             ApiTerraformRun,
-            '/api/v2/runs'
+            '/api/v2/runs',
+            '/api/v2/runs/<string:run_id>'
         )
 
         # Views
@@ -214,8 +215,18 @@ class ApiTerraformConfigurationVersionUpload(Resource):
 class ApiTerraformRun(Resource):
     """Run interface."""
 
-    def post(self):
+    def get(self, run_id=None):
+        """Return run information"""
+        run = Run.get_by_id(run_id)
+        if not run:
+            return {}, 404
+        return run.get_api_details()
+
+    def post(self, run_id=None):
         """Create a run."""
+
+        if run_id:
+            return {}, 422
 
         data = flask.request.get_json().get('data', {})
         request_attributes = data.get('attributes', {})
