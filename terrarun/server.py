@@ -52,6 +52,10 @@ class Server(object):
             ApiTerraformOrganisationEntitlementSet,
             '/api/v2/organizations/<string:organisation_name>/entitlement-set'
         )
+        self._api.add_resource(
+            ApiTerraformOrganisationWorkspace,
+            '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
+        )
 
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
@@ -134,3 +138,13 @@ class ApiTerraformOrganisationEntitlementSet(Resource):
         """Return entitlement-set for organisation"""
         organisation = Organisation.get_by_name(organisation_name)
         return organisation.get_entitlement_set_api()
+
+
+class ApiTerraformOrganisationWorkspace(Resource):
+    """Organisation workspace details endpoint."""
+
+    def get(self, organisation_name, workspace_name):
+        """Return workspace details."""
+        organisation = Organisation.get_by_name(organisation_name)
+        workspace = organisation.get_workspace_by_name(workspace_name)
+        return workspace.get_api_details()

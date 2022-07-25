@@ -1,3 +1,7 @@
+
+from terrarun.workspace import Workspace
+
+
 class Organisation:
 
     @classmethod
@@ -38,3 +42,7 @@ class Organisation:
                 }
             }
         }
+
+    def get_workspace_by_name(self, workspace_name):
+        """Return workspace object within organisation"""
+        return Workspace(self, workspace_name)
