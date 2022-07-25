@@ -122,9 +122,8 @@ class Server(object):
         """Run worker queue"""
         while self.queue_run:
             try:
-                run = Run.WORKER_QUEUE.get(timeout=1)
-                if run._status is RunStatus.PLAN_QUEUED:
-                    run.execute_plan()
+                job = Run.WORKER_QUEUE.get(timeout=1)
+                job.execute()
             except queue.Empty:
                 pass
             except Exception as exc:
