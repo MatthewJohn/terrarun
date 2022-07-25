@@ -1,5 +1,7 @@
 
+import queue
 import re
+import threading
 from flask import Flask, make_response, request
 import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
@@ -7,7 +9,7 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
-from terrarun.run import Run
+from terrarun.run import Run, RunStatus
 from terrarun.workspace import Workspace
 
 
@@ -105,7 +107,22 @@ class Server(object):
 
         self._app.secret_key = "abcefg"
 
+        self.queue_run = True
+        self.worker_thread = threading.Thread(target=self.worker, daemon=True).start()
         self._app.run(**kwargs)
+        self.queue_run = False
+
+    def worker(self):
+        """Run worker queue"""
+        while self.queue_run:
+            try:
+                run = Run.WORKER_QUEUE.get(timeout=1)
+                if run._status is RunStatus.PLAN_QUEUED:
+                    run.execute_plan()
+            except queue.Empty:
+                pass
+            except Exception as exc:
+                print('Error during worker run: ' + str(exc))
 
 
 class ApiTerraformWellKnown(Resource):

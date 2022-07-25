@@ -1,5 +1,7 @@
 
+import subprocess
 from enum import Enum
+import queue
 
 
 class RunStatus(Enum):
@@ -41,6 +43,7 @@ class Run:
 
     RUNS = {}
     RUNS_BY_WORKSPACE = {}
+    WORKER_QUEUE = queue.Queue()
 
     @classmethod
     def get_by_id(cls, id_):
@@ -72,6 +75,32 @@ class Run:
         self._configuration_version = configuration_version
         self._attributes = attributes
         self._status = RunStatus.PENDING
+        self.__class__.WORKER_QUEUE.put(self)
+        self._status = RunStatus.PLAN_QUEUED
+
+    def execute_plan(self):
+        """Execute terraform command"""
+
+        self._status = RunStatus.PLANNING
+        action = None
+        if  self._attributes.get('refresh_only'):
+            action = 'refresh'
+        else:
+            action = 'plan'
+
+        terraform_version = self._attributes.get('terraform_version')
+        command = [f'terraform-{terraform_version}', action]
+        print(self._attributes)
+        proc = subprocess.Popen(
+            command,
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.STDOUT,
+            cwd=self._configuration_version._extract_dir)
+        rc = proc.communicate()
+        if rc:
+            self._status = RunStatus.ERRORED
+        else:
+            self._status = RunStatus.PLANNED
 
     def get_api_details(self):
         """Return API details."""
@@ -88,10 +117,10 @@ class Run:
                 "canceled-at": None,
                 "created-at": "2021-05-24T07:38:04.171Z",
                 "has-changes": False,
-                "auto-apply": False,
+                "auto-apply": self._attributes.get('auto_apply'),
                 "allow-empty-apply": False,
                 "is-destroy": False,
-                "message": "Custom message",
+                "message": self._attributes.get('message'),
                 "plan-only": False,
                 "source": "tfe-api",
                 "status-timestamps": {
@@ -110,7 +139,7 @@ class Run:
                     "can-override-policy-check": True
                 },
                 "refresh": False,
-                "refresh-only": False,
+                "refresh-only": self._attributes.get('refresh_only'),
                 "replace-addrs": None,
                 "variables": []
             },
