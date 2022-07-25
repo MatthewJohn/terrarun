@@ -32,6 +32,11 @@ class Server(object):
             ApiTerraformWellKnown,
             '/.well-known/terraform.json'
         )
+        self._api.add_resource(
+            ApiTerraformPing,
+            '/api/v2/ping'
+        )
+
 
     def run(self, debug=None):
         """Run flask server."""
@@ -58,3 +63,14 @@ class ApiTerraformWellKnown(Resource):
             'tfe.v2.1': '/api/v2/',
             'tfe.v2.2': '/api/v2/'
         }
+
+
+class ApiTerraformPing(Resource):
+
+    def get(self):
+        """Return empty ping response"""
+
+        # Create empty response with 204 status
+        response = make_response({}, 204)
+        response.headers['Content-Type'] = 'application/vnd.api+json'
+        return response
