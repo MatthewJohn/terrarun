@@ -1,0 +1,110 @@
+
+import os
+import subprocess
+from enum import Enum
+from tarfile import TarFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
+
+class ConfigurationVersionStatus(Enum):
+
+    PENDING = 'pending'
+    FETCHING = 'fetching'
+    UPLOADED = 'uploaded'
+    ARCHIVED = 'archived'
+    ERRORED = 'errored'
+
+
+class ConfigurationVersion():
+    """Interface for uploaded configuration files"""
+
+    CONFIGURATIONS = {}
+
+    @classmethod
+    def get_by_id(cls, id_):
+        """Obtain ConfigurationVersion instance by ID."""
+        if id_ in cls.CONFIGURATIONS:
+            return cls.CONFIGURATIONS[id_]
+        return None
+
+    @classmethod
+    def create(cls, workspace, auto_queue_runs=True, speculative=False):
+        """Create configuration and return instance."""
+        id_ = 'cv-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.CONFIGURATIONS)).zfill(2))
+        cv = ConfigurationVersion(workspace=workspace, id_=id_)
+        cls.CONFIGURATIONS[id_] = cv
+        cv.speculative = speculative
+        if auto_queue_runs:
+            cv.queue()
+        return cv
+
+    @property
+    def plan_only(self):
+        """Return whether only a plan."""
+        return False
+
+    def __init__(self, workspace, id_):
+        """Store member variables."""
+        self.speculative = False
+        self._workspace = workspace
+        self._id = id_
+        self._status = ConfigurationVersionStatus.PENDING
+
+    def queue(self):
+        """Queue."""
+        self._status = ConfigurationVersionStatus.FETCHING
+
+    def process_upload(self, data):
+        """Handle upload of archive."""
+        with NamedTemporaryFile(delete=False) as temp_file:
+            tar_gz_file = temp_file.name
+
+        try:
+            with open(tar_gz_file, 'wb') as tar_gz_fh:
+                tar_gz_fh.write(data)
+                
+            with TemporaryDirectory() as extract_dir:
+                tar_file = TarFile.open(tar_gz_file, 'r')
+                tar_file.extractall(extract_dir)
+                print(subprocess.check_output(['bash', '-c', f'cat {extract_dir}/*']))
+        finally:
+            os.unlink(tar_gz_file)
+        self._status = ConfigurationVersionStatus.UPLOADED
+
+    def get_upload_url(self):
+        """Return URL for terraform to upload configuration."""
+        return f'/api/v2/upload-configuration/{self._id}'
+
+    def get_api_details(self):
+        """Return API details."""
+        return {
+            "data": {
+                "id": self._id,
+                "type": "configuration-versions",
+                "attributes": {
+                    "auto-queue-runs": True,
+                    "error": None,
+                    "error-message": None,
+                    "source": "tfe-api",
+                    "speculative": self.speculative,
+                    "status": self._status.value,
+                    "status-timestamps": {},
+                    "upload-url": self.get_upload_url()
+                },
+                "relationships": {
+                    "ingress-attributes": {
+                        "data": {
+                            "id": "ia-i4MrTxmQXYxH2nYD",
+                            "type": "ingress-attributes"
+                        },
+                        "links": {
+                            "related":
+                            f"/api/v2/configuration-versions/{self._id}/ingress-attributes"
+                        }
+                    }
+                },
+                "links": {
+                    "self": f"/api/v2/configuration-versions/{self._id}",
+                    "download": f"/api/v2/configuration-versions/{self._id}/download"
+                }
+            }
+        }
