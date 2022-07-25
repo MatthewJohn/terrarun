@@ -1,5 +1,6 @@
 
-from flask import Flask, make_response
+import re
+from flask import Flask, make_response, request
 from flask_restful import Api, Resource
 
 from terrarun.auth import Auth
@@ -20,7 +21,7 @@ class Server(object):
         )
 
         self.host = '0.0.0.0'
-        self.port = 5002
+        self.port = 5000
         self.ssl_public_key = ssl_public_key
         self.ssl_private_key = ssl_private_key
 
@@ -41,6 +42,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformMotd,
             '/api/terraform/motd'
+        )
+        self._api.add_resource(
+            ApiTerraformAccountDetails,
+            '/api/v2/account/details'
         )
 
         # Views
@@ -97,3 +102,21 @@ class ApiTerraformMotd(Resource):
         return {
             'msg': 'This is a test Terrarun server\nNo functionality yet.'
         }
+
+
+class ApiTerraformAccountDetails(Resource):
+    """Provide interface to return account details"""
+
+    def get(self):
+        """Check account and return details, if available."""
+        user_account = None
+
+        authorization_header = request.headers.get('Authorization', None)
+        if authorization_header:
+            auth_token = re.sub(r'^Bearer ', '', authorization_header)
+            user_account = Auth().get_user_account_by_auth_token(auth_token)
+
+        if user_account is not None:
+            return user_account.get_account_api_data()
+        else:
+            return {}, 403
