@@ -1,5 +1,10 @@
 
+import subprocess
 from enum import Enum
+import queue
+from time import sleep
+
+import terrarun.plan
 
 
 class RunStatus(Enum):
@@ -41,6 +46,7 @@ class Run:
 
     RUNS = {}
     RUNS_BY_WORKSPACE = {}
+    WORKER_QUEUE = queue.Queue()
 
     @classmethod
     def get_by_id(cls, id_):
@@ -69,9 +75,35 @@ class Run:
     def __init__(self, configuration_version, id_, **attributes):
         """Store member variables"""
         self._id = id_
+        self._plan = None
         self._configuration_version = configuration_version
-        self._attributes = attributes
+        self._attributes = {
+            'auto_apply': False,
+            'message': '',
+            'plan_only': False,
+            'refresh': True,
+            'refresh_only': False
+        }
+        self._attributes.update(attributes)
         self._status = RunStatus.PENDING
+
+        self._plan = terrarun.plan.Plan.create(self)
+        self._status = RunStatus.PLAN_QUEUED
+        self.__class__.WORKER_QUEUE.put(self.execute_next_step)
+        self._plan._status = terrarun.plan.PlanState.PENDING
+
+    def execute_next_step(self):
+        """Execute terraform command"""
+        if self._status is RunStatus.PLAN_QUEUED:
+            self._status = RunStatus.PLANNING
+            self._plan.execute()
+            if self._plan._status is terrarun.plan.PlanState.ERRORED:
+                self._status = RunStatus.ERRORED
+            else:
+                self._status = RunStatus.PLANNED
+
+            if self._attributes.get('plan_only') or self._configuration_version.speculative:
+                self._status = RunStatus.PLANNED_AND_FINISHED
 
     def get_api_details(self):
         """Return API details."""
@@ -88,11 +120,11 @@ class Run:
                 "canceled-at": None,
                 "created-at": "2021-05-24T07:38:04.171Z",
                 "has-changes": False,
-                "auto-apply": False,
+                "auto-apply": self._attributes.get('auto_apply'),
                 "allow-empty-apply": False,
                 "is-destroy": False,
-                "message": "Custom message",
-                "plan-only": False,
+                "message": self._attributes.get('message'),
+                "plan-only": self._attributes.get('plan_only', False),
                 "source": "tfe-api",
                 "status-timestamps": {
                     "plan-queueable-at": "2021-05-24T07:38:04+00:00"
@@ -109,25 +141,27 @@ class Run:
                     "can-force-cancel": True,
                     "can-override-policy-check": True
                 },
-                "refresh": False,
-                "refresh-only": False,
+                "refresh": self._attributes.get('refresh', False),
+                "refresh-only": self._attributes.get('refresh_only', False),
                 "replace-addrs": None,
                 "variables": []
             },
             "relationships": {
                 "apply": {},
                 "comments": {},
-                "configuration-version": {},
+                "configuration-version": {
+                    'data': {'id': self._configuration_version._id, 'type': 'configuration-versions'}
+                },
                 "cost-estimate": {},
                 "created-by": {},
                 "input-state-version": {},
-                "plan": {},
+                "plan": {'data': {'id': self._plan._id, 'type': 'plans'}} if self._plan is not None else {},
                 "run-events": {},
                 "policy-checks": {},
                 "workspace": {},
                 "workspace-run-alerts": {}
             },
             "links": {
-                "self": "/api/v2/runs/run-CZcmD7eagjhyX0vN"
+                "self": f"/api/v2/runs/{self._id}"
             }
         }

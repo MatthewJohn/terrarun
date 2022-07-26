@@ -1,5 +1,9 @@
 
+import queue
 import re
+import threading
+from time import sleep
+import traceback
 from flask import Flask, make_response, request
 import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
@@ -7,7 +11,8 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
-from terrarun.run import Run
+from terrarun.plan import Plan, PlanState
+from terrarun.run import Run, RunStatus
 from terrarun.workspace import Workspace
 
 
@@ -85,6 +90,15 @@ class Server(object):
             ApiTerraformOrganisationQueue,
             '/api/v2/organizations/<string:organisation_name>/runs/queue'
         )
+        self._api.add_resource(
+            ApiTerraformPlans,
+            '/api/v2/plans',
+            '/api/v2/plans/<string:plan_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformPlanLog,
+            '/api/v2/plans/<string:plan_id>/log'
+        )
 
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
@@ -105,7 +119,22 @@ class Server(object):
 
         self._app.secret_key = "abcefg"
 
+        self.queue_run = True
+        self.worker_thread = threading.Thread(target=self.worker, daemon=True).start()
         self._app.run(**kwargs)
+        self.queue_run = False
+
+    def worker(self):
+        """Run worker queue"""
+        while self.queue_run:
+            try:
+                job = Run.WORKER_QUEUE.get(timeout=1)
+                job()
+            except queue.Empty:
+                pass
+            except Exception as exc:
+                print('Error during worker run: ' + str(exc))
+                print(traceback.format_exc())
 
 
 class ApiTerraformWellKnown(Resource):
@@ -236,10 +265,12 @@ class ApiTerraformRun(Resource):
         if run_id:
             return {}, 422
 
+        print("CREATE RUN JSON")
+        print(flask.request.get_json())
+
         data = flask.request.get_json().get('data', {})
         request_attributes = data.get('attributes', {})
 
-        print(request_attributes)
         workspace_id = data.get('relationships', {}).get('workspace', {}).get('data', {}).get('id', None)
         if not workspace_id:
             return {}, 422
@@ -297,3 +328,46 @@ class ApiTerraformOrganisationQueue(Resource):
             return {}, 404
 
         return {"data": [run.get_api_details() for run in Run.RUNS.values()]}
+
+
+class ApiTerraformPlans(Resource):
+    """Interface for plans."""
+
+    def get(self, plan_id=None):
+        """Return information for plan(s)"""
+        if plan_id:
+            plan = Plan.get_by_id(plan_id)
+            if not plan:
+                return {}, 404
+
+            return {"data": plan.get_api_details()}
+
+        raise Exception('Need to return list of plans?')
+
+
+class ApiTerraformPlanLog(Resource):
+    """Interface to obtain logs from stream."""
+
+    def get(self, plan_id):
+        """Return information for plan(s)"""
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('offset', type=int, location='args')
+        parser.add_argument('limit', type=int, location='args')
+        args = parser.parse_args()
+        plan = Plan.get_by_id(plan_id)
+        if not plan:
+            return {}, 404
+
+        plan_output = b""
+        for _ in range(60):
+            plan_output = plan._output[args.offset:(args.offset+args.limit)]
+            if plan_output or plan._status not in [PlanState.PENDING, PlanState.MANAGE_QUEUED, PlanState.QUEUED, PlanState.RUNNING]:
+                break
+            print('Waiting as plan state is; ' + str(plan._status))
+
+            sleep(0.5)
+
+        response = make_response(plan_output)
+        response.headers['Content-Type'] = 'text/plain'
+        return response
