@@ -69,6 +69,16 @@ class ConfigurationVersion():
             os.mkdir(self._extract_dir)
             tar_file = TarFile.open(tar_gz_file, 'r')
             tar_file.extractall(self._extract_dir)
+
+            # Create override file for reconfiguring backend
+            with open(os.path.join(self._extract_dir, 'override.tf'), 'w') as override_fh:
+                override_fh.write("""
+terraform {
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
+""".strip())
         finally:
             os.unlink(tar_gz_file)
         self._status = ConfigurationVersionStatus.UPLOADED
