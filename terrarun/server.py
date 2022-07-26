@@ -2,6 +2,7 @@
 import queue
 import re
 import threading
+from time import sleep
 import traceback
 from flask import Flask, make_response, request
 import flask
@@ -10,7 +11,7 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
-from terrarun.plan import Plan
+from terrarun.plan import Plan, PlanState
 from terrarun.run import Run, RunStatus
 from terrarun.workspace import Workspace
 
@@ -358,6 +359,15 @@ class ApiTerraformPlanLog(Resource):
         if not plan:
             return {}, 404
 
-        response = make_response(plan._output[args.offset:(args.offset+args.limit)])
+        plan_output = b""
+        for _ in range(60):
+            plan_output = plan._output[args.offset:(args.offset+args.limit)]
+            if plan_output or plan._state not in [PlanState.PENDING, PlanState.MANAGE_QUEUED, PlanState.QUEUED, PlanState.RUNNING]:
+                break
+            print('Waiting as plan state is; ' + str(plan._state))
+
+            sleep(0.5)
+
+        response = make_response(plan_output)
         response.headers['Content-Type'] = 'text/plain'
         return response
