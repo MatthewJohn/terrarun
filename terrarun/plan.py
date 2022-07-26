@@ -118,12 +118,13 @@ Executed remotely on terrarun server
             stderr=subprocess.STDOUT,
             cwd=self._run._configuration_version._extract_dir)
 
-        for line in iter(plan_proc.stdout.readline, ""):
-            self._output += line
-
-        # Wait for process to exit
-        while plan_proc.poll() is None:
-            sleep(0.05)
+            # Obtain all stdout
+        while True:
+            line = plan_proc.stdout.readline()
+            if line:
+                self._output += line
+            elif plan_proc.poll() is not None:
+                break
 
         plan_rc = plan_proc.returncode
         if plan_rc:
