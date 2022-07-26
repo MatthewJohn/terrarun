@@ -65,72 +65,41 @@ Executed remotely on terrarun server
         terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
         command = [f'terraform-{terraform_version}', action, '-input=false']
 
-        init_proc = subprocess.Popen(
-            [f'terraform-{terraform_version}', 'init', '-input=false'],
+        init_rc = self._run_command([f'terraform-{terraform_version}', 'init', '-input=false'])
+        if init_rc:
+            self._status = PlanState.ERRORED
+            return
+
+        sleep(5)
+        if self._run._attributes.get('refresh', True):
+            refresh_rc = self._run_command([f'terraform-{terraform_version}', 'refresh', '-input=false'])
+            if refresh_rc:
+                self._status = PlanState.ERRORED
+                return
+        sleep(5)
+
+        plan_rc = self._run_command(command)
+        if plan_rc:
+            self._state = PlanState.ERRORED
+        else:
+            self._state = PlanState.FINISHED
+
+    def _run_command(self, command):
+        command_proc = subprocess.Popen(
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             cwd=self._run._configuration_version._extract_dir)
 
         # Obtain all stdout
         while True:
-            line = init_proc.stdout.readline()
+            line = command_proc.stdout.readline()
             if line:
                 self._output += line
-            elif init_proc.poll() is not None:
+            elif command_proc.poll() is not None:
                 break
 
-        # Wait for process to exit
-        while init_proc.poll() is None:
-            sleep(0.05)
-
-        init_rc = init_proc.returncode
-        if init_rc:
-            self._status = PlanState.ERRORED
-            return
-
-        if self._run._attributes.get('refresh', True):
-            refresh_proc = subprocess.Popen(
-                [f'terraform-{terraform_version}', 'refresh', '-input=false'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                cwd=self._run._configuration_version._extract_dir)
-
-            # Obtain all stdout
-            while True:
-                line = refresh_proc.stdout.readline()
-                if line:
-                    self._output += line
-                elif refresh_proc.poll() is not None:
-                    break
-
-            # Wait for process to exit
-            while refresh_proc.poll() is None:
-                sleep(0.05)
-
-            refresh_rc = refresh_proc.returncode
-            if refresh_rc:
-                self._status = PlanState.ERRORED
-                return
-
-        plan_proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=self._run._configuration_version._extract_dir)
-
-            # Obtain all stdout
-        while True:
-            line = plan_proc.stdout.readline()
-            if line:
-                self._output += line
-            elif plan_proc.poll() is not None:
-                break
-
-        plan_rc = plan_proc.returncode
-        if plan_rc:
-            self._state = PlanState.ERRORED
-        else:
-            self._state = PlanState.FINISHED
+        return command_proc.returncode
 
     def get_api_details(self):
         """Return API details for plan"""
