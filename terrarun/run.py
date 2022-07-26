@@ -102,6 +102,9 @@ class Run:
             else:
                 self._status = RunStatus.PLANNED
 
+            if self._attributes.get('plan_only') or self._configuration_version.speculative:
+                self._status = RunStatus.PLANNED_AND_FINISHED
+
     def get_api_details(self):
         """Return API details."""
         return {
