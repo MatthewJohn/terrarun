@@ -44,7 +44,7 @@ class Plan:
         self._run = run
         self._output = b""
         self._state_version = None
-        self._state = PlanState.PENDING
+        self._status = PlanState.PENDING
 
     def execute(self):
         """Execute plan"""
@@ -127,9 +127,9 @@ Executed remotely on terrarun server
 
         plan_rc = plan_proc.returncode
         if plan_rc:
-            self._status = PlanState.ERRORED
+            self._state = PlanState.ERRORED
         else:
-            self._status = PlanState.FINISHED
+            self._state = PlanState.FINISHED
 
     def get_api_details(self):
         """Return API details for plan"""

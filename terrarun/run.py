@@ -90,7 +90,7 @@ class Run:
         self._plan = terrarun.plan.Plan.create(self)
         self._status = RunStatus.PLAN_QUEUED
         self.__class__.WORKER_QUEUE.put(self.execute_next_step)
-        self._plan._state = terrarun.plan.PlanState.PENDING
+        self._plan._status = terrarun.plan.PlanState.PENDING
 
     def execute_next_step(self):
         """Execute terraform command"""
