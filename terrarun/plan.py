@@ -49,7 +49,6 @@ class Plan:
     def execute(self):
         """Execute plan"""
         self._status = PlanState.RUNNING
-        print('')
         action = None
         if  self._run._attributes.get('refresh_only'):
             action = 'refresh'

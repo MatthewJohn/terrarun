@@ -2,6 +2,7 @@
 import queue
 import re
 import threading
+import traceback
 from flask import Flask, make_response, request
 import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
@@ -132,6 +133,7 @@ class Server(object):
                 pass
             except Exception as exc:
                 print('Error during worker run: ' + str(exc))
+                print(traceback.format_exc())
 
 
 class ApiTerraformWellKnown(Resource):
