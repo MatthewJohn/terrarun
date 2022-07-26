@@ -362,9 +362,9 @@ class ApiTerraformPlanLog(Resource):
         plan_output = b""
         for _ in range(60):
             plan_output = plan._output[args.offset:(args.offset+args.limit)]
-            if plan_output or plan._state not in [PlanState.PENDING, PlanState.MANAGE_QUEUED, PlanState.QUEUED, PlanState.RUNNING]:
+            if plan_output or plan._status not in [PlanState.PENDING, PlanState.MANAGE_QUEUED, PlanState.QUEUED, PlanState.RUNNING]:
                 break
-            print('Waiting as plan state is; ' + str(plan._state))
+            print('Waiting as plan state is; ' + str(plan._status))
 
             sleep(0.5)
 
