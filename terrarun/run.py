@@ -112,7 +112,7 @@ class Run:
                 "allow-empty-apply": False,
                 "is-destroy": False,
                 "message": self._attributes.get('message'),
-                "plan-only": False,
+                "plan-only": self._attributes.get('plan_only', False),
                 "source": "tfe-api",
                 "status-timestamps": {
                     "plan-queueable-at": "2021-05-24T07:38:04+00:00"
@@ -129,7 +129,7 @@ class Run:
                     "can-force-cancel": True,
                     "can-override-policy-check": True
                 },
-                "refresh": False,
+                "refresh": self._attributes.get('refresh', False),
                 "refresh-only": self._attributes.get('refresh_only', False),
                 "replace-addrs": None,
                 "variables": []
@@ -137,7 +137,9 @@ class Run:
             "relationships": {
                 "apply": {},
                 "comments": {},
-                "configuration-version": {},
+                "configuration-version": {
+                    'data': {'id': self._configuration_version._id, 'type': 'configuration-versions'}
+                },
                 "cost-estimate": {},
                 "created-by": {},
                 "input-state-version": {},

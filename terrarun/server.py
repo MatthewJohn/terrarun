@@ -262,6 +262,9 @@ class ApiTerraformRun(Resource):
         if run_id:
             return {}, 422
 
+        print("CREATE RUN JSON")
+        print(flask.request.get_json())
+
         data = flask.request.get_json().get('data', {})
         request_attributes = data.get('attributes', {})
 
@@ -354,7 +357,5 @@ class ApiTerraformPlanLog(Resource):
             return {}, 404
 
         response = make_response(plan._output[args.offset:(args.offset+args.limit)])
-        print('Returning LOGS:')
-        print(plan._output[args.offset:(args.offset+args.limit)])
         response.headers['Content-Type'] = 'text/plain'
         return response
