@@ -30,10 +30,10 @@ class Plan:
         return None
 
     @classmethod
-    def create(cls, run, **attributes):
+    def create(cls, run):
         """Create plan and return instance."""
         id_ = 'plan-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.PLANS)).zfill(2))
-        run = cls(run=run, id_=id_, **attributes)
+        run = cls(run=run, id_=id_)
         cls.PLANS[id_] = run
 
         return run

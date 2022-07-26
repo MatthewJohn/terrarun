@@ -77,7 +77,14 @@ class Run:
         self._id = id_
         self._plan = None
         self._configuration_version = configuration_version
-        self._attributes = attributes
+        self._attributes = {
+            'auto_apply': False,
+            'message': '',
+            'plan_only': False,
+            'refresh': True,
+            'refresh_only': False
+        }
+        self._attributes.update(attributes)
         self._status = RunStatus.PENDING
 
         self._status = RunStatus.PLAN_QUEUED
