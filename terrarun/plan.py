@@ -1,6 +1,7 @@
 
 
 from enum import Enum
+from time import sleep
 import terrarun.run
 import subprocess
 
@@ -53,21 +54,33 @@ class Plan:
             action = 'plan'
 
         terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
-        command = [f'terraform-{terraform_version}', action]
+        command = [f'terraform-{terraform_version}', action, '-input=false']
 
         self._status = PlanState.RUNNING
 
         print('InIT STARTING!!!')
         init_proc = subprocess.Popen(
-            [f'terraform-{terraform_version}', 'init'],
+            [f'terraform-{terraform_version}', 'init', '-input=false'],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             cwd=self._run._configuration_version._extract_dir)
+        print("here")
+        # Obtain all stdout
+        while True:
+            line = init_proc.stdout.readline()
+            print('adding line')
+            if line:
+                self._output += line
+            elif init_proc.poll() is not None:
+                break
+        print("there")
 
-        for line in iter(init_proc.stdout.readline, ""):
-            self._output += line
+        # Wait for process to exit
+        while init_proc.poll() is None:
+            print('WAiting for proc to exit')
+            sleep(0.05)
 
-        init_rc = init_proc.communicate()
+        init_rc = init_proc.returncode
         print('INIT FINISHED!!!')
         if init_rc:
             print('INITN FAILED!!!')
@@ -84,7 +97,11 @@ class Plan:
         for line in iter(plan_proc.stdout.readline, ""):
             self._output += line
 
-        plan_rc = plan_proc.communicate()
+        # Wait for process to exit
+        while plan_proc.poll() is None:
+            sleep(0.05)
+
+        plan_rc = plan_proc.returncode
         if plan_rc:
             self._status = PlanState.ERRORED
         else:
