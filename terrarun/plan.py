@@ -58,36 +58,29 @@ class Plan:
 
         self._status = PlanState.RUNNING
 
-        print('InIT STARTING!!!')
         init_proc = subprocess.Popen(
             [f'terraform-{terraform_version}', 'init', '-input=false'],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             cwd=self._run._configuration_version._extract_dir)
-        print("here")
+
         # Obtain all stdout
         while True:
             line = init_proc.stdout.readline()
-            print('adding line')
             if line:
                 self._output += line
             elif init_proc.poll() is not None:
                 break
-        print("there")
 
         # Wait for process to exit
         while init_proc.poll() is None:
-            print('WAiting for proc to exit')
             sleep(0.05)
 
         init_rc = init_proc.returncode
-        print('INIT FINISHED!!!')
         if init_rc:
-            print('INITN FAILED!!!')
             self._status = PlanState.ERRORED
             return
 
-        print('PLAN STARTING!!!')
         plan_proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -106,9 +99,6 @@ class Plan:
             self._status = PlanState.ERRORED
         else:
             self._status = PlanState.FINISHED
-
-        print('PLAN COMPLETE!!!')
-
 
     def get_api_details(self):
         """Return API details for plan"""
