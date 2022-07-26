@@ -80,9 +80,9 @@ Executed remotely on terrarun server
 
         plan_rc = self._run_command(command)
         if plan_rc:
-            self._state = PlanState.ERRORED
+            self._status = PlanState.ERRORED
         else:
-            self._state = PlanState.FINISHED
+            self._status = PlanState.FINISHED
 
     def _run_command(self, command):
         command_proc = subprocess.Popen(
