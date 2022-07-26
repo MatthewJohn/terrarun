@@ -47,6 +47,7 @@ class ConfigurationVersion():
         self.speculative = False
         self._workspace = workspace
         self._id = id_
+        self._extract_dir = None
         self._status = ConfigurationVersionStatus.PENDING
 
     def queue(self):
@@ -63,9 +64,21 @@ class ConfigurationVersion():
                 tar_gz_fh.write(data)
                 
             with TemporaryDirectory() as extract_dir:
-                tar_file = TarFile.open(tar_gz_file, 'r')
-                tar_file.extractall(extract_dir)
-                print(subprocess.check_output(['bash', '-c', f'cat {extract_dir}/*']))
+                pass
+            self._extract_dir = extract_dir
+            os.mkdir(self._extract_dir)
+            tar_file = TarFile.open(tar_gz_file, 'r')
+            tar_file.extractall(self._extract_dir)
+
+            # Create override file for reconfiguring backend
+            with open(os.path.join(self._extract_dir, 'override.tf'), 'w') as override_fh:
+                override_fh.write("""
+terraform {
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
+""".strip())
         finally:
             os.unlink(tar_gz_file)
         self._status = ConfigurationVersionStatus.UPLOADED
