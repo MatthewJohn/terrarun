@@ -87,18 +87,20 @@ class Run:
         self._attributes.update(attributes)
         self._status = RunStatus.PENDING
 
-        self._status = RunStatus.PLAN_QUEUED
         self._plan = terrarun.plan.Plan.create(self)
-        self.__class__.WORKER_QUEUE.put(self._plan)
+        self._status = RunStatus.PLAN_QUEUED
+        self.__class__.WORKER_QUEUE.put(self.execute_next_step)
+        self._plan._state = terrarun.plan.PlanState.PENDING
 
-    def execute_plan(self):
+    def execute_next_step(self):
         """Execute terraform command"""
-        self._status = RunStatus.PLANNING
-        self._plan.execute()
-        if self._plan._status is terrarun.plan.PlanState.ERRORED:
-            self._status = RunStatus.ERRORED
-        else:
-            self._status = RunStatus.PLANNED
+        if self._status is RunStatus.PLAN_QUEUED:
+            self._status = RunStatus.PLANNING
+            self._plan.execute()
+            if self._plan._status is terrarun.plan.PlanState.ERRORED:
+                self._status = RunStatus.ERRORED
+            else:
+                self._status = RunStatus.PLANNED
 
     def get_api_details(self):
         """Return API details."""

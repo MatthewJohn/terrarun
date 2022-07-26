@@ -127,7 +127,7 @@ class Server(object):
         while self.queue_run:
             try:
                 job = Run.WORKER_QUEUE.get(timeout=1)
-                job.execute()
+                job
             except queue.Empty:
                 pass
             except Exception as exc:

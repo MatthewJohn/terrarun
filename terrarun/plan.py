@@ -43,10 +43,13 @@ class Plan:
         self._id = id_
         self._run = run
         self._output = b""
+        self._state_version = None
+        self._state = PlanState.PENDING
 
     def execute(self):
         """Execute plan"""
-        self._status = PlanState.PENDING
+        self._status = PlanState.RUNNING
+        print('')
         action = None
         if  self._run._attributes.get('refresh_only'):
             action = 'refresh'
@@ -62,8 +65,6 @@ Executed remotely on terrarun server
 
         terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
         command = [f'terraform-{terraform_version}', action, '-input=false']
-
-        self._status = PlanState.RUNNING
 
         init_proc = subprocess.Popen(
             [f'terraform-{terraform_version}', 'init', '-input=false'],
@@ -154,7 +155,7 @@ Executed remotely on terrarun server
                 "log-read-url": f"https://local-dev.dock.studio/api/v2/plans/{self._id}/log"
             },
             "relationships": {
-                "state-versions": {}
+                "state-versions": {'data': {'id': self._state_version._id, 'type': 'state-versions'}} if self._state_version else {}
             },
             "links": {
                 "self": f"/api/v2/plans/{self._id}",
