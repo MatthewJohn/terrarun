@@ -88,6 +88,30 @@ Executed remotely on terrarun server
             self._status = PlanState.ERRORED
             return
 
+        if self._run._attributes('refresh', True):
+            refresh_proc = subprocess.Popen(
+                [f'terraform-{terraform_version}', 'refresh', '-input=false'],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=self._run._configuration_version._extract_dir)
+
+            # Obtain all stdout
+            while True:
+                line = refresh_proc.stdout.readline()
+                if line:
+                    self._output += line
+                elif refresh_proc.poll() is not None:
+                    break
+
+            # Wait for process to exit
+            while refresh_proc.poll() is None:
+                sleep(0.05)
+
+            refresh_rc = refresh_proc.returncode
+            if refresh_rc:
+                self._status = PlanState.ERRORED
+                return
+
         plan_proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
