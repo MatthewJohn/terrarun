@@ -53,6 +53,13 @@ class Plan:
         else:
             action = 'plan'
 
+        self._output += b"""================================================
+Command has started
+
+Executed remotely on terrarun server
+================================================
+"""
+
         terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
         command = [f'terraform-{terraform_version}', action, '-input=false']
 
