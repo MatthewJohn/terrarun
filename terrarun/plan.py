@@ -70,13 +70,11 @@ Executed remotely on terrarun server
             self._status = PlanState.ERRORED
             return
 
-        sleep(5)
         if self._run._attributes.get('refresh', True):
             refresh_rc = self._run_command([f'terraform-{terraform_version}', 'refresh', '-input=false'])
             if refresh_rc:
                 self._status = PlanState.ERRORED
                 return
-        sleep(5)
 
         plan_rc = self._run_command(command)
         if plan_rc:
