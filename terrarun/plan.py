@@ -88,7 +88,7 @@ Executed remotely on terrarun server
             self._status = PlanState.ERRORED
             return
 
-        if self._run._attributes('refresh', True):
+        if self._run._attributes.get('refresh', True):
             refresh_proc = subprocess.Popen(
                 [f'terraform-{terraform_version}', 'refresh', '-input=false'],
                 stdout=subprocess.PIPE,
