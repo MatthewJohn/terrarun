@@ -29,6 +29,9 @@ class Workspace:
         """Store member variables."""
         self._organisation = organisation
         self._id = workspace_id
+        self._latest_state = None
+        self._latest_configuration_version = None
+        self._latest_run = None
 
     def get_api_details(self):
         """Return details for workspace."""
@@ -87,73 +90,73 @@ class Workspace:
                     "working-directory": None,
                     "workspace-kpis-runs-count": 7
                 },
-                "id": "ws-qPhan8kDLymzv2uS",
+                "id": self._id,
                 "links": {
-                "self": "/api/v2/organizations/my-organization/workspaces/workspace-1"
+                    "self": f"/api/v2/organizations/{self._organisation._name}/workspaces/workspace-1"
                 },
                 "relationships": {
-                "agent-pool": {
-                    "data": {
-                    "id": "apool-QxGd2tRjympfMvQc",
-                    "type": "agent-pools"
-                    }
-                },
-                "current-configuration-version": {
-                    "data": {
-                    "id": "cv-sixaaRuRwutYg5fH",
-                    "type": "configuration-versions"
+                    "agent-pool": {
+                        "data": {
+                        "id": "apool-QxGd2tRjympfMvQc",
+                        "type": "agent-pools"
+                        }
                     },
-                    "links": {
-                    "related": "/api/v2/configuration-versions/cv-sixaaRuRwutYg5fH"
-                    }
-                },
-                "current-run": {
-                    "data": {
-                    "id": "run-UyCw2TDCmxtfdjmy",
-                    "type": "runs"
+                    "current-configuration-version": {
+                        "data": {
+                            "id": self._latest_configuration_version._id,
+                            "type": "configuration-versions"
+                        },
+                        "links": {
+                            "related": f"/api/v2/configuration-versions/{self._latest_configuration_version._id}"
+                        }
+                    } if self._latest_configuration_version else {},
+                    "current-run": {
+                        "data": {
+                        "id": "run-UyCw2TDCmxtfdjmy",
+                        "type": "runs"
+                        },
+                        "links": {
+                        "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
+                        }
                     },
-                    "links": {
-                    "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
-                    }
-                },
-                "current-state-version": {
-                    "data": {
-                    "id": "sv-TAjm2vFZqY396qY6",
-                    "type": "state-versions"
+                    "current-state-version": {
+                        "data": {
+                            "id": self._latest_state._id,
+                            "type": "state-versions"
+                        },
+                        "links": {
+                            "related": f"/api/v2/workspaces/{self._id}/current-state-version"
+                        }
+                    } if self._latest_state else {},
+                    "latest-run": {
+                        "data": {
+                            "id": self._latest_run._id,
+                            "type": "runs"
+                        },
+                        "links": {
+                            "related": f"/api/v2/runs/{self._latest_run._id}"
+                        }
+                    } if self._latest_run else {},
+                    "organization": {
+                        "data": {
+                            "id": "my-organization",
+                            "type": "organizations"
+                        }
                     },
-                    "links": {
-                    "related": "/api/v2/workspaces/ws-qPhan8kDLymzv2uS/current-state-version"
-                    }
-                },
-                "latest-run": {
-                    "data": {
-                    "id": "run-UyCw2TDCmxtfdjmy",
-                    "type": "runs"
+                    "outputs": {
+                        "data": []
                     },
-                    "links": {
-                    "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
+                    "readme": {
+                        "data": {
+                            "id": "227247",
+                            "type": "workspace-readme"
+                        }
+                    },
+                    "remote-state-consumers": {
+                        "links": {
+                            "related": "/api/v2/workspaces/ws-qPhan8kDLymzv2uS/relationships/remote-state-consumers"
+                        }
                     }
-                },
-                "organization": {
-                    "data": {
-                    "id": "my-organization",
-                    "type": "organizations"
-                    }
-                },
-                "outputs": {
-                    "data": []
-                },
-                "readme": {
-                    "data": {
-                        "id": "227247",
-                        "type": "workspace-readme"
-                    }
-                },
-                "remote-state-consumers": {
-                    "links": {
-                    "related": "/api/v2/workspaces/ws-qPhan8kDLymzv2uS/relationships/remote-state-consumers"
-                    }
-                }
                 },
                 "type": "workspaces"
             }

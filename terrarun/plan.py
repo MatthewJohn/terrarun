@@ -82,6 +82,9 @@ class TerraformCommand:
         state_json = json.loads('\n'.join(state_content))
         self._state_version = StateVersion.create_from_state_json(run=self._run, state_json=state_json)
 
+        # Register state with workspace
+        self._run._workspace._latest_state = self._state_version
+
 class Plan(TerraformCommand):
 
     ID_PREFIX = 'plan'

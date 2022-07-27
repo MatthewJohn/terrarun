@@ -64,7 +64,7 @@ class Run:
         if configuration_version._workspace._id not in cls.RUNS_BY_WORKSPACE:
             cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id] = []
         cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id].append(run)
-
+        configuration_version._workspace._latest_run = run
         return run
 
     @classmethod
