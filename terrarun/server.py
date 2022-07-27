@@ -109,6 +109,10 @@ class Server(object):
             ApiTerraformStateVersionDownload,
             '/api/v2/state-versions/<string:state_version_id>/download'
         )
+        self._api.add_resource(
+            ApiTerraformApplyRun,
+            '/api/v2/runs/<string:run_id>/actions/apply'
+        )
 
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
@@ -405,3 +409,13 @@ class ApiTerraformStateVersionDownload(Resource):
         if not state_version_id:
             return {}, 404
         return state_version._state_json
+
+class ApiTerraformApplyRun(Resource):
+    """Interface to confirm run"""
+
+    def post(self, run_id):
+        """Initialise run apply."""
+        run = Run.get_by_id(run_id)
+        if not run:
+            return {}, 404
+        run.queue_apply()

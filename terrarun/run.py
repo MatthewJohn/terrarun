@@ -118,13 +118,8 @@ class Run:
                 self._status = RunStatus.PLANNED_AND_FINISHED
                 return
 
-            # Continue to apply
-            apply = self._plan.create_apply()
-            self._apply = apply
-            self._status = RunStatus.APPLY_QUEUED
-
-            # Requeue to be applied
-            self.__class__.WORKER_QUEUE.put(self.execute_next_step)
+            if self._attributes.get('auto_apply'):
+                self.queue_apply()
 
         # Handle apply job
         elif self._status is RunStatus.APPLY_QUEUED:
@@ -135,6 +130,13 @@ class Run:
                 return
             else:
                 self._status = RunStatus.APPLIED
+
+    def queue_apply(self):
+        """Queue apply job"""
+        self._status = RunStatus.APPLY_QUEUED
+
+        # Requeue to be applied
+        self.__class__.WORKER_QUEUE.put(self.execute_next_step)
 
 
     def get_api_details(self):
