@@ -65,7 +65,7 @@ Executed remotely on terrarun server
         """Return is plan has changes"""
         if not self._plan_output:
             return False
-        return bool(self._plan_output['resource_changes'])
+        return bool(self.resource_additions or self.resource_destructions or self.resource_changes)
 
     @property
     def resource_additions(self):
