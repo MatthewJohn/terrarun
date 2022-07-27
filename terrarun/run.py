@@ -64,7 +64,7 @@ class Run:
         if configuration_version._workspace._id not in cls.RUNS_BY_WORKSPACE:
             cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id] = []
         cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id].append(run)
-
+        configuration_version._workspace._latest_run = run
         return run
 
     @classmethod
@@ -82,7 +82,13 @@ class Run:
             'message': '',
             'plan_only': False,
             'refresh': True,
-            'refresh_only': False
+            'refresh_only': False,
+            'is_destroy': False,
+            'replace_addrs': None,
+            'target_addrs': None,
+            'variables': [],
+            'terraform_version': None,
+            'allow_empty_apply': None
         }
         self._attributes.update(attributes)
         self._status = RunStatus.PENDING
@@ -99,6 +105,7 @@ class Run:
             self._plan.execute()
             if self._plan._status is terrarun.plan.PlanState.ERRORED:
                 self._status = RunStatus.ERRORED
+                return
             else:
                 self._status = RunStatus.PLANNED
 
@@ -113,13 +120,13 @@ class Run:
             "attributes": {
                 "actions": {
                     "is-cancelable": True,
-                    "is-confirmable": False,
+                    "is-confirmable": True,
                     "is-discardable": False,
                     "is-force-cancelable": False
                 },
                 "canceled-at": None,
                 "created-at": "2021-05-24T07:38:04.171Z",
-                "has-changes": False,
+                "has-changes": self._plan.has_changes if self._plan else False,
                 "auto-apply": self._attributes.get('auto_apply'),
                 "allow-empty-apply": False,
                 "is-destroy": False,
@@ -158,7 +165,7 @@ class Run:
                 "plan": {'data': {'id': self._plan._id, 'type': 'plans'}} if self._plan is not None else {},
                 "run-events": {},
                 "policy-checks": {},
-                "workspace": {},
+                "workspace": {'data': {'id': self._configuration_version._workspace._id, 'type': 'workspaces'}},
                 "workspace-run-alerts": {}
             },
             "links": {

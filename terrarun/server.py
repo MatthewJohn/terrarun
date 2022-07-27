@@ -13,6 +13,7 @@ from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
 from terrarun.plan import Plan, PlanState
 from terrarun.run import Run, RunStatus
+from terrarun.state_version import StateVersion
 from terrarun.workspace import Workspace
 
 
@@ -70,6 +71,10 @@ class Server(object):
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
         )
         self._api.add_resource(
+            ApiTerraformWorkspaceLatestStateVersion,
+            '/api/v2/workspaces/<string:workspace_id>/current-state-version'
+        )
+        self._api.add_resource(
             ApiTerraformConfigurationVersionUpload,
             '/api/v2/upload-configuration/<string:configuration_version_id>'
         )
@@ -98,6 +103,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformPlanLog,
             '/api/v2/plans/<string:plan_id>/log'
+        )
+        self._api.add_resource(
+            ApiTerraformStateVersionDownload,
+            '/api/v2/state-versions/<string:state_version_id>/download'
         )
 
         # Views
@@ -371,3 +380,23 @@ class ApiTerraformPlanLog(Resource):
         response = make_response(plan_output)
         response.headers['Content-Type'] = 'text/plain'
         return response
+
+class ApiTerraformWorkspaceLatestStateVersion(Resource):
+
+    def get(self, workspace_id):
+        """Return latest state for workspace."""
+
+        state = Workspace.get_by_id(workspace_id)._latest_state
+        if state:
+            return {'data': state.get_api_details()}
+
+        return {}, 404
+
+class ApiTerraformStateVersionDownload(Resource):
+
+    def get(self, state_version_id):
+        """Return state version json"""
+        state_version = StateVersion.get_by_id(state_version_id)
+        if not state_version_id:
+            return {}, 404
+        return state_version._state_json
