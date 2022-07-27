@@ -82,7 +82,13 @@ class Run:
             'message': '',
             'plan_only': False,
             'refresh': True,
-            'refresh_only': False
+            'refresh_only': False,
+            'is_destroy': False,
+            'replace_addrs': None,
+            'target_addrs': None,
+            'variables': [],
+            'terraform_version': None,
+            'allow_empty_apply': None
         }
         self._attributes.update(attributes)
         self._status = RunStatus.PENDING
