@@ -32,6 +32,7 @@ class ConfigurationVersion():
         id_ = 'cv-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.CONFIGURATIONS)).zfill(2))
         cv = ConfigurationVersion(workspace=workspace, id_=id_)
         cls.CONFIGURATIONS[id_] = cv
+        workspace._latest_configuration_version = cv
         cv.speculative = speculative
         if auto_queue_runs:
             cv.queue()

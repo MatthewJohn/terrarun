@@ -8,17 +8,20 @@ class Organisation:
     def get_by_name(cls, organisation_name):
         """Return organisation object by name of organisation"""
         # Return fake organisation
-        return Organisation(1)
+        org = Organisation("org-Bzyc2JuegvVLAibn")
+        org._name = organisation_name
+        return org
 
-    def __init__(self, organisation_id):
+    def __init__(self, id_):
         """Store member variables."""
-        self._organisation_id = organisation_id
+        self._id = id_
+        self._name = None
     
     def get_entitlement_set_api(self):
         """Return API response for organisation entitlement"""
         return {
             "data": {
-                "id": "org-Bzyc2JuegvVLAibn",
+                "id": self._id,
                 "type": "entitlement-sets",
                 "attributes": {
                     "cost-estimation": False,
@@ -38,11 +41,11 @@ class Organisation:
                     "sso": False
                 },
                 "links": {
-                    "self": "/api/v2/entitlement-sets/org-Bzyc2JuegvVLAibn"
+                    "self": f"/api/v2/entitlement-sets/{self._id}"
                 }
             }
         }
 
     def get_workspace_by_name(self, workspace_name):
         """Return workspace object within organisation"""
-        return Workspace(self, workspace_name)
+        return Workspace.get_workspace_by_organisation_and_name(self, workspace_name)
