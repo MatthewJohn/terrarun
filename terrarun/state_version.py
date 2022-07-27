@@ -65,7 +65,7 @@ class StateVersion:
         return self._state_json['serial']
 
     @property
-    def serial(self):
+    def version(self):
         """Return serial of state"""
         return self._state_json['version']
 
@@ -111,7 +111,7 @@ class StateVersion:
                 },
                 "workspace": {
                     "data": {
-                        "id": self._run._workspace._id,
+                        "id": self._run._configuration_version._workspace._id,
                         "type": "workspaces"
                     }
                 },
