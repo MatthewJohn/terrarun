@@ -12,6 +12,8 @@ class Apply(TerraformCommand):
 
     def execute(self):
         """Execute apply"""
+        self._pull_latest_state()
+
         self._status = TerraformCommandState.RUNNING
         action = 'apply'
 

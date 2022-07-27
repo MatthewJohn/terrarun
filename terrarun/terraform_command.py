@@ -22,6 +22,7 @@ class TerraformCommandState(Enum):
 class TerraformCommand:
 
     ID_PREFIX = 'nope'
+    STATE_FILE = 'terraform.tfstate'
 
     INSTANCES = {}
 
@@ -51,6 +52,16 @@ class TerraformCommand:
         self._state_version = None
         self._status = TerraformCommandState.PENDING
         self._plan_output = {}
+
+    def _pull_latest_state(self):
+        """Pull latest version of state to working copy."""
+        # No latest state available for workspace
+        state_version = self._run._configuration_version._workspace._latest_state
+        if not state_version or not state_version._state_json:
+            return
+
+        with open(os.path.join(self._run._configuration_version._extract_dir, self.STATE_FILE), 'w') as state_fh:
+            state_fh.write(json.dumps(state_version._state_json))
 
     def execute(self):
         raise NotImplementedError
