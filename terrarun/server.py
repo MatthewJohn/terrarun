@@ -7,13 +7,15 @@ import traceback
 from flask import Flask, make_response, request
 import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
+from terrarun.apply import Apply
 
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
-from terrarun.plan import Plan, PlanState
-from terrarun.run import Run, RunStatus
+from terrarun.plan import Plan
+from terrarun.run import Run
 from terrarun.state_version import StateVersion
+from terrarun.terraform_command import TerraformCommandState
 from terrarun.workspace import Workspace
 
 
@@ -107,6 +109,18 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformStateVersionDownload,
             '/api/v2/state-versions/<string:state_version_id>/download'
+        )
+        self._api.add_resource(
+            ApiTerraformApplyRun,
+            '/api/v2/runs/<string:run_id>/actions/apply'
+        )
+        self._api.add_resource(
+            ApiTerraformApplies,
+            '/api/v2/applies/<string:apply_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformApplyLog,
+            '/api/v2/applies/<string:apply_id>/log'
         )
 
         # Views
@@ -371,7 +385,11 @@ class ApiTerraformPlanLog(Resource):
         plan_output = b""
         for _ in range(60):
             plan_output = plan._output[args.offset:(args.offset+args.limit)]
-            if plan_output or plan._status not in [PlanState.PENDING, PlanState.MANAGE_QUEUED, PlanState.QUEUED, PlanState.RUNNING]:
+            if plan_output or plan._status not in [
+                    TerraformCommandState.PENDING,
+                    TerraformCommandState.MANAGE_QUEUED,
+                    TerraformCommandState.QUEUED,
+                    TerraformCommandState.RUNNING]:
                 break
             print('Waiting as plan state is; ' + str(plan._status))
 
@@ -380,6 +398,7 @@ class ApiTerraformPlanLog(Resource):
         response = make_response(plan_output)
         response.headers['Content-Type'] = 'text/plain'
         return response
+
 
 class ApiTerraformWorkspaceLatestStateVersion(Resource):
 
@@ -392,6 +411,7 @@ class ApiTerraformWorkspaceLatestStateVersion(Resource):
 
         return {}, 404
 
+
 class ApiTerraformStateVersionDownload(Resource):
 
     def get(self, state_version_id):
@@ -400,3 +420,62 @@ class ApiTerraformStateVersionDownload(Resource):
         if not state_version_id:
             return {}, 404
         return state_version._state_json
+
+
+class ApiTerraformApplyRun(Resource):
+    """Interface to confirm run"""
+
+    def post(self, run_id):
+        """Initialise run apply."""
+        run = Run.get_by_id(run_id)
+        if not run:
+            return {}, 404
+        run.queue_apply(comment=flask.request.get_json().get('comment', None))
+        return {}, 202
+
+
+class ApiTerraformApplies(Resource):
+    """Interface for applies"""
+
+    def get(self, apply_id=None):
+        """Get apply details."""
+        if not apply_id:
+            raise Exception('IT WAS CALLED')
+
+        apply = Apply.get_by_id(apply_id)
+        if not apply:
+            return {}, 404
+        
+        return {'data': apply.get_api_details()}
+
+
+class ApiTerraformApplyLog(Resource):
+    """Interface to obtain logs from stream."""
+
+    def get(self, apply_id):
+        """Return information for plan(s)"""
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('offset', type=int, location='args')
+        parser.add_argument('limit', type=int, location='args')
+        args = parser.parse_args()
+        apply = Apply.get_by_id(apply_id)
+        if not apply:
+            return {}, 404
+
+        output = b""
+        for _ in range(60):
+            output = apply._output[args.offset:(args.offset+args.limit)]
+            if output or apply._status not in [
+                    TerraformCommandState.PENDING,
+                    TerraformCommandState.MANAGE_QUEUED,
+                    TerraformCommandState.QUEUED,
+                    TerraformCommandState.RUNNING]:
+                break
+            print('Waiting as apply state is; ' + str(apply._status))
+
+            sleep(0.5)
+
+        response = make_response(output)
+        response.headers['Content-Type'] = 'text/plain'
+        return response
