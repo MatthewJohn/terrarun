@@ -105,6 +105,7 @@ class Run:
             self._plan.execute()
             if self._plan._status is terrarun.plan.PlanState.ERRORED:
                 self._status = RunStatus.ERRORED
+                return
             else:
                 self._status = RunStatus.PLANNED
 
