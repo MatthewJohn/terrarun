@@ -5,20 +5,23 @@ import terrarun.organisation
 
 class Workspace:
 
-    _MOCK_WORKSPACES = {
-    }
+    WORKSPACE = None
 
     @classmethod
     def get_workspace_by_organisation_and_name(cls, organisation, workspace_name):
         """Return organisation object, if it exists within an organisation, by name."""
-        workspace_id = "ws-qPhan8kDLymzv2uS"
-        cls._MOCK_WORKSPACES[workspace_id] = workspace_name
-        return cls(organisation, workspace_id)
+        if cls.WORKSPACE is None:
+            cls.WORKSPACE = cls(terrarun.organisation.Organisation.get_by_name("org-name"), "ws-qPhan8kDLymzv2uS")
+        cls.WORKSPACE._name = workspace_name
+        return cls.WORKSPACE
 
     @classmethod
     def get_by_id(cls, workspace_id):
         """Return workspace by ID"""
-        return cls(terrarun.organisation.Organisation(1), workspace_id)
+        if cls.WORKSPACE is None:
+            cls.WORKSPACE = cls(terrarun.organisation.Organisation.get_by_name("org-name"), "ws-qPhan8kDLymzv2uS")
+        cls.WORKSPACE._id = workspace_id
+        return cls.WORKSPACE
 
     @property
     def auto_apply(self):
@@ -32,6 +35,7 @@ class Workspace:
         self._latest_state = None
         self._latest_configuration_version = None
         self._latest_run = None
+        self._name = 'blah'
 
     def get_api_details(self):
         """Return details for workspace."""
@@ -53,7 +57,7 @@ class Workspace:
                     "global-remote-state": False,
                     "latest-change-at": "2021-06-23T17:50:48.815Z",
                     "locked": False,
-                    "name": "workspace-1",
+                    "name": self._name,
                     "operations": True,
                     "permissions": {
                         "can-create-state-versions": True,
