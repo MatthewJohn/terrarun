@@ -66,10 +66,20 @@ class TerraformCommand:
             cwd=self._run._configuration_version._extract_dir)
 
         # Obtain all stdout
+        print_lines = True
         while True:
             line = command_proc.stdout.readline()
             if line:
-                self._output += line
+                # Stop printing lines once line about
+                # saving plan to output file is displayed and
+                # display line about how to apply changes
+                if line.startswith(b'Saved the plan to: '):
+                    self._output += b'To perform exactly these actions, run the following command to apply:\n    terraform apply\n'
+                    print(line)
+                    print_lines = False
+
+                if print_lines:
+                    self._output += line
             elif command_proc.poll() is not None:
                 break
 
