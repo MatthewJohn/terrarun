@@ -154,16 +154,16 @@ class Run:
                 "has-changes": self._plan.has_changes if self._plan else False,
                 "auto-apply": self._attributes.get('auto_apply'),
                 "allow-empty-apply": False,
-                "is-destroy": False,
+                "is-destroy": self._attributes.get('is_destroy'),
                 "message": self._attributes.get('message'),
-                "plan-only": self._attributes.get('plan_only', False),
+                "plan-only": self._attributes.get('plan_only'),
                 "source": "tfe-api",
                 "status-timestamps": {
                     "plan-queueable-at": "2021-05-24T07:38:04+00:00"
                 },
                 "status": self._status.value,
                 "trigger-reason": "manual",
-                "target-addrs": None,
+                "target-addrs": self._attributes.get('target_addrs'),
                 "permissions": {
                     "can-apply": True,
                     "can-cancel": True,
@@ -175,7 +175,7 @@ class Run:
                 },
                 "refresh": self._attributes.get('refresh', False),
                 "refresh-only": self._attributes.get('refresh_only', False),
-                "replace-addrs": None,
+                "replace-addrs": self._attributes.get('replace_addrs'),
                 "variables": []
             },
             "relationships": {

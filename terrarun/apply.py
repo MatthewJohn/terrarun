@@ -90,6 +90,6 @@ Executed remotely on terrarun server
                 }
             },
             "links": {
-            "self": "/api/v2/applies/apply-47MBvjwzBG8YKc2v"
+                "self": f"/api/v2/applies/{self._id}"
             }
         }
