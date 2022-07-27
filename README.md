@@ -2,6 +2,12 @@
 
 Open source alternative to Terraform cloud, enabling remote terraform plan/applies
 
+## WARNING
+
+Only use this project for fun purposes - all authentication, security and non-essential objects are mocked.
+
+Under no circumstances should this project be used _ANYWHERE_ outside of development of the project.
+
 ## Installation
 
     git clone ssh://git@gitlab.dockstudios.co.uk:2222/pub/terrarun.git
