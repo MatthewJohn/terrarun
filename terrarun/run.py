@@ -5,6 +5,7 @@ import queue
 from time import sleep
 
 import terrarun.plan
+import terrarun.terraform_command
 
 
 class RunStatus(Enum):
@@ -93,17 +94,20 @@ class Run:
         self._attributes.update(attributes)
         self._status = RunStatus.PENDING
 
+        self._apply = None
         self._plan = terrarun.plan.Plan.create(self)
+        #self._apply = terrarun.apply.Apply.create(self)
         self._status = RunStatus.PLAN_QUEUED
         self.__class__.WORKER_QUEUE.put(self.execute_next_step)
-        self._plan._status = terrarun.plan.PlanState.PENDING
+        self._plan._status = terrarun.terraform_command.TerraformCommandState.PENDING
 
     def execute_next_step(self):
         """Execute terraform command"""
+        # Handle plan job
         if self._status is RunStatus.PLAN_QUEUED:
             self._status = RunStatus.PLANNING
             self._plan.execute()
-            if self._plan._status is terrarun.plan.PlanState.ERRORED:
+            if self._plan._status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self._status = RunStatus.ERRORED
                 return
             else:

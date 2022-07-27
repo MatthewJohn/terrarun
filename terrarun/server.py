@@ -11,9 +11,10 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.organisation import Organisation
-from terrarun.plan import Plan, PlanState
-from terrarun.run import Run, RunStatus
+from terrarun.plan import Plan
+from terrarun.run import Run
 from terrarun.state_version import StateVersion
+from terrarun.terraform_command import TerraformCommandState
 from terrarun.workspace import Workspace
 
 
@@ -371,7 +372,11 @@ class ApiTerraformPlanLog(Resource):
         plan_output = b""
         for _ in range(60):
             plan_output = plan._output[args.offset:(args.offset+args.limit)]
-            if plan_output or plan._status not in [PlanState.PENDING, PlanState.MANAGE_QUEUED, PlanState.QUEUED, PlanState.RUNNING]:
+            if plan_output or plan._status not in [
+                    TerraformCommandState.PENDING,
+                    TerraformCommandState.MANAGE_QUEUED,
+                    TerraformCommandState.QUEUED,
+                    TerraformCommandState.RUNNING]:
                 break
             print('Waiting as plan state is; ' + str(plan._status))
 
