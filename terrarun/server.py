@@ -445,7 +445,7 @@ class ApiTerraformApplies(Resource):
         if not apply:
             return {}, 404
         
-        return apply.get_api_details()
+        return {'data': apply.get_api_details()}
 
 
 class ApiTerraformApplyLog(Resource):
