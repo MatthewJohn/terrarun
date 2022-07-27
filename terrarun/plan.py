@@ -75,7 +75,6 @@ class TerraformCommand:
                 # display line about how to apply changes
                 if line.startswith(b'Saved the plan to: '):
                     self._output += b'To perform exactly these actions, run the following command to apply:\n    terraform apply\n'
-                    print(line)
                     print_lines = False
 
                 if print_lines:
