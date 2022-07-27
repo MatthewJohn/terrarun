@@ -1,9 +1,13 @@
 
 
 from enum import Enum
+import json
+import os
 from time import sleep
 import terrarun.run
 import subprocess
+
+from terrarun.state_version import StateVersion
 
 
 class PlanState(Enum):
@@ -70,6 +74,13 @@ class TerraformCommand:
 
         return command_proc.returncode
 
+    def generate_state_version(self):
+        """Generate state version from state file."""
+        state_content = None
+        with open(os.path.join(self._run._configuration_version._extract_dir, 'terraform.tfstate'), 'r') as state_file_fh:
+            state_content = state_file_fh.readlines()
+        state_json = json.loads('\n'.join(state_content))
+        self._state_version = StateVersion.create_from_state_json(run=self._run, state_json=state_json)
 
 class Plan(TerraformCommand):
 
@@ -105,8 +116,8 @@ Executed remotely on terrarun server
                 self._status = PlanState.ERRORED
                 return
 
-        # Extract state
-
+            # Extract state
+            self.generate_state_version()
 
         plan_rc = self._run_command(command)
         if plan_rc:
