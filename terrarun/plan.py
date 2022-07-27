@@ -1,100 +1,10 @@
 
 
-from enum import Enum
 import json
-import os
-from time import sleep
-import terrarun.run
 import subprocess
 
-from terrarun.state_version import StateVersion
+from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
-
-class PlanState(Enum):
-
-    PENDING = 'pending'
-    MANAGE_QUEUED = 'managed_queued'
-    QUEUED = 'queued'
-    RUNNING = 'running'
-    ERRORED = 'errored'
-    CANCELED = 'canceled'
-    FINISHED = 'finished'
-    UNREACHABLE = 'unreachable'
-
-
-class TerraformCommand:
-
-    ID_PREFIX = 'nope'
-
-    INSTANCES = {}
-
-    @classmethod
-    def get_by_id(cls, id_):
-        """Obtain plan instance by ID."""
-        if id_ in cls.INSTANCES:
-            return cls.INSTANCES[id_]
-        return None
-
-    @classmethod
-    def create(cls, run):
-        """Create plan and return instance."""
-        id_ = '{id_prefix}-ntv3HbhJqvFzam{id}'.format(
-            id_prefix=cls.ID_PREFIX,
-            id=str(len(cls.INSTANCES)).zfill(2))
-        run = cls(run=run, id_=id_)
-        cls.INSTANCES[id_] = run
-
-        return run
-
-    def __init__(self, run, id_):
-        """Create run"""
-        self._id = id_
-        self._run = run
-        self._output = b""
-        self._state_version = None
-        self._status = PlanState.PENDING
-        self._plan_output = {}
-
-    def execute(self):
-        raise NotImplementedError
-
-    def _run_command(self, command):
-        command_proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=self._run._configuration_version._extract_dir)
-
-        # Obtain all stdout
-        print_lines = True
-        while True:
-            line = command_proc.stdout.readline()
-            if line:
-                # Stop printing lines once line about
-                # saving plan to output file is displayed and
-                # display line about how to apply changes
-                if line.startswith(b'Saved the plan to: '):
-                    self._output += b'To perform exactly these actions, run the following command to apply:\n    terraform apply\n'
-                    print(line)
-                    print_lines = False
-
-                if print_lines:
-                    self._output += line
-            elif command_proc.poll() is not None:
-                break
-
-        return command_proc.returncode
-
-    def generate_state_version(self):
-        """Generate state version from state file."""
-        state_content = None
-        with open(os.path.join(self._run._configuration_version._extract_dir, 'terraform.tfstate'), 'r') as state_file_fh:
-            state_content = state_file_fh.readlines()
-        state_json = json.loads('\n'.join(state_content))
-        self._state_version = StateVersion.create_from_state_json(run=self._run, state_json=state_json)
-
-        # Register state with workspace
-        self._run._configuration_version._workspace._latest_state = self._state_version
 
 class Plan(TerraformCommand):
 
@@ -102,7 +12,9 @@ class Plan(TerraformCommand):
 
     def execute(self):
         """Execute plan"""
-        self._status = PlanState.RUNNING
+        self._pull_latest_state()
+
+        self._status = TerraformCommandState.RUNNING
         action = None
         if  self._run._attributes.get('refresh_only'):
             action = 'refresh'
@@ -123,13 +35,13 @@ Executed remotely on terrarun server
 
         init_rc = self._run_command([terraform_binary, 'init', '-input=false'])
         if init_rc:
-            self._status = PlanState.ERRORED
+            self._status = TerraformCommandState.ERRORED
             return
 
         if self._run._attributes.get('refresh', True):
             refresh_rc = self._run_command([terraform_binary, 'refresh', '-input=false'])
             if refresh_rc:
-                self._status = PlanState.ERRORED
+                self._status = TerraformCommandState.ERRORED
                 return
 
             # Extract state
@@ -144,16 +56,16 @@ Executed remotely on terrarun server
         self._plan_output = json.loads(plan_out_raw)
 
         if plan_rc:
-            self._status = PlanState.ERRORED
+            self._status = TerraformCommandState.ERRORED
         else:
-            self._status = PlanState.FINISHED
+            self._status = TerraformCommandState.FINISHED
 
     @property
     def has_changes(self):
         """Return is plan has changes"""
         if not self._plan_output:
             return False
-        return bool(self._plan_output['resource_changes'])
+        return bool(self.resource_additions or self.resource_destructions or self.resource_changes)
 
     @property
     def resource_additions(self):

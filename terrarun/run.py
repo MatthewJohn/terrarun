@@ -5,6 +5,8 @@ import queue
 from time import sleep
 
 import terrarun.plan
+import terrarun.apply
+import terrarun.terraform_command
 
 
 class RunStatus(Enum):
@@ -93,17 +95,20 @@ class Run:
         self._attributes.update(attributes)
         self._status = RunStatus.PENDING
 
+        self._apply = None
         self._plan = terrarun.plan.Plan.create(self)
+        self._apply = terrarun.apply.Apply.create(self)
         self._status = RunStatus.PLAN_QUEUED
         self.__class__.WORKER_QUEUE.put(self.execute_next_step)
-        self._plan._status = terrarun.plan.PlanState.PENDING
+        self._plan._status = terrarun.terraform_command.TerraformCommandState.PENDING
 
     def execute_next_step(self):
         """Execute terraform command"""
+        # Handle plan job
         if self._status is RunStatus.PLAN_QUEUED:
             self._status = RunStatus.PLANNING
             self._plan.execute()
-            if self._plan._status is terrarun.plan.PlanState.ERRORED:
+            if self._plan._status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self._status = RunStatus.ERRORED
                 return
             else:
@@ -111,6 +116,29 @@ class Run:
 
             if self._attributes.get('plan_only') or self._configuration_version.speculative:
                 self._status = RunStatus.PLANNED_AND_FINISHED
+                return
+
+            if self._attributes.get('auto_apply'):
+                self.queue_apply()
+
+        # Handle apply job
+        elif self._status is RunStatus.APPLY_QUEUED:
+            self._status = RunStatus.APPLYING
+            self._apply.execute()
+            if self._apply._status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+                self._status = RunStatus.ERRORED
+                return
+            else:
+                self._status = RunStatus.APPLIED
+
+    def queue_apply(self, comment=None):
+        """Queue apply job"""
+        self._status = RunStatus.APPLY_QUEUED
+
+        # Requeue to be applied
+        self.__class__.WORKER_QUEUE.put(self.execute_next_step)
+
+        # @TODO Do something with comment
 
     def get_api_details(self):
         """Return API details."""
@@ -129,16 +157,16 @@ class Run:
                 "has-changes": self._plan.has_changes if self._plan else False,
                 "auto-apply": self._attributes.get('auto_apply'),
                 "allow-empty-apply": False,
-                "is-destroy": False,
+                "is-destroy": self._attributes.get('is_destroy'),
                 "message": self._attributes.get('message'),
-                "plan-only": self._attributes.get('plan_only', False),
+                "plan-only": self._attributes.get('plan_only'),
                 "source": "tfe-api",
                 "status-timestamps": {
                     "plan-queueable-at": "2021-05-24T07:38:04+00:00"
                 },
                 "status": self._status.value,
                 "trigger-reason": "manual",
-                "target-addrs": None,
+                "target-addrs": self._attributes.get('target_addrs'),
                 "permissions": {
                     "can-apply": True,
                     "can-cancel": True,
@@ -150,11 +178,11 @@ class Run:
                 },
                 "refresh": self._attributes.get('refresh', False),
                 "refresh-only": self._attributes.get('refresh_only', False),
-                "replace-addrs": None,
+                "replace-addrs": self._attributes.get('replace_addrs'),
                 "variables": []
             },
             "relationships": {
-                "apply": {},
+                "apply": {'data': {'id': self._apply._id, 'type': 'applies'}} if self._apply is not None else {},
                 "comments": {},
                 "configuration-version": {
                     'data': {'id': self._configuration_version._id, 'type': 'configuration-versions'}
