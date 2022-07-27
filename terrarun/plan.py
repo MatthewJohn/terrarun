@@ -18,23 +18,27 @@ class PlanState(Enum):
     UNREACHABLE = 'unreachable'
 
 
-class Plan:
+class TerraformCommand:
 
-    PLANS = {}
+    ID_PREFIX = 'nope'
+
+    INSTANCES = {}
 
     @classmethod
     def get_by_id(cls, id_):
         """Obtain plan instance by ID."""
-        if id_ in cls.PLANS:
-            return cls.PLANS[id_]
+        if id_ in cls.INSTANCES:
+            return cls.INSTANCES[id_]
         return None
 
     @classmethod
     def create(cls, run):
         """Create plan and return instance."""
-        id_ = 'plan-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.PLANS)).zfill(2))
+        id_ = '{id_prefix}-ntv3HbhJqvFzam{id}'.format(
+            id_prefix=cls.ID_PREFIX,
+            id=str(len(cls.INSTANCES)).zfill(2))
         run = cls(run=run, id_=id_)
-        cls.PLANS[id_] = run
+        cls.INSTANCES[id_] = run
 
         return run
 
@@ -45,6 +49,31 @@ class Plan:
         self._output = b""
         self._state_version = None
         self._status = PlanState.PENDING
+
+    def execute(self):
+        raise NotImplementedError
+
+    def _run_command(self, command):
+        command_proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            cwd=self._run._configuration_version._extract_dir)
+
+        # Obtain all stdout
+        while True:
+            line = command_proc.stdout.readline()
+            if line:
+                self._output += line
+            elif command_proc.poll() is not None:
+                break
+
+        return command_proc.returncode
+
+
+class Plan(TerraformCommand):
+
+    ID_PREFIX = 'plan'
 
     def execute(self):
         """Execute plan"""
@@ -76,28 +105,14 @@ Executed remotely on terrarun server
                 self._status = PlanState.ERRORED
                 return
 
+        # Extract state
+
+
         plan_rc = self._run_command(command)
         if plan_rc:
             self._status = PlanState.ERRORED
         else:
             self._status = PlanState.FINISHED
-
-    def _run_command(self, command):
-        command_proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=self._run._configuration_version._extract_dir)
-
-        # Obtain all stdout
-        while True:
-            line = command_proc.stdout.readline()
-            if line:
-                self._output += line
-            elif command_proc.poll() is not None:
-                break
-
-        return command_proc.returncode
 
     def get_api_details(self):
         """Return API details for plan"""

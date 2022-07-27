@@ -158,7 +158,7 @@ class Run:
                 "plan": {'data': {'id': self._plan._id, 'type': 'plans'}} if self._plan is not None else {},
                 "run-events": {},
                 "policy-checks": {},
-                "workspace": {},
+                "workspace": {'data': {'id': self._configuration_version._workspace._id, 'type': 'workspaces'}},
                 "workspace-run-alerts": {}
             },
             "links": {
