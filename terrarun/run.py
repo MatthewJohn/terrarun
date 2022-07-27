@@ -113,7 +113,7 @@ class Run:
             "attributes": {
                 "actions": {
                     "is-cancelable": True,
-                    "is-confirmable": False,
+                    "is-confirmable": True,
                     "is-discardable": False,
                     "is-force-cancelable": False
                 },
