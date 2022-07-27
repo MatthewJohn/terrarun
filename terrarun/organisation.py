@@ -1,34 +1,28 @@
 
 import sqlalchemy
 
+from terrarun.base_object import BaseObject
 from terrarun.workspace import Workspace
-from terrarun.database import Base
+from terrarun.database import Base, Database
 
 
-class Organisation(Base):
+class Organisation(Base, BaseObject):
 
     __tablename__ = 'organisation'
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String)
 
     @classmethod
     def get_by_name(cls, organisation_name):
         """Return organisation object by name of organisation"""
-        # Return fake organisation
-        org = Organisation("org-Bzyc2JuegvVLAibn")
-        org._name = organisation_name
-        return org
-
-    def __init__(self, id_):
-        """Store member variables."""
-        self._id = id_
-        self._name = None
+        with Database.get_session() as session:
+            return session.query(Organisation).filter(Organisation.name==organisation_name).first()
     
     def get_entitlement_set_api(self):
         """Return API response for organisation entitlement"""
         return {
             "data": {
-                "id": self._id,
+                "id": self.api_id,
                 "type": "entitlement-sets",
                 "attributes": {
                     "cost-estimation": False,
@@ -48,11 +42,7 @@ class Organisation(Base):
                     "sso": False
                 },
                 "links": {
-                    "self": f"/api/v2/entitlement-sets/{self._id}"
+                    "self": f"/api/v2/entitlement-sets/{self.api_id}"
                 }
             }
         }
-
-    def get_workspace_by_name(self, workspace_name):
-        """Return workspace object within organisation"""
-        return Workspace.get_workspace_by_organisation_and_name(self, workspace_name)

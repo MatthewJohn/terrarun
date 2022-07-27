@@ -13,7 +13,7 @@ class Apply(TerraformCommand, Base):
     ID_PREFIX = 'apply'
 
     __tablename__ = 'apply'
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     plan_id = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
     plan = sqlalchemy.orm.relationship("Plan", back_populates="applies")
@@ -21,8 +21,8 @@ class Apply(TerraformCommand, Base):
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="applies")
 
-    status = sqlalchemy.Column(sqlalchemy.String)
-    chnages = sqlalchemy.Column(sqlalchemy.String)
+    status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
+    changes = sqlalchemy.Column(sqlalchemy.String)
     log = sqlalchemy.Column(sqlalchemy.LargeBinary)
 
     def execute(self):

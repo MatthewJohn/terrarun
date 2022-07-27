@@ -9,6 +9,7 @@ from terrarun.database import Base
 import terrarun.plan
 import terrarun.apply
 import terrarun.terraform_command
+from terrarun.base_object import BaseObject
 
 
 class RunStatus(Enum):
@@ -46,16 +47,17 @@ class RunOperations:
     EMPTY_APPLY = 'empty_apply'
 
 
-class Run(Base):
+class Run(Base, BaseObject):
 
     WORKER_QUEUE = queue.Queue()
 
     __tablename__ = 'run'
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     configuration_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
     configuration_version = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
 
+    status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     message = sqlalchemy.Column(sqlalchemy.String)
     plan_only = sqlalchemy.Column(sqlalchemy.Boolean)

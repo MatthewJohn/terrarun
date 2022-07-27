@@ -15,7 +15,7 @@ class Plan(TerraformCommand, Base):
     ID_PREFIX = 'plan'
 
     __tablename__ = 'plan'
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
     run = sqlalchemy.orm.relationship("Run", back_populates="plans")
@@ -23,7 +23,7 @@ class Plan(TerraformCommand, Base):
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="plans")
 
-    status = sqlalchemy.Column(sqlalchemy.String)
+    status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     plan_output = sqlalchemy.Column(sqlalchemy.String)
     log = sqlalchemy.Column(sqlalchemy.LargeBinary)
 

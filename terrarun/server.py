@@ -227,7 +227,7 @@ class ApiTerraformWorkspace(Resource):
     def get(self, organisation_name, workspace_name):
         """Return workspace details."""
         organisation = Organisation.get_by_name(organisation_name)
-        workspace = organisation.get_workspace_by_name(workspace_name)
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
         return workspace.get_api_details()
 
 

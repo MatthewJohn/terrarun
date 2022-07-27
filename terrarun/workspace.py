@@ -2,48 +2,52 @@
 import sqlalchemy
 import sqlalchemy.orm
 
+from terrarun.base_object import BaseObject
 import terrarun.organisation
-from terrarun.database import Base
+from terrarun.database import Base, Database
 
 
-class Workspace(Base):
+class Workspace(Base, BaseObject):
 
     __tablename__ = 'workspace'
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String)
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
 
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
 
-    @classmethod
-    def get_workspace_by_organisation_and_name(cls, organisation, workspace_name):
-        """Return organisation object, if it exists within an organisation, by name."""
-        if cls.WORKSPACE is None:
-            cls.WORKSPACE = cls(terrarun.organisation.Organisation.get_by_name("org-name"), "ws-qPhan8kDLymzv2uS")
-        cls.WORKSPACE._name = workspace_name
-        return cls.WORKSPACE
+    _latest_state = None
+    _latest_configuration_version = None
+    _latest_run = None
 
     @classmethod
-    def get_by_id(cls, workspace_id):
-        """Return workspace by ID"""
-        if cls.WORKSPACE is None:
-            cls.WORKSPACE = cls(terrarun.organisation.Organisation.get_by_name("org-name"), "ws-qPhan8kDLymzv2uS")
-        cls.WORKSPACE._id = workspace_id
-        return cls.WORKSPACE
+    def get_by_organisation_and_name(cls, organisation, workspace_name):
+        """Return organisation object, if it exists within an organisation, by name."""
+        with Database.get_session() as session:
+            return session.query(Workspace).filter(
+                Workspace.workspace_name==workspace_name,
+                terrarun.organisation.Organisation==organisation
+            ).first()
 
     @property
     def auto_apply(self):
         """Whether runs are auto-apply enabled"""
         return False
 
-    def __init__(self, organisation, workspace_id):
-        """Store member variables."""
-        self._organisation = organisation
-        self._id = workspace_id
-        self._latest_state = None
-        self._latest_configuration_version = None
-        self._latest_run = None
-        self._name = 'blah'
+    @property
+    def latest_state_version(self):
+        """Return latest state version."""
+        pass
+
+    @property
+    def latest_configuration_version(self):
+        """Return latest configuration version."""
+        pass
+
+    @property
+    def latest_run(self):
+        """Return latest run."""
+        pass
 
     def get_api_details(self):
         """Return details for workspace."""
@@ -102,9 +106,9 @@ class Workspace(Base):
                     "working-directory": None,
                     "workspace-kpis-runs-count": 7
                 },
-                "id": self._id,
+                "id": self.api_id,
                 "links": {
-                    "self": f"/api/v2/organizations/{self._organisation._name}/workspaces/workspace-1"
+                    "self": f"/api/v2/organizations/{self.organisation.name}/workspaces/workspace-1"
                 },
                 "relationships": {
                     "agent-pool": {
@@ -151,7 +155,7 @@ class Workspace(Base):
                     } if self._latest_run else {},
                     "organization": {
                         "data": {
-                            "id": "my-organization",
+                            "id": self.organisation.name,
                             "type": "organizations"
                         }
                     },

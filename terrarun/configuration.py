@@ -8,7 +8,8 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base
+from terrarun.base_object import BaseObject
+from terrarun.database import Base, Database
 
 
 class ConfigurationVersionStatus(Enum):
@@ -20,34 +21,28 @@ class ConfigurationVersionStatus(Enum):
     ERRORED = 'errored'
 
 
-class ConfigurationVersion(Base):
+class ConfigurationVersion(Base, BaseObject):
     """Interface for uploaded configuration files"""
 
     __tablename__ = 'configuration_version'
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
 
     speculative = sqlalchemy.Column(sqlalchemy.Boolean)
     auto_queue_runs = sqlalchemy.Column(sqlalchemy.Boolean)
-
-    @classmethod
-    def get_by_id(cls, id_):
-        """Obtain ConfigurationVersion instance by ID."""
-        if id_ in cls.CONFIGURATIONS:
-            return cls.CONFIGURATIONS[id_]
-        return None
+    status = sqlalchemy.Column(sqlalchemy.Enum(ConfigurationVersionStatus))
 
     @classmethod
     def create(cls, workspace, auto_queue_runs=True, speculative=False):
         """Create configuration and return instance."""
-        id_ = 'cv-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.CONFIGURATIONS)).zfill(2))
-        cv = ConfigurationVersion(workspace=workspace, id_=id_)
-        cls.CONFIGURATIONS[id_] = cv
-        workspace._latest_configuration_version = cv
-        cv.speculative = speculative
-        if auto_queue_runs:
+        cv = ConfigurationVersion(workspace=workspace, speculative=speculative, auto_queue_runs=auto_queue_runs)
+        with Database.get_session() as session:
+            session.add(cv)
+            session.commit()
+
+        if cv.auto_queue_runs:
             cv.queue()
         return cv
 

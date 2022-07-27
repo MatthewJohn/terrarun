@@ -15,3 +15,8 @@ class Database:
         if cls._ENGINE is None:
             cls._ENGINE = sqlalchemy.create_engine('sqlite:///test.db', pool_size=5, pool_recycle=3600)
         return cls._ENGINE
+
+    @classmethod
+    def get_session(cls):
+        """Return database session"""
+        return sqlalchemy.orm.session(cls.get_engine(), future=True)

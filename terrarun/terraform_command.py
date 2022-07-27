@@ -4,6 +4,7 @@ import json
 import os
 import subprocess
 
+from terrarun.base_object import BaseObject
 from terrarun.state_version import StateVersion
 
 
@@ -19,7 +20,7 @@ class TerraformCommandState(Enum):
     UNREACHABLE = 'unreachable'
 
 
-class TerraformCommand:
+class TerraformCommand(BaseObject):
 
     ID_PREFIX = 'nope'
     STATE_FILE = 'terraform.tfstate'

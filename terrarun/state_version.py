@@ -2,45 +2,37 @@
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base
+from terrarun.base_object import BaseObject
+from terrarun.database import Base, Database
 
-class StateVersion(Base):
+
+class StateVersion(Base, BaseObject):
 
     __tablename__ = 'state_version'
-    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")
 
-    state_json = sqlalchemy.Column(sqlalchemy.String)
+    run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
+    run = sqlalchemy.orm.relationship("StateVersion", back_populates="state_versions")
 
-    @classmethod
-    def get_by_id(cls, id_):
-        """Obtain plan instance by ID."""
-        if id_ in cls.INSTANCES:
-            return cls.INSTANCES[id_]
-        return None
+    state_json = sqlalchemy.Column(sqlalchemy.String)
 
     @classmethod
     def create_from_state_json(cls, run, state_json):
         """Create StateVersion from state_json."""
-        id_ = 'sv-ntv3HbhJqvFzam{id}'.format(
-            id=str(len(cls.INSTANCES)).zfill(2))
-        sv = cls(run=run, id_=id_, state_json=state_json)
-        cls.INSTANCES[id_] = sv
+        sv = cls(run=run, id=id, state_json=state_json)
+        with Database.get_session() as session:
+            session.add(sv)
+            session.commit()
 
         return sv
-
-    def __init__(self, id_, run, state_json):
-        """Store member variables"""
-        self._run = run
-        self._id = id_
-        self._state_json = state_json
 
     @property
     def resources(self):
         """Return resources"""
-        return self._state_json['resources']
+        return self.state_json['resources']
 
     @property
     def providers(self):
@@ -72,16 +64,16 @@ class StateVersion(Base):
     @property
     def serial(self):
         """Return serial of state"""
-        return self._state_json['serial']
+        return self.state_json['serial']
 
     @property
     def version(self):
         """Return serial of state"""
-        return self._state_json['version']
+        return self.state_json['version']
 
     @property
     def terraform_version(self):
-        return self._state_json['terraform_version']
+        return self.state_json['terraform_version']
 
     def get_api_details(self):
         """Return API details."""
@@ -91,7 +83,7 @@ class StateVersion(Base):
             "attributes": {
                 "created-at": "2021-06-08T01:22:03.794Z",
                 "size": 940,
-                "hosted-state-download-url": f"/api/v2/state-versions/{self._id}/download",
+                "hosted-state-download-url": f"/api/v2/state-versions/{self.api_id}/download",
                 "modules": self.modules,
                 "providers": self.providers,
                 "resources": self.resources,
@@ -105,7 +97,7 @@ class StateVersion(Base):
             "relationships": {
                 "run": {
                     "data": {
-                        "id": self._run._id,
+                        "id": self.run.api_id,
                         "type": "runs"
                     }
                 },
@@ -121,7 +113,7 @@ class StateVersion(Base):
                 },
                 "workspace": {
                     "data": {
-                        "id": self._run._configuration_version._workspace._id,
+                        "id": self.run.configuration_version.workspace.api_id,
                         "type": "workspaces"
                     }
                 },
@@ -143,6 +135,6 @@ class StateVersion(Base):
                 }
             },
             "links": {
-                "self": f"/api/v2/state-versions/{self._id}"
+                "self": f"/api/v2/state-versions/{self.api_id}"
             }
         }
