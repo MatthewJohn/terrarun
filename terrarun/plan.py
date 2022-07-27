@@ -53,6 +53,7 @@ class TerraformCommand:
         self._output = b""
         self._state_version = None
         self._status = PlanState.PENDING
+        self._plan_output = {}
 
     def execute(self):
         raise NotImplementedError
@@ -105,16 +106,18 @@ Executed remotely on terrarun server
 ================================================
 """
 
+        plan_out_file = 'TFRUN_PLAN_OUT'
         terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
-        command = [f'terraform-{terraform_version}', action, '-input=false']
+        terraform_binary = f'terraform-{terraform_version}'
+        command = [terraform_binary, action, '-input=false', f'-out={plan_out_file}']
 
-        init_rc = self._run_command([f'terraform-{terraform_version}', 'init', '-input=false'])
+        init_rc = self._run_command([terraform_binary, 'init', '-input=false'])
         if init_rc:
             self._status = PlanState.ERRORED
             return
 
         if self._run._attributes.get('refresh', True):
-            refresh_rc = self._run_command([f'terraform-{terraform_version}', 'refresh', '-input=false'])
+            refresh_rc = self._run_command([terraform_binary, 'refresh', '-input=false'])
             if refresh_rc:
                 self._status = PlanState.ERRORED
                 return
@@ -123,10 +126,48 @@ Executed remotely on terrarun server
             self.generate_state_version()
 
         plan_rc = self._run_command(command)
+
+        plan_out_raw = subprocess.check_output(
+            [terraform_binary, 'show', '-json', plan_out_file],
+            cwd=self._run._configuration_version._extract_dir
+        )
+        self._plan_output = json.loads(plan_out_raw)
+
         if plan_rc:
             self._status = PlanState.ERRORED
         else:
             self._status = PlanState.FINISHED
+
+    @property
+    def has_changes(self):
+        """Return is plan has changes"""
+        if not self._plan_output:
+            return False
+        return bool(self._plan_output['resource_changes'])
+
+    @property
+    def resource_additions(self):
+        count = 0
+        for resource in self._plan_output.get('resource_changes', {}):
+            if 'create' in resource.get('change', {}).get('actions', []):
+                count += 1
+        return count
+
+    @property
+    def resource_destructions(self):
+        count = 0
+        for resource in self._plan_output.get('resource_changes', {}):
+            if 'delete' in resource.get('change', {}).get('actions', []):
+                count += 1
+        return count
+
+    @property
+    def resource_changes(self):
+        count = 0
+        for resource in self._plan_output.get('resource_changes', {}):
+            if 'update' in resource.get('change', {}).get('actions', []):
+                count += 1
+        return count
 
     def get_api_details(self):
         """Return API details for plan"""
@@ -137,10 +178,10 @@ Executed remotely on terrarun server
                 "execution-details": {
                     "mode": "remote",
                 },
-                "has-changes": True,
-                "resource-additions": 0,
-                "resource-changes": 1,
-                "resource-destructions": 0,
+                "has-changes": self.has_changes,
+                "resource-additions": self.resource_additions,
+                "resource-changes": self.resource_changes,
+                "resource-destructions": self.resource_destructions,
                 "status": self._status.value,
                 "status-timestamps": {
                     "queued-at": "2018-07-02T22:29:53+00:00",

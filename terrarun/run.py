@@ -119,7 +119,7 @@ class Run:
                 },
                 "canceled-at": None,
                 "created-at": "2021-05-24T07:38:04.171Z",
-                "has-changes": False,
+                "has-changes": self._plan.has_changes if self._plan else False,
                 "auto-apply": self._attributes.get('auto_apply'),
                 "allow-empty-apply": False,
                 "is-destroy": False,
