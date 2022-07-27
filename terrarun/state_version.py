@@ -1,8 +1,18 @@
 
-class StateVersion:
+import sqlalchemy
+import sqlalchemy.orm
 
+from terrarun.database import Base
 
-    INSTANCES = {}
+class StateVersion(Base):
+
+    __tablename__ = 'state_version'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+
+    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
+    workspace = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")
+
+    state_json = sqlalchemy.Column(sqlalchemy.String)
 
     @classmethod
     def get_by_id(cls, id_):

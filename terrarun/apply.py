@@ -1,14 +1,29 @@
 
 
-import json
-import subprocess
+import sqlalchemy
+import sqlalchemy.orm
+
+from terrarun.database import Base
 
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
 
-class Apply(TerraformCommand):
+class Apply(TerraformCommand, Base):
 
     ID_PREFIX = 'apply'
+
+    __tablename__ = 'apply'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+
+    plan_id = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
+    plan = sqlalchemy.orm.relationship("Plan", back_populates="applies")
+
+    state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
+    state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="applies")
+
+    status = sqlalchemy.Column(sqlalchemy.String)
+    chnages = sqlalchemy.Column(sqlalchemy.String)
+    log = sqlalchemy.Column(sqlalchemy.LargeBinary)
 
     def execute(self):
         """Execute apply"""

@@ -3,12 +3,29 @@
 import json
 import subprocess
 
+import sqlalchemy
+import sqlalchemy.orm
+
+from terrarun.database import Base
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
 
-class Plan(TerraformCommand):
+class Plan(TerraformCommand, Base):
 
     ID_PREFIX = 'plan'
+
+    __tablename__ = 'plan'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+
+    run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
+    run = sqlalchemy.orm.relationship("Run", back_populates="plans")
+
+    state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
+    state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="plans")
+
+    status = sqlalchemy.Column(sqlalchemy.String)
+    plan_output = sqlalchemy.Column(sqlalchemy.String)
+    log = sqlalchemy.Column(sqlalchemy.LargeBinary)
 
     def execute(self):
         """Execute plan"""

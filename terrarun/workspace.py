@@ -1,11 +1,19 @@
 
+import sqlalchemy
+import sqlalchemy.orm
 
 import terrarun.organisation
+from terrarun.database import Base
 
 
-class Workspace:
+class Workspace(Base):
 
-    WORKSPACE = None
+    __tablename__ = 'workspace'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String)
+    organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
+
+    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
 
     @classmethod
     def get_workspace_by_organisation_and_name(cls, organisation, workspace_name):

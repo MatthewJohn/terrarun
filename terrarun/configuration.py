@@ -5,6 +5,12 @@ from enum import Enum
 from tarfile import TarFile
 from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 
+import sqlalchemy
+import sqlalchemy.orm
+
+from terrarun.database import Base
+
+
 class ConfigurationVersionStatus(Enum):
 
     PENDING = 'pending'
@@ -14,10 +20,17 @@ class ConfigurationVersionStatus(Enum):
     ERRORED = 'errored'
 
 
-class ConfigurationVersion():
+class ConfigurationVersion(Base):
     """Interface for uploaded configuration files"""
 
-    CONFIGURATIONS = {}
+    __tablename__ = 'configuration_version'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+
+    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
+    workspace = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
+
+    speculative = sqlalchemy.Column(sqlalchemy.Boolean)
+    auto_queue_runs = sqlalchemy.Column(sqlalchemy.Boolean)
 
     @classmethod
     def get_by_id(cls, id_):

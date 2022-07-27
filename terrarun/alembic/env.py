@@ -5,6 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -14,16 +15,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 target_metadata = None
+from terrarun.organisation import Organisation
+from terrarun.workspace import Workspace
+from terrarun.configuration import ConfigurationVersion
+from terrarun.run import Run
+from terrarun.state_version import StateVersion
+from terrarun.plan import Plan
+from terrarun.apply import Apply
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
+from terrarun.database import Base
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

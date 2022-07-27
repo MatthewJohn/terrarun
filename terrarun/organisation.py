@@ -1,8 +1,15 @@
 
+import sqlalchemy
+
 from terrarun.workspace import Workspace
+from terrarun.database import Base
 
 
-class Organisation:
+class Organisation(Base):
+
+    __tablename__ = 'organisation'
+    id = sqlalchemy.Column(sqlalchemy.String, primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String)
 
     @classmethod
     def get_by_name(cls, organisation_name):
