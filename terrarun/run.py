@@ -131,13 +131,14 @@ class Run:
             else:
                 self._status = RunStatus.APPLIED
 
-    def queue_apply(self):
+    def queue_apply(self, comment=None):
         """Queue apply job"""
         self._status = RunStatus.APPLY_QUEUED
 
         # Requeue to be applied
         self.__class__.WORKER_QUEUE.put(self.execute_next_step)
 
+        # @TODO Do something with comment
 
     def get_api_details(self):
         """Return API details."""

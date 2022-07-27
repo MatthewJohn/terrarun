@@ -430,7 +430,8 @@ class ApiTerraformApplyRun(Resource):
         run = Run.get_by_id(run_id)
         if not run:
             return {}, 404
-        run.queue_apply()
+        run.queue_apply(comment=flask.request.get_json().get('comment', None))
+        return {}, 202
 
 
 class ApiTerraformApplies(Resource):
