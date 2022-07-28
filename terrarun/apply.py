@@ -19,7 +19,7 @@ class Apply(TerraformCommand, Base):
     plan = sqlalchemy.orm.relationship("Plan", back_populates="applies")
 
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
-    state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="applies")
+    state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="apply", uselist=False)
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     changes = sqlalchemy.Column(sqlalchemy.String)

@@ -57,6 +57,9 @@ class Run(Base, BaseObject):
     configuration_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
     configuration_version = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
 
+    state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="run")
+    plans = sqlalchemy.orm.relation("Plan", back_populates="run")
+
     status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     message = sqlalchemy.Column(sqlalchemy.String)

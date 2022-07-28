@@ -15,7 +15,11 @@ class StateVersion(Base, BaseObject):
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")
 
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
-    run = sqlalchemy.orm.relationship("StateVersion", back_populates="state_versions")
+    run = sqlalchemy.orm.relationship("Run", back_populates="state_versions")
+
+    # Optional references to either plan that generated state or apply
+    apply = sqlalchemy.orm.relation("Apply", back_populates="state_version")
+    plan = sqlalchemy.orm.relation("Plan", back_populates="state_version")
 
     state_json = sqlalchemy.Column(sqlalchemy.String)
 

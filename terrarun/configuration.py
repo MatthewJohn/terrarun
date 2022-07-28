@@ -30,6 +30,8 @@ class ConfigurationVersion(Base, BaseObject):
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
 
+    runs = sqlalchemy.orm.relation("Run", back_populates="configuration_version")
+
     speculative = sqlalchemy.Column(sqlalchemy.Boolean)
     auto_queue_runs = sqlalchemy.Column(sqlalchemy.Boolean)
     status = sqlalchemy.Column(sqlalchemy.Enum(ConfigurationVersionStatus))

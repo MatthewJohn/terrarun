@@ -21,7 +21,9 @@ class Plan(TerraformCommand, Base):
     run = sqlalchemy.orm.relationship("Run", back_populates="plans")
 
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
-    state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="plans")
+    state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="plan", uselist=False)
+
+    applies = sqlalchemy.orm.relation("Apply", back_populates="plan")
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     plan_output = sqlalchemy.Column(sqlalchemy.String)

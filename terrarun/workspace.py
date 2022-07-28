@@ -14,8 +14,10 @@ class Workspace(Base, BaseObject):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String)
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
-
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
+
+    state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
+    configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
 
     _latest_state = None
     _latest_configuration_version = None
