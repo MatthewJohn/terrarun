@@ -10,6 +10,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+from terrarun.blob import Blob
 
 
 class ConfigurationVersionStatus(Enum):
@@ -31,6 +32,9 @@ class ConfigurationVersion(Base, BaseObject):
 
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
+
+    configuration_blob_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    configuration_blob = sqlalchemy.orm.relation("Blob", foreign_keys=[configuration_blob_id])
 
     runs = sqlalchemy.orm.relation("Run", back_populates="configuration_version")
 
@@ -71,6 +75,20 @@ class ConfigurationVersion(Base, BaseObject):
 
     def process_upload(self, data):
         """Handle upload of archive."""
+        if self.configuration_blob:
+            raise Exception('Configuration version already uploaded')
+
+        # Create blob for configuration version
+        session = Database.get_session()
+        blob = Blob(data=data)
+        session.add(blob)
+        session.commit()
+
+    def extract_configuration(self):
+        if not self.configuration_blob:
+            raise Exception('Configuration version not uploaded')
+
+        data = self.configuration_blob.data
         with NamedTemporaryFile(delete=False) as temp_file:
             tar_gz_file = temp_file.name
 
