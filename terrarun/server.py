@@ -4,13 +4,21 @@ import re
 import threading
 from time import sleep
 import traceback
+
+try:
+    from greenlet import getcurrent as _ident_func
+except ImportError:
+    from threading import get_ident as _ident_func
+
 from flask import Flask, make_response, request
+from sqlalchemy.orm import scoped_session
 import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
-from terrarun.apply import Apply
 
+from terrarun.apply import Apply
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
+from terrarun.database import Database
 from terrarun.organisation import Organisation
 from terrarun.plan import Plan
 from terrarun.run import Run
@@ -28,6 +36,10 @@ class Server(object):
             __name__,
             static_folder='static',
             template_folder='templates'
+        )
+        self._app.session = scoped_session(
+            Database.get_session_local(),
+            scopefunc=_ident_func
         )
         self._api = Api(
             self._app,

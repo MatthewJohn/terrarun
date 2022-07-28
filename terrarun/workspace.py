@@ -31,7 +31,7 @@ class Workspace(Base, BaseObject):
         with Database.get_session() as session:
             ws = session.query(Workspace).filter(
                 Workspace.name==workspace_name,
-                terrarun.organisation.Organisation==organisation
+                Workspace.organisation==organisation
             ).first()
 
             if ws:
