@@ -7,6 +7,7 @@ import traceback
 from flask import Flask, make_response, request
 import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
+import flask_sqlalchemy
 from terrarun.apply import Apply
 
 from terrarun.auth import Auth
@@ -29,6 +30,8 @@ class Server(object):
             static_folder='static',
             template_folder='templates'
         )
+        self._app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+        self._db = flask_sqlalchemy.SQLAlchemy(self._app)
         self._api = Api(
             self._app,
         )
