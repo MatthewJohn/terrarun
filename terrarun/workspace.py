@@ -30,7 +30,7 @@ class Workspace(Base, BaseObject):
         """Return organisation object, if it exists within an organisation, by name."""
         with Database.get_session() as session:
             ws = session.query(Workspace).filter(
-                Workspace.workspace_name==workspace_name,
+                Workspace.name==workspace_name,
                 terrarun.organisation.Organisation==organisation
             ).first()
 
@@ -86,7 +86,7 @@ class Workspace(Base, BaseObject):
                     "global-remote-state": False,
                     "latest-change-at": "2021-06-23T17:50:48.815Z",
                     "locked": False,
-                    "name": self._name,
+                    "name": self.name,
                     "operations": True,
                     "permissions": {
                         "can-create-state-versions": True,
