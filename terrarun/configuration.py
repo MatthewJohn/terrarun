@@ -41,10 +41,15 @@ class ConfigurationVersion(Base, BaseObject):
     @classmethod
     def create(cls, workspace, auto_queue_runs=True, speculative=False):
         """Create configuration and return instance."""
-        cv = ConfigurationVersion(workspace=workspace, speculative=speculative, auto_queue_runs=auto_queue_runs)
-        with Database.get_session() as session:
-            session.add(cv)
-            session.commit()
+        cv = ConfigurationVersion(
+            workspace=workspace,
+            speculative=speculative,
+            auto_queue_runs=auto_queue_runs,
+            status=ConfigurationVersionStatus.PENDING
+        )
+        session = Database.get_session()
+        session.add(cv)
+        session.commit()
 
         if cv.auto_queue_runs:
             cv.queue()
@@ -55,13 +60,10 @@ class ConfigurationVersion(Base, BaseObject):
         """Return whether only a plan."""
         return False
 
-    def __init__(self, workspace, id_):
+    def __init__(self, *args, **kwargs):
         """Store member variables."""
-        self.speculative = False
-        self._workspace = workspace
-        self._id = id_
+        super(ConfigurationVersion, self).__init__(*args, **kwargs)
         self._extract_dir = None
-        self._status = ConfigurationVersionStatus.PENDING
 
     def queue(self):
         """Queue."""
