@@ -34,7 +34,7 @@ class BaseObject:
             raise Exception('Object must override ID_PREFIX')
 
         id = self.id
-        api_id = ''
+        api_id = f'{self.ID_PREFIX}-'
         while id != 0:
             api_id = self.ID_BASE_62[id % self.ID_BASE] + api_id    
             id //= self.ID_BASE
