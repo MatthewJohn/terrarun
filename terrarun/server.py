@@ -32,7 +32,7 @@ class Server(object):
             static_folder='static',
             template_folder='templates'
         )
-        self._app.request_tearing_down.connect(self.shutdown_session)
+        self._app.teardown_request(self.shutdown_session)
 
         self._api = Api(
             self._app,
@@ -46,6 +46,9 @@ class Server(object):
         self._register_routes()
 
     def shutdown_session(self, exception=None):
+        """Tear down database session."""
+        print("TEARING DOWN SESSION")
+        print(Database.get_session() == Database.get_session())
         Database.get_session().remove()
 
     def _register_routes(self):

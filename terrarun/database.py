@@ -1,4 +1,9 @@
 
+try:
+    from greenlet import getcurrent as _ident_func
+except ImportError:
+    from threading import get_ident as _ident_func
+
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -8,6 +13,7 @@ class Database:
 
     _ENGINE = None
     _SESSION_MAKER = None
+    _SESSIONS = {}
 
     @classmethod
     def get_engine(cls):
@@ -19,7 +25,12 @@ class Database:
     @classmethod
     def get_session(cls):
         """Return database session"""
-        return sqlalchemy.orm.scoped_session(cls.get_session_maker())
+        thread_id = _ident_func()
+        if thread_id not in cls._SESSIONS:
+            cls._SESSIONS[thread_id] = sqlalchemy.orm.scoped_session(
+                cls.get_session_maker()
+            )
+        return cls._SESSIONS[thread_id]
 
     @classmethod
     def get_session_maker(cls):
