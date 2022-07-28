@@ -76,13 +76,6 @@ class Run(Base, BaseObject):
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
 
     @classmethod
-    def get_by_id(cls, id_):
-        """Obtain run instance by ID."""
-        if id_ in cls.RUNS:
-            return cls.RUNS[id_]
-        return None
-
-    @classmethod
     def create(cls, configuration_version, **attributes):
         """Create run and return instance."""
         id_ = 'run-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.RUNS)).zfill(2))

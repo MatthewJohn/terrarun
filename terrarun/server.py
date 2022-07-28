@@ -248,7 +248,7 @@ class ApiTerraformWorkspaceConfigurationVersions(Resource):
         data = flask.request.get_json().get('data', {})
         attributes = data.get('attributes', {})
 
-        workspace = Workspace.get_by_id(workspace_id)
+        workspace = Workspace.get_by_api_id(workspace_id)
 
         cv = ConfigurationVersion.create(
             workspace=workspace,
@@ -263,7 +263,7 @@ class ApiTerraformConfigurationVersions(Resource):
 
     def get(self, configuration_version_id):
         """Get configuration version details."""
-        cv = ConfigurationVersion.get_by_id(id_=configuration_version_id)
+        cv = ConfigurationVersion.get_by_api_id(id_=configuration_version_id)
         if not cv:
             return {}, 404
         return cv.get_api_details()
@@ -274,7 +274,7 @@ class ApiTerraformConfigurationVersionUpload(Resource):
 
     def put(self, configuration_version_id):
         """Handle upload of configuration version data."""
-        cv = ConfigurationVersion.get_by_id(configuration_version_id)
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
 
@@ -286,7 +286,7 @@ class ApiTerraformRun(Resource):
 
     def get(self, run_id=None):
         """Return run information"""
-        run = Run.get_by_id(run_id)
+        run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
         return {"data": run.get_api_details()}
@@ -307,7 +307,7 @@ class ApiTerraformRun(Resource):
         if not workspace_id:
             return {}, 422
 
-        workspace = Workspace.get_by_id(workspace_id)
+        workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
 
@@ -316,7 +316,7 @@ class ApiTerraformRun(Resource):
         if not configuration_version_id:
             return {}, 422
 
-        cv = ConfigurationVersion.get_by_id(configuration_version_id)
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
 
@@ -343,7 +343,7 @@ class ApiTerraformWorkspaceRuns(Resource):
 
     def get(self, workspace_id):
         """Return all runs for a workspace."""
-        workspace = Workspace.get_by_id(workspace_id)
+        workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
 
@@ -368,7 +368,7 @@ class ApiTerraformPlans(Resource):
     def get(self, plan_id=None):
         """Return information for plan(s)"""
         if plan_id:
-            plan = Plan.get_by_id(plan_id)
+            plan = Plan.get_by_api_id(plan_id)
             if not plan:
                 return {}, 404
 
@@ -387,7 +387,7 @@ class ApiTerraformPlanLog(Resource):
         parser.add_argument('offset', type=int, location='args')
         parser.add_argument('limit', type=int, location='args')
         args = parser.parse_args()
-        plan = Plan.get_by_id(plan_id)
+        plan = Plan.get_by_api_id(plan_id)
         if not plan:
             return {}, 404
 
@@ -414,7 +414,7 @@ class ApiTerraformWorkspaceLatestStateVersion(Resource):
     def get(self, workspace_id):
         """Return latest state for workspace."""
 
-        state = Workspace.get_by_id(workspace_id)._latest_state
+        state = Workspace.get_by_api_id(workspace_id)._latest_state
         if state:
             return {'data': state.get_api_details()}
 
@@ -425,7 +425,7 @@ class ApiTerraformStateVersionDownload(Resource):
 
     def get(self, state_version_id):
         """Return state version json"""
-        state_version = StateVersion.get_by_id(state_version_id)
+        state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
             return {}, 404
         return state_version._state_json
@@ -436,7 +436,7 @@ class ApiTerraformApplyRun(Resource):
 
     def post(self, run_id):
         """Initialise run apply."""
-        run = Run.get_by_id(run_id)
+        run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
         run.queue_apply(comment=flask.request.get_json().get('comment', None))
@@ -451,7 +451,7 @@ class ApiTerraformApplies(Resource):
         if not apply_id:
             raise Exception('IT WAS CALLED')
 
-        apply = Apply.get_by_id(apply_id)
+        apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
         
@@ -468,7 +468,7 @@ class ApiTerraformApplyLog(Resource):
         parser.add_argument('offset', type=int, location='args')
         parser.add_argument('limit', type=int, location='args')
         args = parser.parse_args()
-        apply = Apply.get_by_id(apply_id)
+        apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
 
