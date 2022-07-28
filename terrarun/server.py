@@ -265,7 +265,7 @@ class ApiTerraformConfigurationVersions(Resource):
 
     def get(self, configuration_version_id):
         """Get configuration version details."""
-        cv = ConfigurationVersion.get_by_api_id(id_=configuration_version_id)
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
         return cv.get_api_details()
