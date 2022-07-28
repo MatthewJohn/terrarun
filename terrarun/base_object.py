@@ -21,7 +21,9 @@ class BaseObject:
             return None
 
         id = 0
-        for itx, char in enumerate(stripped_id):
+
+        # Iterate over ID, in reverse order, so that first digit is the first value
+        for itx, char in enumerate(stripped_id[::-1]):
             if itx == cls.ID_LENGTH:
                 raise Exception('ID too long')
 
