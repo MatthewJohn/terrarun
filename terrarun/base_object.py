@@ -15,6 +15,7 @@ class BaseObject:
     def db_id_from_api_id(cls, api_id):
         if len(api_id.split('-')) != 2:
             return None
+
         stripped_id = api_id.split('-')[1]
         if len(stripped_id) != 16:
             return None
@@ -34,11 +35,12 @@ class BaseObject:
             raise Exception('Object must override ID_PREFIX')
 
         id = self.id
-        api_id = f'{self.ID_PREFIX}-'
+        api_id = ''
         while id != 0:
             api_id = self.ID_BASE_62[id % self.ID_BASE] + api_id    
             id //= self.ID_BASE
-        return api_id.zfill(self.ID_LENGTH)
+        api_id = api_id.zfill(self.ID_LENGTH)
+        return f'{self.ID_PREFIX}-{api_id}'
 
     @classmethod
     def get_by_api_id(cls, id):
