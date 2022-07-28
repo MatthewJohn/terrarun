@@ -2,13 +2,12 @@
 import sqlalchemy
 import sqlalchemy.orm
 
-Base = sqlalchemy.orm.declarative_base()
 
 class Database:
     """Handle database connection and settng up database schema"""
 
     _ENGINE = None
-    _SESSION_LOCAL = None
+    _SESSION_MAKER = None
 
     @classmethod
     def get_engine(cls):
@@ -20,15 +19,18 @@ class Database:
     @classmethod
     def get_session(cls):
         """Return database session"""
-        return sqlalchemy.orm.Session(cls.get_engine(), future=True, expire_on_commit=False)
+        return sqlalchemy.orm.scoped_session(cls.get_session_maker())
 
     @classmethod
-    def get_session_local(cls):
+    def get_session_maker(cls):
         """Return session local object"""
-        if cls._SESSION_LOCAL is None:
-            cls._SESSION_LOCAL = sqlalchemy.orm.sessionmaker(
+        if cls._SESSION_MAKER is None:
+            cls._SESSION_MAKER = sqlalchemy.orm.sessionmaker(
                 autocommit=False,
                 autoflush=False,
                 bind=cls.get_engine()
             )
-        return cls._SESSION_LOCAL
+        return cls._SESSION_MAKER
+
+Base = sqlalchemy.orm.declarative_base()
+Base.query = Database.get_session().query_property()

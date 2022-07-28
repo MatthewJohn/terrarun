@@ -5,11 +5,6 @@ import threading
 from time import sleep
 import traceback
 
-try:
-    from greenlet import getcurrent as _ident_func
-except ImportError:
-    from threading import get_ident as _ident_func
-
 from flask import Flask, make_response, request
 from sqlalchemy.orm import scoped_session
 import flask
@@ -37,10 +32,8 @@ class Server(object):
             static_folder='static',
             template_folder='templates'
         )
-        self._app.session = scoped_session(
-            Database.get_session_local(),
-            scopefunc=_ident_func
-        )
+        self._app.request_tearing_down.connect(self.shutdown_session)
+
         self._api = Api(
             self._app,
         )
@@ -51,6 +44,9 @@ class Server(object):
         self.ssl_private_key = ssl_private_key
 
         self._register_routes()
+
+    def shutdown_session(self, exception=None):
+        Database.get_session().remove()
 
     def _register_routes(self):
         """Register routes with flask."""

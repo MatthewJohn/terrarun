@@ -28,14 +28,11 @@ class Workspace(Base, BaseObject):
     @classmethod
     def get_by_organisation_and_name(cls, organisation, workspace_name):
         """Return organisation object, if it exists within an organisation, by name."""
-        with Database.get_session() as session:
-            ws = session.query(Workspace).filter(
-                Workspace.name==workspace_name,
-                Workspace.organisation==organisation
-            ).first()
-
-            if ws:
-                session.expunge_all()
+        session = Database.get_session()
+        ws = session.query(Workspace).filter(
+            Workspace.name==workspace_name,
+            Workspace.organisation==organisation
+        ).first()
 
         if not ws and Config().AUTO_CREATE_WORKSPACES:
             ws = Workspace.create(organisation=organisation, name=workspace_name)
@@ -44,10 +41,9 @@ class Workspace(Base, BaseObject):
     @classmethod
     def create(cls, organisation, name):
         ws = cls(organisation=organisation, name=name)
-        with Database.get_session() as session:
-            session.add(ws)
-            session.commit()
-            session.expunge_all()
+        session = Database.get_session()
+        session.add(ws)
+        session.commit()
         return ws
 
     @property
