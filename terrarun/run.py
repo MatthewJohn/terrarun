@@ -51,6 +51,8 @@ class Run(Base, BaseObject):
 
     WORKER_QUEUE = queue.Queue()
 
+    ID_PREFIX = 'run'
+
     __tablename__ = 'run'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 

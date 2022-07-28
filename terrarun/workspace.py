@@ -10,6 +10,8 @@ from terrarun.database import Base, Database
 
 class Workspace(Base, BaseObject):
 
+    ID_PREFIX = 'ws'
+
     __tablename__ = 'workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String)

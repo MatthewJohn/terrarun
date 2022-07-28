@@ -24,6 +24,8 @@ class ConfigurationVersionStatus(Enum):
 class ConfigurationVersion(Base, BaseObject):
     """Interface for uploaded configuration files"""
 
+    ID_PREFIX = 'cv'
+
     __tablename__ = 'configuration_version'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 

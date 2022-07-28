@@ -9,6 +9,8 @@ from terrarun.config import Config
 
 class Organisation(Base, BaseObject):
 
+    ID_PREFIX = 'org'
+
     __tablename__ = 'organisation'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String)

@@ -8,6 +8,8 @@ from terrarun.database import Base, Database
 
 class StateVersion(Base, BaseObject):
 
+    ID_PREFIX = 'sv'
+
     __tablename__ = 'state_version'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
