@@ -47,8 +47,6 @@ class Server(object):
 
     def shutdown_session(self, exception=None):
         """Tear down database session."""
-        print("TEARING DOWN SESSION")
-        print(Database.get_session() == Database.get_session())
         Database.get_session().remove()
 
     def _register_routes(self):
