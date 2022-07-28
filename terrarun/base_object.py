@@ -41,4 +41,7 @@ class BaseObject:
         """Return object by API ID"""
         id = cls.db_id_from_api_id(id)
         with Database.get_session() as session:
-            return session.query(cls).where(cls.id==id).first()
+            obj = session.query(cls).where(cls.id==id).first()
+            if obj:
+                session.expunge_all()
+        return obj

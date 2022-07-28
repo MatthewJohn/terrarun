@@ -34,9 +34,12 @@ class Workspace(Base, BaseObject):
                 terrarun.organisation.Organisation==organisation
             ).first()
 
+            if ws:
+                session.expunge_all()
+
         if not ws and Config().AUTO_CREATE_WORKSPACES:
-            org = Workspace.create(organisation=organisation, name=workspace_name)
-        return org
+            ws = Workspace.create(organisation=organisation, name=workspace_name)
+        return ws
     
     @classmethod
     def create(cls, organisation, name):
@@ -44,6 +47,7 @@ class Workspace(Base, BaseObject):
         with Database.get_session() as session:
             session.add(ws)
             session.commit()
+            session.expunge_all()
         return ws
 
     @property

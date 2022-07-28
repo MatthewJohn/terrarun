@@ -22,6 +22,7 @@ class Organisation(Base, BaseObject):
         """Return organisation object by name of organisation"""
         with Database.get_session() as session:
             org = session.query(Organisation).filter(Organisation.name==organisation_name).first()
+            session.expunge_all()
 
         if not org and Config().AUTO_CREATE_ORGANISATIONS:
             org = Organisation.create(name=organisation_name)
@@ -33,6 +34,7 @@ class Organisation(Base, BaseObject):
         with Database.get_session() as session:
             session.add(org)
             session.commit()
+            session.expunge_all()
         return org
 
     def get_entitlement_set_api(self):
