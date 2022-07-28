@@ -100,13 +100,13 @@ terraform {
 
     def get_upload_url(self):
         """Return URL for terraform to upload configuration."""
-        return f'/api/v2/upload-configuration/{self._id}'
+        return f'/api/v2/upload-configuration/{self.api_id}'
 
     def get_api_details(self):
         """Return API details."""
         return {
             "data": {
-                "id": self._id,
+                "id": self.api_id,
                 "type": "configuration-versions",
                 "attributes": {
                     "auto-queue-runs": True,
@@ -114,7 +114,7 @@ terraform {
                     "error-message": None,
                     "source": "tfe-api",
                     "speculative": self.speculative,
-                    "status": self._status.value,
+                    "status": self.status.value,
                     "status-timestamps": {},
                     "upload-url": self.get_upload_url()
                 },
@@ -126,13 +126,13 @@ terraform {
                         },
                         "links": {
                             "related":
-                            f"/api/v2/configuration-versions/{self._id}/ingress-attributes"
+                            f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
                         }
                     }
                 },
                 "links": {
-                    "self": f"/api/v2/configuration-versions/{self._id}",
-                    "download": f"/api/v2/configuration-versions/{self._id}/download"
+                    "self": f"/api/v2/configuration-versions/{self.api_id}",
+                    "download": f"/api/v2/configuration-versions/{self.api_id}/download"
                 }
             }
         }
