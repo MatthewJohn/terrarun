@@ -25,7 +25,7 @@ class BaseObject:
                 raise Exception('ID too long')
 
             id += (cls.ID_BASE_62.index(char) * pow(62, itx))
-        return id
+        return int(id)
 
     @property
     def api_id(self):
