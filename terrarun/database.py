@@ -19,4 +19,4 @@ class Database:
     @classmethod
     def get_session(cls):
         """Return database session"""
-        return sqlalchemy.orm.Session(cls.get_engine(), future=True)
+        return sqlalchemy.orm.Session(cls.get_engine(), future=True, expire_on_commit=False)
