@@ -25,8 +25,6 @@ class TerraformCommand(BaseObject):
 
     STATE_FILE = 'terraform.tfstate'
 
-    INSTANCES = {}
-
     @classmethod
     def create(cls, run):
         """Create plan and return instance."""
@@ -74,6 +72,12 @@ class TerraformCommand(BaseObject):
                 break
 
         return command_proc.returncode
+
+    def add_output(self, output):
+        """Record command output."""
+        with Database.get_session() as session:
+            self.output += output
+            session.commit()
 
     def generate_state_version(self):
         """Generate state version from state file."""

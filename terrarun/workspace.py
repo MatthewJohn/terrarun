@@ -3,6 +3,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
+from terrarun.config import Config
 import terrarun.organisation
 from terrarun.database import Base, Database
 
@@ -24,10 +25,22 @@ class Workspace(Base, BaseObject):
     def get_by_organisation_and_name(cls, organisation, workspace_name):
         """Return organisation object, if it exists within an organisation, by name."""
         with Database.get_session() as session:
-            return session.query(Workspace).filter(
+            ws = session.query(Workspace).filter(
                 Workspace.workspace_name==workspace_name,
                 terrarun.organisation.Organisation==organisation
             ).first()
+
+        if not ws and Config().AUTO_CREATE_WORKSPACES:
+            org = Workspace.create(organisation=organisation, name=workspace_name)
+        return org
+    
+    @classmethod
+    def create(cls, organisation, name):
+        ws = cls(organisation=organisation, name=name)
+        with Database.get_session() as session:
+            session.add(ws)
+            session.commit()
+        return ws
 
     @property
     def auto_apply(self):

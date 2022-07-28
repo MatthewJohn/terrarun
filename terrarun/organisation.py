@@ -4,6 +4,7 @@ import sqlalchemy
 from terrarun.base_object import BaseObject
 from terrarun.workspace import Workspace
 from terrarun.database import Base, Database
+from terrarun.config import Config
 
 
 class Organisation(Base, BaseObject):
@@ -16,8 +17,20 @@ class Organisation(Base, BaseObject):
     def get_by_name(cls, organisation_name):
         """Return organisation object by name of organisation"""
         with Database.get_session() as session:
-            return session.query(Organisation).filter(Organisation.name==organisation_name).first()
+            org = session.query(Organisation).filter(Organisation.name==organisation_name).first()
+
+        if not org and Config().AUTO_CREATE_ORGANISATIONS:
+            org = Organisation.create(name=organisation_name)
+        return org
     
+    @classmethod
+    def create(cls, name):
+        org = cls(name=name)
+        with Database.get_session() as session:
+            session.add(org)
+            session.commit()
+        return org
+
     def get_entitlement_set_api(self):
         """Return API response for organisation entitlement"""
         return {
