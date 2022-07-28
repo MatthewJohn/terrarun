@@ -129,7 +129,7 @@ class Workspace(Base, BaseObject):
                 },
                 "id": self.api_id,
                 "links": {
-                    "self": f"/api/v2/organizations/{self.organisation.name}/workspaces/workspace-1"
+                    "self": f"/api/v2/organizations/{self.organisation.name}/workspaces/{self.name}"
                 },
                 "relationships": {
                     "agent-pool": {
