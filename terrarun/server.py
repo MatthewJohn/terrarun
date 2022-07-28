@@ -249,6 +249,8 @@ class ApiTerraformWorkspaceConfigurationVersions(Resource):
         attributes = data.get('attributes', {})
 
         workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
 
         cv = ConfigurationVersion.create(
             workspace=workspace,
