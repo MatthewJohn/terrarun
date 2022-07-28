@@ -9,6 +9,7 @@ class BaseObject:
     ID_PREFIX = None
     ID_BASE_62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     ID_BASE = len(ID_BASE_62)
+    ID_LENGTH = 16
 
     @classmethod
     def db_id_from_api_id(cls, api_id):
@@ -20,6 +21,9 @@ class BaseObject:
 
         id = 0
         for itx, char in enumerate(stripped_id):
+            if itx == cls.ID_LENGTH:
+                raise Exception('ID too long')
+
             id += (cls.ID_BASE_62.index(char) * pow(62, itx))
         return id
 
@@ -34,7 +38,7 @@ class BaseObject:
         while id != 0:
             api_id = self.ID_BASE_62[id % self.ID_BASE] + api_id    
             id //= self.ID_BASE
-        return api_id
+        return api_id.zfill(self.ID_LENGTH)
 
     @classmethod
     def get_by_api_id(cls, id):
