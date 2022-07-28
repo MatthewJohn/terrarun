@@ -43,6 +43,10 @@ class BaseObject:
     @classmethod
     def get_by_api_id(cls, id):
         """Return object by API ID"""
+
         id = cls.db_id_from_api_id(id)
+        if id is None:
+            return None
+
         session = Database.get_session()
         return session.query(cls).where(cls.id==id).first()
