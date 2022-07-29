@@ -84,6 +84,8 @@ class ConfigurationVersion(Base, BaseObject):
         session.add(blob)
         session.commit()
 
+        self.update_state(ConfigurationVersionStatus.UPLOADED)
+
     def extract_configuration(self):
         if not self.configuration_blob:
             raise Exception('Configuration version not uploaded')
@@ -114,7 +116,6 @@ terraform {
 """.strip())
         finally:
             os.unlink(tar_gz_file)
-        self._status = ConfigurationVersionStatus.UPLOADED
 
     def get_upload_url(self):
         """Return URL for terraform to upload configuration."""
