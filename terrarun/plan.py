@@ -43,27 +43,27 @@ class Plan(TerraformCommand, Base):
         else:
             action = 'plan'
 
-        self._output += b"""================================================
+        self._append_output(b"""================================================
 Command has started
 
 Executed remotely on terrarun server
 ================================================
-"""
+""")
 
         plan_out_file = 'TFRUN_PLAN_OUT'
-        terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
+        terraform_version = self.run.terraform_version or '1.1.7'
         terraform_binary = f'terraform-{terraform_version}'
         command = [terraform_binary, action, '-input=false', f'-out={plan_out_file}']
 
         init_rc = self._run_command([terraform_binary, 'init', '-input=false'])
         if init_rc:
-            self._status = TerraformCommandState.ERRORED
+            self.update_state(TerraformCommandState.ERRORED)
             return
 
-        if self._run._attributes.get('refresh', True):
+        if self.run.refresh:
             refresh_rc = self._run_command([terraform_binary, 'refresh', '-input=false'])
             if refresh_rc:
-                self._status = TerraformCommandState.ERRORED
+                self.update_state(TerraformCommandState.ERRORED)
                 return
 
             # Extract state
@@ -78,14 +78,22 @@ Executed remotely on terrarun server
         self._plan_output = json.loads(plan_out_raw)
 
         if plan_rc:
-            self._status = TerraformCommandState.ERRORED
+            self.update_state(TerraformCommandState.ERRORED)
         else:
-            self._status = TerraformCommandState.FINISHED
+            self.update_state(TerraformCommandState.FINISHED)
+
+    def update_state(self, new_state):
+        """Update state of plan."""
+        session = Database.get_session()
+        session.refresh(self)
+        self.state = new_state
+        session.update(self)
+        session.commit()
 
     @property
     def has_changes(self):
         """Return is plan has changes"""
-        if not self._plan_output:
+        if not self.plan_output.data:
             return False
         return bool(self.resource_additions or self.resource_destructions or self.resource_changes)
 

@@ -34,15 +34,25 @@ class TerraformCommand(BaseObject):
             session.commit()
         return run
 
-    def _pull_latest_state(self):
+    def _pull_latest_state(self, work_dir):
         """Pull latest version of state to working copy."""
         # No latest state available for workspace
         state_version = self.run.configuration_version.workspace.latest_state
         if not state_version or not state_version.state_json:
             return
 
-        with open(os.path.join(self.run.configuration_version._extract_dir, self.STATE_FILE), 'w') as state_fh:
+        with open(os.path.join(work_dir, self.STATE_FILE), 'w') as state_fh:
             state_fh.write(json.dumps(state_version.state_json))
+
+    def _append_output(self, data):
+        """Append to output"""
+        session = Database.get_session()
+        session.refresh(self)
+        log = self.log
+        session.refresh(log)
+        log.data += data
+        session.update(log)
+        session.commit()
 
     def execute(self):
         raise NotImplementedError
@@ -63,11 +73,11 @@ class TerraformCommand(BaseObject):
                 # saving plan to output file is displayed and
                 # display line about how to apply changes
                 if line.startswith(b'Saved the plan to: '):
-                    self._output += b'To perform exactly these actions, run the following command to apply:\n    terraform apply\n'
+                    self._append_output(b'To perform exactly these actions, run the following command to apply:\n    terraform apply\n')
                     print_lines = False
 
                 if print_lines:
-                    self._output += line
+                    self._append_output(line)
             elif command_proc.poll() is not None:
                 break
 
