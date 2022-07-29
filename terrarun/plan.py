@@ -34,7 +34,8 @@ class Plan(TerraformCommand, Base):
 
     def execute(self):
         """Execute plan"""
-        self._pull_latest_state()
+        work_dir = self.configuration_version.extract_configuration()
+        self._pull_latest_state(work_dir)
 
         self._status = TerraformCommandState.RUNNING
         action = None

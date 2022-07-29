@@ -100,13 +100,12 @@ class ConfigurationVersion(Base, BaseObject):
                 
             with TemporaryDirectory() as extract_dir:
                 pass
-            self._extract_dir = extract_dir
-            os.mkdir(self._extract_dir)
+            os.mkdir(extract_dir)
             tar_file = TarFile.open(tar_gz_file, 'r')
-            tar_file.extractall(self._extract_dir)
+            tar_file.extractall(extract_dir)
 
             # Create override file for reconfiguring backend
-            with open(os.path.join(self._extract_dir, 'override.tf'), 'w') as override_fh:
+            with open(os.path.join(extract_dir, 'override.tf'), 'w') as override_fh:
                 override_fh.write("""
 terraform {
   backend "local" {
@@ -116,6 +115,7 @@ terraform {
 """.strip())
         finally:
             os.unlink(tar_gz_file)
+        return extract_dir
 
     def get_upload_url(self):
         """Return URL for terraform to upload configuration."""
