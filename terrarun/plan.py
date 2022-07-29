@@ -6,7 +6,7 @@ import subprocess
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base
+from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
 
@@ -26,8 +26,11 @@ class Plan(TerraformCommand, Base):
     applies = sqlalchemy.orm.relation("Apply", back_populates="plan")
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
-    plan_output = sqlalchemy.Column(sqlalchemy.String)
-    log = sqlalchemy.Column(sqlalchemy.LargeBinary)
+
+    plan_output_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    plan_output = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_id])
+    log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
     def execute(self):
         """Execute plan"""

@@ -21,9 +21,11 @@ class Apply(TerraformCommand, Base):
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="apply", uselist=False)
 
+    log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
+
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     changes = sqlalchemy.Column(sqlalchemy.String)
-    log = sqlalchemy.Column(sqlalchemy.LargeBinary)
 
     def execute(self):
         """Execute apply"""
