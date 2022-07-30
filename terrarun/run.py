@@ -109,6 +109,7 @@ class Run(Base, BaseObject):
             status=RunStatus.PENDING,
             **attributes)
         session.add(run)
+        session.commit()
         plan = terrarun.plan.Plan.create(run=run)
         terrarun.apply.Apply.create(plan=plan)
         return run
