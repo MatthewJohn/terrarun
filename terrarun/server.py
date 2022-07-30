@@ -488,9 +488,13 @@ class ApiTerraformApplyLog(Resource):
             return {}, 404
 
         output = b""
+        session = Database.get_session()
         for _ in range(60):
-            if apply.log and apply.log.data:
-                output = apply.log.data[args.offset:(args.offset+args.limit)]
+            session.refresh(apply)
+            if apply.log:
+                session.refresh(apply.log)
+                if apply.log.data:
+                    output = apply.log.data[args.offset:(args.offset+args.limit)]
             if output or apply.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
