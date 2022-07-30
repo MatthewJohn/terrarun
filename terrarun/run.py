@@ -10,6 +10,7 @@ import sqlalchemy.sql
 from terrarun.database import Base, Database
 import terrarun.plan
 import terrarun.apply
+from terrarun.run_queue import RunQueue
 import terrarun.terraform_command
 from terrarun.base_object import BaseObject
 
@@ -50,8 +51,6 @@ class RunOperations:
 
 
 class Run(Base, BaseObject):
-
-    WORKER_QUEUE = queue.Queue()
 
     ID_PREFIX = 'run'
 
@@ -120,6 +119,11 @@ class Run(Base, BaseObject):
 
     def execute_next_step(self):
         """Execute terraform command"""
+        # Remove from run queue
+        session = Database.get_session()
+        session.delete(self.run_queue)
+        session.commit()
+
         # Handle plan job
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
@@ -155,12 +159,19 @@ class Run(Base, BaseObject):
         session.add(self)
         session.commit()
 
+    def queue_job(self):
+        """Add item to queue for run"""
+        session = Database.get_session()
+        rq = RunQueue(run=self)
+        session.add(rq)
+        session.commit()
+
     def queue_apply(self, comment=None):
         """Queue apply job"""
         self.update_status(RunStatus.APPLY_QUEUED)
 
         # Requeue to be applied
-        self.__class__.WORKER_QUEUE.put(self.execute_next_step)
+        self.queue_job()
 
         # @TODO Do something with comment
 

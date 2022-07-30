@@ -17,6 +17,7 @@ from terrarun.database import Database
 from terrarun.organisation import Organisation
 from terrarun.plan import Plan
 from terrarun.run import Run
+from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.workspace import Workspace
@@ -160,10 +161,11 @@ class Server(object):
         """Run worker queue"""
         while self.queue_run:
             try:
-                job = Run.WORKER_QUEUE.get(timeout=1)
-                job()
-            except queue.Empty:
-                pass
+                run = RunQueue.query.first()
+                if run:
+                    run.execute_next_step()
+                else:
+                    sleep(5)
             except Exception as exc:
                 print('Error during worker run: ' + str(exc))
                 print(traceback.format_exc())
