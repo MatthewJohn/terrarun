@@ -116,7 +116,7 @@ Executed remotely on terrarun server
     def plan_output(self):
         """Return plan output value"""
         if self._plan_output and self._plan_output.data:
-            return json.loads(self._plan_output.data)
+            return json.loads(self._plan_output.data.decode('utf-8'))
         return {}
 
     @plan_output.setter
@@ -130,7 +130,7 @@ Executed remotely on terrarun server
         else:
             plan_output_blob = Blob()
 
-        plan_output_blob.data = json.dumps(value)
+        plan_output_blob.data = bytes(json.dumps(value), 'utf-8')
 
         session.add(plan_output_blob)
         session.refresh(self)
