@@ -8,6 +8,7 @@ import sqlalchemy.orm
 
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
+from terrarun.blob import Blob
 
 
 class Plan(TerraformCommand, Base):
@@ -28,7 +29,7 @@ class Plan(TerraformCommand, Base):
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
 
     plan_output_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    plan_output = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_id])
+    _plan_output = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_id])
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
@@ -50,12 +51,12 @@ class Plan(TerraformCommand, Base):
 
     def execute(self):
         """Execute plan"""
-        work_dir = self.configuration_version.extract_configuration()
+        work_dir = self.run.configuration_version.extract_configuration()
         self._pull_latest_state(work_dir)
 
-        self._status = TerraformCommandState.RUNNING
+        self.update_status(TerraformCommandState.RUNNING)
         action = None
-        if  self._run._attributes.get('refresh_only'):
+        if  self.run.refresh_only:
             action = 'refresh'
         else:
             action = 'plan'
@@ -90,9 +91,9 @@ Executed remotely on terrarun server
 
         plan_out_raw = subprocess.check_output(
             [terraform_binary, 'show', '-json', plan_out_file],
-            cwd=self._run._configuration_version._extract_dir
+            cwd=work_dir
         )
-        self._plan_output = json.loads(plan_out_raw)
+        self.plan_output = json.loads(plan_out_raw)
 
         if plan_rc:
             self.update_status(TerraformCommandState.ERRORED)
@@ -108,16 +109,42 @@ Executed remotely on terrarun server
         session.commit()
 
     @property
+    def plan_output(self):
+        """Return plan output value"""
+        if self._plan_output and self._plan_output.data:
+            return json.loads(self._plan_output.data)
+        return {}
+
+    @plan_output.setter
+    def plan_output(self, value):
+        """Set plan output"""
+        session = Database.get_session()
+
+        if self._plan_output:
+            plan_output_blob = self._plan_output
+            session.refresh(plan_output_blob)
+        else:
+            plan_output_blob = Blob()
+
+        plan_output_blob.data = value
+
+        session.add(plan_output_blob)
+        session.refresh(self)
+        self.plan_output = plan_output_blob
+        session.add(self)
+        session.commit()
+
+    @property
     def has_changes(self):
         """Return is plan has changes"""
-        if not self.plan_output.data:
+        if not self.plan_output:
             return False
         return bool(self.resource_additions or self.resource_destructions or self.resource_changes)
 
     @property
     def resource_additions(self):
         count = 0
-        for resource in self._plan_output.get('resource_changes', {}):
+        for resource in self.plan_output.get('resource_changes', {}):
             if 'create' in resource.get('change', {}).get('actions', []):
                 count += 1
         return count
@@ -125,7 +152,7 @@ Executed remotely on terrarun server
     @property
     def resource_destructions(self):
         count = 0
-        for resource in self._plan_output.get('resource_changes', {}):
+        for resource in self.plan_output.get('resource_changes', {}):
             if 'delete' in resource.get('change', {}).get('actions', []):
                 count += 1
         return count
@@ -133,7 +160,7 @@ Executed remotely on terrarun server
     @property
     def resource_changes(self):
         count = 0
-        for resource in self._plan_output.get('resource_changes', {}):
+        for resource in self.plan_output.get('resource_changes', {}):
             if 'update' in resource.get('change', {}).get('actions', []):
                 count += 1
         return count
@@ -151,7 +178,7 @@ Executed remotely on terrarun server
                 "resource-additions": self.resource_additions,
                 "resource-changes": self.resource_changes,
                 "resource-destructions": self.resource_destructions,
-                "status": self._status.value,
+                "status": self.status.value,
                 "status-timestamps": {
                     "queued-at": "2018-07-02T22:29:53+00:00",
                     "pending-at": "2018-07-02T22:29:53+00:00",
