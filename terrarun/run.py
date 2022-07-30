@@ -115,6 +115,9 @@ class Run(Base, BaseObject):
         session.commit()
         plan = terrarun.plan.Plan.create(run=run)
         terrarun.apply.Apply.create(plan=plan)
+
+        # Queue plan job
+        RunQueue.queue_run(run)
         return run
 
     def execute_next_step(self):
@@ -159,19 +162,12 @@ class Run(Base, BaseObject):
         session.add(self)
         session.commit()
 
-    def queue_job(self):
-        """Add item to queue for run"""
-        session = Database.get_session()
-        rq = RunQueue(run=self)
-        session.add(rq)
-        session.commit()
-
     def queue_apply(self, comment=None):
         """Queue apply job"""
         self.update_status(RunStatus.APPLY_QUEUED)
 
         # Requeue to be applied
-        self.queue_job()
+        RunQueue.queue_run(self)
 
         # @TODO Do something with comment
 

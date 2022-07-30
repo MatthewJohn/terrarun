@@ -17,9 +17,10 @@ class RunQueue(Base, BaseObject):
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
     run = sqlalchemy.orm.relation("Run", back_populates="run_queue")
 
-    def queue_run(self, run):
+    @classmethod
+    def queue_run(cls, run):
         """Queue a run to be executed."""
         session = Database.get_session()
-        run_queue = RunQueue(run=run)
+        run_queue = cls(run=run)
         session.add(run_queue)
         session.commit()
