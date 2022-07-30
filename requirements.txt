@@ -1,3 +1,4 @@
 Flask==2.1.1
 Flask-RESTful==0.3.9
 sqlalchemy==1.4.39
+alembic==1.8.1
