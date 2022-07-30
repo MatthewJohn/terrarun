@@ -37,7 +37,7 @@ class StateVersion(Base, BaseObject):
     @classmethod
     def create_from_state_json(cls, run, state_json):
         """Create StateVersion from state_json."""
-        sv = cls(run=run, id=id, state_json=state_json)
+        sv = cls(run=run, workspace=run.configuration_version.workspace, state_json=state_json)
         session = Database.get_session()
         session.add(sv)
         session.commit()
