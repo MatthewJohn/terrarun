@@ -64,6 +64,8 @@ class Run(Base, BaseObject):
     state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="run")
     plans = sqlalchemy.orm.relation("Plan", back_populates="run")
 
+    run_queue = sqlalchemy.orm.relation("RunQueue", back_populates="run", uselist=False)
+
     status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     message = sqlalchemy.Column(sqlalchemy.String)

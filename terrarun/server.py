@@ -361,7 +361,7 @@ class ApiTerraformOrganisationQueue(Resource):
         if not organisation:
             return {}, 404
 
-        return {"data": [run.get_api_details() for run in Run.RUNS.values()]}
+        return {"data": [run.get_api_details() for run in organisation.get_run_queue()]}
 
 
 class ApiTerraformPlans(Resource):

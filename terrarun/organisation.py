@@ -1,10 +1,14 @@
 
 import sqlalchemy
+import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
-from terrarun.workspace import Workspace
 from terrarun.database import Base, Database
 from terrarun.config import Config
+import terrarun.run
+import terrarun.run_queue
+import terrarun.configuration
+import terrarun.workspace
 
 
 class Organisation(Base, BaseObject):
@@ -34,6 +38,24 @@ class Organisation(Base, BaseObject):
         session.add(org)
         session.commit()
         return org
+
+    def get_run_queue(self):
+        """Return runs queued to be executed"""
+        session = Database.get_session()
+        run_queues = session.query(
+            terrarun.run_queue.RunQueue
+        ).join(
+            terrarun.run.Run
+        ).join(
+            terrarun.configuration.ConfigurationVersion
+        ).join(
+            terrarun.workspace.Workspace
+        ).filter(
+            terrarun.workspace.Workspace.organisation == self
+        )
+        return [
+            run_queue.run for run_queue in run_queues
+        ]
 
     def get_entitlement_set_api(self):
         """Return API response for organisation entitlement"""
