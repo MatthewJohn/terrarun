@@ -4,16 +4,20 @@ import re
 import threading
 from time import sleep
 import traceback
+
 from flask import Flask, make_response, request
+from sqlalchemy.orm import scoped_session
 import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
-from terrarun.apply import Apply
 
+from terrarun.apply import Apply
 from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
+from terrarun.database import Database
 from terrarun.organisation import Organisation
 from terrarun.plan import Plan
 from terrarun.run import Run
+from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.workspace import Workspace
@@ -29,6 +33,8 @@ class Server(object):
             static_folder='static',
             template_folder='templates'
         )
+        self._app.teardown_request(self.shutdown_session)
+
         self._api = Api(
             self._app,
         )
@@ -39,6 +45,10 @@ class Server(object):
         self.ssl_private_key = ssl_private_key
 
         self._register_routes()
+
+    def shutdown_session(self, exception=None):
+        """Tear down database session."""
+        Database.get_session().remove()
 
     def _register_routes(self):
         """Register routes with flask."""
@@ -151,10 +161,17 @@ class Server(object):
         """Run worker queue"""
         while self.queue_run:
             try:
-                job = Run.WORKER_QUEUE.get(timeout=1)
-                job()
-            except queue.Empty:
-                pass
+                session = Database.get_session()
+                rq = session.query(RunQueue).first()
+                if not rq:
+                    sleep(5)
+                    continue
+
+                run = rq.run
+                session.delete(rq)
+                session.commit()
+                print("Worker, found run: " + run.api_id)
+                run.execute_next_step()
             except Exception as exc:
                 print('Error during worker run: ' + str(exc))
                 print(traceback.format_exc())
@@ -227,7 +244,7 @@ class ApiTerraformWorkspace(Resource):
     def get(self, organisation_name, workspace_name):
         """Return workspace details."""
         organisation = Organisation.get_by_name(organisation_name)
-        workspace = organisation.get_workspace_by_name(workspace_name)
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
         return workspace.get_api_details()
 
 
@@ -239,7 +256,9 @@ class ApiTerraformWorkspaceConfigurationVersions(Resource):
         data = flask.request.get_json().get('data', {})
         attributes = data.get('attributes', {})
 
-        workspace = Workspace.get_by_id(workspace_id)
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
 
         cv = ConfigurationVersion.create(
             workspace=workspace,
@@ -254,7 +273,7 @@ class ApiTerraformConfigurationVersions(Resource):
 
     def get(self, configuration_version_id):
         """Get configuration version details."""
-        cv = ConfigurationVersion.get_by_id(id_=configuration_version_id)
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
         return cv.get_api_details()
@@ -265,7 +284,7 @@ class ApiTerraformConfigurationVersionUpload(Resource):
 
     def put(self, configuration_version_id):
         """Handle upload of configuration version data."""
-        cv = ConfigurationVersion.get_by_id(configuration_version_id)
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
 
@@ -277,7 +296,7 @@ class ApiTerraformRun(Resource):
 
     def get(self, run_id=None):
         """Return run information"""
-        run = Run.get_by_id(run_id)
+        run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
         return {"data": run.get_api_details()}
@@ -298,7 +317,7 @@ class ApiTerraformRun(Resource):
         if not workspace_id:
             return {}, 422
 
-        workspace = Workspace.get_by_id(workspace_id)
+        workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
 
@@ -307,7 +326,7 @@ class ApiTerraformRun(Resource):
         if not configuration_version_id:
             return {}, 422
 
-        cv = ConfigurationVersion.get_by_id(configuration_version_id)
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
 
@@ -334,11 +353,11 @@ class ApiTerraformWorkspaceRuns(Resource):
 
     def get(self, workspace_id):
         """Return all runs for a workspace."""
-        workspace = Workspace.get_by_id(workspace_id)
+        workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
 
-        return {"data": [run.get_api_details() for run in Run.get_runs_by_workspace(workspace)]}
+        return {"data": [run.get_api_details() for run in workspace.runs]}
 
 
 class ApiTerraformOrganisationQueue(Resource):
@@ -350,7 +369,7 @@ class ApiTerraformOrganisationQueue(Resource):
         if not organisation:
             return {}, 404
 
-        return {"data": [run.get_api_details() for run in Run.RUNS.values()]}
+        return {"data": [run.get_api_details() for run in organisation.get_run_queue()]}
 
 
 class ApiTerraformPlans(Resource):
@@ -359,7 +378,7 @@ class ApiTerraformPlans(Resource):
     def get(self, plan_id=None):
         """Return information for plan(s)"""
         if plan_id:
-            plan = Plan.get_by_id(plan_id)
+            plan = Plan.get_by_api_id(plan_id)
             if not plan:
                 return {}, 404
 
@@ -378,20 +397,25 @@ class ApiTerraformPlanLog(Resource):
         parser.add_argument('offset', type=int, location='args')
         parser.add_argument('limit', type=int, location='args')
         args = parser.parse_args()
-        plan = Plan.get_by_id(plan_id)
+        plan = Plan.get_by_api_id(plan_id)
         if not plan:
             return {}, 404
 
         plan_output = b""
+        session = Database.get_session()
         for _ in range(60):
-            plan_output = plan._output[args.offset:(args.offset+args.limit)]
-            if plan_output or plan._status not in [
+            session.refresh(plan)
+            if plan.log:
+                session.refresh(plan.log)
+                if plan.log.data:
+                    plan_output = plan.log.data[args.offset:(args.offset+args.limit)]
+            if plan_output or plan.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
                     TerraformCommandState.QUEUED,
                     TerraformCommandState.RUNNING]:
                 break
-            print('Waiting as plan state is; ' + str(plan._status))
+            print('Waiting as plan state is; ' + str(plan.status))
 
             sleep(0.5)
 
@@ -405,7 +429,7 @@ class ApiTerraformWorkspaceLatestStateVersion(Resource):
     def get(self, workspace_id):
         """Return latest state for workspace."""
 
-        state = Workspace.get_by_id(workspace_id)._latest_state
+        state = Workspace.get_by_api_id(workspace_id)._latest_state
         if state:
             return {'data': state.get_api_details()}
 
@@ -416,7 +440,7 @@ class ApiTerraformStateVersionDownload(Resource):
 
     def get(self, state_version_id):
         """Return state version json"""
-        state_version = StateVersion.get_by_id(state_version_id)
+        state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
             return {}, 404
         return state_version._state_json
@@ -427,7 +451,7 @@ class ApiTerraformApplyRun(Resource):
 
     def post(self, run_id):
         """Initialise run apply."""
-        run = Run.get_by_id(run_id)
+        run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
         run.queue_apply(comment=flask.request.get_json().get('comment', None))
@@ -442,7 +466,7 @@ class ApiTerraformApplies(Resource):
         if not apply_id:
             raise Exception('IT WAS CALLED')
 
-        apply = Apply.get_by_id(apply_id)
+        apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
         
@@ -459,20 +483,25 @@ class ApiTerraformApplyLog(Resource):
         parser.add_argument('offset', type=int, location='args')
         parser.add_argument('limit', type=int, location='args')
         args = parser.parse_args()
-        apply = Apply.get_by_id(apply_id)
+        apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
 
         output = b""
+        session = Database.get_session()
         for _ in range(60):
-            output = apply._output[args.offset:(args.offset+args.limit)]
-            if output or apply._status not in [
+            session.refresh(apply)
+            if apply.log:
+                session.refresh(apply.log)
+                if apply.log.data:
+                    output = apply.log.data[args.offset:(args.offset+args.limit)]
+            if output or apply.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
                     TerraformCommandState.QUEUED,
                     TerraformCommandState.RUNNING]:
                 break
-            print('Waiting as apply state is; ' + str(apply._status))
+            print('Waiting as apply state is; ' + str(apply.status))
 
             sleep(0.5)
 

@@ -1,41 +1,109 @@
 
+import sqlalchemy
+import sqlalchemy.orm
 
+from terrarun.base_object import BaseObject
+from terrarun.config import Config
 import terrarun.organisation
+import terrarun.run
+import terrarun.configuration
+from terrarun.database import Base, Database
 
 
-class Workspace:
+class Workspace(Base, BaseObject):
 
-    WORKSPACE = None
+    ID_PREFIX = 'ws'
+
+    __tablename__ = 'workspace'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    name = sqlalchemy.Column(sqlalchemy.String)
+    organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
+    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
+
+    state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
+    configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
+
+    _latest_state = None
+    _latest_configuration_version = None
+    _latest_run = None
 
     @classmethod
-    def get_workspace_by_organisation_and_name(cls, organisation, workspace_name):
+    def get_by_organisation_and_name(cls, organisation, workspace_name):
         """Return organisation object, if it exists within an organisation, by name."""
-        if cls.WORKSPACE is None:
-            cls.WORKSPACE = cls(terrarun.organisation.Organisation.get_by_name("org-name"), "ws-qPhan8kDLymzv2uS")
-        cls.WORKSPACE._name = workspace_name
-        return cls.WORKSPACE
+        session = Database.get_session()
+        ws = session.query(Workspace).filter(
+            Workspace.name==workspace_name,
+            Workspace.organisation==organisation
+        ).first()
 
+        if not ws and Config().AUTO_CREATE_WORKSPACES:
+            ws = Workspace.create(organisation=organisation, name=workspace_name)
+        return ws
+    
     @classmethod
-    def get_by_id(cls, workspace_id):
-        """Return workspace by ID"""
-        if cls.WORKSPACE is None:
-            cls.WORKSPACE = cls(terrarun.organisation.Organisation.get_by_name("org-name"), "ws-qPhan8kDLymzv2uS")
-        cls.WORKSPACE._id = workspace_id
-        return cls.WORKSPACE
+    def create(cls, organisation, name):
+        ws = cls(organisation=organisation, name=name)
+        session = Database.get_session()
+        session.add(ws)
+        session.commit()
+        return ws
+
+    @property
+    def runs(self):
+        """Return runs for workspace"""
+        runs = []
+        for cv in self.configuration_versions:
+            runs += cv.runs
+        return runs
 
     @property
     def auto_apply(self):
         """Whether runs are auto-apply enabled"""
         return False
 
-    def __init__(self, organisation, workspace_id):
-        """Store member variables."""
-        self._organisation = organisation
-        self._id = workspace_id
-        self._latest_state = None
-        self._latest_configuration_version = None
-        self._latest_run = None
-        self._name = 'blah'
+    @property
+    def latest_state_version(self):
+        """Return latest state version."""
+        pass
+
+    @property
+    def latest_configuration_version(self):
+        """Return latest configuration version."""
+        pass
+
+    @property
+    def latest_run(self):
+        """Return latest run."""
+        pass
+
+    @property
+    def latest_configuration_version(self):
+        """Return latest configuration version."""
+        if self.configuration_versions:
+            return self.configuration_versions[-1]
+        return None
+
+    @property
+    def latest_state(self):
+        """Return latest state version"""
+        if self.state_versions:
+            return self.state_versions[-1]
+        return None
+
+    @property
+    def latest_run(self):
+        """Return latest state version"""
+        session = Database.get_session()
+        run = session.query(
+            terrarun.run.Run
+        ).join(
+            terrarun.configuration.ConfigurationVersion
+        ).filter(
+            terrarun.configuration.ConfigurationVersion.workspace == self
+        ).order_by(
+            terrarun.run.Run.created_at.desc()
+        ).first()
+        return run
 
     def get_api_details(self):
         """Return details for workspace."""
@@ -57,7 +125,7 @@ class Workspace:
                     "global-remote-state": False,
                     "latest-change-at": "2021-06-23T17:50:48.815Z",
                     "locked": False,
-                    "name": self._name,
+                    "name": self.name,
                     "operations": True,
                     "permissions": {
                         "can-create-state-versions": True,
@@ -94,9 +162,9 @@ class Workspace:
                     "working-directory": None,
                     "workspace-kpis-runs-count": 7
                 },
-                "id": self._id,
+                "id": self.api_id,
                 "links": {
-                    "self": f"/api/v2/organizations/{self._organisation._name}/workspaces/workspace-1"
+                    "self": f"/api/v2/organizations/{self.organisation.name}/workspaces/{self.name}"
                 },
                 "relationships": {
                     "agent-pool": {
@@ -107,13 +175,13 @@ class Workspace:
                     },
                     "current-configuration-version": {
                         "data": {
-                            "id": self._latest_configuration_version._id,
+                            "id": self.latest_configuration_version.api_id,
                             "type": "configuration-versions"
                         },
                         "links": {
-                            "related": f"/api/v2/configuration-versions/{self._latest_configuration_version._id}"
+                            "related": f"/api/v2/configuration-versions/{self.latest_configuration_version.api_id}"
                         }
-                    } if self._latest_configuration_version else {},
+                    } if self.latest_configuration_version else {},
                     "current-run": {
                         "data": {
                         "id": "run-UyCw2TDCmxtfdjmy",
@@ -125,25 +193,25 @@ class Workspace:
                     },
                     "current-state-version": {
                         "data": {
-                            "id": self._latest_state._id,
+                            "id": self.latest_state.api_id,
                             "type": "state-versions"
                         },
                         "links": {
-                            "related": f"/api/v2/workspaces/{self._id}/current-state-version"
+                            "related": f"/api/v2/workspaces/{self.api_id}/current-state-version"
                         }
-                    } if self._latest_state else {},
+                    } if self.latest_state else {},
                     "latest-run": {
                         "data": {
-                            "id": self._latest_run._id,
+                            "id": self.latest_run.api_id,
                             "type": "runs"
                         },
                         "links": {
-                            "related": f"/api/v2/runs/{self._latest_run._id}"
+                            "related": f"/api/v2/runs/{self.latest_run.api_id}"
                         }
                     } if self._latest_run else {},
                     "organization": {
                         "data": {
-                            "id": "my-organization",
+                            "id": self.organisation.name,
                             "type": "organizations"
                         }
                     },

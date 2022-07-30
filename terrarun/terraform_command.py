@@ -4,6 +4,9 @@ import json
 import os
 import subprocess
 
+from terrarun.base_object import BaseObject
+from terrarun.blob import Blob
+from terrarun.database import Database
 from terrarun.state_version import StateVersion
 
 
@@ -19,59 +22,45 @@ class TerraformCommandState(Enum):
     UNREACHABLE = 'unreachable'
 
 
-class TerraformCommand:
+class TerraformCommand(BaseObject):
 
-    ID_PREFIX = 'nope'
     STATE_FILE = 'terraform.tfstate'
+    PLAN_OUTPUT_FILE = 'TFRUN_PLAN_OUT'
 
-    INSTANCES = {}
-
-    @classmethod
-    def get_by_id(cls, id_):
-        """Obtain plan instance by ID."""
-        if id_ in cls.INSTANCES:
-            return cls.INSTANCES[id_]
-        return None
-
-    @classmethod
-    def create(cls, run):
-        """Create plan and return instance."""
-        id_ = '{id_prefix}-ntv3HbhJqvFzam{id}'.format(
-            id_prefix=cls.ID_PREFIX,
-            id=str(len(cls.INSTANCES)).zfill(2))
-        run = cls(run=run, id_=id_)
-        cls.INSTANCES[id_] = run
-
-        return run
-
-    def __init__(self, run, id_):
-        """Create run"""
-        self._id = id_
-        self._run = run
-        self._output = b""
-        self._state_version = None
-        self._status = TerraformCommandState.PENDING
-        self._plan_output = {}
-
-    def _pull_latest_state(self):
+    def _pull_latest_state(self, work_dir):
         """Pull latest version of state to working copy."""
         # No latest state available for workspace
-        state_version = self._run._configuration_version._workspace._latest_state
-        if not state_version or not state_version._state_json:
+        state_version = self.run.configuration_version.workspace.latest_state
+        if not state_version or not state_version.state_json:
             return
 
-        with open(os.path.join(self._run._configuration_version._extract_dir, self.STATE_FILE), 'w') as state_fh:
-            state_fh.write(json.dumps(state_version._state_json))
+        with open(os.path.join(work_dir, self.STATE_FILE), 'w') as state_fh:
+            state_fh.write(json.dumps(state_version.state_json))
+
+    def _append_output(self, data):
+        """Append to output"""
+        session = Database.get_session()
+        session.refresh(self)
+        if self.log_id is None:
+            log = Blob(data=b"")
+            self.log = log
+            session.add(self)
+        else:
+            log = self.log
+            session.refresh(log)
+        log.data += data
+        session.add(log)
+        session.commit()
 
     def execute(self):
         raise NotImplementedError
 
-    def _run_command(self, command):
+    def _run_command(self, command, work_dir):
         command_proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            cwd=self._run._configuration_version._extract_dir)
+            cwd=work_dir)
 
         # Obtain all stdout
         print_lines = True
@@ -82,23 +71,18 @@ class TerraformCommand:
                 # saving plan to output file is displayed and
                 # display line about how to apply changes
                 if line.startswith(b'Saved the plan to: '):
-                    self._output += b'To perform exactly these actions, run the following command to apply:\n    terraform apply\n'
+                    self._append_output(b'To perform exactly these actions, run the following command to apply:\n    terraform apply\n')
                     print_lines = False
 
                 if print_lines:
-                    self._output += line
+                    self._append_output(line)
             elif command_proc.poll() is not None:
                 break
 
         return command_proc.returncode
 
-    def generate_state_version(self):
-        """Generate state version from state file."""
-        state_content = None
-        with open(os.path.join(self._run._configuration_version._extract_dir, 'terraform.tfstate'), 'r') as state_file_fh:
-            state_content = state_file_fh.readlines()
-        state_json = json.loads('\n'.join(state_content))
-        self._state_version = StateVersion.create_from_state_json(run=self._run, state_json=state_json)
-
-        # Register state with workspace
-        self._run._configuration_version._workspace._latest_state = self._state_version
+    def add_output(self, output):
+        """Record command output."""
+        with Database.get_session() as session:
+            self.output += output
+            session.commit()

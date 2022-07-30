@@ -1,71 +1,122 @@
 
 
-import json
-import subprocess
+import os
+import sqlalchemy
+import sqlalchemy.orm
+
+from terrarun.database import Base, Database
 
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
 
-class Apply(TerraformCommand):
+class Apply(TerraformCommand, Base):
 
     ID_PREFIX = 'apply'
 
+    __tablename__ = 'apply'
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+
+    plan_id = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
+    plan = sqlalchemy.orm.relationship("Plan", back_populates="applies")
+
+    state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
+    state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="apply", uselist=False)
+
+    log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
+
+    status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
+    changes = sqlalchemy.Column(sqlalchemy.String)
+
+    @classmethod
+    def create(cls, plan):
+        """Create plan and return instance."""
+        apply = cls(plan=plan, status=TerraformCommandState.PENDING)
+        session = Database.get_session()
+        session.add(apply)
+        session.commit()
+        return apply
+
+    def _pull_plan_output(self, work_dir):
+        """Create plan output file"""
+        with open(os.path.join(work_dir, self.PLAN_OUTPUT_FILE), 'wb') as plan_fh:
+            plan_fh.write(self.plan.plan_output_binary)
+
     def execute(self):
         """Execute apply"""
-        self._pull_latest_state()
+        work_dir = self.run.configuration_version.extract_configuration()
+        self._pull_latest_state(work_dir)
+        self._pull_plan_output(work_dir)
 
-        self._status = TerraformCommandState.RUNNING
+        self.update_status(TerraformCommandState.RUNNING)
         action = 'apply'
 
-        self._output += b"""
+        self._append_output(b"""
 ================================================
 Command has started
 
 Executed remotely on terrarun server
 ================================================
-"""
+""")
 
-        plan_out_file = 'TFRUN_PLAN_OUT'
-        terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
+        terraform_version = self.run.terraform_version or '1.1.7'
         terraform_binary = f'terraform-{terraform_version}'
-        command = [terraform_binary, action, '-input=false', '-auto-approve', plan_out_file]
+        command = [terraform_binary, action, '-input=false', '-auto-approve', self.PLAN_OUTPUT_FILE]
 
-        init_rc = self._run_command([terraform_binary, 'init', '-input=false'])
+        init_rc = self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir)
         if init_rc:
-            self._status = TerraformCommandState.ERRORED
+            self.update_status(TerraformCommandState.ERRORED)
             return
 
-        apply_rc = self._run_command(command)
+        apply_rc = self._run_command(command, work_dir=work_dir)
 
-        self.generate_state_version()
+        # Extract state
+        state_version = self.run.generate_state_version(work_dir=work_dir)
+        session = Database.get_session()
+        self.state_version = state_version
+        session.add(self)
+        session.commit()
 
         if apply_rc:
-            self._status = TerraformCommandState.ERRORED
+            self.update_status(TerraformCommandState.ERRORED)
+            return
         else:
-            self._status = TerraformCommandState.FINISHED
+            self.update_status(TerraformCommandState.FINISHED)
+
+    @property
+    def run(self):
+        """Get run object"""
+        return self.plan.run
 
     @property
     def state_version_relationships(self):
         """List of state version relationships"""
         relationships = []
-        if self._state_version:
+        if self.state_version:
             relationships.append({
-                "id": self._state_version._id,
+                "id": self.state_version.api_id,
                 "type": "state-versions"
             })
-        if self._run._plan._state_version:
+        if self.plan.state_version:
             relationships.append({
-                "id": self._run._plan._state_version._id,
+                "id": self.plan.state_version.api_id,
                 "type": "state-versions"
             })
 
         return relationships
 
+    def update_status(self, new_status):
+        """Update state of apply."""
+        session = Database.get_session()
+        session.refresh(self)
+        self.status = new_status
+        session.add(self)
+        session.commit()
 
     def get_api_details(self):
-        """Return API details for plan"""
+        """Return API details for apply"""
         return {
-            "id": self._id,
+            "id": self.api_id,
             "type": "applies",
             "attributes": {
                 "execution-details": {
@@ -81,7 +132,7 @@ Executed remotely on terrarun server
                     "started-at": "2018-10-17T18:58:29+00:00",
                     "finished-at": "2018-10-17T18:58:37+00:00"
                 },
-                "log-read-url": f"https://local-dev.dock.studio/api/v2/applies/{self._id}/log",
+                "log-read-url": f"https://local-dev.dock.studio/api/v2/applies/{self.api_id}/log",
                 "resource-additions": 0,
                 "resource-changes": 0,
                 "resource-destructions": 0
@@ -92,6 +143,6 @@ Executed remotely on terrarun server
                 }
             },
             "links": {
-                "self": f"/api/v2/applies/{self._id}"
+                "self": f"/api/v2/applies/{self.api_id}"
             }
         }
