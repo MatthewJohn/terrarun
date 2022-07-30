@@ -85,14 +85,3 @@ class TerraformCommand(BaseObject):
         with Database.get_session() as session:
             self.output += output
             session.commit()
-
-    def generate_state_version(self):
-        """Generate state version from state file."""
-        state_content = None
-        with open(os.path.join(self._run._configuration_version._extract_dir, 'terraform.tfstate'), 'r') as state_file_fh:
-            state_content = state_file_fh.readlines()
-        state_json = json.loads('\n'.join(state_content))
-        self._state_version = StateVersion.create_from_state_json(run=self._run, state_json=state_json)
-
-        # Register state with workspace
-        self.run.configuration_version.workspace.latest_state = self._state_version

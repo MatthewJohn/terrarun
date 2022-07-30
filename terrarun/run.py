@@ -1,6 +1,7 @@
 
 from enum import Enum
 import json
+import os
 import queue
 
 import sqlalchemy
@@ -10,6 +11,7 @@ import sqlalchemy.sql
 from terrarun.database import Base, Database
 import terrarun.plan
 import terrarun.apply
+import terrarun.state_version
 from terrarun.run_queue import RunQueue
 import terrarun.terraform_command
 from terrarun.base_object import BaseObject
@@ -149,6 +151,16 @@ class Run(Base, BaseObject):
                 return
             else:
                 self.update_status(RunStatus.APPLIED)
+
+    def generate_state_version(self, work_dir):
+        """Generate state version from state file."""
+        state_content = None
+        with open(os.path.join(work_dir, 'terraform.tfstate'), 'r') as state_file_fh:
+            state_content = state_file_fh.readlines()
+        state_json = json.loads('\n'.join(state_content))
+        state_version = terrarun.state_version.StateVersion.create_from_state_json(run=self, state_json=state_json)
+
+        return state_version
 
     def update_status(self, new_status):
         """Update state of run."""

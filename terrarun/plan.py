@@ -85,7 +85,11 @@ Executed remotely on terrarun server
                 return
 
             # Extract state
-            self.generate_state_version()
+            state_version = self.run.generate_state_version(work_dir=work_dir)
+            session = Database.get_session()
+            self.state_version = state_version
+            session.add(self)
+            session.commit()
 
         plan_rc = self._run_command(command)
 

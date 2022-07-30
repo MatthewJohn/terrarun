@@ -64,7 +64,12 @@ Executed remotely on terrarun server
 
         apply_rc = self._run_command(command, work_dir=work_dir)
 
-        self.generate_state_version()
+        # Extract state
+        state_version = self.plan.run.generate_state_version(work_dir=work_dir)
+        session = Database.get_session()
+        self.state_version = state_version
+        session.add(self)
+        session.commit()
 
         if apply_rc:
             self.update_status(TerraformCommandState.ERRORED)
