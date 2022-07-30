@@ -15,6 +15,7 @@ Under no circumstances should this project be used _ANYWHERE_ outside of develop
     virtualenv -p python3 venv
     . venv/bin/activate
     pip install -r requirements.txt
+    alembic upgrade head
 
 ## Usage
 
