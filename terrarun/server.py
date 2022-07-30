@@ -402,9 +402,13 @@ class ApiTerraformPlanLog(Resource):
             return {}, 404
 
         plan_output = b""
+        session = Database.get_session()
         for _ in range(60):
-            if plan.log and plan.log.data:
-                plan_output = plan.log.data[args.offset:(args.offset+args.limit)]
+            session.refresh(plan)
+            if plan.log:
+                session.refresh(plan.log)
+                if plan.log.data:
+                    plan_output = plan.log.data[args.offset:(args.offset+args.limit)]
             if plan_output or plan.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
