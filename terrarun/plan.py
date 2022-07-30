@@ -134,7 +134,7 @@ Executed remotely on terrarun server
 
         session.add(plan_output_blob)
         session.refresh(self)
-        self.plan_output = plan_output_blob
+        self._plan_output = plan_output_blob
         session.add(self)
         session.commit()
 
