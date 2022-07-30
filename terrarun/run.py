@@ -119,25 +119,25 @@ class Run(Base, BaseObject):
         # Handle plan job
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
-            self._plan.execute()
-            if self._plan._status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            self.plan.execute()
+            if self.plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
                 self.update_status(RunStatus.PLANNED)
 
-            if self._attributes.get('plan_only') or self._configuration_version.speculative:
+            if self.plan_only or self.configuration_version.speculative:
                 self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
 
-            if self._attributes.get('auto_apply'):
+            if self.auto_apply:
                 self.queue_apply()
 
         # Handle apply job
         elif self.status is RunStatus.APPLY_QUEUED:
             self.update_status(RunStatus.APPLYING)
-            self._apply.execute()
-            if self._apply._status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            self.plan.apply.execute()
+            if self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
