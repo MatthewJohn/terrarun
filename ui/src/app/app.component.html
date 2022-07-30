@@ -1,8 +1,13 @@
 <nb-layout>
 
   <nb-layout-header fixed>
-      <h2>Terrarun</h2>
+    <nb-icon (click)="toggleSidebar()" class="sidebar-toggle" icon="menu-2-outline"></nb-icon>
+    <h2>Terrarun</h2>
   </nb-layout-header>
+
+  <nb-sidebar class="menu-sidebar" responsive start>
+    <nb-menu [items]="items"></nb-menu>
+  </nb-sidebar>
 
   <nb-layout-column>
     <router-outlet></router-outlet>
