@@ -21,6 +21,10 @@ export class AppComponent {
     {
       title: 'Home',
       link: '/'
+    },
+    {
+      title: 'Settings',
+      link: '/settings'
     }
    ];
 }
