@@ -168,7 +168,7 @@ Executed remotely on terrarun server
     def get_api_details(self):
         """Return API details for plan"""
         return {
-            "id": self._id,
+            "id": self.api_id,
             "type": "plans",
             "attributes": {
                 "execution-details": {
@@ -188,10 +188,10 @@ Executed remotely on terrarun server
                 "log-read-url": f"https://local-dev.dock.studio/api/v2/plans/{self._id}/log"
             },
             "relationships": {
-                "state-versions": {'data': {'id': self._state_version._id, 'type': 'state-versions'}} if self._state_version else {}
+                "state-versions": {'data': {'id': self.state_version.api_id, 'type': 'state-versions'}} if self.state_version else {}
             },
             "links": {
-                "self": f"/api/v2/plans/{self._id}",
-                "json-output": f"/api/v2/plans/{self._id}/json-output"
+                "self": f"/api/v2/plans/{self.api_id}",
+                "json-output": f"/api/v2/plans/{self.api_id}/json-output"
             }
         }
