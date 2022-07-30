@@ -4,6 +4,7 @@ try:
 except ImportError:
     from threading import get_ident as _ident_func
 
+# from threading import get_ident as _ident_func
 import sqlalchemy
 import sqlalchemy.orm
 

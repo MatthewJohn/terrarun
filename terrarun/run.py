@@ -122,11 +122,6 @@ class Run(Base, BaseObject):
 
     def execute_next_step(self):
         """Execute terraform command"""
-        # Remove from run queue
-        session = Database.get_session()
-        session.delete(self.run_queue)
-        session.commit()
-
         # Handle plan job
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)

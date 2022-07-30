@@ -161,7 +161,14 @@ class Server(object):
         """Run worker queue"""
         while self.queue_run:
             try:
-                run = RunQueue.query.first()
+                session = Database.get_session()
+                rq = session.query(RunQueue).first()
+                if not rq:
+                    continue
+
+                run = rq.run
+                session.delete(rq)
+                session.commit()
                 if run:
                     run.execute_next_step()
                 else:
