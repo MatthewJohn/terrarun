@@ -89,7 +89,10 @@ class ConfigurationVersion(Base, BaseObject):
         # Create blob for configuration version
         session = Database.get_session()
         blob = Blob(data=data)
+        session.refresh(self)
         session.add(blob)
+        self.configuration_blob = blob
+        session.add(self)
         session.commit()
 
         self.update_status(ConfigurationVersionStatus.UPLOADED)
