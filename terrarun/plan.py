@@ -41,6 +41,13 @@ class Plan(TerraformCommand, Base):
         session.commit()
         return plan
 
+    @property
+    def apply(self):
+        """Get latest apply"""
+        if self.applies:
+            return self.applies[-1]
+        return None
+
     def execute(self):
         """Execute plan"""
         work_dir = self.configuration_version.extract_configuration()

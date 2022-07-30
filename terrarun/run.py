@@ -91,40 +91,54 @@ class Run(Base, BaseObject):
     def execute_next_step(self):
         """Execute terraform command"""
         # Handle plan job
-        if self._status is RunStatus.PLAN_QUEUED:
-            self._status = RunStatus.PLANNING
+        if self.status is RunStatus.PLAN_QUEUED:
+            self.update_status(RunStatus.PLANNING)
             self._plan.execute()
             if self._plan._status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-                self._status = RunStatus.ERRORED
+                self.update_status(RunStatus.ERRORED)
                 return
             else:
-                self._status = RunStatus.PLANNED
+                self.update_status(RunStatus.PLANNED)
 
             if self._attributes.get('plan_only') or self._configuration_version.speculative:
-                self._status = RunStatus.PLANNED_AND_FINISHED
+                self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
 
             if self._attributes.get('auto_apply'):
                 self.queue_apply()
 
         # Handle apply job
-        elif self._status is RunStatus.APPLY_QUEUED:
-            self._status = RunStatus.APPLYING
+        elif self.status is RunStatus.APPLY_QUEUED:
+            self.update_status(RunStatus.APPLYING)
             self._apply.execute()
             if self._apply._status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-                self._status = RunStatus.ERRORED
+                self.update_status(RunStatus.ERRORED)
                 return
             else:
-                self._status = RunStatus.APPLIED
+                self.update_status(RunStatus.APPLIED)
+
+    def update_status(self, new_status):
+        """Update state of run."""
+        session = Database.get_session()
+        session.refresh(self)
+        self.status = new_status
+        session.add(self)
+        session.commit()
 
     def queue_apply(self, comment=None):
         """Queue apply job"""
-        self._status = RunStatus.APPLY_QUEUED
+        self.update_status(RunStatus.APPLY_QUEUED)
 
         # Requeue to be applied
         self.__class__.WORKER_QUEUE.put(self.execute_next_step)
 
         # @TODO Do something with comment
+
+    def plan(self):
+        """Get latest plan"""
+        if self.applies:
+            return self.applies[-1]
+        return None
 
     def get_api_details(self):
         """Return API details."""
@@ -140,19 +154,19 @@ class Run(Base, BaseObject):
                 },
                 "canceled-at": None,
                 "created-at": "2021-05-24T07:38:04.171Z",
-                "has-changes": self._plan.has_changes if self._plan else False,
-                "auto-apply": self._attributes.get('auto_apply'),
+                "has-changes": self.plan.has_changes if self.plan else False,
+                "auto-apply": self.auto_apply,
                 "allow-empty-apply": False,
-                "is-destroy": self._attributes.get('is_destroy'),
-                "message": self._attributes.get('message'),
-                "plan-only": self._attributes.get('plan_only'),
+                "is-destroy": self.is_destroy,
+                "message": self.message,
+                "plan-only": self.plan_only,
                 "source": "tfe-api",
                 "status-timestamps": {
                     "plan-queueable-at": "2021-05-24T07:38:04+00:00"
                 },
-                "status": self._status.value,
+                "status": self.status.value,
                 "trigger-reason": "manual",
-                "target-addrs": self._attributes.get('target_addrs'),
+                "target-addrs": self.target_addrs,
                 "permissions": {
                     "can-apply": True,
                     "can-cancel": True,
@@ -162,27 +176,27 @@ class Run(Base, BaseObject):
                     "can-force-cancel": True,
                     "can-override-policy-check": True
                 },
-                "refresh": self._attributes.get('refresh', False),
-                "refresh-only": self._attributes.get('refresh_only', False),
-                "replace-addrs": self._attributes.get('replace_addrs'),
+                "refresh": self.refresh,
+                "refresh-only": self.refresh_only,
+                "replace-addrs": self.replace_addrs,
                 "variables": []
             },
             "relationships": {
-                "apply": {'data': {'id': self._apply._id, 'type': 'applies'}} if self._apply is not None else {},
+                "apply": {'data': {'id': self.plan.apply.api_id, 'type': 'applies'}} if self.plan is not None and self.plan.apply is not None else {},
                 "comments": {},
                 "configuration-version": {
-                    'data': {'id': self._configuration_version._id, 'type': 'configuration-versions'}
+                    'data': {'id': self.configuration_version.api_id, 'type': 'configuration-versions'}
                 },
                 "cost-estimate": {},
                 "created-by": {},
                 "input-state-version": {},
-                "plan": {'data': {'id': self._plan._id, 'type': 'plans'}} if self._plan is not None else {},
+                "plan": {'data': {'id': self.plan.api_id, 'type': 'plans'}} if self.plan is not None else {},
                 "run-events": {},
                 "policy-checks": {},
-                "workspace": {'data': {'id': self._configuration_version._workspace._id, 'type': 'workspaces'}},
+                "workspace": {'data': {'id': self.configuration_version.workspace.api_id, 'type': 'workspaces'}},
                 "workspace-run-alerts": {}
             },
             "links": {
-                "self": f"/api/v2/runs/{self._id}"
+                "self": f"/api/v2/runs/{self.api_id}"
             }
         }
