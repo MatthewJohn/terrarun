@@ -91,7 +91,7 @@ Executed remotely on terrarun server
             session.add(self)
             session.commit()
 
-        plan_rc = self._run_command(command)
+        plan_rc = self._run_command(command, work_dir=work_dir)
 
         plan_out_raw = subprocess.check_output(
             [terraform_binary, 'show', '-json', plan_out_file],
