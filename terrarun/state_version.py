@@ -84,7 +84,7 @@ class StateVersion(Base, BaseObject):
     def get_api_details(self):
         """Return API details."""
         return {
-            "id": self._id,
+            "id": self.api_id,
             "type": "state-versions",
             "attributes": {
                 "created-at": "2021-06-08T01:22:03.794Z",
