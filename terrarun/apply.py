@@ -105,7 +105,7 @@ Executed remotely on terrarun server
     def get_api_details(self):
         """Return API details for apply"""
         return {
-            "id": self._id,
+            "id": self.api_id,
             "type": "applies",
             "attributes": {
                 "execution-details": {
@@ -121,7 +121,7 @@ Executed remotely on terrarun server
                     "started-at": "2018-10-17T18:58:29+00:00",
                     "finished-at": "2018-10-17T18:58:37+00:00"
                 },
-                "log-read-url": f"https://local-dev.dock.studio/api/v2/applies/{self._id}/log",
+                "log-read-url": f"https://local-dev.dock.studio/api/v2/applies/{self.api_id}/log",
                 "resource-additions": 0,
                 "resource-changes": 0,
                 "resource-destructions": 0
@@ -132,6 +132,6 @@ Executed remotely on terrarun server
                 }
             },
             "links": {
-                "self": f"/api/v2/applies/{self._id}"
+                "self": f"/api/v2/applies/{self.api_id}"
             }
         }
