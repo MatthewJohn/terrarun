@@ -57,12 +57,12 @@ Executed remotely on terrarun server
         terraform_binary = f'terraform-{terraform_version}'
         command = [terraform_binary, action, '-input=false', '-auto-approve', plan_out_file]
 
-        init_rc = self._run_command([terraform_binary, 'init', '-input=false'])
+        init_rc = self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir)
         if init_rc:
             self.update_status(TerraformCommandState.ERRORED)
             return
 
-        apply_rc = self._run_command(command)
+        apply_rc = self._run_command(command, work_dir=work_dir)
 
         self.generate_state_version()
 

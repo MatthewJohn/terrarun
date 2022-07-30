@@ -54,12 +54,12 @@ class TerraformCommand(BaseObject):
     def execute(self):
         raise NotImplementedError
 
-    def _run_command(self, command):
+    def _run_command(self, command, work_dir):
         command_proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            cwd=self.run.configuration_version._extract_dir)
+            cwd=work_dir)
 
         # Obtain all stdout
         print_lines = True
