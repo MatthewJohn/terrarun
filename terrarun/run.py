@@ -117,12 +117,13 @@ class Run(Base, BaseObject):
         terrarun.apply.Apply.create(plan=plan)
 
         # Queue plan job
-        RunQueue.queue_run(run)
+        run.queue_plan()
         return run
 
     def execute_next_step(self):
         """Execute terraform command"""
         # Handle plan job
+        print("Job Status: " + str(self.status))
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
             self.plan.execute()
@@ -151,20 +152,35 @@ class Run(Base, BaseObject):
 
     def update_status(self, new_status):
         """Update state of run."""
+        print(f"Updating job status to from {str(self.status)} to {str(new_status)}")
         session = Database.get_session()
         session.refresh(self)
         self.status = new_status
         session.add(self)
         session.commit()
 
+    def queue_plan(self):
+        """Queue for plan"""
+        self.update_status(RunStatus.PLAN_QUEUED)
+
+        # Requeue to be applied
+        self.add_to_queue_table()
+
     def queue_apply(self, comment=None):
         """Queue apply job"""
         self.update_status(RunStatus.APPLY_QUEUED)
 
         # Requeue to be applied
-        RunQueue.queue_run(self)
+        self.add_to_queue_table()
 
         # @TODO Do something with comment
+
+    def add_to_queue_table(self):
+        """Queue a run to be executed."""
+        session = Database.get_session()
+        run_queue = RunQueue(run=self)
+        session.add(run_queue)
+        session.commit()
 
     @property
     def plan(self):

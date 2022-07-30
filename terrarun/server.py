@@ -164,15 +164,14 @@ class Server(object):
                 session = Database.get_session()
                 rq = session.query(RunQueue).first()
                 if not rq:
+                    sleep(5)
                     continue
 
                 run = rq.run
                 session.delete(rq)
                 session.commit()
-                if run:
-                    run.execute_next_step()
-                else:
-                    sleep(5)
+                print("Worker, found run: " + run.api_id)
+                run.execute_next_step()
             except Exception as exc:
                 print('Error during worker run: ' + str(exc))
                 print(traceback.format_exc())
