@@ -38,7 +38,7 @@ class Apply(TerraformCommand, Base):
 
     def execute(self):
         """Execute apply"""
-        work_dir = self.configuration_version.extract_configuration()
+        work_dir = self.plan.run.configuration_version.extract_configuration()
         self._pull_latest_state(work_dir)
 
         self.update_status(TerraformCommandState.RUNNING)
