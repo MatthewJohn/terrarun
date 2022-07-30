@@ -185,7 +185,7 @@ Executed remotely on terrarun server
                     "started-at": "2018-07-02T22:29:54+00:00",
                     "finished-at": "2018-07-02T22:29:58+00:00"
                 },
-                "log-read-url": f"https://local-dev.dock.studio/api/v2/plans/{self._id}/log"
+                "log-read-url": f"https://local-dev.dock.studio/api/v2/plans/{self.api_id}/log"
             },
             "relationships": {
                 "state-versions": {'data': {'id': self.state_version.api_id, 'type': 'state-versions'}} if self.state_version else {}
