@@ -130,7 +130,7 @@ Executed remotely on terrarun server
         else:
             plan_output_blob = Blob()
 
-        plan_output_blob.data = value
+        plan_output_blob.data = json.dumps(value)
 
         session.add(plan_output_blob)
         session.refresh(self)
