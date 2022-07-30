@@ -7,6 +7,12 @@ const routes: Routes = [
     path: 'home',
     component: HomeComponent
   },
+  // Redirect app/* URLs to root
+  {
+    path: 'app',
+    redirectTo: '/',
+    pathMatch: 'prefix'
+  },
   {path: '', redirectTo: 'home', pathMatch: 'full'},
   {path: '**', redirectTo: 'home'},
 ];
