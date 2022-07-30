@@ -106,6 +106,7 @@ Executed remotely on terrarun server
 
     def update_status(self, new_status):
         """Update state of plan."""
+        print(f"Updating plan status to from {str(self.status)} to {str(new_status)}")
         session = Database.get_session()
         session.refresh(self)
         self.status = new_status
