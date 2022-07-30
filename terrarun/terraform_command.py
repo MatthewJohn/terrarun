@@ -25,6 +25,7 @@ class TerraformCommandState(Enum):
 class TerraformCommand(BaseObject):
 
     STATE_FILE = 'terraform.tfstate'
+    PLAN_OUTPUT_FILE = 'TFRUN_PLAN_OUT'
 
     def _pull_latest_state(self, work_dir):
         """Pull latest version of state to working copy."""

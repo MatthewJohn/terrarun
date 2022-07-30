@@ -71,10 +71,9 @@ Executed remotely on terrarun server
 ================================================
 """)
 
-        plan_out_file = 'TFRUN_PLAN_OUT'
         terraform_version = self.run.terraform_version or '1.1.7'
         terraform_binary = f'terraform-{terraform_version}'
-        command = [terraform_binary, action, '-input=false', f'-out={plan_out_file}']
+        command = [terraform_binary, action, '-input=false', f'-out={self.PLAN_OUTPUT_FILE}']
 
         init_rc = self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir)
         if init_rc:
@@ -96,11 +95,11 @@ Executed remotely on terrarun server
 
         plan_rc = self._run_command(command, work_dir=work_dir)
 
-        with open(os.path.join(work_dir, plan_out_file), 'rb') as plan_out_file_fh:
+        with open(os.path.join(work_dir, self.PLAN_OUTPUT_FILE), 'rb') as plan_out_file_fh:
             self.plan_output_binary = plan_out_file_fh.read()
 
         plan_out_raw = subprocess.check_output(
-            [terraform_binary, 'show', '-json', plan_out_file],
+            [terraform_binary, 'show', '-json', self.PLAN_OUTPUT_FILE],
             cwd=work_dir
         )
         self.plan_output = json.loads(plan_out_raw)

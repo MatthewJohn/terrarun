@@ -39,7 +39,7 @@ class Apply(TerraformCommand, Base):
 
     def _pull_plan_output(self, work_dir):
         """Create plan output file"""
-        with open(os.path.join(work_dir, 'TFRUN_PLAN_OUT'), 'wb') as plan_fh:
+        with open(os.path.join(work_dir, self.PLAN_OUTPUT_FILE), 'wb') as plan_fh:
             plan_fh.write(self.plan.plan_output_binary)
 
     def execute(self):
@@ -59,10 +59,9 @@ Executed remotely on terrarun server
 ================================================
 """)
 
-        plan_out_file = 'TFRUN_PLAN_OUT'
         terraform_version = self.run.terraform_version or '1.1.7'
         terraform_binary = f'terraform-{terraform_version}'
-        command = [terraform_binary, action, '-input=false', '-auto-approve', plan_out_file]
+        command = [terraform_binary, action, '-input=false', '-auto-approve', self.PLAN_OUTPUT_FILE]
 
         init_rc = self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir)
         if init_rc:
