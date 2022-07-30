@@ -349,7 +349,7 @@ class ApiTerraformWorkspaceRuns(Resource):
         if not workspace:
             return {}, 404
 
-        return {"data": [run.get_api_details() for run in Run.get_runs_by_workspace(workspace)]}
+        return {"data": [run.get_api_details() for run in workspace.runs]}
 
 
 class ApiTerraformOrganisationQueue(Resource):

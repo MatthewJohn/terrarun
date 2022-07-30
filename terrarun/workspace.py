@@ -5,6 +5,8 @@ import sqlalchemy.orm
 from terrarun.base_object import BaseObject
 from terrarun.config import Config
 import terrarun.organisation
+import terrarun.run
+import terrarun.configuration
 from terrarun.database import Base, Database
 
 
@@ -47,6 +49,14 @@ class Workspace(Base, BaseObject):
         return ws
 
     @property
+    def runs(self):
+        """Return runs for workspace"""
+        runs = []
+        for cv in self.configuration_versions:
+            runs += cv.runs
+        return runs
+
+    @property
     def auto_apply(self):
         """Whether runs are auto-apply enabled"""
         return False
@@ -65,6 +75,35 @@ class Workspace(Base, BaseObject):
     def latest_run(self):
         """Return latest run."""
         pass
+
+    @property
+    def latest_configuration_version(self):
+        """Return latest configuration version."""
+        if self.configuration_versions:
+            return self.configuration_versions[-1]
+        return None
+
+    @property
+    def latest_state(self):
+        """Return latest state version"""
+        if self.state_versions:
+            return self.state_versions[-1]
+        return None
+
+    @property
+    def latest_run(self):
+        """Return latest state version"""
+        session = Database.get_session()
+        run = session.query(
+            terrarun.run.Run
+        ).join(
+            terrarun.configuration.ConfigurationVersion
+        ).filter(
+            terrarun.configuration.ConfigurationVersion.workspace == self
+        ).order_by(
+            terrarun.run.Run.created_at.desc()
+        ).first()
+        return run
 
     def get_api_details(self):
         """Return details for workspace."""
@@ -136,13 +175,13 @@ class Workspace(Base, BaseObject):
                     },
                     "current-configuration-version": {
                         "data": {
-                            "id": self._latest_configuration_version._id,
+                            "id": self.latest_configuration_version.api_id,
                             "type": "configuration-versions"
                         },
                         "links": {
-                            "related": f"/api/v2/configuration-versions/{self._latest_configuration_version._id}"
+                            "related": f"/api/v2/configuration-versions/{self.latest_configuration_version.api_id}"
                         }
-                    } if self._latest_configuration_version else {},
+                    } if self.latest_configuration_version else {},
                     "current-run": {
                         "data": {
                         "id": "run-UyCw2TDCmxtfdjmy",
@@ -154,20 +193,20 @@ class Workspace(Base, BaseObject):
                     },
                     "current-state-version": {
                         "data": {
-                            "id": self._latest_state._id,
+                            "id": self.latest_state.api_id,
                             "type": "state-versions"
                         },
                         "links": {
-                            "related": f"/api/v2/workspaces/{self._id}/current-state-version"
+                            "related": f"/api/v2/workspaces/{self.api_id}/current-state-version"
                         }
-                    } if self._latest_state else {},
+                    } if self.latest_state else {},
                     "latest-run": {
                         "data": {
-                            "id": self._latest_run._id,
+                            "id": self.latest_run.api_id,
                             "type": "runs"
                         },
                         "links": {
-                            "related": f"/api/v2/runs/{self._latest_run._id}"
+                            "related": f"/api/v2/runs/{self.latest_run.api_id}"
                         }
                     } if self._latest_run else {},
                     "organization": {

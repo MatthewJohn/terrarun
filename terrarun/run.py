@@ -5,6 +5,7 @@ import queue
 
 import sqlalchemy
 import sqlalchemy.orm
+import sqlalchemy.sql
 
 from terrarun.database import Base, Database
 import terrarun.plan
@@ -75,6 +76,7 @@ class Run(Base, BaseObject):
     _variables = sqlalchemy.Column("variables", sqlalchemy.String)
     terraform_version = sqlalchemy.Column(sqlalchemy.String)
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     @property
     def replace_addrs(self):
