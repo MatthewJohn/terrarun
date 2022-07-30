@@ -160,16 +160,17 @@ class Run(Base, BaseObject):
 
         # @TODO Do something with comment
 
+    @property
     def plan(self):
         """Get latest plan"""
-        if self.applies:
-            return self.applies[-1]
+        if self.plans:
+            return self.plans[-1]
         return None
 
     def get_api_details(self):
         """Return API details."""
         return {
-            "id": self._id,
+            "id": self.api_id,
             "type": "runs",
             "attributes": {
                 "actions": {
