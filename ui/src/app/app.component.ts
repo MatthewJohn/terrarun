@@ -21,6 +21,10 @@ export class AppComponent {
     {
       title: 'Home',
       link: '/'
+    },
+    {
+      title: 'Account',
+      link: '/account'
     }
    ];
 }
