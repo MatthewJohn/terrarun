@@ -5,6 +5,7 @@ import os
 import subprocess
 
 from terrarun.base_object import BaseObject
+from terrarun.blob import Blob
 from terrarun.database import Database
 from terrarun.state_version import StateVersion
 
@@ -39,8 +40,13 @@ class TerraformCommand(BaseObject):
         """Append to output"""
         session = Database.get_session()
         session.refresh(self)
-        log = self.log
-        session.refresh(log)
+        if self.log_id is None:
+            log = Blob(data=b"")
+            self.log = log
+            session.add(self)
+        else:
+            log = self.log
+            session.refresh(log)
         log.data += data
         session.add(log)
         session.commit()
