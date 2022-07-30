@@ -38,13 +38,13 @@ class Apply(TerraformCommand, Base):
 
     def execute(self):
         """Execute apply"""
-        work_dir = self.plan.run.configuration_version.extract_configuration()
+        work_dir = self.run.configuration_version.extract_configuration()
         self._pull_latest_state(work_dir)
 
         self.update_status(TerraformCommandState.RUNNING)
         action = 'apply'
 
-        self._update_output(b"""
+        self._append_output(b"""
 ================================================
 Command has started
 
@@ -65,7 +65,7 @@ Executed remotely on terrarun server
         apply_rc = self._run_command(command, work_dir=work_dir)
 
         # Extract state
-        state_version = self.plan.run.generate_state_version(work_dir=work_dir)
+        state_version = self.run.generate_state_version(work_dir=work_dir)
         session = Database.get_session()
         self.state_version = state_version
         session.add(self)
@@ -76,6 +76,11 @@ Executed remotely on terrarun server
             return
         else:
             self.update_status(TerraformCommandState.FINISHED)
+
+    @property
+    def run(self):
+        """Get run object"""
+        return self.plan.run
 
     @property
     def state_version_relationships(self):
