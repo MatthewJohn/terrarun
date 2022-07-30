@@ -403,7 +403,6 @@ class ApiTerraformPlanLog(Resource):
 
         plan_output = b""
         for _ in range(60):
-            plan_output = None
             if plan.log and plan.log.data:
                 plan_output = plan.log.data[args.offset:(args.offset+args.limit)]
             if plan_output or plan.status not in [
@@ -486,14 +485,15 @@ class ApiTerraformApplyLog(Resource):
 
         output = b""
         for _ in range(60):
-            output = apply._output[args.offset:(args.offset+args.limit)]
-            if output or apply._status not in [
+            if apply.log and apply.log.data:
+                output = apply.log.data[args.offset:(args.offset+args.limit)]
+            if output or apply.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
                     TerraformCommandState.QUEUED,
                     TerraformCommandState.RUNNING]:
                 break
-            print('Waiting as apply state is; ' + str(apply._status))
+            print('Waiting as apply state is; ' + str(apply.status))
 
             sleep(0.5)
 
