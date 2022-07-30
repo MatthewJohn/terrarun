@@ -403,14 +403,16 @@ class ApiTerraformPlanLog(Resource):
 
         plan_output = b""
         for _ in range(60):
-            plan_output = plan._output[args.offset:(args.offset+args.limit)]
-            if plan_output or plan._status not in [
+            plan_output = None
+            if plan.log and plan.log.data:
+                plan_output = plan.log.data[args.offset:(args.offset+args.limit)]
+            if plan_output or plan.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
                     TerraformCommandState.QUEUED,
                     TerraformCommandState.RUNNING]:
                 break
-            print('Waiting as plan state is; ' + str(plan._status))
+            print('Waiting as plan state is; ' + str(plan.status))
 
             sleep(0.5)
 
