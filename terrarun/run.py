@@ -5,7 +5,7 @@ import queue
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base
+from terrarun.database import Base, Database
 import terrarun.plan
 import terrarun.apply
 import terrarun.terraform_command
@@ -78,47 +78,15 @@ class Run(Base, BaseObject):
     @classmethod
     def create(cls, configuration_version, **attributes):
         """Create run and return instance."""
-        id_ = 'run-ntv3HbhJqvFzam{id}'.format(id=str(len(cls.RUNS)).zfill(2))
-        run = cls(configuration_version=configuration_version, id_=id_, **attributes)
-        cls.RUNS[id_] = run
-        if configuration_version._workspace._id not in cls.RUNS_BY_WORKSPACE:
-            cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id] = []
-        cls.RUNS_BY_WORKSPACE[configuration_version._workspace._id].append(run)
-        configuration_version._workspace._latest_run = run
+        session = Database.get_session()
+        run = Run(
+            configuration_version=configuration_version,
+            status=RunStatus.PENDING,
+            **attributes)
+        session.add(run)
+        plan = terrarun.plan.Plan.create(run=run)
+        terrarun.apply.Apply.create(plan=plan)
         return run
-
-    @classmethod
-    def get_runs_by_workspace(cls, workspace):
-        """Return all runs for a given workspace"""
-        return cls.RUNS_BY_WORKSPACE.get(workspace._id, [])
-
-    def __init__(self, configuration_version, id_, **attributes):
-        """Store member variables"""
-        self._id = id_
-        self._plan = None
-        self._configuration_version = configuration_version
-        self._attributes = {
-            'auto_apply': False,
-            'message': '',
-            'plan_only': False,
-            'refresh': True,
-            'refresh_only': False,
-            'is_destroy': False,
-            'replace_addrs': None,
-            'target_addrs': None,
-            'variables': [],
-            'terraform_version': None,
-            'allow_empty_apply': None
-        }
-        self._attributes.update(attributes)
-        self._status = RunStatus.PENDING
-
-        self._apply = None
-        self._plan = terrarun.plan.Plan.create(self)
-        self._apply = terrarun.apply.Apply.create(self)
-        self._status = RunStatus.PLAN_QUEUED
-        self.__class__.WORKER_QUEUE.put(self.execute_next_step)
-        self._plan._status = terrarun.terraform_command.TerraformCommandState.PENDING
 
     def execute_next_step(self):
         """Execute terraform command"""

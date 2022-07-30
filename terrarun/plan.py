@@ -32,6 +32,15 @@ class Plan(TerraformCommand, Base):
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
+    @classmethod
+    def create(cls, run):
+        """Create plan and return instance."""
+        plan = cls(run=run, status=TerraformCommandState.PENDING)
+        session = Database.get_session()
+        session.add(plan)
+        session.commit()
+        return plan
+
     def execute(self):
         """Execute plan"""
         work_dir = self.configuration_version.extract_configuration()
@@ -58,13 +67,13 @@ Executed remotely on terrarun server
 
         init_rc = self._run_command([terraform_binary, 'init', '-input=false'])
         if init_rc:
-            self.update_state(TerraformCommandState.ERRORED)
+            self.update_status(TerraformCommandState.ERRORED)
             return
 
         if self.run.refresh:
             refresh_rc = self._run_command([terraform_binary, 'refresh', '-input=false'])
             if refresh_rc:
-                self.update_state(TerraformCommandState.ERRORED)
+                self.update_status(TerraformCommandState.ERRORED)
                 return
 
             # Extract state
@@ -79,16 +88,16 @@ Executed remotely on terrarun server
         self._plan_output = json.loads(plan_out_raw)
 
         if plan_rc:
-            self.update_state(TerraformCommandState.ERRORED)
+            self.update_status(TerraformCommandState.ERRORED)
         else:
-            self.update_state(TerraformCommandState.FINISHED)
+            self.update_status(TerraformCommandState.FINISHED)
 
-    def update_state(self, new_state):
+    def update_status(self, new_status):
         """Update state of plan."""
         session = Database.get_session()
         session.refresh(self)
-        self.state = new_state
-        session.update(self)
+        self.status = new_status
+        session.add(self)
         session.commit()
 
     @property

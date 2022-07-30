@@ -25,15 +25,6 @@ class TerraformCommand(BaseObject):
 
     STATE_FILE = 'terraform.tfstate'
 
-    @classmethod
-    def create(cls, run):
-        """Create plan and return instance."""
-        run = cls(run=run, status=TerraformCommandState.PENDING)
-        with Database.get_session() as session:
-            session.add(run)
-            session.commit()
-        return run
-
     def _pull_latest_state(self, work_dir):
         """Pull latest version of state to working copy."""
         # No latest state available for workspace
@@ -51,7 +42,7 @@ class TerraformCommand(BaseObject):
         log = self.log
         session.refresh(log)
         log.data += data
-        session.update(log)
+        session.add(log)
         session.commit()
 
     def execute(self):

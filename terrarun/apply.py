@@ -3,7 +3,7 @@
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base
+from terrarun.database import Base, Database
 
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
@@ -27,29 +27,39 @@ class Apply(TerraformCommand, Base):
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     changes = sqlalchemy.Column(sqlalchemy.String)
 
+    @classmethod
+    def create(cls, plan):
+        """Create plan and return instance."""
+        apply = cls(plan=plan, status=TerraformCommandState.PENDING)
+        session = Database.get_session()
+        session.add(apply)
+        session.commit()
+        return apply
+
     def execute(self):
         """Execute apply"""
-        self._pull_latest_state()
+        work_dir = self.configuration_version.extract_configuration()
+        self._pull_latest_state(work_dir)
 
-        self._status = TerraformCommandState.RUNNING
+        self.update_status(TerraformCommandState.RUNNING)
         action = 'apply'
 
-        self._output += b"""
+        self._update_output(b"""
 ================================================
 Command has started
 
 Executed remotely on terrarun server
 ================================================
-"""
+""")
 
         plan_out_file = 'TFRUN_PLAN_OUT'
-        terraform_version = self._run._attributes.get('terraform_version') or '1.1.7'
+        terraform_version = self.run.terraform_version or '1.1.7'
         terraform_binary = f'terraform-{terraform_version}'
         command = [terraform_binary, action, '-input=false', '-auto-approve', plan_out_file]
 
         init_rc = self._run_command([terraform_binary, 'init', '-input=false'])
         if init_rc:
-            self._status = TerraformCommandState.ERRORED
+            self.update_status(TerraformCommandState.ERRORED)
             return
 
         apply_rc = self._run_command(command)
@@ -57,30 +67,38 @@ Executed remotely on terrarun server
         self.generate_state_version()
 
         if apply_rc:
-            self._status = TerraformCommandState.ERRORED
+            self.update_status(TerraformCommandState.ERRORED)
+            return
         else:
-            self._status = TerraformCommandState.FINISHED
+            self.update_status(TerraformCommandState.FINISHED)
 
     @property
     def state_version_relationships(self):
         """List of state version relationships"""
         relationships = []
-        if self._state_version:
+        if self.state_version:
             relationships.append({
-                "id": self._state_version._id,
+                "id": self.state_version.api_id,
                 "type": "state-versions"
             })
-        if self._run._plan._state_version:
+        if self.plan.state_version:
             relationships.append({
-                "id": self._run._plan._state_version._id,
+                "id": self.plan.state_version.api_id,
                 "type": "state-versions"
             })
 
         return relationships
 
+    def update_status(self, new_status):
+        """Update state of apply."""
+        session = Database.get_session()
+        session.refresh(self)
+        self.status = new_status
+        session.add(self)
+        session.commit()
 
     def get_api_details(self):
-        """Return API details for plan"""
+        """Return API details for apply"""
         return {
             "id": self._id,
             "type": "applies",

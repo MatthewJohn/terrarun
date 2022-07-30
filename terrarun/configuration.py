@@ -69,9 +69,17 @@ class ConfigurationVersion(Base, BaseObject):
         super(ConfigurationVersion, self).__init__(*args, **kwargs)
         self._extract_dir = None
 
+    def update_status(self, new_status):
+        """Update state of configuration version."""
+        session = Database.get_session()
+        session.refresh(self)
+        self.status = new_status
+        session.add(self)
+        session.commit()
+
     def queue(self):
         """Queue."""
-        self._status = ConfigurationVersionStatus.FETCHING
+        self.update_status(ConfigurationVersionStatus.FETCHING)
 
     def process_upload(self, data):
         """Handle upload of archive."""
@@ -84,7 +92,7 @@ class ConfigurationVersion(Base, BaseObject):
         session.add(blob)
         session.commit()
 
-        self.update_state(ConfigurationVersionStatus.UPLOADED)
+        self.update_status(ConfigurationVersionStatus.UPLOADED)
 
     def extract_configuration(self):
         if not self.configuration_blob:
