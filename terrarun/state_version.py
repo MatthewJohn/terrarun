@@ -1,4 +1,5 @@
 
+import json
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -23,7 +24,15 @@ class StateVersion(Base, BaseObject):
     apply = sqlalchemy.orm.relation("Apply", back_populates="state_version")
     plan = sqlalchemy.orm.relation("Plan", back_populates="state_version")
 
-    state_json = sqlalchemy.Column(sqlalchemy.String)
+    _state_json = sqlalchemy.Column("state_version", sqlalchemy.String)
+
+    @property
+    def state_json(self):
+        return json.loads(self._state_json)
+
+    @state_json.setter
+    def state_json(self, value):
+        self._state_json = json.dumps(value)
 
     @classmethod
     def create_from_state_json(cls, run, state_json):
