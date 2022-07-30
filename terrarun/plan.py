@@ -1,6 +1,7 @@
 
 
 import json
+import os
 import subprocess
 
 import sqlalchemy
@@ -30,6 +31,8 @@ class Plan(TerraformCommand, Base):
 
     plan_output_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     _plan_output = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_id])
+    plan_output_binary_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    _plan_output_binary = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_binary_id])
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
@@ -93,6 +96,9 @@ Executed remotely on terrarun server
 
         plan_rc = self._run_command(command, work_dir=work_dir)
 
+        with open(os.path.join(work_dir, plan_out_file), 'rb') as plan_out_file_fh:
+            self.plan_output_binary = plan_out_file_fh.read()
+
         plan_out_raw = subprocess.check_output(
             [terraform_binary, 'show', '-json', plan_out_file],
             cwd=work_dir
@@ -136,6 +142,32 @@ Executed remotely on terrarun server
         session.add(plan_output_blob)
         session.refresh(self)
         self._plan_output = plan_output_blob
+        session.add(self)
+        session.commit()
+
+    @property
+    def plan_output_binary(self):
+        """Return plan output value"""
+        if self._plan_output_binary and self._plan_output_binary.data:
+            return self._plan_output_binary.data
+        return {}
+
+    @plan_output_binary.setter
+    def plan_output_binary(self, value):
+        """Set plan output"""
+        session = Database.get_session()
+
+        if self._plan_output_binary:
+            plan_output_binary_blob = self._plan_output_binary
+            session.refresh(plan_output_binary_blob)
+        else:
+            plan_output_binary_blob = Blob()
+
+        plan_output_binary_blob.data = value
+
+        session.add(plan_output_binary_blob)
+        session.refresh(self)
+        self._plan_output_binary = plan_output_binary_blob
         session.add(self)
         session.commit()
 

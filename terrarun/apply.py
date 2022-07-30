@@ -1,5 +1,6 @@
 
 
+import os
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -36,10 +37,16 @@ class Apply(TerraformCommand, Base):
         session.commit()
         return apply
 
+    def _pull_plan_output(self, work_dir):
+        """Create plan output file"""
+        with open(os.path.join(work_dir, 'TFRUN_PLAN_OUT'), 'wb') as plan_fh:
+            plan_fh.write(self.plan.plan_output_binary)
+
     def execute(self):
         """Execute apply"""
         work_dir = self.run.configuration_version.extract_configuration()
         self._pull_latest_state(work_dir)
+        self._pull_plan_output(work_dir)
 
         self.update_status(TerraformCommandState.RUNNING)
         action = 'apply'
