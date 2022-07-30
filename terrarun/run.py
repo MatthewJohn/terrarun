@@ -1,5 +1,6 @@
 
 from enum import Enum
+import json
 import queue
 
 import sqlalchemy
@@ -69,11 +70,35 @@ class Run(Base, BaseObject):
     refresh = sqlalchemy.Column(sqlalchemy.Boolean)
     refresh_only = sqlalchemy.Column(sqlalchemy.Boolean)
     is_destroy = sqlalchemy.Column(sqlalchemy.Boolean)
-    replace_addrs = sqlalchemy.Column(sqlalchemy.String)
-    target_addrs = sqlalchemy.Column(sqlalchemy.String)
-    variables = sqlalchemy.Column(sqlalchemy.String)
+    _replace_addrs = sqlalchemy.Column("replace_addrs", sqlalchemy.String)
+    _target_addrs = sqlalchemy.Column("target_addrs", sqlalchemy.String)
+    _variables = sqlalchemy.Column("variables", sqlalchemy.String)
     terraform_version = sqlalchemy.Column(sqlalchemy.String)
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
+
+    @property
+    def replace_addrs(self):
+        return json.loads(self._replace_addrs)
+
+    @replace_addrs.setter
+    def replace_addrs(self, value):
+        self._replace_addrs = json.dumps(value)
+
+    @property
+    def target_addrs(self):
+        return json.loads(self._target_addrs)
+
+    @target_addrs.setter
+    def target_addrs(self, value):
+        self._target_addrs = json.dumps(value)
+
+    @property
+    def variables(self):
+        return json.loads(self._variables)
+
+    @variables.setter
+    def variables(self, value):
+        self._variables = json.dumps(value)
 
     @classmethod
     def create(cls, configuration_version, **attributes):
