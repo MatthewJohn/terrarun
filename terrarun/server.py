@@ -135,6 +135,10 @@ class Server(object):
             ApiTerraformApplyLog,
             '/api/v2/applies/<string:apply_id>/log'
         )
+        self._api.add_resource(
+            ApiTerraformUserTokens,
+            '/api/v2/users/<string:user_id>/authentication-tokens'
+        )
 
         # Custom endpoints
         self._api.add_resource(
@@ -195,6 +199,22 @@ class ApiAuthenticate(Resource):
 
         token = UserToken.create(user=user, type=UserTokenType.UI)
         return {"data": token.get_creation_api_details()}
+
+
+class ApiTerraformUserTokens(Resource):
+    """Get user tokens for user"""
+
+    def get(self, user_id):
+        """Return tokens for user"""
+        user = User.get_by_api_id(user_id)
+        if not user_id:
+            return {}, 404
+        return {
+            "data": [
+                user_token.get_api_details()
+                for user_token in user.user_tokens
+            ]
+        }
 
 
 class ApiTerraformWellKnown(Resource):

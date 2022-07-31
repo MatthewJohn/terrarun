@@ -18,7 +18,9 @@ export class TokensComponent implements OnInit {
 
   ngOnInit(): void {
     this.accountService.getAccountDetails().then((accountDetails) => {
-      this.tokens = this.userService.getUserTokens(accountDetails.id)
+      this.userService.getUserTokens(accountDetails.id).then((tokens) => {
+        this.tokens = tokens;
+      });
     });
   }
 }

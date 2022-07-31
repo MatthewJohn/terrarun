@@ -3,11 +3,15 @@
 
 <table>
     <thead>
-        <th>Token</th>
+        <th>Description</th>
+        <th>Created</th>
+        <th>Last used</th>
     </thead>
     <tbody>
         <tr *ngFor="let token of tokens">
-            <td>{{ token.token }}</td>
+            <td>{{ token.attributes.description }}</td>
+            <td>{{ token.attributes['created-at'] }}</td>
+            <td>{{ token.attributes['last-used-at'] }}</td>
         </tr>
     </tbody>
 </table>

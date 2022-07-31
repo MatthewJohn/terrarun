@@ -9,13 +9,15 @@ export class UserService {
   constructor(private http: HttpClient) {
   }
 
-  getUserTokens(userId: string): any {
-    this.http.get<any>(
-      `https://${window.location.host}:5001/api/v2/users/${userId}/authentication-tokens`,
-      { observe: 'response' }
-    )
-    .subscribe(response => {
-      return response.body.data;
+  getUserTokens(userId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `https://${window.location.hostname}:5000/api/v2/users/${userId}/authentication-tokens`
+      )
+      .subscribe({
+        next: data => resolve(data.data),
+        error: () => reject()
+      });
     });
   }
 }

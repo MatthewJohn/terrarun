@@ -17,7 +17,6 @@ export class AccountService {
       // If already determined if user is logged
       // in, return this status
       if (this.loggedIn !== null) {
-        console.log('Returning cached value')
         resolve(this.loggedIn);
       }
       // Otherwise, obtain account details
@@ -59,13 +58,12 @@ export class AccountService {
       )
       .subscribe({
         next: response => {
-          console.log('Logged in true');
           this.loggedIn = true;
           resolve(response);
         },
         error: () => {
           this.loggedIn = false;
-          reject()
+          reject();
         }
       });
     });
