@@ -57,9 +57,9 @@ class TeamWorkspaceAccess(Base, BaseObject):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     team_id = sqlalchemy.Column(sqlalchemy.ForeignKey("team.id"), primary_key=True)
+    team = sqlalchemy.orm.relationship("Team", back_populates="workspace_accesses")
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), primary_key=True)
-    team = sqlalchemy.orm.relationship("Team", back_populates="workspaces")
-    workspace = sqlalchemy.orm.relationship("Workspace", back_populates="teams")
+    workspace = sqlalchemy.orm.relationship("Workspace", back_populates="team_accesses")
 
     access_type = sqlalchemy.Column(sqlalchemy.Enum(TeamWorkspaceAccessType))
     permission_runs = sqlalchemy.Column(sqlalchemy.Enum(TeamWorkspaceRunsPermission))

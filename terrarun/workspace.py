@@ -23,6 +23,8 @@ class Workspace(Base, BaseObject):
     state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
     configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
 
+    team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
+
     _latest_state = None
     _latest_configuration_version = None
     _latest_run = None
