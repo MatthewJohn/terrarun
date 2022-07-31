@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { AppRedirectComponent } from './app-redirect/app-redirect.component';
 import { HomeComponent } from './home/home.component';
 import { LoggedInGuard } from './logged-in.guard';
 import { LoginComponent } from './login/login.component';
@@ -23,8 +24,12 @@ const routes: Routes = [
   // Redirect app/* URLs to root
   {
     path: 'app',
-    redirectTo: '/',
-    pathMatch: 'prefix'
+    children: [
+      {
+        path: '**',
+        component: AppRedirectComponent
+      }
+    ]
   },
   {
     // Redirect empty URL to home

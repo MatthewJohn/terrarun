@@ -6,16 +6,11 @@ import { TokensComponent } from './tokens/tokens.component';
 const routes: Routes = [
   {
     path: '',
-    children: [
-      {
-        path: '',
-        component: SettingsComponent
-      },
-      {
-        path: 'tokens',
-        component: TokensComponent
-      }
-    ]
+    component: SettingsComponent
+  },
+  {
+    path: 'tokens',
+    component: TokensComponent
   }
 ];
 

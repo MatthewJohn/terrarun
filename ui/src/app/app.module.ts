@@ -11,12 +11,14 @@ import { SettingsModule } from './settings/settings.module';
 import { HttpClientModule } from '@angular/common/http';
 import { LoginComponent } from './login/login.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { AppRedirectComponent } from './app-redirect/app-redirect.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
-    LoginComponent
+    LoginComponent,
+    AppRedirectComponent
   ],
   imports: [
     BrowserModule,
