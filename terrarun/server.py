@@ -20,7 +20,9 @@ from terrarun.run import Run
 from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
 from terrarun.terraform_command import TerraformCommandState
+from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
+from terrarun.user import User
 
 
 class Server(object):
@@ -133,6 +135,12 @@ class Server(object):
             '/api/v2/applies/<string:apply_id>/log'
         )
 
+        # Custom endpoints
+        self._api.add_resource(
+            ApiAuthenticate,
+            '/api/terrarun/v1/authenticate'
+        )
+
         # Views
         self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
 
@@ -176,6 +184,23 @@ class Server(object):
                 print('Error during worker run: ' + str(exc))
                 print(traceback.format_exc())
 
+
+class ApiAuthenticate(Resource):
+    """Interface to authenticate user"""
+
+    def post(self):
+        """Authenticate user"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('username', type=str, location='json')
+        parser.add_argument('password', type=str, location='json')
+        args = parser.parse_args()
+        user = User.get_by_username(args.username)
+
+        if not user or not user.check_password(args.password):
+            return {}, 403
+
+        token = UserToken.create(user=user, type=UserTokenType.UI)
+        return token.get_creation_api_details()
 
 class ApiTerraformWellKnown(Resource):
 

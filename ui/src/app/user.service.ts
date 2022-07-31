@@ -5,20 +5,17 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class UserService {
-  authTokens: any[] = [];
-  userId: string;
 
-  constructor(userId: string, private http: HttpClient) {
-    this.userId = userId;
+  constructor(private http: HttpClient) {
   }
 
-  getUserTokens(): any {
+  getUserTokens(userId: string): any {
     this.http.get<any>(
-      `https://${window.location.host}:5001/api/v2/users/${this.userId}/authentication-tokens`,
+      `https://${window.location.host}:5001/api/v2/users/${userId}/authentication-tokens`,
       { observe: 'response' }
     )
     .subscribe(response => {
-      this.authTokens = response.body.data;
+      return response.body.data;
     });
   }
 }
