@@ -1,21 +1,27 @@
 <h3>Login</h3>
 
-<form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
 
-  <div>
-    <label for="username">
-      Username
-    </label>
-    <input id="username" type="text" formControlName="username">
-  </div>
+<nb-card>
+  <nb-card-body class="example-items-rows">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
 
-  <div>
-    <label for="password">
-      Password
-    </label>
-    <input id="password" type="password" formControlName="password">
-  </div>
+      <nb-form-field>
+        <label for="username">
+          Username
+        </label>
+        <input nbInput id="username" type="text" formControlName="username">
+      </nb-form-field>
 
-  <button class="button" type="submit">Login</button>
+      <nb-form-field>
+        <label for="password">
+          Password
+        </label>
+        <input nbInput id="password" type="password" formControlName="password">
+      </nb-form-field>
 
-</form>
+      <button nbButton type="submit">Login</button>
+
+    </form>
+  </nb-card-body>
+</nb-card>
+
