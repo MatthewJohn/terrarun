@@ -11,7 +11,6 @@ import flask
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 
 from terrarun.apply import Apply
-from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.organisation import Organisation
@@ -134,10 +133,6 @@ class Server(object):
             ApiTerraformApplyLog,
             '/api/v2/applies/<string:apply_id>/log'
         )
-        self._api.add_resource(
-            ApiAccountDetails,
-            '/api/v2/account/details'
-        )
 
         # Custom endpoints
         self._api.add_resource(
@@ -231,19 +226,14 @@ class ApiTerraformPing(Resource):
         return response
 
 
-class ApiAccountDetails(Resource):
+class ApiTerraformAccountDetails(Resource):
     """Interface to obtain current account"""
 
     def get(self):
         """Get current account details"""
-        auth_header = request.headers.get('Authorization', None)
-        if not auth_header:
-            return {}, 403
-        auth_header_split = auth_header.split()
-        if len(auth_header_split) != 2:
-            return {}, 403
-        token = auth_header_split[1]
-        user_token = UserToken.get_by_token(token)
+        authorization_header = request.headers.get('Authorization', '')
+        auth_token = re.sub(r'^Bearer ', '', authorization_header)
+        user_token = UserToken.get_by_token(auth_token)
         if not user_token:
             return {}, 403
         return user_token.user.get_api_details()
@@ -257,24 +247,6 @@ class ApiTerraformMotd(Resource):
         return {
             'msg': 'This is a test Terrarun server\nNo functionality yet.'
         }
-
-
-class ApiTerraformAccountDetails(Resource):
-    """Provide interface to return account details"""
-
-    def get(self):
-        """Check account and return details, if available."""
-        user_account = None
-
-        authorization_header = request.headers.get('Authorization', None)
-        if authorization_header:
-            auth_token = re.sub(r'^Bearer ', '', authorization_header)
-            user_account = Auth().get_user_account_by_auth_token(auth_token)
-
-        if user_account is not None:
-            return user_account.get_account_api_data()
-        else:
-            return {}, 403
 
 
 class ApiTerraformOrganisationEntitlementSet(Resource):
