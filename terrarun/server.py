@@ -24,6 +24,9 @@ from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
 from terrarun.user import User
+from terrarun.team_workspace_access import TeamWorkspaceAccess
+from terrarun.team_user_membership import TeamUserMembership
+from terrarun.team import Team
 
 
 class Server(object):
