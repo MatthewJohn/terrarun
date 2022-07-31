@@ -16,3 +16,22 @@
     </tbody>
 </table>
 
+
+<h3>Create token</h3>
+
+<form [formGroup]="createTokenForm" (ngSubmit)="onCreateTokenFormSubmit()">
+
+  <div>
+    <label for="newTokenDescription">
+      Description
+    </label>
+    <input id="newTokenDescription" type="text" formControlName="description">
+  </div>
+
+  <button class="button" type="submit">Login</button>
+
+  <span *ngIf="createdToken">
+      Created token: {{createdToken.attributes.token}}
+  </span>
+
+</form>

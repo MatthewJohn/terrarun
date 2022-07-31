@@ -215,6 +215,24 @@ class ApiTerraformUserTokens(Resource):
                 for user_token in user.user_tokens
             ]
         }
+    
+    def post(self, user_id):
+        """Create token"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('description', type=str, location='json')
+        args = parser.parse_args()
+
+        user = User.get_by_api_id(user_id)
+        if not user_id:
+            return {}, 404
+
+        user_token = UserToken.create(
+            user=user, type=UserTokenType.USER_GENERATED,
+            description=args.description
+        )
+        return {
+            "data": user_token.get_creation_api_details()
+        }
 
 
 class ApiTerraformWellKnown(Resource):

@@ -49,12 +49,22 @@ export class AccountService {
     });
   }
 
+  getAuthHeader(): {Authorization: string} | {} {
+    let authToken = localStorage.getItem('authToken');
+    if (authToken) {
+      return {
+        Authorization: `Bearer ${authToken}`
+      };
+    }
+    return {};
+  }
+
   getAccountDetails(): Promise<any> {
     // @TODO: Cache these results
     return new Promise((resolve, reject) => {
       this.http.get<any>(
         `https://${window.location.hostname}:5000/api/v2/account/details`,
-        { headers: {Authorization: `Bearer ${localStorage.getItem('authToken')}`} }
+        { headers: this.getAuthHeader() }
       )
       .subscribe({
         next: response => {

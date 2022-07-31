@@ -32,6 +32,7 @@ class UserToken(Base, BaseObject):
     last_used = sqlalchemy.Column(sqlalchemy.DateTime)
     expiry = sqlalchemy.Column(sqlalchemy.DateTime)
     token = sqlalchemy.Column(sqlalchemy.String)
+    description = sqlalchemy.Column(sqlalchemy.String, default=None)
 
     user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=False)
     user = sqlalchemy.orm.relation("User", back_populates="user_tokens")
@@ -45,7 +46,7 @@ class UserToken(Base, BaseObject):
         )
 
     @classmethod
-    def create(cls, user, type):
+    def create(cls, user, type, description=None):
         """Create API token"""
         # Generate expiry date
         expiry = None
@@ -53,7 +54,11 @@ class UserToken(Base, BaseObject):
             expiry = datetime.datetime.now() + datetime.timedelta(minutes=Config().SESSION_EXPIRY_MINS)
 
         # Create token object
-        token = cls(user=user, type=type, expiry=expiry, token=cls.generate_token())
+        token = cls(
+            user=user, type=type,
+            expiry=expiry, token=cls.generate_token(),
+            description=description
+        )
 
         # Commit to database
         session = Database.get_session()
@@ -81,7 +86,7 @@ class UserToken(Base, BaseObject):
             "attributes": {
                 "created-at": self.created_at,
                 "last-used-at": self.last_used,
-                "description": "api",
+                "description": self.description,
                 "token": None
             },
             "relationships": {
