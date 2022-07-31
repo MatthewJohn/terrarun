@@ -28,10 +28,10 @@
     <input id="newTokenDescription" type="text" formControlName="description">
   </div>
 
-  <button class="button" type="submit">Login</button>
-
-  <span *ngIf="createdToken">
-      Created token: {{createdToken.attributes.token}}
-  </span>
+  <button class="button" type="submit">Create</button>
 
 </form>
+
+<span *ngIf="createdToken">
+    Created token: <pre><code>{{createdToken.attributes.token}}</code></pre>
+</span>
