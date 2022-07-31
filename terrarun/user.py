@@ -7,7 +7,6 @@ import bcrypt
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
-from terrarun.team_user_membership import TEAM_USER_MEMBERSHIP_TABLE
 
 
 class User(Base, BaseObject):
@@ -26,7 +25,7 @@ class User(Base, BaseObject):
 
     user_tokens = sqlalchemy.orm.relation("UserToken", back_populates="user")
 
-    teams = sqlalchemy.orm.relationship("Team", secondary=TEAM_USER_MEMBERSHIP_TABLE, backref="users")
+    teams = sqlalchemy.orm.relationship("TeamUserMembership", back_populates="user")
 
     def __init__(self, *args, **kwargs):
         """Setup salt"""

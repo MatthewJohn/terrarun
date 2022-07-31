@@ -9,7 +9,6 @@ import terrarun.organisation
 import terrarun.run
 import terrarun.configuration
 from terrarun.database import Base, Database
-from terrarun.team_user_membership import TEAM_USER_MEMBERSHIP_TABLE
 
 
 class TeamVisibility(Enum):
@@ -30,4 +29,4 @@ class Team(Base, BaseObject):
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
 
-    users = sqlalchemy.orm.relationship("User", secondary=TEAM_USER_MEMBERSHIP_TABLE, backref="teams")
+    users = sqlalchemy.orm.relationship("TeamUserMembership", back_populates="team")
