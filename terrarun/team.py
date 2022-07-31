@@ -27,7 +27,7 @@ class Team(Base, BaseObject):
     name = sqlalchemy.Column(sqlalchemy.String)
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
-    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
+    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="teams")
 
     sso_team_id = sqlalchemy.Column(sqlalchemy.String, default=None)
     visibility = sqlalchemy.Column(sqlalchemy.Enum(TeamVisibility))

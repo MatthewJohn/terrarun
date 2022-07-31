@@ -73,6 +73,8 @@ class Organisation(Base, BaseObject):
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="organisation")
 
+    teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
+
     @classmethod
     def get_by_name(cls, organisation_name):
         """Return organisation object by name of organisation"""
