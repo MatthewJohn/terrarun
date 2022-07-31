@@ -20,11 +20,17 @@ export class AppComponent {
   items: NbMenuItem[] = [
     {
       title: 'Home',
-      link: '/'
+      link: '/home'
     },
     {
       title: 'Settings',
-      link: '/settings'
+      link: '/settings',
+      children: [
+        {
+          title: 'User Tokens',
+          link: '/settings/tokens'
+        }
+      ]
     }
    ];
 }
