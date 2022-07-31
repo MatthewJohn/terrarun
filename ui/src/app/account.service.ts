@@ -1,6 +1,5 @@
-import { HttpClient, HttpRequest, HttpResponse } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -13,19 +12,22 @@ export class AccountService {
   constructor(private http: HttpClient) {
   }
 
-  isLoggedIn(): boolean {
-    // If already determined if user is logged
-    // in, return this status
-    if (this.loggedIn !== null) {
-      return this.loggedIn;
-    }
-    // Otherwise, obtain account details
-    // and return logged in status afterwards
-    this.getAccountDetails().then(() => {
-      return this.loggedIn;
+  isLoggedIn(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      // If already determined if user is logged
+      // in, return this status
+      if (this.loggedIn !== null) {
+        console.log('Returning cached value')
+        resolve(this.loggedIn);
+      }
+      // Otherwise, obtain account details
+      // and return logged in status afterwards
+      this.getAccountDetails().then(() => {
+        resolve(this.loggedIn === null ? false : true);
+      }).catch(() => {
+        resolve(false);
+      });
     });
-    // Fallback to false
-    return false;
   }
 
   login(username: string, password: string): Promise<string> {
@@ -33,12 +35,18 @@ export class AccountService {
       this.http.post<any>(
         `https://${window.location.hostname}:5000/api/terrarun/v1/authenticate`,
         { 'username': username, 'password': password },
-      ).pipe(
-        tap({
-          next: (data) => resolve(data.data.attributes.token),
-          error: (error) => reject()
-        })
-      );
+        { observe: 'response' }
+      ).subscribe({
+        next: (response) => {
+          if (response.status == 200) {
+            resolve(response.body.data.attributes.token);
+          }
+          reject();
+        },
+        error: () => {
+          reject();
+        }
+      });
     });
   }
 
@@ -47,15 +55,17 @@ export class AccountService {
     return new Promise((resolve, reject) => {
       this.http.get<any>(
         `https://${window.location.hostname}:5000/api/v2/account/details`,
-        { observe: 'response' }
+        { headers: {Authorization: `Bearer ${localStorage.getItem('authToken')}`} }
       )
-      .subscribe(response => {
-        if (response.status == 403) {
-          this.loggedIn = false;
-          reject();
-        } else {
+      .subscribe({
+        next: response => {
+          console.log('Logged in true');
           this.loggedIn = true;
-          resolve(response.body.data);
+          resolve(response);
+        },
+        error: () => {
+          this.loggedIn = false;
+          reject()
         }
       });
     });
