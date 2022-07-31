@@ -118,7 +118,8 @@ class User(Base, BaseObject):
                 "permissions": {
                     "can-create-organizations": True,
                     "can-change-email": True,
-                    "can-change-username": True
+                    "can-change-username": True,
+                    "can-manage-user-tokens": False
                 }
             },
             "relationships": {
@@ -175,7 +176,8 @@ class User(Base, BaseObject):
                 "permissions": {
                     "can-create-organizations": True,
                     "can-change-email": True,
-                    "can-change-username": True
+                    "can-change-username": True,
+                    "can-manage-user-tokens": True
                 }
             },
             "relationships": {
