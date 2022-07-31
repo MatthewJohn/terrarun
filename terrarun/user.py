@@ -115,6 +115,12 @@ class User(Base, BaseObject):
                 "is-sso-login": False,
                 "email": self.email,
                 "unconfirmed-email": None,
+                "password": None,
+                "enterprise-support": False,
+                "two-factor": {
+                    "enabled": False,
+                    "verified": False
+                },
                 "permissions": {
                     "can-create-organizations": True,
                     "can-change-email": True,
