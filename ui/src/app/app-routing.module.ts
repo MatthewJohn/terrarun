@@ -1,15 +1,23 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
+import { LoggedInGuard } from './logged-in.guard';
+import { LoginComponent } from './login/login.component';
 
 const routes: Routes = [
   {
     path: 'home',
-    component: HomeComponent
+    component: HomeComponent,
+    canActivate: [LoggedInGuard]
   },
   {
     path: 'settings',
-    loadChildren: () => import(`./settings/settings.module`).then(m => m.SettingsModule)
+    loadChildren: () => import(`./settings/settings.module`).then(m => m.SettingsModule),
+    canActivate: [LoggedInGuard]
+  },
+  {
+    path: 'login',
+    component: LoginComponent
   },
 
   // Redirect app/* URLs to root
@@ -18,7 +26,10 @@ const routes: Routes = [
     redirectTo: '/',
     pathMatch: 'prefix'
   },
-  { path: '', redirectTo: 'home', pathMatch: 'full' }
+  {
+    // Redirect empty URL to home
+    path: '', redirectTo: 'home', pathMatch: 'full'
+  }
 ];
 
 @NgModule({

@@ -8,6 +8,7 @@ import traceback
 from flask import Flask, make_response, request
 from sqlalchemy.orm import scoped_session
 import flask
+from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 
 from terrarun.apply import Apply
@@ -34,6 +35,7 @@ class Server(object):
             static_folder='static',
             template_folder='templates'
         )
+        self._cors = CORS(self._app)
         self._app.teardown_request(self.shutdown_session)
 
         self._api = Api(
@@ -140,13 +142,6 @@ class Server(object):
             '/api/terrarun/v1/authenticate'
         )
 
-        # Views
-        self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
-
-    def _view_serve_settings_tokens(self):
-        """Return authentication tokens"""
-        return Auth().get_auth_token()
-
     def run(self, debug=None):
         """Run flask server."""
         kwargs = {
@@ -199,7 +194,7 @@ class ApiAuthenticate(Resource):
             return {}, 403
 
         token = UserToken.create(user=user, type=UserTokenType.UI)
-        return token.get_creation_api_details()
+        return {"data": token.get_creation_api_details()}
 
 
 class ApiTerraformWellKnown(Resource):
