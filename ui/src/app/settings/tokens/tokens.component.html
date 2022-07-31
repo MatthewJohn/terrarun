@@ -17,21 +17,26 @@
 </table>
 
 
-<h3>Create token</h3>
+<nb-card>
+    <nb-card-body class="example-items-rows">
 
-<form [formGroup]="createTokenForm" (ngSubmit)="onCreateTokenFormSubmit()">
+        <h3>Create token</h3>
 
-  <div>
-    <label for="newTokenDescription">
-      Description
-    </label>
-    <input id="newTokenDescription" type="text" formControlName="description">
-  </div>
+        <form [formGroup]="createTokenForm" (ngSubmit)="onCreateTokenFormSubmit()">
+        
+            <nb-form-field>
+                <label for="newTokenDescription">
+                    Description
+                </label>
+                <input nbInput id="newTokenDescription" type="text" formControlName="description">
+            </nb-form-field>
+          <button nbButton type="submit">Create</button>
+        
+        </form>
 
-  <button class="button" type="submit">Create</button>
-
-</form>
-
-<span *ngIf="createdToken">
-    Created token: <pre><code>{{createdToken.attributes.token}}</code></pre>
-</span>
+        <span *ngIf="createdToken">
+            Created token: <pre><code>{{createdToken.attributes.token}}</code></pre>
+        </span>
+    </nb-card-body>
+</nb-card>
+  
