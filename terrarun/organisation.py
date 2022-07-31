@@ -1,5 +1,6 @@
 
 from enum import Enum
+import re
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -27,7 +28,7 @@ class Organisation(Base, BaseObject):
     # User-chosen name of org
     name = sqlalchemy.Column(sqlalchemy.String)
     # Name used for URLs and API references
-    name_id = sqlalchemy.Column(sqlalchemy.String)
+    name_id = sqlalchemy.Column(sqlalchemy.String, unique=True)
     # Admin email address
     email = sqlalchemy.Column(sqlalchemy.String, nullable=True)
 
@@ -84,7 +85,9 @@ class Organisation(Base, BaseObject):
     
     @classmethod
     def create(cls, name):
-        org = cls(name=name)
+        re.sub(r'[^0-9^a-z^A-Z]')
+        name_id = name.replace(' ', '-').replace('').lower()
+        org = cls(name=name, name_id=name_id)
         session = Database.get_session()
         session.add(org)
         session.commit()
