@@ -134,6 +134,10 @@ class Server(object):
             ApiTerraformApplyLog,
             '/api/v2/applies/<string:apply_id>/log'
         )
+        self._api.add_resource(
+            ApiAccountDetails,
+            '/api/v2/account/details'
+        )
 
         # Custom endpoints
         self._api.add_resource(
@@ -202,6 +206,7 @@ class ApiAuthenticate(Resource):
         token = UserToken.create(user=user, type=UserTokenType.UI)
         return token.get_creation_api_details()
 
+
 class ApiTerraformWellKnown(Resource):
 
     def get(self):
@@ -224,6 +229,24 @@ class ApiTerraformPing(Resource):
         response = make_response({}, 204)
         response.headers['Content-Type'] = 'application/vnd.api+json'
         return response
+
+
+class ApiAccountDetails(Resource):
+    """Interface to obtain current account"""
+
+    def get(self):
+        """Get current account details"""
+        auth_header = request.headers.get('Authorization', None)
+        if not auth_header:
+            return {}, 403
+        auth_header_split = auth_header.split()
+        if len(auth_header_split) != 2:
+            return {}, 403
+        token = auth_header_split[1]
+        user_token = UserToken.get_by_token(token)
+        if not user_token:
+            return {}, 403
+        return user_token.user.get_api_details()
 
 
 class ApiTerraformMotd(Resource):

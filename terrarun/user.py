@@ -17,13 +17,13 @@ class User(Base, BaseObject):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     username = sqlalchemy.Column(sqlalchemy.String, unique=True)
-    salt = sqlalchemy.Column(sqlalchemy.String)
-    _password = sqlalchemy.Column("password", sqlalchemy.String)
+    salt = sqlalchemy.Column(sqlalchemy.BLOB)
+    _password = sqlalchemy.Column("password", sqlalchemy.BLOB)
     email = sqlalchemy.Column(sqlalchemy.String, unique=True)
     service_account = sqlalchemy.Column(sqlalchemy.Boolean)
     site_admin = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
-    tokens = sqlalchemy.orm.relation("UserToken", back_populates="user")
+    user_tokens = sqlalchemy.orm.relation("UserToken", back_populates="user")
 
     def __init__(self, *args, **kwargs):
         """Setup salt"""
@@ -63,14 +63,18 @@ class User(Base, BaseObject):
     @password.setter
     def password(self, value):
         """hash password before storing"""
-        hashed_password = bcrypt.hashpw(value, self.salt)
-        self._password = json.dumps(hashed_password)
+        password = value.encode(encoding='UTF-8', errors='strict')
+        hashed_password = bcrypt.hashpw(password, self.salt)
+        self._password = hashed_password
 
     def check_password(self, password):
         """Check password."""
         if not self.password:
             return False
-        return bcrypt.checkpw(password, self.password)
+        return bcrypt.checkpw(
+            password.encode(encoding='UTF-8', errors='strict'),
+            self.password
+        )
 
     def get_api_details(self):
         """Return API details for user"""

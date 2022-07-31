@@ -61,6 +61,12 @@ class UserToken(Base, BaseObject):
         session.commit()
         return token
 
+    @classmethod
+    def get_by_token(cls, token):
+        """Return token by token value"""
+        session = Database.get_session()
+        return session.query(cls).filter(cls.token == token).first()
+
     def get_creation_api_details(self):
         """Create API details for created token"""
         details = self.get_api_details()
