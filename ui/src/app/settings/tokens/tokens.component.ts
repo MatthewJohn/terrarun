@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { AccountService } from 'src/app/account.service';
+import { UserService } from 'src/app/user.service';
 
 @Component({
   selector: 'app-tokens',
@@ -7,9 +10,13 @@ import { Component, OnInit } from '@angular/core';
 })
 export class TokensComponent implements OnInit {
 
-  constructor() { }
+  tokens: any;
+
+  constructor(private http: HttpClient,
+              private accountService: AccountService,
+              private userService: UserService) { }
 
   ngOnInit(): void {
-  }
 
+  }
 }

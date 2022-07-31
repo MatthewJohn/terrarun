@@ -13,12 +13,12 @@ const routes: Routes = [
   },
 
   // Redirect app/* URLs to root
-  // {
-  //   path: 'app',
-  //   redirectTo: '/',
-  //   pathMatch: 'prefix'
-  // },
-  {path: '', redirectTo: 'home', pathMatch: 'full'}
+  {
+    path: 'app',
+    redirectTo: '/',
+    pathMatch: 'prefix'
+  },
+  { path: '', redirectTo: 'home', pathMatch: 'full' }
 ];
 
 @NgModule({

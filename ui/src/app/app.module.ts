@@ -8,6 +8,7 @@ import { NbIconModule, NbLayoutModule, NbMenuModule, NbSidebarModule, NbThemeMod
 import { NbEvaIconsModule } from '@nebular/eva-icons';
 import { HomeComponent } from './home/home.component';
 import { SettingsModule } from './settings/settings.module';
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -24,7 +25,8 @@ import { SettingsModule } from './settings/settings.module';
     NbMenuModule.forRoot(),
     NbThemeModule.forRoot({ name: 'default' }),
     NbLayoutModule,
-    NbEvaIconsModule
+    NbEvaIconsModule,
+    HttpClientModule
   ],
   providers: [],
   bootstrap: [AppComponent]
