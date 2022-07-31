@@ -1,5 +1,6 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpRequest, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -27,18 +28,18 @@ export class AccountService {
     return false;
   }
 
-  login(username: string, password: string): string | null {
-    this.http.post<any>(
-      `https://${window.location.hostname}:5000/api/terrarun/v1/authenticate`,
-      { 'username': username, 'password': password },
-      { observe: 'response' }
-    ).subscribe((response) => {
-      if (response.status == 200) {
-        return response.body.data.attributes.token;
-      }
-      return null;
+  login(username: string, password: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      this.http.post<any>(
+        `https://${window.location.hostname}:5000/api/terrarun/v1/authenticate`,
+        { 'username': username, 'password': password },
+      ).pipe(
+        tap({
+          next: (data) => resolve(data.data.attributes.token),
+          error: (error) => reject()
+        })
+      );
     });
-    return null;
   }
 
   getAccountDetails(): Promise<any> {

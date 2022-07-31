@@ -22,15 +22,16 @@ export class LoginComponent implements OnInit {
   ) {}
 
   onSubmit(): void {
-    var token = this.accountService.login(
+    this.accountService.login(
       this.loginForm.value.username,
       this.loginForm.value.password
-    );
-    if (token) {
+    ).then((token) => {
+      console.log('logged in');
       localStorage.setItem('authToken', token);
       this.router.navigateByUrl('/');
-    }
-    this.loginForm.reset();
+    }).catch(() => {
+      console.log('Login failure');
+    });
   }
 
   ngOnInit(): void {
