@@ -45,14 +45,6 @@ class Team(Base, BaseObject):
 
     workspace_accesses = sqlalchemy.orm.relation("TeamWorkspaceAccess", back_populates="team")
 
-
-    def get_membership_details(self):
-        """Return API details for memberships"""
-        return [
-            { "type": "users", "id": user.username }
-            for user in self.users
-        ]
-
     def get_api_details(self):
         """Return API details for organisation"""
         return {
