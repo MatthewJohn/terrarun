@@ -10,3 +10,6 @@ class Config:
     def AUTO_CREATE_WORKSPACES(self):
         return True
 
+    @property
+    def SESSION_EXPIRY_MINS(self):
+        return 10

@@ -6,12 +6,13 @@ from time import sleep
 import traceback
 
 from flask import Flask, make_response, request
+from sqlalchemy import desc
 from sqlalchemy.orm import scoped_session
 import flask
+from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 
 from terrarun.apply import Apply
-from terrarun.auth import Auth
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.organisation import Organisation
@@ -20,7 +21,9 @@ from terrarun.run import Run
 from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
 from terrarun.terraform_command import TerraformCommandState
+from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
+from terrarun.user import User
 
 
 class Server(object):
@@ -33,6 +36,7 @@ class Server(object):
             static_folder='static',
             template_folder='templates'
         )
+        self._cors = CORS(self._app)
         self._app.teardown_request(self.shutdown_session)
 
         self._api = Api(
@@ -132,13 +136,16 @@ class Server(object):
             ApiTerraformApplyLog,
             '/api/v2/applies/<string:apply_id>/log'
         )
+        self._api.add_resource(
+            ApiTerraformUserTokens,
+            '/api/v2/users/<string:user_id>/authentication-tokens'
+        )
 
-        # Views
-        self._app.route('/app/settings/tokens')(self._view_serve_settings_tokens)
-
-    def _view_serve_settings_tokens(self):
-        """Return authentication tokens"""
-        return Auth().get_auth_token()
+        # Custom endpoints
+        self._api.add_resource(
+            ApiAuthenticate,
+            '/api/terrarun/v1/authenticate'
+        )
 
     def run(self, debug=None):
         """Run flask server."""
@@ -177,6 +184,58 @@ class Server(object):
                 print(traceback.format_exc())
 
 
+class ApiAuthenticate(Resource):
+    """Interface to authenticate user"""
+
+    def post(self):
+        """Authenticate user"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('username', type=str, location='json')
+        parser.add_argument('password', type=str, location='json')
+        args = parser.parse_args()
+        user = User.get_by_username(args.username)
+
+        if not user or not user.check_password(args.password):
+            return {}, 403
+
+        token = UserToken.create(user=user, type=UserTokenType.UI)
+        return {"data": token.get_creation_api_details()}
+
+
+class ApiTerraformUserTokens(Resource):
+    """Get user tokens for user"""
+
+    def get(self, user_id):
+        """Return tokens for user"""
+        user = User.get_by_api_id(user_id)
+        if not user_id:
+            return {}, 404
+        return {
+            "data": [
+                user_token.get_api_details()
+                for user_token in user.user_tokens
+            ]
+        }
+    
+    def post(self, user_id):
+        """Create token"""
+        user = User.get_by_api_id(user_id)
+        if not user_id:
+            return {}, 404
+
+        description = flask.request.get_json().get('data', {}).get('attributes', {}).get('description', None)
+        if not description:
+            return {'Error': 'Missing description'}, 400
+
+        user_token = UserToken.create(
+            user=user, type=UserTokenType.USER_GENERATED,
+            description=description
+        )
+        return {
+            "data": user_token.get_creation_api_details()
+        }
+
+
 class ApiTerraformWellKnown(Resource):
 
     def get(self):
@@ -201,6 +260,19 @@ class ApiTerraformPing(Resource):
         return response
 
 
+class ApiTerraformAccountDetails(Resource):
+    """Interface to obtain current account"""
+
+    def get(self):
+        """Get current account details"""
+        authorization_header = request.headers.get('Authorization', '')
+        auth_token = re.sub(r'^Bearer ', '', authorization_header)
+        user_token = UserToken.get_by_token(auth_token)
+        if not user_token:
+            return {}, 403
+        return user_token.user.get_api_details()
+
+
 class ApiTerraformMotd(Resource):
     """Return MOTD for terraform"""
 
@@ -209,24 +281,6 @@ class ApiTerraformMotd(Resource):
         return {
             'msg': 'This is a test Terrarun server\nNo functionality yet.'
         }
-
-
-class ApiTerraformAccountDetails(Resource):
-    """Provide interface to return account details"""
-
-    def get(self):
-        """Check account and return details, if available."""
-        user_account = None
-
-        authorization_header = request.headers.get('Authorization', None)
-        if authorization_header:
-            auth_token = re.sub(r'^Bearer ', '', authorization_header)
-            user_account = Auth().get_user_account_by_auth_token(auth_token)
-
-        if user_account is not None:
-            return user_account.get_account_api_data()
-        else:
-            return {}, 403
 
 
 class ApiTerraformOrganisationEntitlementSet(Resource):
