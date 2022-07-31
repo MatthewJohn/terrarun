@@ -270,7 +270,7 @@ class ApiTerraformAccountDetails(Resource):
         user_token = UserToken.get_by_token(auth_token)
         if not user_token:
             return {}, 403
-        return user_token.user.get_api_details()
+        return user_token.user.get_account_details()
 
 
 class ApiTerraformMotd(Resource):
