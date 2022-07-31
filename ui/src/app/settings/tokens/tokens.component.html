@@ -1,0 +1,42 @@
+
+<h2>Terraform tokens</h2>
+
+<table>
+    <thead>
+        <th>Description</th>
+        <th>Created</th>
+        <th>Last used</th>
+    </thead>
+    <tbody>
+        <tr *ngFor="let token of tokens">
+            <td>{{ token.attributes.description }}</td>
+            <td>{{ token.attributes['created-at'] }}</td>
+            <td>{{ token.attributes['last-used-at'] }}</td>
+        </tr>
+    </tbody>
+</table>
+
+
+<nb-card>
+    <nb-card-body class="example-items-rows">
+
+        <h3>Create token</h3>
+
+        <form [formGroup]="createTokenForm" (ngSubmit)="onCreateTokenFormSubmit()">
+        
+            <nb-form-field>
+                <label for="newTokenDescription">
+                    Description
+                </label>
+                <input nbInput id="newTokenDescription" type="text" formControlName="description">
+            </nb-form-field>
+          <button nbButton type="submit">Create</button>
+        
+        </form>
+
+        <span *ngIf="createdToken">
+            Created token: <pre><code>{{createdToken.attributes.token}}</code></pre>
+        </span>
+    </nb-card-body>
+</nb-card>
+  
