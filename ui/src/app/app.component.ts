@@ -34,6 +34,16 @@ export class AppComponent {
       ]
     },
     {
+      title: 'Workspaces',
+      link: '/workspaces',
+      children: [
+        {
+          title: 'Create',
+          link: '/workspaces/create'
+        }
+      ]
+    },
+    {
       title: 'Settings',
       link: '/settings',
       icon: 'settings-2-outline',
