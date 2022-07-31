@@ -6,6 +6,7 @@ from time import sleep
 import traceback
 
 from flask import Flask, make_response, request
+from sqlalchemy import desc
 from sqlalchemy.orm import scoped_session
 import flask
 from flask_cors import CORS
@@ -218,17 +219,17 @@ class ApiTerraformUserTokens(Resource):
     
     def post(self, user_id):
         """Create token"""
-        parser = reqparse.RequestParser()
-        parser.add_argument('description', type=str, location='json')
-        args = parser.parse_args()
-
         user = User.get_by_api_id(user_id)
         if not user_id:
             return {}, 404
 
+        description = flask.request.get_json().get('data', {}).get('attributes', {}).get('description', None)
+        if not description:
+            return {'Error': 'Missing description'}, 400
+
         user_token = UserToken.create(
             user=user, type=UserTokenType.USER_GENERATED,
-            description=args.description
+            description=description
         )
         return {
             "data": user_token.get_creation_api_details()
