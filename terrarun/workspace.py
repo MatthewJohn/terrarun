@@ -60,26 +60,6 @@ class Workspace(Base, BaseObject):
         return runs
 
     @property
-    def auto_apply(self):
-        """Whether runs are auto-apply enabled"""
-        return False
-
-    @property
-    def latest_state_version(self):
-        """Return latest state version."""
-        pass
-
-    @property
-    def latest_configuration_version(self):
-        """Return latest configuration version."""
-        pass
-
-    @property
-    def latest_run(self):
-        """Return latest run."""
-        pass
-
-    @property
     def latest_configuration_version(self):
         """Return latest configuration version."""
         if self.configuration_versions:
@@ -119,7 +99,7 @@ class Workspace(Base, BaseObject):
                     },
                     "allow-destroy-plan": True,
                     "apply-duration-average": 158000,
-                    "auto-apply": False,
+                    "auto-apply": self.auto_apply,
                     "auto-destroy-at": None,
                     "created-at": "2021-06-03T17:50:20.307Z",
                     "description": "An example workspace for documentation.",
@@ -157,8 +137,8 @@ class Workspace(Base, BaseObject):
                 "relationships": {
                     "agent-pool": {
                         "data": {
-                        "id": "apool-QxGd2tRjympfMvQc",
-                        "type": "agent-pools"
+                            "id": "apool-QxGd2tRjympfMvQc",
+                            "type": "agent-pools"
                         }
                     },
                     "current-configuration-version": {
@@ -172,11 +152,11 @@ class Workspace(Base, BaseObject):
                     } if self.latest_configuration_version else {},
                     "current-run": {
                         "data": {
-                        "id": "run-UyCw2TDCmxtfdjmy",
-                        "type": "runs"
+                            "id": "run-UyCw2TDCmxtfdjmy",
+                            "type": "runs"
                         },
                         "links": {
-                        "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
+                            "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
                         }
                     },
                     "current-state-version": {
