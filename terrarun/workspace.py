@@ -5,6 +5,7 @@ import sqlalchemy.orm
 from terrarun.base_object import BaseObject
 from terrarun.config import Config
 import terrarun.organisation
+from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.run
 import terrarun.configuration
 from terrarun.database import Base, Database
@@ -107,8 +108,9 @@ class Workspace(Base, BaseObject):
         ).first()
         return run
 
-    def get_api_details(self):
+    def get_api_details(self, effective_user):
         """Return details for workspace."""
+        workspace_permissions = WorkspacePermissions(current_user=effective_user, workspace=self)
         return {
             "data": {
                 "attributes": {
@@ -129,24 +131,7 @@ class Workspace(Base, BaseObject):
                     "locked": False,
                     "name": self.name,
                     "operations": True,
-                    "permissions": {
-                        "can-create-state-versions": True,
-                        "can-destroy": True,
-                        "can-force-unlock": True,
-                        "can-lock": True,
-                        "can-manage-run-tasks": True,
-                        "can-manage-tags": True,
-                        "can-queue-apply": True,
-                        "can-queue-destroy": True,
-                        "can-queue-run": True,
-                        "can-read-settings": True,
-                        "can-read-state-versions": True,
-                        "can-read-variable": True,
-                        "can-unlock": True,
-                        "can-update": True,
-                        "can-update-variable": True,
-                        "can-read-assessment-result": True
-                    },
+                    "permissions": workspace_permissions.get_api_permissions(),
                     "plan-duration-average": 20000,
                     "policy-check-failures": None,
                     "queue-all-runs": False,

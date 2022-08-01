@@ -27,7 +27,7 @@ from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
 from terrarun.user import User
-from terrarun.team_workspace_access import TeamWorkspaceAccess
+from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission
 from terrarun.team_user_membership import TeamUserMembership
 from terrarun.team import Team
 
@@ -495,8 +495,9 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
             return False
         # As per documentation:
         # You need read runs permission to list and view configuration versions for a workspace, and you need queue plans permission to create new configuration versions.
-        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
-            WorkspacePermissions.Permissions.CAN_QUEUE_RUN)
+        return WorkspacePermissions(current_user=current_user,
+                                    workspace=workspace).check_access_type(
+                                        runs=TeamWorkspaceRunsPermission.PLAN)
 
     def _post(self, workspace_id, current_user):
         """Create configuration version"""
@@ -523,10 +524,9 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return False
-        # @TODO Check this permission - this is documented as requiring read_runs permission
-        # but this does not directly exist
-        return WorkspacePermissions(current_user=current_user, workspace=cv.workspace).check_permission(
-            WorkspacePermissions.Permissions.)
+        return WorkspacePermissions(current_user=current_user,
+                                    workspace=cv.workspace).check_access_type(
+                                        runs=TeamWorkspaceRunsPermission.READ)
 
     def _get(self, configuration_version_id, current_user):
         """Get configuration version details."""
@@ -544,10 +544,9 @@ class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return False
-        # @TODO Check this permission - should CAN_QUEUE_RUN only be for
-        # queueing existing runs and need more permissions to upload configuration version?
-        return WorkspacePermissions(current_user=current_user, workspace=cv.workspace).check_permission(
-            WorkspacePermissions.Permissions.CAN_QUEUE_RUN)
+        return WorkspacePermissions(current_user=current_user,
+                                    workspace=cv.workspace).check_access_type(
+                                        runs=TeamWorkspaceRunsPermission.PLAN)
 
     def _put(self, configuration_version_id, current_user):
         """Handle upload of configuration version data."""
