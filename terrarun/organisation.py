@@ -7,6 +7,7 @@ import sqlalchemy.orm
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.config import Config
+from terrarun.permissions.organisation import OrganisationPermissions
 import terrarun.run
 import terrarun.run_queue
 import terrarun.configuration
@@ -142,8 +143,9 @@ class Organisation(Base, BaseObject):
             }
         }
 
-    def get_api_details(self):
+    def get_api_details(self, effective_user):
         """Return API details for organisation"""
+        permission = OrganisationPermissions(self, effective_user)
         return {
             "id": self.name_id,
             "type": "organizations",
@@ -165,33 +167,7 @@ class Organisation(Base, BaseObject):
                 "cost-estimation-enabled": self.cost_estimation_enabled,
                 "send-passing-statuses-for-untriggered-speculative-plans": self.send_passing_statuses_for_untriggered_speculative_plans,
                 "name": self.name,
-                "permissions": {
-                    "can-update": True,
-                    "can-destroy": True,
-                    "can-access-via-teams": True,
-                    "can-create-module": True,
-                    "can-create-team": True,
-                    "can-create-workspace": True,
-                    "can-manage-users": True,
-                    "can-manage-subscription": True,
-                    "can-manage-sso": True,
-                    "can-update-oauth": True,
-                    "can-update-sentinel": True,
-                    "can-update-ssh-keys": True,
-                    "can-update-api-token": True,
-                    "can-traverse": True,
-                    "can-start-trial": True,
-                    "can-update-agent-pools": True,
-                    "can-manage-tags": True,
-                    "can-manage-varsets": True,
-                    "can-read-varsets": True,
-                    "can-manage-public-providers": True,
-                    "can-create-provider": True,
-                    "can-manage-public-modules": True,
-                    "can-manage-custom-providers": True,
-                    "can-manage-run-tasks": True,
-                    "can-read-run-tasks": True
-                },
+                "permissions": permission.get_api_permissions(),
                 "fair-run-queuing-enabled": self.fair_run_queuing_enabled,
                 "saml-enabled": self.saml_enabled,
                 "owners-team-saml-role-id": self.owners_team_saml_role_id,

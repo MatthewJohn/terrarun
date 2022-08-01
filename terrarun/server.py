@@ -16,6 +16,8 @@ from terrarun.apply import Apply
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.organisation import Organisation
+from terrarun.permissions.organisation import OrganisationPermissions
+from terrarun.permissions.user import UserPermissions
 from terrarun.plan import Plan
 from terrarun.run import Run
 from terrarun.run_queue import RunQueue
@@ -76,6 +78,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformAccountDetails,
             '/api/v2/account/details'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationDetails,
+            '/api/v2/organizations/<string:organisation_name>'
         )
         self._api.add_resource(
             ApiTerraformOrganisationEntitlementSet,
@@ -187,6 +193,76 @@ class Server(object):
                 print(traceback.format_exc())
 
 
+class AuthenticatedEndpoint(Resource):
+    """Authenticated endpoint"""
+
+    def _get_current_user(self):
+        """Obtain current user based on API token key in request"""
+        authorization_header = request.headers.get('Authorization', '')
+        auth_token = re.sub(r'^Bearer ', '', authorization_header)
+        user_token = UserToken.get_by_token(auth_token)
+        if not user_token:
+            return None
+        return user_token.user
+
+    def _get(self, *args, **kwargs):
+        """Handle GET request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_get(self, *args, **kwargs):
+        """Function to check permissions, must be implemented by overriding class."""
+        raise NotImplementedError
+
+    def get(self, *args, **kwargs):
+        """Handle GET request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            print('No user')
+            return {}, 403
+
+        if not self.check_permissions_get(*args, current_user=current_user, **kwargs):
+            return {}, 403
+
+        return self._get(*args, current_user=current_user, **kwargs)
+
+    def _post(self, *args, **kwargs):
+        """Handle POST request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_post(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def post(self, *args, **kwargs):
+        """Handle POST request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_post(*args, current_user=current_user, **kwargs):
+            return {}, 403
+        return self._post(*args, current_user=current_user, **kwargs)
+
+    def _patch(self, *args, **kwargs):
+        """Handle PATCH request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_patch(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def patch(self, *args, **kwargs):
+        """Handle PATCH request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_patch(*args, current_user=current_user, **kwargs):
+            return {}, 403
+
+        return self._patch(*args, current_user=current_user, **kwargs)
+
+
 class ApiAuthenticate(Resource):
     """Interface to authenticate user"""
 
@@ -205,10 +281,19 @@ class ApiAuthenticate(Resource):
         return {"data": token.get_creation_api_details()}
 
 
-class ApiTerraformUserTokens(Resource):
+class ApiTerraformUserTokens(AuthenticatedEndpoint):
     """Get user tokens for user"""
 
-    def get(self, user_id):
+    def check_permissions_get(self, user_id, current_user, *args, **kwargs):
+        """Check if user has permission to modify user tokens"""
+        target_user = User.get_by_api_id(user_id)
+        # @TODO Do not return 403 when user does not exist
+        if not target_user:
+            return False
+        return UserPermissions(current_user=current_user, user=target_user).check_permission(
+            UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
+
+    def _get(self, user_id, current_user):
         """Return tokens for user"""
         user = User.get_by_api_id(user_id)
         if not user_id:
@@ -220,7 +305,16 @@ class ApiTerraformUserTokens(Resource):
             ]
         }
     
-    def post(self, user_id):
+    def check_permissions_post(self, current_user, user_id, *args, **kwargs):
+        """Check if user has permission to modify user tokens"""
+        target_user = User.get_by_api_id(user_id)
+        # @TODO Do not return 403 when user does not exist
+        if not target_user:
+            return False
+        return UserPermissions(current_user=current_user, user=target_user).check_permission(
+            UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
+
+    def _post(self, current_user, user_id):
         """Create token"""
         user = User.get_by_api_id(user_id)
         if not user_id:
@@ -263,17 +357,17 @@ class ApiTerraformPing(Resource):
         return response
 
 
-class ApiTerraformAccountDetails(Resource):
+class ApiTerraformAccountDetails(AuthenticatedEndpoint):
     """Interface to obtain current account"""
 
-    def get(self):
+    def check_permissions_get(self, current_user):
+        """Check permissions to access account details."""
+        # All users can view their own account details
+        return True
+
+    def _get(self, current_user):
         """Get current account details"""
-        authorization_header = request.headers.get('Authorization', '')
-        auth_token = re.sub(r'^Bearer ', '', authorization_header)
-        user_token = UserToken.get_by_token(auth_token)
-        if not user_token:
-            return {}, 403
-        return user_token.user.get_account_details()
+        return current_user.get_account_details()
 
 
 class ApiTerraformMotd(Resource):
@@ -286,7 +380,26 @@ class ApiTerraformMotd(Resource):
         }
 
 
-class ApiTerraformOrganisationEntitlementSet(Resource):
+class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
+    """Organisation details endpoint"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        organisation = Organisation.get_by_name(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation, current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_TRAVERSE)
+
+    def _get(self, current_user, organisation_name):
+        """Get organisation details"""
+        organisation = Organisation.get_by_name(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {"data": organisation.get_api_details()}
+
+
+class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
     """Organisation entitlement endpoint."""
 
     def get(self, organisation_name):
@@ -295,7 +408,7 @@ class ApiTerraformOrganisationEntitlementSet(Resource):
         return organisation.get_entitlement_set_api()
 
 
-class ApiTerraformWorkspace(Resource):
+class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
     def get(self, organisation_name, workspace_name):
@@ -305,7 +418,7 @@ class ApiTerraformWorkspace(Resource):
         return workspace.get_api_details()
 
 
-class ApiTerraformWorkspaceConfigurationVersions(Resource):
+class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
     def post(self, workspace_id):
