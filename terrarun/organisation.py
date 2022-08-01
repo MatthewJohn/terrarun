@@ -88,8 +88,7 @@ class Organisation(Base, BaseObject):
     
     @classmethod
     def create(cls, name):
-        re.sub(r'[^0-9^a-z^A-Z]')
-        name_id = name.replace(' ', '-').replace('').lower()
+        name_id = re.sub(r'[^0-9^a-z^A-Z]+', '-', name).replace('--', '-').lower()
         org = cls(name=name, name_id=name_id)
         session = Database.get_session()
         session.add(org)
