@@ -482,7 +482,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
         if not workspace:
             return {}, 404
-        return workspace.get_api_details()
+        return workspace.get_api_details(effective_user=current_user)
 
 
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
@@ -560,12 +560,46 @@ class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
 class ApiTerraformRun(AuthenticatedEndpoint):
     """Run interface."""
 
-    def _get(self, run_id=None):
+    def check_permissions_get(self, current_user, run_id=None,):
+        """Check permissions to view run"""
+        if not run_id:
+            return False
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, current_user, run_id=None):
         """Return run information"""
+        if not run_id:
+            return {}, 404
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
         return {"data": run.get_api_details()}
+
+    def check_permissions_post(self, current_user, run_id=None,):
+        """Check permissions to view run"""
+        if run_id:
+            return False
+
+        data = flask.request.get_json().get('data', {})
+        workspace_id = data.get('relationships', {}).get('workspace', {}).get('data', {}).get('id', None)
+        if not workspace_id:
+            return False
+
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.PLAN)
 
     def _post(self, current_user, run_id=None):
         """Create a run."""
@@ -594,6 +628,11 @@ class ApiTerraformRun(AuthenticatedEndpoint):
 
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
+            return {}, 404
+
+        if cv.workspace.id != workspace.id:
+            print('Configuration version ID and workspace ID mismatch')
+            # Hide error to prevent workspace ID/configuration ID enumeration
             return {}, 404
 
         create_attributes = {
@@ -641,7 +680,21 @@ class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
 class ApiTerraformPlans(AuthenticatedEndpoint):
     """Interface for plans."""
 
-    def _get(self, plan_id=None):
+    def check_permissions_get(self, current_user, plan_id=None):
+        """Check permissions to view run"""
+        if not plan_id:
+            return False
+
+        plan = Plan.get_by_api_id(plan_id)
+        if not plan:
+            return {}, 404
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=plan.run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, current_user, plan_id=None):
         """Return information for plan(s)"""
         if plan_id:
             plan = Plan.get_by_api_id(plan_id)
