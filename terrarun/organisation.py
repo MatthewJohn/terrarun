@@ -11,6 +11,7 @@ from terrarun.permissions.organisation import OrganisationPermissions
 import terrarun.run
 import terrarun.run_queue
 import terrarun.configuration
+from terrarun.utils import datetime_to_json
 import terrarun.workspace
 
 
@@ -151,7 +152,7 @@ class Organisation(Base, BaseObject):
             "type": "organizations",
             "attributes": {
                 "external-id": self.api_id,
-                "created-at": self.created_at,
+                "created-at": datetime_to_json(self.created_at),
                 "email": self.email,
                 "session-timeout": self.session_timeout,
                 "session-remember": self.session_remember,
