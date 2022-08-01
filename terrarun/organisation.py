@@ -145,7 +145,7 @@ class Organisation(Base, BaseObject):
 
     def get_api_details(self, effective_user):
         """Return API details for organisation"""
-        permission = OrganisationPermissions(self, effective_user)
+        permission = OrganisationPermissions(current_user=effective_user, organisation=self)
         return {
             "id": self.name_id,
             "type": "organizations",

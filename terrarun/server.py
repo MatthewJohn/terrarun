@@ -399,7 +399,7 @@ class ApiTerraformOrganisationList(AuthenticatedEndpoint):
         """Obtain list of organisations"""
         return {
             'data': [
-                organisation.get_api_details()
+                organisation.get_api_details(effective_user=current_user)
                 for organisation in current_user.organisations
             ]
         }
@@ -421,7 +421,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
-        return {"data": organisation.get_api_details()}
+        return {"data": organisation.get_api_details(effective_user=current_user)}
 
 
 class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
