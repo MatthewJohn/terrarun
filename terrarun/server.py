@@ -79,6 +79,11 @@ class Server(object):
             ApiTerraformAccountDetails,
             '/api/v2/account/details'
         )
+
+        self._api.add_resource(
+            ApiTerraformOrganisationList,
+            '/api/v2/organizations'
+        )
         self._api.add_resource(
             ApiTerraformOrganisationDetails,
             '/api/v2/organizations/<string:organisation_name>'
@@ -91,6 +96,11 @@ class Server(object):
             ApiTerraformWorkspace,
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
+        self._api.add_resource(
+            ApiTerraformOrganisationQueue,
+            '/api/v2/organizations/<string:organisation_name>/runs/queue'
+        )
+
         self._api.add_resource(
             ApiTerraformWorkspaceConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
@@ -115,10 +125,6 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
-        )
-        self._api.add_resource(
-            ApiTerraformOrganisationQueue,
-            '/api/v2/organizations/<string:organisation_name>/runs/queue'
         )
         self._api.add_resource(
             ApiTerraformPlans,
@@ -380,11 +386,30 @@ class ApiTerraformMotd(Resource):
         }
 
 
+class ApiTerraformOrganisationList(AuthenticatedEndpoint):
+    """Interface for listing organisations"""
+
+    def check_permissions_get(self, *args, **kwargs):
+        """Check permissions for endpoint."""
+        # Since organisations are obtained based on user permissions for organisation,
+        # do not do any permission checking
+        return True
+
+    def _get(self, current_user):
+        """Obtain list of organisations"""
+        return {
+            'data': [
+                organisation.get_api_details()
+                for organisation in current_user.organisations
+            ]
+        }
+
+
 class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
     """Organisation details endpoint"""
 
     def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
-        organisation = Organisation.get_by_name(organisation_name)
+        organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return False
         return OrganisationPermissions(organisation, current_user).check_permission(
@@ -392,7 +417,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
 
     def _get(self, current_user, organisation_name):
         """Get organisation details"""
-        organisation = Organisation.get_by_name(organisation_name)
+        organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
 
@@ -404,7 +429,7 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
 
     def get(self, organisation_name):
         """Return entitlement-set for organisation"""
-        organisation = Organisation.get_by_name(organisation_name)
+        organisation = Organisation.get_by_name_id(organisation_name)
         return organisation.get_entitlement_set_api()
 
 
@@ -413,7 +438,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
 
     def get(self, organisation_name, workspace_name):
         """Return workspace details."""
-        organisation = Organisation.get_by_name(organisation_name)
+        organisation = Organisation.get_by_name_id(organisation_name)
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
         return workspace.get_api_details()
 
@@ -535,7 +560,7 @@ class ApiTerraformOrganisationQueue(Resource):
 
     def get(self, organisation_name):
         """Get list of runs queued"""
-        organisation = Organisation.get_by_name(organisation_name)
+        organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
 
