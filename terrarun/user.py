@@ -8,6 +8,7 @@ import bcrypt
 import terrarun.organisation
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+from terrarun.permissions.user import UserPermissions
 
 
 class User(Base, BaseObject):
@@ -102,8 +103,9 @@ class User(Base, BaseObject):
                     organisations.append(org)
         return organisations
 
-    def get_account_details(self):
+    def get_account_details(self, effective_user):
         """Get API details for account endpoint."""
+        user_permissions = UserPermissions(current_user=effective_user, user=self)
         return {
             "id": self.api_id,
             "type": "users",
@@ -122,12 +124,7 @@ class User(Base, BaseObject):
                     "enabled": False,
                     "verified": False
                 },
-                "permissions": {
-                    "can-create-organizations": True,
-                    "can-change-email": True,
-                    "can-change-username": True,
-                    "can-manage-user-tokens": False
-                }
+                "permissions": user_permissions.get_api_permissions()
             },
             "relationships": {
                 "authentication-tokens": {
@@ -170,8 +167,9 @@ class User(Base, BaseObject):
             }
         }
 
-    def get_api_details(self):
+    def get_api_details(self, effective_user):
         """Return API details for user"""
+        user_permissions = UserPermissions(current_user=effective_user, user=self)
         return {
             "id": self.api_id,
             "type": "users",
@@ -180,12 +178,7 @@ class User(Base, BaseObject):
                 "is-service-account": self.service_account,
                 "avatar-url": "https://www.gravatar.com/avatar/9babb00091b97b9ce9538c45807fd35f?s=100&d=mm",
                 "v2-only": False,
-                "permissions": {
-                    "can-create-organizations": True,
-                    "can-change-email": True,
-                    "can-change-username": True,
-                    "can-manage-user-tokens": True
-                }
+                "permissions": user_permissions.get_api_permissions()
             },
             "relationships": {
                 "authentication-tokens": {
