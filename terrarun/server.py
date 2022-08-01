@@ -706,10 +706,13 @@ class ApiTerraformPlans(AuthenticatedEndpoint):
         raise Exception('Need to return list of plans?')
 
 
-class ApiTerraformPlanLog(AuthenticatedEndpoint):
-    """Interface to obtain logs from stream."""
+class ApiTerraformPlanLog(Resource):
+    """
+    Interface to obtain logs from stream.
+    @TODO: Need to find a way to authenticate this endpoint
+    """
 
-    def _get(self, plan_id):
+    def get(self, plan_id):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
@@ -792,10 +795,13 @@ class ApiTerraformApplies(AuthenticatedEndpoint):
         return {'data': apply.get_api_details()}
 
 
-class ApiTerraformApplyLog(AuthenticatedEndpoint):
-    """Interface to obtain logs from stream."""
+class ApiTerraformApplyLog(Resource):
+    """
+    Interface to obtain logs from stream.
+    @TODO: Need to find a way to authenticate this endpoint
+    """
 
-    def _get(self, apply_id):
+    def get(self, apply_id):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
