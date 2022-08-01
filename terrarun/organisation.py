@@ -77,13 +77,14 @@ class Organisation(Base, BaseObject):
     teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
 
     @classmethod
-    def get_by_name(cls, organisation_name):
+    def get_by_name_id(cls, name_id):
         """Return organisation object by name of organisation"""
         session = Database.get_session()
-        org = session.query(Organisation).filter(Organisation.name==organisation_name).first()
+        org = session.query(Organisation).filter(Organisation.name_id==name_id).first()
 
+        # @TODO Remove this once able to create organisation in UI
         if not org and Config().AUTO_CREATE_ORGANISATIONS:
-            org = Organisation.create(name=organisation_name)
+            org = Organisation.create(name=name_id)
         return org
     
     @classmethod
