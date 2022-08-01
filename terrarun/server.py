@@ -373,7 +373,7 @@ class ApiTerraformAccountDetails(AuthenticatedEndpoint):
 
     def _get(self, current_user):
         """Get current account details"""
-        return current_user.get_account_details()
+        return {'data': current_user.get_account_details()}
 
 
 class ApiTerraformMotd(Resource):
