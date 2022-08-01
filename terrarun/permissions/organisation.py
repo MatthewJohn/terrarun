@@ -55,7 +55,6 @@ class OrganisationPermissions:
 
         return False
 
-
     def get_api_permissions(self):
         """Return list of permissions for API"""
         return {

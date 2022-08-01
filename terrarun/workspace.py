@@ -144,7 +144,8 @@ class Workspace(Base, BaseObject):
                         "can-read-variable": True,
                         "can-unlock": True,
                         "can-update": True,
-                        "can-update-variable": True
+                        "can-update-variable": True,
+                        "can-read-assessment-result": True
                     },
                     "plan-duration-average": 20000,
                     "policy-check-failures": None,

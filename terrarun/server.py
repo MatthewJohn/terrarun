@@ -18,6 +18,7 @@ from terrarun.database import Database
 from terrarun.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
+from terrarun.permissions.workspace import WorkspacePermissions
 from terrarun.plan import Plan
 from terrarun.run import Run
 from terrarun.run_queue import RunQueue
@@ -268,6 +269,24 @@ class AuthenticatedEndpoint(Resource):
 
         return self._patch(*args, current_user=current_user, **kwargs)
 
+    def _put(self, *args, **kwargs):
+        """Handle PUT request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_put(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def put(self, *args, **kwargs):
+        """Handle PUT request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_put(*args, current_user=current_user, **kwargs):
+            return {}, 403
+
+        return self._put(*args, current_user=current_user, **kwargs)
 
 class ApiAuthenticate(Resource):
     """Interface to authenticate user"""
@@ -412,7 +431,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return False
-        return OrganisationPermissions(organisation, current_user).check_permission(
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_TRAVERSE)
 
     def _get(self, current_user, organisation_name):
@@ -427,7 +446,15 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
 class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
     """Organisation entitlement endpoint."""
 
-    def get(self, organisation_name):
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_TRAVERSE)
+
+    def _get(self, current_user, organisation_name):
         """Return entitlement-set for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         return organisation.get_entitlement_set_api()
@@ -436,17 +463,42 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
-    def get(self, organisation_name, workspace_name):
+    def check_permissions_get(self, organisation_name, workspace_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return False
+        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, organisation_name, workspace_name, current_user):
         """Return workspace details."""
         organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return {}, 404
         return workspace.get_api_details()
 
 
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
-    def post(self, workspace_id):
+    def check_permissions_post(self, workspace_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        # As per documentation:
+        # You need read runs permission to list and view configuration versions for a workspace, and you need queue plans permission to create new configuration versions.
+        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_QUEUE_RUN)
+
+    def _post(self, workspace_id, current_user):
         """Create configuration version"""
         data = flask.request.get_json().get('data', {})
         attributes = data.get('attributes', {})
@@ -463,10 +515,20 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
         return cv.get_api_details()
 
 
-class ApiTerraformConfigurationVersions(Resource):
+class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
-    def get(self, configuration_version_id):
+    def check_permissions_get(self, current_user, configuration_version_id):
+        """Check permissions"""
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
+        if not cv:
+            return False
+        # @TODO Check this permission - this is documented as requiring read_runs permission
+        # but this does not directly exist
+        return WorkspacePermissions(current_user=current_user, workspace=cv.workspace).check_permission(
+            WorkspacePermissions.Permissions.)
+
+    def _get(self, configuration_version_id, current_user):
         """Get configuration version details."""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -474,10 +536,20 @@ class ApiTerraformConfigurationVersions(Resource):
         return cv.get_api_details()
 
 
-class ApiTerraformConfigurationVersionUpload(Resource):
+class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
     """Configuration version upload endpoint"""
 
-    def put(self, configuration_version_id):
+    def check_permissions_put(self, current_user, configuration_version_id):
+        """Check permissions"""
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
+        if not cv:
+            return False
+        # @TODO Check this permission - should CAN_QUEUE_RUN only be for
+        # queueing existing runs and need more permissions to upload configuration version?
+        return WorkspacePermissions(current_user=current_user, workspace=cv.workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_QUEUE_RUN)
+
+    def _put(self, configuration_version_id, current_user):
         """Handle upload of configuration version data."""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -486,17 +558,17 @@ class ApiTerraformConfigurationVersionUpload(Resource):
         cv.process_upload(request.data)
 
 
-class ApiTerraformRun(Resource):
+class ApiTerraformRun(AuthenticatedEndpoint):
     """Run interface."""
 
-    def get(self, run_id=None):
+    def _get(self, run_id=None):
         """Return run information"""
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
         return {"data": run.get_api_details()}
 
-    def post(self, run_id=None):
+    def _post(self, current_user, run_id=None):
         """Create a run."""
 
         if run_id:
@@ -543,10 +615,10 @@ class ApiTerraformRun(Resource):
         return {"data": run.get_api_details()}
 
 
-class ApiTerraformWorkspaceRuns(Resource):
+class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
     """Interface to obtain workspace runs,"""
 
-    def get(self, workspace_id):
+    def _get(self, workspace_id, current_user):
         """Return all runs for a workspace."""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -555,10 +627,10 @@ class ApiTerraformWorkspaceRuns(Resource):
         return {"data": [run.get_api_details() for run in workspace.runs]}
 
 
-class ApiTerraformOrganisationQueue(Resource):
+class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
     """Interface to obtain run queue for organisation"""
 
-    def get(self, organisation_name):
+    def _get(self, organisation_name, current_user):
         """Get list of runs queued"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -567,10 +639,10 @@ class ApiTerraformOrganisationQueue(Resource):
         return {"data": [run.get_api_details() for run in organisation.get_run_queue()]}
 
 
-class ApiTerraformPlans(Resource):
+class ApiTerraformPlans(AuthenticatedEndpoint):
     """Interface for plans."""
 
-    def get(self, plan_id=None):
+    def _get(self, plan_id=None):
         """Return information for plan(s)"""
         if plan_id:
             plan = Plan.get_by_api_id(plan_id)
@@ -582,10 +654,10 @@ class ApiTerraformPlans(Resource):
         raise Exception('Need to return list of plans?')
 
 
-class ApiTerraformPlanLog(Resource):
+class ApiTerraformPlanLog(AuthenticatedEndpoint):
     """Interface to obtain logs from stream."""
 
-    def get(self, plan_id):
+    def _get(self, plan_id):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
@@ -619,9 +691,9 @@ class ApiTerraformPlanLog(Resource):
         return response
 
 
-class ApiTerraformWorkspaceLatestStateVersion(Resource):
+class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
 
-    def get(self, workspace_id):
+    def _get(self, workspace_id):
         """Return latest state for workspace."""
 
         state = Workspace.get_by_api_id(workspace_id)._latest_state
@@ -631,9 +703,9 @@ class ApiTerraformWorkspaceLatestStateVersion(Resource):
         return {}, 404
 
 
-class ApiTerraformStateVersionDownload(Resource):
+class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
 
-    def get(self, state_version_id):
+    def _get(self, state_version_id):
         """Return state version json"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
@@ -641,10 +713,10 @@ class ApiTerraformStateVersionDownload(Resource):
         return state_version._state_json
 
 
-class ApiTerraformApplyRun(Resource):
+class ApiTerraformApplyRun(AuthenticatedEndpoint):
     """Interface to confirm run"""
 
-    def post(self, run_id):
+    def _post(self, run_id):
         """Initialise run apply."""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -653,10 +725,10 @@ class ApiTerraformApplyRun(Resource):
         return {}, 202
 
 
-class ApiTerraformApplies(Resource):
+class ApiTerraformApplies(AuthenticatedEndpoint):
     """Interface for applies"""
 
-    def get(self, apply_id=None):
+    def _get(self, apply_id=None):
         """Get apply details."""
         if not apply_id:
             raise Exception('IT WAS CALLED')
@@ -668,10 +740,10 @@ class ApiTerraformApplies(Resource):
         return {'data': apply.get_api_details()}
 
 
-class ApiTerraformApplyLog(Resource):
+class ApiTerraformApplyLog(AuthenticatedEndpoint):
     """Interface to obtain logs from stream."""
 
-    def get(self, apply_id):
+    def _get(self, apply_id):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
