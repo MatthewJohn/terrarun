@@ -16,16 +16,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = None
-from terrarun.organisation import Organisation
-from terrarun.workspace import Workspace
-from terrarun.configuration import ConfigurationVersion
-from terrarun.run import Run
-from terrarun.state_version import StateVersion
-from terrarun.plan import Plan
-from terrarun.apply import Apply
-from terrarun.run_queue import RunQueue
-from terrarun.user import User
-from terrarun.user_token import UserToken
+import terrarun
 
 from terrarun.database import Base
 target_metadata = Base.metadata

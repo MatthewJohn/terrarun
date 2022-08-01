@@ -70,7 +70,13 @@ class UserToken(Base, BaseObject):
     def get_by_token(cls, token):
         """Return token by token value"""
         session = Database.get_session()
-        return session.query(cls).filter(cls.token == token, cls.expiry > datetime.datetime.now()).first()
+        return session.query(cls).filter(
+            cls.token == token,
+            sqlalchemy.or_(
+                cls.expiry > datetime.datetime.now(),
+                cls.expiry == None
+            )
+        ).first()
 
     def get_creation_api_details(self):
         """Create API details for created token"""
