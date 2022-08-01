@@ -69,7 +69,7 @@ export class AccountService {
       .subscribe({
         next: response => {
           this.loggedIn = true;
-          resolve(response);
+          resolve(response.data);
         },
         error: () => {
           this.loggedIn = false;
