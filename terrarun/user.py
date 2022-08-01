@@ -5,8 +5,10 @@ import sqlalchemy.orm
 
 import bcrypt
 
+import terrarun.organisation
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+from terrarun.permissions.user import UserPermissions
 
 
 class User(Base, BaseObject):
@@ -24,6 +26,8 @@ class User(Base, BaseObject):
     site_admin = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
     user_tokens = sqlalchemy.orm.relation("UserToken", back_populates="user")
+
+    teams = sqlalchemy.orm.relationship("TeamUserMembership", back_populates="user")
 
     def __init__(self, *args, **kwargs):
         """Setup salt"""
@@ -76,8 +80,32 @@ class User(Base, BaseObject):
             self.password
         )
 
-    def get_api_details(self):
-        """Return API details for user"""
+    @property
+    def organisations(self):
+        """List of organisations that the user is a member of."""
+        session = Database.get_session()
+
+        # Return user as being a member of all organisations,
+        # if they're a site admin
+        if self.site_admin:
+            print('Site ADMIN')
+            return session.query(terrarun.organisation.Organisation).all()
+
+        organisations = []
+        org_ids = []
+        # Iterate through all team memberships and all team workspace accesses
+        # to determine which organisations this user has access to
+        for team in self.teams:
+            for workspace_access in team.workspace_accesses:
+                org = workspace_access.workspace.organisation
+                if org.web_id not in org_ids:
+                    org_ids.append(org_ids)
+                    organisations.append(org)
+        return organisations
+
+    def get_account_details(self, effective_user):
+        """Get API details for account endpoint."""
+        user_permissions = UserPermissions(current_user=effective_user, user=self)
         return {
             "id": self.api_id,
             "type": "users",
@@ -90,18 +118,74 @@ class User(Base, BaseObject):
                 "is-sso-login": False,
                 "email": self.email,
                 "unconfirmed-email": None,
-                "permissions": {
-                    "can-create-organizations": True,
-                    "can-change-email": True,
-                    "can-change-username": True
-                }
+                "password": None,
+                "enterprise-support": False,
+                "two-factor": {
+                    "enabled": False,
+                    "verified": False
+                },
+                "permissions": user_permissions.get_api_permissions()
             },
             "relationships": {
-            "authentication-tokens": {
-                "links": {
-                    "related": f"/api/v2/users/{self.api_id}/authentication-tokens"
+                "authentication-tokens": {
+                    "links": {
+                        "related": f"/api/v2/users/{self.api_id}/authentication-tokens"
+                    }
                 }
+            },
+            "links": {
+                "self": f"/api/v2/users/{self.api_id}"
             }
+        }
+
+    def get_admin_details(self):
+        """Get API details for admin endpoint."""
+        return {
+            "id": self.api_id,
+            "type": "users",
+            "attributes": {
+                "username": self.username,
+                "email": self.email,
+                "avatar-url": "https://www.gravatar.com/avatar/9babb00091b97b9ce9538c45807fd35f?s=100&d=mm",
+                "is-admin": self.site_admin,
+                "is-suspended": self.suspended,
+                "is-service-account": self.service_account
+            },
+            "relationships": {
+                "organizations": {
+                    "data": [
+                        {
+                            "id": organisation.name_id,
+                            "type": "organizations"
+                        }
+                        for organisation in self.organisations
+                    ]
+                }
+            },
+            "links": {
+                "self": f"/api/v2/users/{self.api_id}"
+            }
+        }
+
+    def get_api_details(self, effective_user):
+        """Return API details for user"""
+        user_permissions = UserPermissions(current_user=effective_user, user=self)
+        return {
+            "id": self.api_id,
+            "type": "users",
+            "attributes": {
+                "username": self.username,
+                "is-service-account": self.service_account,
+                "avatar-url": "https://www.gravatar.com/avatar/9babb00091b97b9ce9538c45807fd35f?s=100&d=mm",
+                "v2-only": False,
+                "permissions": user_permissions.get_api_permissions()
+            },
+            "relationships": {
+                "authentication-tokens": {
+                    "links": {
+                        "related": f"/api/v2/users/{self.api_id}/authentication-tokens"
+                    }
+                }
             },
             "links": {
                 "self": f"/api/v2/users/{self.api_id}"

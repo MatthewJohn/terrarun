@@ -16,6 +16,9 @@ from terrarun.apply import Apply
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.organisation import Organisation
+from terrarun.permissions.organisation import OrganisationPermissions
+from terrarun.permissions.user import UserPermissions
+from terrarun.permissions.workspace import WorkspacePermissions
 from terrarun.plan import Plan
 from terrarun.run import Run
 from terrarun.run_queue import RunQueue
@@ -24,6 +27,9 @@ from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
 from terrarun.user import User
+from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
+from terrarun.team_user_membership import TeamUserMembership
+from terrarun.team import Team
 
 
 class Server(object):
@@ -74,6 +80,15 @@ class Server(object):
             ApiTerraformAccountDetails,
             '/api/v2/account/details'
         )
+
+        self._api.add_resource(
+            ApiTerraformOrganisationList,
+            '/api/v2/organizations'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationDetails,
+            '/api/v2/organizations/<string:organisation_name>'
+        )
         self._api.add_resource(
             ApiTerraformOrganisationEntitlementSet,
             '/api/v2/organizations/<string:organisation_name>/entitlement-set'
@@ -82,6 +97,11 @@ class Server(object):
             ApiTerraformWorkspace,
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
+        self._api.add_resource(
+            ApiTerraformOrganisationQueue,
+            '/api/v2/organizations/<string:organisation_name>/runs/queue'
+        )
+
         self._api.add_resource(
             ApiTerraformWorkspaceConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
@@ -106,10 +126,6 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
-        )
-        self._api.add_resource(
-            ApiTerraformOrganisationQueue,
-            '/api/v2/organizations/<string:organisation_name>/runs/queue'
         )
         self._api.add_resource(
             ApiTerraformPlans,
@@ -184,6 +200,94 @@ class Server(object):
                 print(traceback.format_exc())
 
 
+class AuthenticatedEndpoint(Resource):
+    """Authenticated endpoint"""
+
+    def _get_current_user(self):
+        """Obtain current user based on API token key in request"""
+        authorization_header = request.headers.get('Authorization', '')
+        auth_token = re.sub(r'^Bearer ', '', authorization_header)
+        user_token = UserToken.get_by_token(auth_token)
+        if not user_token:
+            return None
+        return user_token.user
+
+    def _get(self, *args, **kwargs):
+        """Handle GET request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_get(self, *args, **kwargs):
+        """Function to check permissions, must be implemented by overriding class."""
+        raise NotImplementedError
+
+    def get(self, *args, **kwargs):
+        """Handle GET request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            print('No user')
+            return {}, 403
+
+        if not self.check_permissions_get(*args, current_user=current_user, **kwargs):
+            return {}, 403
+
+        return self._get(*args, current_user=current_user, **kwargs)
+
+    def _post(self, *args, **kwargs):
+        """Handle POST request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_post(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def post(self, *args, **kwargs):
+        """Handle POST request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_post(*args, current_user=current_user, **kwargs):
+            return {}, 403
+        return self._post(*args, current_user=current_user, **kwargs)
+
+    def _patch(self, *args, **kwargs):
+        """Handle PATCH request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_patch(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def patch(self, *args, **kwargs):
+        """Handle PATCH request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_patch(*args, current_user=current_user, **kwargs):
+            return {}, 403
+
+        return self._patch(*args, current_user=current_user, **kwargs)
+
+    def _put(self, *args, **kwargs):
+        """Handle PUT request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_put(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def put(self, *args, **kwargs):
+        """Handle PUT request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_put(*args, current_user=current_user, **kwargs):
+            return {}, 403
+
+        return self._put(*args, current_user=current_user, **kwargs)
+
 class ApiAuthenticate(Resource):
     """Interface to authenticate user"""
 
@@ -202,10 +306,19 @@ class ApiAuthenticate(Resource):
         return {"data": token.get_creation_api_details()}
 
 
-class ApiTerraformUserTokens(Resource):
+class ApiTerraformUserTokens(AuthenticatedEndpoint):
     """Get user tokens for user"""
 
-    def get(self, user_id):
+    def check_permissions_get(self, user_id, current_user, *args, **kwargs):
+        """Check if user has permission to modify user tokens"""
+        target_user = User.get_by_api_id(user_id)
+        # @TODO Do not return 403 when user does not exist
+        if not target_user:
+            return False
+        return UserPermissions(current_user=current_user, user=target_user).check_permission(
+            UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
+
+    def _get(self, user_id, current_user):
         """Return tokens for user"""
         user = User.get_by_api_id(user_id)
         if not user_id:
@@ -217,7 +330,16 @@ class ApiTerraformUserTokens(Resource):
             ]
         }
     
-    def post(self, user_id):
+    def check_permissions_post(self, current_user, user_id, *args, **kwargs):
+        """Check if user has permission to modify user tokens"""
+        target_user = User.get_by_api_id(user_id)
+        # @TODO Do not return 403 when user does not exist
+        if not target_user:
+            return False
+        return UserPermissions(current_user=current_user, user=target_user).check_permission(
+            UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
+
+    def _post(self, current_user, user_id):
         """Create token"""
         user = User.get_by_api_id(user_id)
         if not user_id:
@@ -260,17 +382,17 @@ class ApiTerraformPing(Resource):
         return response
 
 
-class ApiTerraformAccountDetails(Resource):
+class ApiTerraformAccountDetails(AuthenticatedEndpoint):
     """Interface to obtain current account"""
 
-    def get(self):
+    def check_permissions_get(self, current_user):
+        """Check permissions to access account details."""
+        # All users can view their own account details
+        return True
+
+    def _get(self, current_user):
         """Get current account details"""
-        authorization_header = request.headers.get('Authorization', '')
-        auth_token = re.sub(r'^Bearer ', '', authorization_header)
-        user_token = UserToken.get_by_token(auth_token)
-        if not user_token:
-            return {}, 403
-        return user_token.user.get_api_details()
+        return {'data': current_user.get_account_details(current_user)}
 
 
 class ApiTerraformMotd(Resource):
@@ -283,29 +405,101 @@ class ApiTerraformMotd(Resource):
         }
 
 
-class ApiTerraformOrganisationEntitlementSet(Resource):
+class ApiTerraformOrganisationList(AuthenticatedEndpoint):
+    """Interface for listing organisations"""
+
+    def check_permissions_get(self, *args, **kwargs):
+        """Check permissions for endpoint."""
+        # Since organisations are obtained based on user permissions for organisation,
+        # do not do any permission checking
+        return True
+
+    def _get(self, current_user):
+        """Obtain list of organisations"""
+        return {
+            'data': [
+                organisation.get_api_details(effective_user=current_user)
+                for organisation in current_user.organisations
+            ]
+        }
+
+
+class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
+    """Organisation details endpoint"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, current_user, organisation_name):
+        """Get organisation details"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {"data": organisation.get_api_details(effective_user=current_user)}
+
+
+class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
     """Organisation entitlement endpoint."""
 
-    def get(self, organisation_name):
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, current_user, organisation_name):
         """Return entitlement-set for organisation"""
-        organisation = Organisation.get_by_name(organisation_name)
+        organisation = Organisation.get_by_name_id(organisation_name)
         return organisation.get_entitlement_set_api()
 
 
-class ApiTerraformWorkspace(Resource):
+class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
-    def get(self, organisation_name, workspace_name):
-        """Return workspace details."""
-        organisation = Organisation.get_by_name(organisation_name)
+    def check_permissions_get(self, organisation_name, workspace_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
-        return workspace.get_api_details()
+        if not workspace:
+            return False
+        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, organisation_name, workspace_name, current_user):
+        """Return workspace details."""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return {}, 404
+        return workspace.get_api_details(effective_user=current_user)
 
 
-class ApiTerraformWorkspaceConfigurationVersions(Resource):
+class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
-    def post(self, workspace_id):
+    def check_permissions_post(self, workspace_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        # As per documentation:
+        # You need read runs permission to list and view configuration versions for a workspace, and you need queue plans permission to create new configuration versions.
+        return WorkspacePermissions(current_user=current_user,
+                                    workspace=workspace).check_access_type(
+                                        runs=TeamWorkspaceRunsPermission.PLAN)
+
+    def _post(self, workspace_id, current_user):
         """Create configuration version"""
         data = flask.request.get_json().get('data', {})
         attributes = data.get('attributes', {})
@@ -322,10 +516,19 @@ class ApiTerraformWorkspaceConfigurationVersions(Resource):
         return cv.get_api_details()
 
 
-class ApiTerraformConfigurationVersions(Resource):
+class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
-    def get(self, configuration_version_id):
+    def check_permissions_get(self, current_user, configuration_version_id):
+        """Check permissions"""
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
+        if not cv:
+            return False
+        return WorkspacePermissions(current_user=current_user,
+                                    workspace=cv.workspace).check_access_type(
+                                        runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, configuration_version_id, current_user):
         """Get configuration version details."""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -333,10 +536,19 @@ class ApiTerraformConfigurationVersions(Resource):
         return cv.get_api_details()
 
 
-class ApiTerraformConfigurationVersionUpload(Resource):
+class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
     """Configuration version upload endpoint"""
 
-    def put(self, configuration_version_id):
+    def check_permissions_put(self, current_user, configuration_version_id):
+        """Check permissions"""
+        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
+        if not cv:
+            return False
+        return WorkspacePermissions(current_user=current_user,
+                                    workspace=cv.workspace).check_access_type(
+                                        runs=TeamWorkspaceRunsPermission.PLAN)
+
+    def _put(self, configuration_version_id, current_user):
         """Handle upload of configuration version data."""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -345,17 +557,51 @@ class ApiTerraformConfigurationVersionUpload(Resource):
         cv.process_upload(request.data)
 
 
-class ApiTerraformRun(Resource):
+class ApiTerraformRun(AuthenticatedEndpoint):
     """Run interface."""
 
-    def get(self, run_id=None):
+    def check_permissions_get(self, current_user, run_id=None,):
+        """Check permissions to view run"""
+        if not run_id:
+            return False
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, current_user, run_id=None):
         """Return run information"""
+        if not run_id:
+            return {}, 404
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
         return {"data": run.get_api_details()}
 
-    def post(self, run_id=None):
+    def check_permissions_post(self, current_user, run_id=None,):
+        """Check permissions to view run"""
+        if run_id:
+            return False
+
+        data = flask.request.get_json().get('data', {})
+        workspace_id = data.get('relationships', {}).get('workspace', {}).get('data', {}).get('id', None)
+        if not workspace_id:
+            return False
+
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.PLAN)
+
+    def _post(self, current_user, run_id=None):
         """Create a run."""
 
         if run_id:
@@ -384,6 +630,11 @@ class ApiTerraformRun(Resource):
         if not cv:
             return {}, 404
 
+        if cv.workspace.id != workspace.id:
+            print('Configuration version ID and workspace ID mismatch')
+            # Hide error to prevent workspace ID/configuration ID enumeration
+            return {}, 404
+
         create_attributes = {
             'auto_apply': request_attributes.get('auto-apply', workspace.auto_apply),
             'is_destroy': request_attributes.get('is-destroy', False),
@@ -402,10 +653,21 @@ class ApiTerraformRun(Resource):
         return {"data": run.get_api_details()}
 
 
-class ApiTerraformWorkspaceRuns(Resource):
+class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
     """Interface to obtain workspace runs,"""
 
-    def get(self, workspace_id):
+    def check_permissions_get(self, current_user, workspace_id):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, workspace_id, current_user):
         """Return all runs for a workspace."""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -414,22 +676,48 @@ class ApiTerraformWorkspaceRuns(Resource):
         return {"data": [run.get_api_details() for run in workspace.runs]}
 
 
-class ApiTerraformOrganisationQueue(Resource):
+class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
     """Interface to obtain run queue for organisation"""
 
-    def get(self, organisation_name):
+    def check_permissions_get(self, current_user, organisation_name):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        # @TODO Check this permission
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
         """Get list of runs queued"""
-        organisation = Organisation.get_by_name(organisation_name)
+        organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
 
         return {"data": [run.get_api_details() for run in organisation.get_run_queue()]}
 
 
-class ApiTerraformPlans(Resource):
+class ApiTerraformPlans(AuthenticatedEndpoint):
     """Interface for plans."""
 
-    def get(self, plan_id=None):
+    def check_permissions_get(self, current_user, plan_id=None):
+        """Check permissions to view run"""
+        if not plan_id:
+            return False
+
+        plan = Plan.get_by_api_id(plan_id)
+        if not plan:
+            return {}, 404
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=plan.run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, current_user, plan_id=None):
         """Return information for plan(s)"""
         if plan_id:
             plan = Plan.get_by_api_id(plan_id)
@@ -442,7 +730,10 @@ class ApiTerraformPlans(Resource):
 
 
 class ApiTerraformPlanLog(Resource):
-    """Interface to obtain logs from stream."""
+    """
+    Interface to obtain logs from stream.
+    @TODO: Need to find a way to authenticate this endpoint
+    """
 
     def get(self, plan_id):
         """Return information for plan(s)"""
@@ -478,21 +769,47 @@ class ApiTerraformPlanLog(Resource):
         return response
 
 
-class ApiTerraformWorkspaceLatestStateVersion(Resource):
+class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
 
-    def get(self, workspace_id):
+    def check_permissions_get(self, current_user, workspace_id):
+        """Check permissions to view run"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
+
+    def _get(self, current_user, workspace_id):
         """Return latest state for workspace."""
 
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
         state = Workspace.get_by_api_id(workspace_id)._latest_state
-        if state:
-            return {'data': state.get_api_details()}
+        if not state:
+            return {}, 404
+        
+        return {'data': state.get_api_details()}
 
-        return {}, 404
 
+class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
 
-class ApiTerraformStateVersionDownload(Resource):
+    def check_permissions_get(self, current_user, state_version_id):
+        """Check permissions to view run"""
+        state_version = StateVersion.get_by_api_id(state_version_id)
+        if not state_version_id:
+            return False
 
-    def get(self, state_version_id):
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=state_version.workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
+
+    def _get(self, current_user, state_version_id):
         """Return state version json"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
@@ -500,10 +817,21 @@ class ApiTerraformStateVersionDownload(Resource):
         return state_version._state_json
 
 
-class ApiTerraformApplyRun(Resource):
+class ApiTerraformApplyRun(AuthenticatedEndpoint):
     """Interface to confirm run"""
 
-    def post(self, run_id):
+    def check_permissions_post(self, current_user, run_id):
+        """Check permissions to view run"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.APPLY)
+
+    def _post(self, current_user, run_id):
         """Initialise run apply."""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -512,10 +840,24 @@ class ApiTerraformApplyRun(Resource):
         return {}, 202
 
 
-class ApiTerraformApplies(Resource):
+class ApiTerraformApplies(AuthenticatedEndpoint):
     """Interface for applies"""
 
-    def get(self, apply_id=None):
+    def check_permissions_get(self, current_user, apply_id=None):
+        """Check permissions to view run"""
+        if not apply_id:
+            raise Exception('IT WAS CALLED')
+
+        apply = Apply.get_by_api_id(apply_id)
+        if not apply:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=apply.plan.run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, current_user, apply_id=None):
         """Get apply details."""
         if not apply_id:
             raise Exception('IT WAS CALLED')
@@ -528,7 +870,10 @@ class ApiTerraformApplies(Resource):
 
 
 class ApiTerraformApplyLog(Resource):
-    """Interface to obtain logs from stream."""
+    """
+    Interface to obtain logs from stream.
+    @TODO: Need to find a way to authenticate this endpoint
+    """
 
     def get(self, apply_id):
         """Return information for plan(s)"""
