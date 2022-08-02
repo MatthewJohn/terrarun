@@ -99,7 +99,7 @@ class Organisation(Base, BaseObject):
     def validate_new_name_id(cls, name_id):
         """Ensure organisation does not already exist and name isn't reserved"""
         session = Database.get_session()
-        existing_org = session.query(cls).filter(cls.name_id == name_id).fetchone()
+        existing_org = session.query(cls).filter(cls.name_id == name_id).first()
         if existing_org:
             return False
         if name_id in cls.RESERVED_ORGANISATION_NAMES:
