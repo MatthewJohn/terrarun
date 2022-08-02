@@ -918,9 +918,10 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
     """Endpoint to validate new organisation name"""
 
     def check_permissions_post(self, current_user):
+        """Check permissions"""
         return current_user.site_admin
 
-    def _post(self):
+    def _post(self, current_user):
         """Validate new organisation name"""
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='json')
