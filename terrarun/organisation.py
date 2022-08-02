@@ -85,10 +85,6 @@ class Organisation(Base, BaseObject):
         """Return organisation object by name of organisation"""
         session = Database.get_session()
         org = session.query(Organisation).filter(Organisation.name_id==name_id).first()
-
-        # @TODO Remove this once able to create organisation in UI
-        if not org and Config().AUTO_CREATE_ORGANISATIONS:
-            org = Organisation.create(name=name_id)
         return org
     
     @staticmethod
