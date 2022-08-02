@@ -9,10 +9,10 @@
                 <form [formGroup]="form" (ngSubmit)="onCreate()">
                     <nb-form-field>
                         <input nbInput (change)="validateName()" placeholder="Organisation name" id="name" formControlName="name" type="text">
-                        <nb-icon nbSuffix icon="minus-circle-outline" pack="eva"></nb-icon>
+                        <nb-icon nbSuffix [icon]="nameValid.icon" [status]="nameValid.iconStatus" pack="eva"></nb-icon>
                     </nb-form-field>
                     <br />
-                    <button [disabled]="!nameValid" nbButton>Create</button>
+                    <button [disabled]="!nameValid.valid" nbButton>Create</button>
                 </form>
             </nb-card-body>
         </nb-card>        

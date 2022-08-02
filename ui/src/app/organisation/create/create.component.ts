@@ -9,17 +9,24 @@ import { OrganisationService } from 'src/app/organisation.service';
 })
 export class CreateComponent implements OnInit {
 
-  nameValid: boolean = false;
+
+  nameValidStates = {
+    invalid: {icon: 'close-outline', valid: false, iconStatus: 'danger'},
+    valid: {icon: 'checkmark-circle-outline', valid: true, iconStatus: 'success'},
+    loading: {icon: 'loader-outline', valid: false, iconStatus: 'info'}
+  };
+  nameValid: {icon: string, valid: boolean, iconStatus: string} = this.nameValidStates.invalid;
   form = this.formBuilder.group({
     name: ''
   });
+  nameValidIcon: string = 'close-outline';
 
   constructor(private formBuilder: FormBuilder, private organisationService: OrganisationService) { }
 
   validateName(): void {
+    this.nameValid = this.nameValidStates.loading;
     this.organisationService.validateNewOrganisationName(this.form.value.name).then((validationResult) => {
-      console.log(validationResult);
-      this.nameValid = validationResult.valid;
+      this.nameValid = validationResult.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
     });
   }
 
