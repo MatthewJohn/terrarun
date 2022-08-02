@@ -1,0 +1,20 @@
+
+<nb-layout>
+    <nb-layout-column left class="colored-column-success">
+        <nb-card>
+            <nb-card-header>
+                Create Organisation
+            </nb-card-header>
+            <nb-card-body>
+                <nb-form-field>
+                    <input nbInput (change)="validateName()" placeholder="Organisation name" type="text">
+                    <nb-icon nbSuffix icon="minus-circle-outline" pack="eva"></nb-icon>
+                </nb-form-field>
+                <br />
+                <button [disabled]="!nameValid" (submit)="onCreate()" nbButton>Create</button>
+            </nb-card-body>
+        </nb-card>        
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>

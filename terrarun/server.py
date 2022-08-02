@@ -162,6 +162,10 @@ class Server(object):
             ApiAuthenticate,
             '/api/terrarun/v1/authenticate'
         )
+        self._api.add_resource(
+            ApiTerrarunOrganisationCreateNameValidation,
+            '/api/terrarun/v1/organisation/create/name-validation'
+        )
 
     def run(self, debug=None):
         """Run flask server."""
@@ -287,6 +291,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         return self._put(*args, current_user=current_user, **kwargs)
+
 
 class ApiAuthenticate(Resource):
     """Interface to authenticate user"""
@@ -907,3 +912,25 @@ class ApiTerraformApplyLog(Resource):
         response = make_response(output)
         response.headers['Content-Type'] = 'text/plain'
         return response
+
+
+class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new organisation name"""
+
+    def check_permissions_post(self, current_user):
+        return current_user.site_admin
+
+    def _post(self):
+        """Validate new organisation name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+        name_id = Organisation.name_to_name_id(args.name)
+        
+        return {
+            "data": {
+                "valid": Organisation.validate_new_name_id(name_id),
+                "name": args.name,
+                "name_id": name_id
+            }
+        }

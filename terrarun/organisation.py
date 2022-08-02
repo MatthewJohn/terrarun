@@ -24,6 +24,8 @@ class CollaboratorAuthPolicyType(Enum):
 class Organisation(Base, BaseObject):
 
     ID_PREFIX = 'org'
+    RESERVED_ORGANISATION_NAMES = ["organisation"]
+    MINIMUM_NAME_LENGTH = 3
 
     __tablename__ = 'organisation'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
@@ -88,9 +90,27 @@ class Organisation(Base, BaseObject):
             org = Organisation.create(name=name_id)
         return org
     
+    @staticmethod
+    def name_to_name_id(name):
+        """Convert organisation to a name ID"""
+        return re.sub(r'[^0-9^a-z^A-Z]+', '-', name).replace('--', '-').lower()
+
+    @classmethod
+    def validate_new_name_id(cls, name_id):
+        """Ensure organisation does not already exist and name isn't reserved"""
+        session = Database.get_session()
+        existing_org = session.query(cls).filter(cls.name_id == name_id).fetchone()
+        if existing_org:
+            return False
+        if name_id in cls.RESERVED_ORGANISATION_NAMES:
+            return False
+        if len(name_id) < cls.MINIMUM_NAME_LENGTH:
+            return False
+        return True
+
     @classmethod
     def create(cls, name):
-        name_id = re.sub(r'[^0-9^a-z^A-Z]+', '-', name).replace('--', '-').lower()
+        name_id = cls.name_to_name_id(name)
         org = cls(name=name, name_id=name_id)
         session = Database.get_session()
         session.add(org)
