@@ -109,9 +109,14 @@ class Organisation(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, name):
+    def create(cls, name, email):
+        """Create organisation"""
         name_id = cls.name_to_name_id(name)
-        org = cls(name=name, name_id=name_id)
+
+        if not cls.validate_new_name_id(name):
+            return None
+
+        org = cls(name=name, name_id=name_id, email=email)
         session = Database.get_session()
         session.add(org)
         session.commit()
