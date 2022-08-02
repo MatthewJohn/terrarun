@@ -42,4 +42,20 @@ export class OrganisationService {
       });
     });
   }
+
+  getAll(): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `https://${window.location.hostname}:5000/api/v2/organizations`,
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data) => {
+          resolve(data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
 }

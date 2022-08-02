@@ -24,22 +24,16 @@ export class AppComponent {
       icon: 'home-outline'
     },
     {
-      title: 'Create',
-      icon: 'plus-square-outline',
-      children: [
-        {
-          title: 'Organisation',
-          link: '/organisation/create'
-        }
-      ]
-    },
-    {
-      title: 'Workspaces',
-      link: '/workspaces',
+      title: 'Organisations',
+      icon: 'globe-outline',
       children: [
         {
           title: 'Create',
-          link: '/workspaces/create'
+          link: '/organisation/create'
+        },
+        {
+          title: 'List',
+          link: '/organisation/list'
         }
       ]
     },

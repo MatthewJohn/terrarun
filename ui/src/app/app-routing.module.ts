@@ -36,11 +36,6 @@ const routes: Routes = [
     path: '', redirectTo: 'home', pathMatch: 'full'
   },
   {
-    path: 'workspaces',
-    loadChildren: () => import('./workspaces/workspaces.module').then(m => m.WorkspacesModule),
-    canActivate: [LoggedInGuard]
-  },
-  {
     path: '*',
     loadChildren: () => import(`./organisation/organisation.module`).then(m => m.OrganisationModule),
     canActivate: [LoggedInGuard]
