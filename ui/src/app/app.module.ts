@@ -4,7 +4,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbMenuModule, NbSidebarModule, NbThemeModule } from '@nebular/theme';
+import { NbActionsModule, NbButtonModule, NbCardModule, NbFormFieldModule, NbIconConfig, NbIconModule, NbInputModule, NbLayoutModule, NbMenuModule, NbSidebarModule, NbThemeModule } from '@nebular/theme';
 import { NbEvaIconsModule } from '@nebular/eva-icons';
 import { HomeComponent } from './home/home.component';
 import { SettingsModule } from './settings/settings.module';
@@ -12,6 +12,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { LoginComponent } from './login/login.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppRedirectComponent } from './app-redirect/app-redirect.component';
+import { OrganisationModule } from './organisation/organisation.module';
 
 @NgModule({
   declarations: [
@@ -36,12 +37,19 @@ import { AppRedirectComponent } from './app-redirect/app-redirect.component';
     NbCardModule,
     NbButtonModule,
     NbFormFieldModule,
+    NbActionsModule,
+    NbEvaIconsModule,
 
     HttpClientModule,
     FormsModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    OrganisationModule
   ],
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+
+
+export class AppModule {
+  disabledIconConfig: NbIconConfig = { icon: 'settings-2-outline', pack: 'eva' };
+}

@@ -34,7 +34,12 @@ const routes: Routes = [
   {
     // Redirect empty URL to home
     path: '', redirectTo: 'home', pathMatch: 'full'
-  }
+  },
+  {
+    path: '*',
+    loadChildren: () => import(`./organisation/organisation.module`).then(m => m.OrganisationModule),
+    canActivate: [LoggedInGuard]
+  },
 ];
 
 @NgModule({
