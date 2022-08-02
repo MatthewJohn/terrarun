@@ -110,7 +110,7 @@ class Organisation(Base, BaseObject):
         """Create organisation"""
         name_id = cls.name_to_name_id(name)
 
-        if not cls.validate_new_name_id(name):
+        if not cls.validate_new_name_id(name_id):
             return None
 
         org = cls(name=name, name_id=name_id, email=email)
