@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { OrganisationRoutingModule } from './organisation-routing.module';
 import { CreateComponent } from './create/create.component';
 import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule } from '@nebular/theme';
+import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -19,7 +20,10 @@ import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputM
     NbLayoutModule,
     NbInputModule,
     NbIconModule,
-    NbButtonModule
+    NbButtonModule,
+
+    FormsModule,
+    ReactiveFormsModule,
   ]
 })
 export class OrganisationModule { }

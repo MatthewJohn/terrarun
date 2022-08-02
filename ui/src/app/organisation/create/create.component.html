@@ -6,12 +6,14 @@
                 Create Organisation
             </nb-card-header>
             <nb-card-body>
-                <nb-form-field>
-                    <input nbInput (change)="validateName()" placeholder="Organisation name" type="text">
-                    <nb-icon nbSuffix icon="minus-circle-outline" pack="eva"></nb-icon>
-                </nb-form-field>
-                <br />
-                <button [disabled]="!nameValid" (submit)="onCreate()" nbButton>Create</button>
+                <form [formGroup]="form" (ngSubmit)="onCreate()">
+                    <nb-form-field>
+                        <input nbInput (change)="validateName()" placeholder="Organisation name" id="name" formControlName="name" type="text">
+                        <nb-icon nbSuffix icon="minus-circle-outline" pack="eva"></nb-icon>
+                    </nb-form-field>
+                    <br />
+                    <button [disabled]="!nameValid" nbButton>Create</button>
+                </form>
             </nb-card-body>
         </nb-card>        
     </nb-layout-column>
