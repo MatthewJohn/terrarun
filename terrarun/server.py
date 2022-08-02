@@ -448,6 +448,9 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
 
         organisation = Organisation.create(name=name, email=email)
 
+        if organisation is None:
+            return {}, 400
+
         return {
             "data": organisation.get_api_details(effective_user=current_user)
         }
