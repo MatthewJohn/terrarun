@@ -919,7 +919,8 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
 
     def check_permissions_post(self, current_user):
         """Check permissions"""
-        return current_user.site_admin
+        return UserPermissions(current_user=current_user, user=current_user).check_permission(
+            UserPermissions.Permissions.CAN_CREATE_ORGANISATIONS)
 
     def _post(self, current_user):
         """Validate new organisation name"""
