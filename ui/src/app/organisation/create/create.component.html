@@ -8,11 +8,17 @@
             <nb-card-body>
                 <form [formGroup]="form" (ngSubmit)="onCreate()">
                     <nb-form-field>
-                        <input nbInput (change)="validateName()" placeholder="Organisation name" id="name" formControlName="name" type="text">
+                        <label for="name">Organisation Name:</label>
+                        <input nbInput (change)="validateName()" placeholder="My Organisation" id="name" formControlName="name" type="text">
                         <nb-icon nbSuffix [icon]="nameValid.icon" [status]="nameValid.iconStatus" pack="eva"></nb-icon>
                     </nb-form-field>
-                    <br />
                     <span *ngIf="organisationSlug">Organisation Slug: {{organisationSlug}}</span>
+                    <br />
+                    <br />
+                    <nb-form-field>
+                        <label for="email">Admin email address:</label>
+                        <input nbInput placeholder="admin@example.com" id="email" formControlName="email" type="text">
+                    </nb-form-field>
                     <br />
                     <button [disabled]="!nameValid.valid" nbButton>Create</button>
                 </form>

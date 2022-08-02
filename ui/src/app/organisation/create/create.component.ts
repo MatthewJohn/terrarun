@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
+import { Router } from '@angular/router';
 import { OrganisationService } from 'src/app/organisation.service';
 
 @Component({
@@ -17,12 +18,14 @@ export class CreateComponent implements OnInit {
   };
   nameValid: {icon: string, valid: boolean, iconStatus: string} = this.nameValidStates.invalid;
   form = this.formBuilder.group({
-    name: ''
+    name: '',
+    email: ''
   });
-  nameValidIcon: string = 'close-outline';
   organisationSlug: string = '';
 
-  constructor(private formBuilder: FormBuilder, private organisationService: OrganisationService) { }
+  constructor(private formBuilder: FormBuilder,
+              private organisationService: OrganisationService,
+              private router: Router) { }
 
   validateName(): void {
     this.nameValid = this.nameValidStates.loading;
@@ -33,7 +36,9 @@ export class CreateComponent implements OnInit {
   }
 
   onCreate(): void {
-
+    this.organisationService.create(this.form.value.name, this.form.value.email).then((orgData) => {
+      console.log(orgData);
+    });
   }
 
   ngOnInit(): void {
