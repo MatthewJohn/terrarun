@@ -12,6 +12,8 @@
                         <nb-icon nbSuffix [icon]="nameValid.icon" [status]="nameValid.iconStatus" pack="eva"></nb-icon>
                     </nb-form-field>
                     <br />
+                    <span *ngIf="organisationSlug">Organisation Slug: {{organisationSlug}}</span>
+                    <br />
                     <button [disabled]="!nameValid.valid" nbButton>Create</button>
                 </form>
             </nb-card-body>

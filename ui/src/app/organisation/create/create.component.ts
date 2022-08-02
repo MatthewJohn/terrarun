@@ -20,6 +20,7 @@ export class CreateComponent implements OnInit {
     name: ''
   });
   nameValidIcon: string = 'close-outline';
+  organisationSlug: string = '';
 
   constructor(private formBuilder: FormBuilder, private organisationService: OrganisationService) { }
 
@@ -27,6 +28,7 @@ export class CreateComponent implements OnInit {
     this.nameValid = this.nameValidStates.loading;
     this.organisationService.validateNewOrganisationName(this.form.value.name).then((validationResult) => {
       this.nameValid = validationResult.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
+      this.organisationSlug = validationResult.valid ? validationResult.name_id : '';
     });
   }
 
