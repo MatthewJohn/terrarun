@@ -11,6 +11,7 @@ from terrarun.permissions.organisation import OrganisationPermissions
 import terrarun.run
 import terrarun.run_queue
 import terrarun.configuration
+from terrarun.team import Team
 from terrarun.utils import datetime_to_json
 import terrarun.workspace
 
@@ -120,6 +121,9 @@ class Organisation(Base, BaseObject):
         session = Database.get_session()
         session.add(org)
         session.commit()
+
+        # @TODO Create owners group
+
         return org
 
     def get_run_queue(self):

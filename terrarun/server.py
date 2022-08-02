@@ -82,7 +82,7 @@ class Server(object):
         )
 
         self._api.add_resource(
-            ApiTerraformOrganisationList,
+            ApiTerraformOrganisation,
             '/api/v2/organizations'
         )
         self._api.add_resource(
@@ -410,8 +410,8 @@ class ApiTerraformMotd(Resource):
         }
 
 
-class ApiTerraformOrganisationList(AuthenticatedEndpoint):
-    """Interface for listing organisations"""
+class ApiTerraformOrganisation(AuthenticatedEndpoint):
+    """Interface for listing/creating organisations"""
 
     def check_permissions_get(self, *args, **kwargs):
         """Check permissions for endpoint."""
@@ -426,6 +426,30 @@ class ApiTerraformOrganisationList(AuthenticatedEndpoint):
                 organisation.get_api_details(effective_user=current_user)
                 for organisation in current_user.organisations
             ]
+        }
+
+    def check_permissions_post(self, current_user):
+        """Check permissions"""
+        return UserPermissions(current_user=current_user, user=current_user).check_permission(
+            UserPermissions.Permissions.CAN_CREATE_ORGANISATIONS)
+
+    def _post(self, current_user):
+        """Create new organisation"""
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type', None) != "organizations":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name', None)
+        email = attributes.get('email', None)
+
+        if not email or not email:
+            return {}, 400
+
+        organisation = Organisation.create(name=name, email=email)
+
+        return {
+            "data": organisation.get_api_details(effective_user=current_user)
         }
 
 
