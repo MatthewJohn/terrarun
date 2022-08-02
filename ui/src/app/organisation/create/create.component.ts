@@ -38,6 +38,7 @@ export class CreateComponent implements OnInit {
   onCreate(): void {
     this.organisationService.create(this.form.value.name, this.form.value.email).then((orgData) => {
       console.log(orgData);
+      this.router.navigateByUrl(`/${orgData.data.id}`);
     });
   }
 
