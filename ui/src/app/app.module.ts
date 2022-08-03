@@ -13,8 +13,6 @@ import { LoginComponent } from './login/login.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppRedirectComponent } from './app-redirect/app-redirect.component';
 import { OrganisationModule } from './organisation/organisation.module';
-import { StoreModule } from '@ngrx/store';
-import { authenticationReducer } from './reducers/authenticationState.reducer';
 
 @NgModule({
   declarations: [
@@ -25,7 +23,6 @@ import { authenticationReducer } from './reducers/authenticationState.reducer';
   ],
   imports: [
     BrowserModule,
-    StoreModule.forRoot({authentication: authenticationReducer}),
     AppRoutingModule,
     SettingsModule,
     BrowserAnimationsModule,
