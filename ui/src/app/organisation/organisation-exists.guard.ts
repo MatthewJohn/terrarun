@@ -7,7 +7,7 @@ import { StateService } from '../state.service';
 @Injectable({
   providedIn: 'root'
 })
-export class OrganisationExistsGuard implements CanActivate, CanActivateChild, CanDeactivate<unknown>, CanLoad {
+export class OrganisationExistsGuard implements CanActivate {
 
   constructor(private stateService: StateService, private router: Router, private organisationService: OrganisationService) { }
 
@@ -22,22 +22,5 @@ export class OrganisationExistsGuard implements CanActivate, CanActivateChild, C
           reject();
         });
     });
-  }
-  canActivateChild(
-    childRoute: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    return true;
-  }
-  canDeactivate(
-    component: unknown,
-    currentRoute: ActivatedRouteSnapshot,
-    currentState: RouterStateSnapshot,
-    nextState?: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    return true;
-  }
-  canLoad(
-    route: Route,
-    segments: UrlSegment[]): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
-    return true;
   }
 }
