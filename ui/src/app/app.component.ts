@@ -69,7 +69,7 @@ export class AppComponent {
       // Add links for current organisation
       if (this._currentOrganisationState.id) {
         this.items[1].children?.push({
-          title: this._currentOrganisationState.name || '',
+          title: `Organisation: ${this._currentOrganisationState.name}`,
           link: `/${this._currentOrganisationState.id}`,
           children: [
             {
