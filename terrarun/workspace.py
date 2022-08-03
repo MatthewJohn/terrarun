@@ -1,4 +1,5 @@
 
+import re
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -14,6 +15,8 @@ from terrarun.database import Base, Database
 class Workspace(Base, BaseObject):
 
     ID_PREFIX = 'ws'
+    RESERVED_NAMES = ['setttings']
+    MINIMUM_NAME_LENGTH = 3
 
     __tablename__ = 'workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
@@ -42,7 +45,22 @@ class Workspace(Base, BaseObject):
         if not ws and Config().AUTO_CREATE_WORKSPACES:
             ws = Workspace.create(organisation=organisation, name=workspace_name)
         return ws
-    
+
+    @classmethod
+    def validate_new_name(cls, organisation, name):
+        """Ensure organisation does not already exist and name isn't reserved"""
+        session = Database.get_session()
+        existing_workspace = session.query(cls).filter(cls.name==name, cls.organisation==organisation).first()
+        if existing_workspace:
+            return False
+        if name in cls.RESERVED_NAMES:
+            return False
+        if len(name) < cls.MINIMUM_NAME_LENGTH:
+            return False
+        if not re.match(r'^[a-zA-Z0-9-_]+$', name):
+            return False
+        return True
+
     @classmethod
     def create(cls, organisation, name):
         ws = cls(organisation=organisation, name=name)
