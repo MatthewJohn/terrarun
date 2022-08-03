@@ -7,13 +7,15 @@ import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputM
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ListComponent } from './list/list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
+import { OverviewComponent } from './overview/overview.component';
 
 
 @NgModule({
   declarations: [
     CreateComponent,
     ListComponent,
-    WorkspaceListComponent
+    WorkspaceListComponent,
+    OverviewComponent
   ],
   imports: [
     CommonModule,

@@ -4,6 +4,7 @@ import { LoggedInGuard } from '../logged-in.guard';
 import { CreateComponent } from './create/create.component';
 import { ListComponent } from './list/list.component';
 import { OrganisationExistsGuard } from './organisation-exists.guard';
+import { OverviewComponent } from './overview/overview.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 
 const routes: Routes = [
@@ -16,6 +17,11 @@ const routes: Routes = [
     path: 'organisation/list',
     component: ListComponent,
     canActivate: [LoggedInGuard]
+  },
+  {
+    path: 'organisation/:organisationId',
+    component: OverviewComponent,
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
     path: 'organisation/:organisationId/workspaces',
