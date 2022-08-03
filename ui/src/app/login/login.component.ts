@@ -3,9 +3,8 @@ import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { AccountService } from '../account.service';
-import { AppState } from '../app.state';
-import { LoginAction } from '../reducers/authentication.reducer';
-import { LogIn } from '../../store/actions/authentication.actions';
+import { LoginAction } from '../reducers/authenticationState.reducer';
+import { AuthenticationState } from './authenticationState.model';
 
 @Component({
   selector: 'app-login',
@@ -23,23 +22,22 @@ export class LoginComponent implements OnInit {
     private formBuilder: FormBuilder,
     private accountService: AccountService,
     private router: Router,
-    private store: Store<AppState>
+    private store: Store<AuthenticationState>
   ) {}
 
   onSubmit(): void {
     let username = this.loginForm.value.username
-    this.store.dispatch(new LogIn({username: this.loginForm.value.username, password: this.loginForm.value.password}))
-    // this.accountService.login(
-    //   username,
-    //   this.loginForm.value.password
-    // ).then((data) => {
-    //   console.log('logged in');
-    //   this.store.dispatch(new LogIn({loggedIn: true, userId: data.relationships['created-by'].data.id, username: username}))
-      // localStorage.setItem('authToken', data.attributes.token);
+    this.accountService.login(
+      username,
+      this.loginForm.value.password
+    ).then((data) => {
+      console.log('logged in');
+      this.store.dispatch(LoginAction({loggedIn: true, userId: data.relationships['created-by'].data.id, username: username}))
+      localStorage.setItem('authToken', data.attributes.token);
       this.router.navigateByUrl('/');
     // }).catch(() => {
     //   console.log('Login failure');
-    //});
+    });
   }
 
   ngOnInit(): void {
