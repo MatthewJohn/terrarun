@@ -25,7 +25,7 @@ export class LoginComponent implements OnInit {
     this.accountService.login(
       this.loginForm.value.username,
       this.loginForm.value.password
-    ).then((token) => {
+    ).then(() => {
       console.log('logged in');
       this.router.navigateByUrl('/');
     }).catch(() => {

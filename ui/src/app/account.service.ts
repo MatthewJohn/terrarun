@@ -24,9 +24,9 @@ export class AccountService {
 
             // Perform get account details, which will send notification
             // for new logged in state
-            this.getAccountDetails();
-
-            resolve();
+            this.getAccountDetails().then(() => {
+              resolve();
+            });
             return;
           }
           this.logout();
@@ -61,27 +61,31 @@ export class AccountService {
     return {};
   }
 
-  getAccountDetails(): void {
-    this.http.get<any>(
-      `https://${window.location.hostname}:5000/api/v2/account/details`,
-      { headers: this.getAuthHeader() }
-    )
-    .subscribe({
-      next: response => {
-        console.log("putting into observer");
-        this.stateService.getAuthenticationObserver().next({
-          authenticated: true,
-          username: response.data.username,
-          id: response.data.id
-        })
-      },
-      error: () => {
-        this.stateService.getAuthenticationObserver().next({
-          authenticated: false,
-          username: null,
-          id: null
-        })
-      }
+  getAccountDetails(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `https://${window.location.hostname}:5000/api/v2/account/details`,
+        { headers: this.getAuthHeader() }
+      )
+      .subscribe({
+        next: response => {
+          console.log("putting into observer");
+          this.stateService.getAuthenticationObserver().next({
+            authenticated: true,
+            username: response.data.username,
+            id: response.data.id
+          })
+          resolve();
+        },
+        error: () => {
+          this.stateService.getAuthenticationObserver().next({
+            authenticated: false,
+            username: null,
+            id: null
+          });
+          reject();
+        }
+      });
     });
   }
 }
