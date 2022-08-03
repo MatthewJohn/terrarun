@@ -5,7 +5,7 @@ import { AccountService } from './account.service';
 
 
 export interface AuthenticationStateType {
-    authenticated: boolean;
+    authenticated: boolean | null;
     id: string | null;
     username: string | null;
 };
@@ -15,7 +15,7 @@ export interface AuthenticationStateType {
 })
 export class StateService {
 
-    authenticationState: BehaviorSubject<AuthenticationStateType> = new BehaviorSubject<AuthenticationStateType>({authenticated: false, id: null, username: null});
+    authenticationState: BehaviorSubject<AuthenticationStateType> = new BehaviorSubject<AuthenticationStateType>({authenticated: null, id: null, username: null});
 
     constructor() {
         console.log("Created state object");

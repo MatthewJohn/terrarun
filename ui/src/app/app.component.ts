@@ -18,7 +18,7 @@ export class AppComponent {
     this.accountService.getAccountDetails();
 
     this.stateService.authenticationState.subscribe((data) => {
-      if (data.authenticated) {
+      if (data.authenticated == true) {
         this.items = [
           {
             title: 'Home',
