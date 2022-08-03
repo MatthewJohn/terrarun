@@ -19,12 +19,12 @@ const routes: Routes = [
     canActivate: [LoggedInGuard]
   },
   {
-    path: 'organisation/:organisationId',
+    path: ':organisationId',
     component: OverviewComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
-    path: 'organisation/:organisationId/workspaces',
+    path: ':organisationId/workspaces',
     component: WorkspaceListComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   }
