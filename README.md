@@ -2,7 +2,7 @@
 
 Open source alternative to Terraform Cloud/Enterprise
 
-Current features:
+Current backend features (all partial):
 
  * Organisations
  * Workspaces
