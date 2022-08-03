@@ -27,7 +27,6 @@ export class LoginComponent implements OnInit {
       this.loginForm.value.password
     ).then((token) => {
       console.log('logged in');
-      localStorage.setItem('authToken', token);
       this.router.navigateByUrl('/');
     }).catch(() => {
       console.log('Login failure');

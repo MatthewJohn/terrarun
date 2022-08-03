@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { NbMenuItem, NbSidebarService } from '@nebular/theme';
 import { AccountService } from './account.service';
 import { HomeComponent } from './home/home.component';
+import { StateService } from './state.service';
 
 @Component({
   selector: 'app-root',
@@ -12,9 +13,12 @@ export class AppComponent {
   title = 'ui';
 
   constructor(private readonly sidebarService: NbSidebarService,
-              private accountService: AccountService) {
-    this.accountService.isLoggedIn().then((loggedIn) => {
-      if (loggedIn) {
+              private accountService: AccountService,
+              private stateService: StateService) {
+    this.accountService.getAccountDetails();
+
+    this.stateService.authenticationState.subscribe((data) => {
+      if (data.authenticated) {
         this.items = [
           {
             title: 'Home',
