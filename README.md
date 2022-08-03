@@ -12,9 +12,9 @@ Current backend features (all partial):
  * Terraform state management
  * Configuration versions
  * Support for:
- ** Terraform init
- ** Terraform plan
- ** Terraform apply
+   * Terraform init
+   * Terraform plan
+   * Terraform apply
 
 Current UI implementation:
  * Authentication
