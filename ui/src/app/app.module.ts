@@ -14,7 +14,9 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { AppRedirectComponent } from './app-redirect/app-redirect.component';
 import { OrganisationModule } from './organisation/organisation.module';
 import { StoreModule } from '@ngrx/store';
-import { authenticationReducer } from './reducers/authenticationState.reducer';
+import { AuthenticationEffects } from './effects/authentication.effects';
+import { EffectsModule } from '@ngrx/effects';
+
 
 @NgModule({
   declarations: [
@@ -25,7 +27,8 @@ import { authenticationReducer } from './reducers/authenticationState.reducer';
   ],
   imports: [
     BrowserModule,
-    StoreModule.forRoot({authentication: authenticationReducer}),
+    //StoreModule.forRoot({authentication: authenticationReducer}),
+    EffectsModule.forRoot([AuthenticationEffects]),
     AppRoutingModule,
     SettingsModule,
     BrowserAnimationsModule,
