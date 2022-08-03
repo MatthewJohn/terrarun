@@ -73,9 +73,3 @@ Copyright (c) 2022 Matt Comben <matthew@dockstudios.co.uk>
 Terrarun can not be copied and/or distributed without the express
 permission of the authors
 
-## Project status
-
-This is a proof-of-concept implementation of Terraform Cloud, attempting to implement:
- * Authentication
- * Terraform plan
- * Terraform apply
