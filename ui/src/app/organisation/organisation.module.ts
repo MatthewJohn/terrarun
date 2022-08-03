@@ -6,12 +6,14 @@ import { CreateComponent } from './create/create.component';
 import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbTreeGridModule } from '@nebular/theme';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ListComponent } from './list/list.component';
+import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 
 
 @NgModule({
   declarations: [
     CreateComponent,
-    ListComponent
+    ListComponent,
+    WorkspaceListComponent
   ],
   imports: [
     CommonModule,

@@ -94,6 +94,10 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/entitlement-set'
         )
         self._api.add_resource(
+            ApiTerraformOrganisationWorkspaces,
+            '/api/v2/organizations/<string:organisation_name>/workspaces'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspace,
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
@@ -492,6 +496,31 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
         return organisation.get_entitlement_set_api()
 
 
+class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
+    """Interface to obtain organisation workspaces"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of workspaces for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                workspace.get_api_details(effective_user=current_user)
+                for workspace in organisation.workspaces
+            ]
+        }
+
+
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
@@ -514,7 +543,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
         if not workspace:
             return {}, 404
-        return workspace.get_api_details(effective_user=current_user)
+        return {"data": workspace.get_api_details(effective_user=current_user)}
 
 
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):

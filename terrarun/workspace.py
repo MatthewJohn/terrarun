@@ -92,112 +92,110 @@ class Workspace(Base, BaseObject):
         """Return details for workspace."""
         workspace_permissions = WorkspacePermissions(current_user=effective_user, workspace=self)
         return {
-            "data": {
-                "attributes": {
-                    "actions": {
-                        "is-destroyable": True
-                    },
-                    "allow-destroy-plan": True,
-                    "apply-duration-average": 158000,
-                    "auto-apply": self.auto_apply,
-                    "auto-destroy-at": None,
-                    "created-at": "2021-06-03T17:50:20.307Z",
-                    "description": "An example workspace for documentation.",
-                    "environment": "default",
-                    "execution-mode": "remote",
-                    "file-triggers-enabled": True,
-                    "global-remote-state": False,
-                    "latest-change-at": "2021-06-23T17:50:48.815Z",
-                    "locked": False,
-                    "name": self.name,
-                    "operations": True,
-                    "permissions": workspace_permissions.get_api_permissions(),
-                    "plan-duration-average": 20000,
-                    "policy-check-failures": None,
-                    "queue-all-runs": False,
-                    "resource-count": 0,
-                    "run-failures": 6,
-                    "source": "terraform",
-                    "source-name": None,
-                    "source-url": None,
-                    "speculative-enabled": True,
-                    "structured-run-output-enabled": False,
-                    "terraform-version": "0.15.3",
-                    "trigger-prefixes": [],
-                    "updated-at": "2021-08-16T18:54:06.874Z",
-                    "vcs-repo": None,
-                    "vcs-repo-identifier": None,
-                    "working-directory": None,
-                    "workspace-kpis-runs-count": 7
+            "attributes": {
+                "actions": {
+                    "is-destroyable": True
                 },
-                "id": self.api_id,
-                "links": {
-                    "self": f"/api/v2/organizations/{self.organisation.name}/workspaces/{self.name}"
-                },
-                "relationships": {
-                    "agent-pool": {
-                        "data": {
-                            "id": "apool-QxGd2tRjympfMvQc",
-                            "type": "agent-pools"
-                        }
-                    },
-                    "current-configuration-version": {
-                        "data": {
-                            "id": self.latest_configuration_version.api_id,
-                            "type": "configuration-versions"
-                        },
-                        "links": {
-                            "related": f"/api/v2/configuration-versions/{self.latest_configuration_version.api_id}"
-                        }
-                    } if self.latest_configuration_version else {},
-                    "current-run": {
-                        "data": {
-                            "id": "run-UyCw2TDCmxtfdjmy",
-                            "type": "runs"
-                        },
-                        "links": {
-                            "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
-                        }
-                    },
-                    "current-state-version": {
-                        "data": {
-                            "id": self.latest_state.api_id,
-                            "type": "state-versions"
-                        },
-                        "links": {
-                            "related": f"/api/v2/workspaces/{self.api_id}/current-state-version"
-                        }
-                    } if self.latest_state else {},
-                    "latest-run": {
-                        "data": {
-                            "id": self.latest_run.api_id,
-                            "type": "runs"
-                        },
-                        "links": {
-                            "related": f"/api/v2/runs/{self.latest_run.api_id}"
-                        }
-                    } if self._latest_run else {},
-                    "organization": {
-                        "data": {
-                            "id": self.organisation.name,
-                            "type": "organizations"
-                        }
-                    },
-                    "outputs": {
-                        "data": []
-                    },
-                    "readme": {
-                        "data": {
-                            "id": "227247",
-                            "type": "workspace-readme"
-                        }
-                    },
-                    "remote-state-consumers": {
-                        "links": {
-                            "related": "/api/v2/workspaces/ws-qPhan8kDLymzv2uS/relationships/remote-state-consumers"
-                        }
+                "allow-destroy-plan": True,
+                "apply-duration-average": 158000,
+                "auto-apply": False,
+                "auto-destroy-at": None,
+                "created-at": "2021-06-03T17:50:20.307Z",
+                "description": "An example workspace for documentation.",
+                "environment": "default",
+                "execution-mode": "remote",
+                "file-triggers-enabled": True,
+                "global-remote-state": False,
+                "latest-change-at": "2021-06-23T17:50:48.815Z",
+                "locked": False,
+                "name": self.name,
+                "operations": True,
+                "permissions": workspace_permissions.get_api_permissions(),
+                "plan-duration-average": 20000,
+                "policy-check-failures": None,
+                "queue-all-runs": False,
+                "resource-count": 0,
+                "run-failures": 6,
+                "source": "terraform",
+                "source-name": None,
+                "source-url": None,
+                "speculative-enabled": True,
+                "structured-run-output-enabled": False,
+                "terraform-version": "0.15.3",
+                "trigger-prefixes": [],
+                "updated-at": "2021-08-16T18:54:06.874Z",
+                "vcs-repo": None,
+                "vcs-repo-identifier": None,
+                "working-directory": None,
+                "workspace-kpis-runs-count": 7
+            },
+            "id": self.api_id,
+            "links": {
+                "self": f"/api/v2/organizations/{self.organisation.name}/workspaces/{self.name}"
+            },
+            "relationships": {
+                "agent-pool": {
+                    "data": {
+                        "id": "apool-QxGd2tRjympfMvQc",
+                        "type": "agent-pools"
                     }
                 },
-                "type": "workspaces"
-            }
+                "current-configuration-version": {
+                    "data": {
+                        "id": self.latest_configuration_version.api_id,
+                        "type": "configuration-versions"
+                    },
+                    "links": {
+                        "related": f"/api/v2/configuration-versions/{self.latest_configuration_version.api_id}"
+                    }
+                } if self.latest_configuration_version else {},
+                "current-run": {
+                    "data": {
+                        "id": "run-UyCw2TDCmxtfdjmy",
+                        "type": "runs"
+                    },
+                    "links": {
+                        "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
+                    }
+                },
+                "current-state-version": {
+                    "data": {
+                        "id": self.latest_state.api_id,
+                        "type": "state-versions"
+                    },
+                    "links": {
+                        "related": f"/api/v2/workspaces/{self.api_id}/current-state-version"
+                    }
+                } if self.latest_state else {},
+                "latest-run": {
+                    "data": {
+                        "id": self.latest_run.api_id,
+                        "type": "runs"
+                    },
+                    "links": {
+                        "related": f"/api/v2/runs/{self.latest_run.api_id}"
+                    }
+                } if self._latest_run else {},
+                "organization": {
+                    "data": {
+                        "id": self.organisation.name,
+                        "type": "organizations"
+                    }
+                },
+                "outputs": {
+                    "data": []
+                },
+                "readme": {
+                    "data": {
+                        "id": "227247",
+                        "type": "workspace-readme"
+                    }
+                },
+                "remote-state-consumers": {
+                    "links": {
+                        "related": "/api/v2/workspaces/ws-qPhan8kDLymzv2uS/relationships/remote-state-consumers"
+                    }
+                }
+            },
+            "type": "workspaces"
         }

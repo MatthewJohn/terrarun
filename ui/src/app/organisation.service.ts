@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable, map } from 'rxjs';
 import { AccountService } from './account.service';
 
 @Injectable({
@@ -57,5 +58,11 @@ export class OrganisationService {
         }
       });
     });
+  }
+
+  getAllWorkspaces(organisationId: string): Observable<any> {
+    return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationId}/workspaces`,
+                              { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
+
   }
 }
