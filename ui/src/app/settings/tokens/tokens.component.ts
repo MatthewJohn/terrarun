@@ -26,10 +26,12 @@ export class TokensComponent implements OnInit {
 
   ngOnInit(): void {
     this.stateService.authenticationState.subscribe((data) => {
-      this.userId = data.id;
-      this.userService.getUserTokens(data.id).then((tokens) => {
-        this.tokens = tokens;
-      });
+      if (data.id) {
+        this.userId = data.id;
+        this.userService.getUserTokens(data.id).then((tokens) => {
+          this.tokens = tokens;
+        });
+      }
     });
   }
 
