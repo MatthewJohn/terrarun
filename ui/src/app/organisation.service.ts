@@ -60,6 +60,22 @@ export class OrganisationService {
     });
   }
 
+  getOrganisationDetails(organisationName: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}`,
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data) => {
+          resolve(data.data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
+
   getAllWorkspaces(organisationId: string): Observable<any> {
     return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationId}/workspaces`,
                               { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));

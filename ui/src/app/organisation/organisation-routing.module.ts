@@ -3,6 +3,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LoggedInGuard } from '../logged-in.guard';
 import { CreateComponent } from './create/create.component';
 import { ListComponent } from './list/list.component';
+import { OrganisationExistsGuard } from './organisation-exists.guard';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 
 const routes: Routes = [
@@ -19,7 +20,7 @@ const routes: Routes = [
   {
     path: 'organisation/:organisationId/workspaces',
     component: WorkspaceListComponent,
-    canActivate: [LoggedInGuard]
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
   }
 ];
 
