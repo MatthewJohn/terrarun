@@ -2,12 +2,31 @@ import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoggedInGuard } from '../logged-in.guard';
 import { CreateComponent } from './create/create.component';
+import { ListComponent } from './list/list.component';
+import { OrganisationExistsGuard } from './organisation-exists.guard';
+import { OverviewComponent } from './overview/overview.component';
+import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 
 const routes: Routes = [
   {
     path: 'organisation/create',
     component: CreateComponent,
     canActivate: [LoggedInGuard]
+  },
+  {
+    path: 'organisation/list',
+    component: ListComponent,
+    canActivate: [LoggedInGuard]
+  },
+  {
+    path: ':organisationId',
+    component: OverviewComponent,
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
+  },
+  {
+    path: ':organisationId/workspaces',
+    component: WorkspaceListComponent,
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
   }
 ];
 

@@ -39,7 +39,7 @@ const routes: Routes = [
     path: '*',
     loadChildren: () => import(`./organisation/organisation.module`).then(m => m.OrganisationModule),
     canActivate: [LoggedInGuard]
-  },
+  }
 ];
 
 @NgModule({
