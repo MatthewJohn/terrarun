@@ -33,6 +33,11 @@ const routes: Routes = [
     path: ':organisationId/settings',
     component: SettingsComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
+  },
+  {
+    path: ':organisationId/:workspaceId',
+    loadChildren: () => import(`../workspace/workspace.module`).then(m => m.WorkspaceModule),
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
   }
 ];
 
