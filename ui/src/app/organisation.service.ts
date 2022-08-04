@@ -44,6 +44,23 @@ export class OrganisationService {
     });
   }
 
+  update(organisationName: string, name: string, email: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.patch<any>(
+        `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}`,
+        { data: { type: 'organizations', attributes: {'name': name, 'email': email }}},
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data) => {
+          resolve(data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
+
   getAll(): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.get<any>(

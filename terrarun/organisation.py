@@ -122,6 +122,33 @@ class Organisation(Base, BaseObject):
 
         return org
 
+    def update_attributes(self, **kwargs):
+        """Update attributes of organisation"""
+        # If name_id has been specified, remove it, as this
+        # cannot be set manually.
+        if 'name_id' in kwargs:
+            del(kwargs['name_id'])
+
+        # If name is specificed in arguments to update,
+        # update the name_id
+        if 'name' in kwargs:
+            new_name_id = self.name_to_name_id(kwargs['name'])
+
+            # If the name ID differs from the current one,
+            # validate it
+            if new_name_id != self.name_id:
+                if not self.validate_new_name_id(name_id=new_name_id):
+                    return False
+                kwargs['name_id'] = new_name_id
+
+        for attr in kwargs:
+            setattr(self, attr, kwargs[attr])
+
+        session = Database.get_session()
+        session.add(self)
+        session.commit()
+        return True
+
     def get_run_queue(self):
         """Return runs queued to be executed"""
         session = Database.get_session()

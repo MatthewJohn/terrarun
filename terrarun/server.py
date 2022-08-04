@@ -484,6 +484,36 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
 
         return {"data": organisation.get_api_details(effective_user=current_user)}
 
+    def check_permissions_patch(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions for updating organsation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_UPDATE)
+
+    def _patch(self, current_user, organisation_name):
+        """Get organisation details"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type', None) != "organizations":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name', None)
+        email = attributes.get('email', None)
+
+        if not email or not email:
+            return {}, 400
+
+        if not organisation.update_attributes(name=name, email=email):
+            return {}, 400
+        return {"data": organisation.get_api_details(effective_user=current_user)}
+
+        
 
 class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
     """Organisation entitlement endpoint."""

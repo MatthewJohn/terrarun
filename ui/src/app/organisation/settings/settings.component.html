@@ -1,0 +1,29 @@
+
+<nb-layout>
+    <nb-layout-column left class="colored-column-success">
+        <nb-card>
+            <nb-card-header>
+                Settings
+            </nb-card-header>
+            <nb-card-body>
+                <form [formGroup]="form" (ngSubmit)="onSubmit()">
+                    <nb-form-field>
+                        <label for="name">Organisation Name:</label>
+                        <input nbInput (change)="validateName()" placeholder="My Organisation" id="name" formControlName="name" type="text">
+                        <nb-icon nbSuffix [icon]="nameValid.icon" [status]="nameValid.iconStatus" pack="eva"></nb-icon>
+                    </nb-form-field>
+                    <br />
+                    <br />
+                    <nb-form-field>
+                        <label for="email">Admin email address:</label>
+                        <input nbInput placeholder="admin@example.com" id="email" formControlName="email" type="text">
+                    </nb-form-field>
+                    <br />
+                    <button [disabled]="!nameValid.valid" nbButton>Update</button>
+                </form>
+            </nb-card-body>
+        </nb-card>        
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>
