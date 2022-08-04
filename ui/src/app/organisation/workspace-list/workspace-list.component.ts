@@ -58,12 +58,18 @@ export class WorkspaceListComponent implements OnInit {
   validateName(): void {
     this.nameValid = this.nameValidStates.loading;
 
-    this.workspaceService.validateNewWorkspaceName(this.currentOrganisation?.name || '', this.form.value.name).then((validationResult) => {
+    this.workspaceService.validateNewWorkspaceName(this.organisationId || '', this.form.value.name).then((validationResult) => {
       this.nameValid = validationResult.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
     });
   }
   onCreate(): void {
-
+    this.workspaceService.create(this.organisationId || '',
+                                 this.form.value.name,
+                                 this.form.value.description
+                                 ).then((workspace) => {
+      console.log(workspace);
+      this.router.navigateByUrl(`/${this.organisationId}/${workspace.data.attributes.name}`);
+    });
   }
 
   onWorkspaceClick(target: any) {

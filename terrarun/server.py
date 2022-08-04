@@ -1,4 +1,5 @@
 
+import json
 import queue
 import re
 import threading
@@ -11,6 +12,7 @@ from sqlalchemy.orm import scoped_session
 import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
+from terrarun import workspace
 
 from terrarun.apply import Apply
 from terrarun.configuration import ConfigurationVersion
@@ -501,7 +503,7 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
 
 
 class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
-    """Interface to obtain organisation workspaces"""
+    """Interface to list/create organisation workspaces"""
 
     def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
         """Check permissions"""
@@ -523,6 +525,37 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
                 for workspace in organisation.workspaces
             ]
         }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            print('NOT ORG FOND')
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
+
+    def _post(self, organisation_name, current_user):
+        """Return list of workspaces for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "workspaces":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        if not name:
+            return {}, 400
+
+        workspace = Workspace.create(organisation=organisation, name=name)
+
+        return {
+            "data": workspace.get_api_details(effective_user=current_user)
+        }
+
 
 
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
