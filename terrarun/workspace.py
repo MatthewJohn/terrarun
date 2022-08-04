@@ -27,6 +27,8 @@ class Workspace(Base, BaseObject):
     state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
     configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
 
+    auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
 
     _latest_state = None
