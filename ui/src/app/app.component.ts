@@ -79,6 +79,10 @@ export class AppComponent {
             {
               title: 'Workspaces',
               link: `/${this._currentOrganisationState.id}/workspaces`
+            },
+            {
+              title: 'Settings',
+              link: `/${this._currentOrganisationState.id}/settings`
             }
           ]
         })

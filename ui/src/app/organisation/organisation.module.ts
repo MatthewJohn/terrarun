@@ -8,6 +8,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ListComponent } from './list/list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 import { OverviewComponent } from './overview/overview.component';
+import { SettingsComponent } from './settings/settings.component';
 
 
 @NgModule({
@@ -15,7 +16,8 @@ import { OverviewComponent } from './overview/overview.component';
     CreateComponent,
     ListComponent,
     WorkspaceListComponent,
-    OverviewComponent
+    OverviewComponent,
+    SettingsComponent
   ],
   imports: [
     CommonModule,
