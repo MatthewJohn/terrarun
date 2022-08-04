@@ -3,13 +3,19 @@ import { CommonModule } from '@angular/common';
 
 import { OrganisationRoutingModule } from './organisation-routing.module';
 import { CreateComponent } from './create/create.component';
-import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule } from '@nebular/theme';
+import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbTreeGridModule } from '@nebular/theme';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ListComponent } from './list/list.component';
+import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
+import { OverviewComponent } from './overview/overview.component';
 
 
 @NgModule({
   declarations: [
-    CreateComponent
+    CreateComponent,
+    ListComponent,
+    WorkspaceListComponent,
+    OverviewComponent
   ],
   imports: [
     CommonModule,
@@ -21,6 +27,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
     NbInputModule,
     NbIconModule,
     NbButtonModule,
+    NbTreeGridModule,
 
     FormsModule,
     ReactiveFormsModule,

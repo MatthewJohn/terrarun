@@ -1,0 +1,45 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-body>
+
+            <table [nbTreeGrid]="workspaces$ | async" equalColumnsWidth>
+
+                <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                    <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
+                </ng-container>
+
+            </table>
+
+            </nb-card-body>
+
+
+            <nb-card>
+                <nb-card-header>
+                    Create Workspace
+                </nb-card-header>
+                <nb-card-body>
+                    <form [formGroup]="form" (ngSubmit)="onCreate()">
+                        <nb-form-field>
+                            <label for="name">Name:</label>
+                            <input nbInput (change)="validateName()" placeholder="My App" id="name" formControlName="name" type="text">
+                            <nb-icon nbSuffix [icon]="nameValid.icon" [status]="nameValid.iconStatus" pack="eva"></nb-icon>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="description">Description:</label>
+                            <input nbInput placeholder="" id="description" formControlName="description" type="text">
+                        </nb-form-field>
+                        <br />
+                        <button [disabled]="!nameValid.valid" nbButton>Create</button>
+                    </form>
+                </nb-card-body>
+            </nb-card>    
+
+        </nb-card>
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>

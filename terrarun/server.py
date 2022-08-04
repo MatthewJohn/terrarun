@@ -1,4 +1,5 @@
 
+import json
 import queue
 import re
 import threading
@@ -11,6 +12,7 @@ from sqlalchemy.orm import scoped_session
 import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
+from terrarun import workspace
 
 from terrarun.apply import Apply
 from terrarun.configuration import ConfigurationVersion
@@ -94,6 +96,10 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/entitlement-set'
         )
         self._api.add_resource(
+            ApiTerraformOrganisationWorkspaces,
+            '/api/v2/organizations/<string:organisation_name>/workspaces'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspace,
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
@@ -165,6 +171,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerrarunOrganisationCreateNameValidation,
             '/api/terrarun/v1/organisation/create/name-validation'
+        )
+        self._api.add_resource(
+            ApiTerrarunWorkspaceCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/workspace-name-validate'
         )
 
     def run(self, debug=None):
@@ -492,6 +502,62 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
         return organisation.get_entitlement_set_api()
 
 
+class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
+    """Interface to list/create organisation workspaces"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of workspaces for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                workspace.get_api_details(effective_user=current_user)
+                for workspace in organisation.workspaces
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            print('NOT ORG FOND')
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
+
+    def _post(self, organisation_name, current_user):
+        """Return list of workspaces for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "workspaces":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        if not name:
+            return {}, 400
+
+        workspace = Workspace.create(organisation=organisation, name=name)
+
+        return {
+            "data": workspace.get_api_details(effective_user=current_user)
+        }
+
+
+
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
@@ -514,7 +580,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
         if not workspace:
             return {}, 404
-        return workspace.get_api_details(effective_user=current_user)
+        return {"data": workspace.get_api_details(effective_user=current_user)}
 
 
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
@@ -963,3 +1029,33 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
                 "name_id": name_id
             }
         }
+
+
+class ApiTerrarunWorkspaceCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new workspace name"""
+
+    def check_permissions_post(self, organisation_name, current_user):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
+
+    def _post(self, organisation_name, current_user):
+        """Validate new organisation name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": Workspace.validate_new_name(organisation, args.name),
+                "name": args.name
+            }
+        }
+
