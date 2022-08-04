@@ -44,7 +44,7 @@ export class OrganisationService {
     });
   }
 
-  update(organisationName: string, name: string, email: string) {
+  update(organisationName: string, name: string, email: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
         `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}`,

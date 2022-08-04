@@ -64,6 +64,9 @@ export class SettingsComponent implements OnInit {
       this.form.value.email
     ).then((orgData) => {
       console.log(orgData);
+      if (orgData.data.id != this._organisationId) {
+        this.router.navigateByUrl(`/${orgData.data.id}/settings`)
+      }
     });
   }
 }
