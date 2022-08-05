@@ -5,7 +5,7 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
 import { RunModule } from '../run/run.module';
 import { OverviewComponent } from './overview/overview.component';
 import { RunListComponent } from './run-list/run-list.component';
-import { NbCardModule, NbIconModule, NbLayoutModule, NbTreeGridModule } from '@nebular/theme';
+import { NbCardModule, NbIconModule, NbLayoutModule, NbTagModule, NbTreeGridModule } from '@nebular/theme';
 
 
 @NgModule({
@@ -21,7 +21,8 @@ import { NbCardModule, NbIconModule, NbLayoutModule, NbTreeGridModule } from '@n
     NbLayoutModule,
     NbCardModule,
     NbTreeGridModule,
-    NbIconModule
+    NbIconModule,
+    NbTagModule
   ]
 })
 export class WorkspaceModule { }

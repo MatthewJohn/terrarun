@@ -20,112 +20,112 @@ abstract class RunStatusBaseClass implements IRunStatus {
 
 class RunStatusApplied extends RunStatusBaseClass {
     _nameString = "Applied";
-    _labelColour = "green";
+    _labelColour = "success";
     _icon = "done-all-outline";
 }
 class RunStatusApplying extends RunStatusBaseClass {
     _nameString = "Applying";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "activity-outline";
 }
 class RunStatusApplyQueued extends RunStatusBaseClass {
     _nameString = "Applying";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 class RunStatusCancelled extends RunStatusBaseClass {
     _nameString = "Cancelled";
-    _labelColour = "green";
+    _labelColour = "danger";
     _icon = "alert-circle-outline";
 }
 class RunStatusConfirmed extends RunStatusBaseClass {
     _nameString = "Confirmed";
-    _labelColour = "green";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusCostEstimated extends RunStatusBaseClass {
     _nameString = "Cost estimated";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 class RunStatusCostEstimating extends RunStatusBaseClass {
     _nameString = "Cost estimating";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 class RunStatusDiscarded extends RunStatusBaseClass {
     _nameString = "Discarded";
-    _labelColour = "green";
+    _labelColour = "danger";
     _icon = "alert-circle-outline";
 }
 class RunStatusErrored extends RunStatusBaseClass {
     _nameString = "Errored";
-    _labelColour = "green";
+    _labelColour = "danger";
     _icon = "alert-circle-outline";
 }
 class RunStatusFetching extends RunStatusBaseClass {
     _nameString = "Fetching";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 class RunStatusForceCancelled extends RunStatusBaseClass {
     _nameString = "Force cancelled";
-    _labelColour = "green";
+    _labelColour = "warning";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPending extends RunStatusBaseClass {
     _nameString = "Pending";
-    _labelColour = "green";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPlanned extends RunStatusBaseClass {
     _nameString = "Planned";
-    _labelColour = "green";
+    _labelColour = "success";
     _icon = "checkmark-square-outline";
 }
 class RunStatusPlannedAndFinished extends RunStatusBaseClass {
     _nameString = "Planned and finished";
-    _labelColour = "green";
+    _labelColour = "success";
     _icon = "checkmark-outline";
 }
 class RunStatusPlanning extends RunStatusBaseClass {
     _nameString = "Planning";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "activity-outline";
 }
 class RunStatusPlanQueued extends RunStatusBaseClass {
     _nameString = "Plan queued";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPolicyChecked extends RunStatusBaseClass {
     _nameString = "Policy checked";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPolicyChecking extends RunStatusBaseClass {
     _nameString = "Policy checking";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPolicyOverride extends RunStatusBaseClass {
     _nameString = "Policy override";
-    _labelColour = "green";
+    _labelColour = "warning";
     _icon = "alert-triangle-outline";
 }
 class RunStatusPolicySoftFailed extends RunStatusBaseClass {
     _nameString = "Policy soft failed";
-    _labelColour = "green";
+    _labelColour = "warning";
     _icon = "alert-triangle-outline";
 }
 class RunStatusPostPlanCompleted extends RunStatusBaseClass {
     _nameString = "Post-plan completed";
-    _labelColour = "green";
+    _labelColour = "success";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _nameString = "Post-plan running";
-    _labelColour = "green";
+    _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
 
