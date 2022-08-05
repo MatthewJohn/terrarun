@@ -1,0 +1,19 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-body>
+                <table [nbTreeGrid]="runs$ | async" equalColumnsWidth>
+
+                    <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
+                    </ng-container>
+
+                </table>
+            </nb-card-body>
+
+        </nb-card>
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>
