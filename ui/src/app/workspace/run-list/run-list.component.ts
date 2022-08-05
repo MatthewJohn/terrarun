@@ -14,20 +14,10 @@ import { WorkspaceService } from 'src/app/workspace.service';
 export class RunListComponent implements OnInit {
 
   runs$: Observable<any> | null = null;
-  tableColumns: string[] = ['name'];
+  tableColumns: string[] = ['id', 'status', 'created-at'];
   workspaceName: string | null = null;
   organisationName: string | null = null;
 
-  nameValidStates = {
-    invalid: {icon: 'close-outline', valid: false, iconStatus: 'danger'},
-    valid: {icon: 'checkmark-circle-outline', valid: true, iconStatus: 'success'},
-    loading: {icon: 'loader-outline', valid: false, iconStatus: 'info'}
-  };
-  nameValid: {icon: string, valid: boolean, iconStatus: string} = this.nameValidStates.invalid;
-  form = this.formBuilder.group({
-    name: '',
-    description: ''
-  });
 
   currentOrganisation: OrganisationStateType | null = null;
   currentWorkspace: WorkspaceStateType | null = null;
@@ -42,8 +32,9 @@ export class RunListComponent implements OnInit {
       if (data.id) {
         this.runs$ = this.workspaceService.getRuns(data.id).pipe(
           map((data) => {
+            console.log(data);
             return Array.from({length: data.data.length},
-              (_, n) => ({'data': data.data[n]}))
+              (_, n) => ({'data': {id: data.data[n].id, ...data.data[n].attributes}}))
           })
         );
       }

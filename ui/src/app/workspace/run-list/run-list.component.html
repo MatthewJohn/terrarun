@@ -7,7 +7,7 @@
                     <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
-                        <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
+                        <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">{{row.data[column]}}</td>
                     </ng-container>
 
                 </table>
