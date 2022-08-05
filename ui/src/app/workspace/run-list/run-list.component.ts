@@ -32,7 +32,6 @@ export class RunListComponent implements OnInit {
       setInterval(() => {
         this.runs$ = this.workspaceService.getRuns(data.id || '').pipe(
           map((data) => {
-            console.log(data);
             return Array.from({length: data.data.length},
               (_, n) => ({'data': {id: data.data[n].id, ...data.data[n].attributes}}))
           })
