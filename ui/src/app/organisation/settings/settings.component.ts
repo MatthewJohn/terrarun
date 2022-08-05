@@ -21,7 +21,7 @@ export class SettingsComponent implements OnInit {
     name: '',
     email: ''
   });
-  _organisationId: string | null = null;
+  _organisationName: string | null = null;
   _originalOrgSettings: any = {};
 
   constructor(private formBuilder: FormBuilder,
@@ -29,9 +29,9 @@ export class SettingsComponent implements OnInit {
               private router: Router,
               private route: ActivatedRoute) {
     this.route.paramMap.subscribe((params) => {
-      this._organisationId = params.get('organisationId');
+      this._organisationName = params.get('organisationName');
 
-      this.organisationService.getOrganisationDetails(this._organisationId || '').then((orgDetails) => {
+      this.organisationService.getOrganisationDetails(this._organisationName || '').then((orgDetails) => {
         this._originalOrgSettings = orgDetails
         this.form.setValue({
           name: orgDetails.attributes.name,
@@ -59,12 +59,12 @@ export class SettingsComponent implements OnInit {
 
   onSubmit(): void {
     this.organisationService.update(
-      this._organisationId || '',
+      this._organisationName || '',
       this.form.value.name,
       this.form.value.email
     ).then((orgData) => {
       console.log(orgData);
-      if (orgData.data.id != this._organisationId) {
+      if (orgData.data.id != this._organisationName) {
         this.router.navigateByUrl(`/${orgData.data.id}/settings`)
       }
     });

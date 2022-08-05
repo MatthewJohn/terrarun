@@ -15,7 +15,7 @@ export class OrganisationExistsGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
       return new Promise<boolean>((resolve, reject) => {
-        this.organisationService.getOrganisationDetails(route.paramMap.get('organisationId') || '').then((data) => {
+        this.organisationService.getOrganisationDetails(route.paramMap.get('organisationName') || '').then((data) => {
           this.stateService.currentOrganisation.next({id: data.id, name: data.attributes.name});
           resolve(true);
         }).catch(() => {

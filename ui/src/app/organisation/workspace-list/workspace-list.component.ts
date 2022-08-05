@@ -15,7 +15,7 @@ export class WorkspaceListComponent implements OnInit {
 
   workspaces$: Observable<any>;
   tableColumns: string[] = ['name'];
-  organisationId: string | null = null;
+  organisationName: string | null = null;
 
   nameValidStates = {
     invalid: {icon: 'close-outline', valid: false, iconStatus: 'danger'},
@@ -38,8 +38,8 @@ export class WorkspaceListComponent implements OnInit {
               private formBuilder: FormBuilder) {
     this.workspaces$ = this.route.paramMap.pipe(
       switchMap(params => {
-        this.organisationId = params.get('organisationId');
-        return this.organisationService.getAllWorkspaces(this.organisationId || "").pipe(
+        this.organisationName = params.get('organisationName');
+        return this.organisationService.getAllWorkspaces(this.organisationName || "").pipe(
           map((data) => {
             return Array.from({length: data.length},
               (_, n) => ({'data': data[n]}))
@@ -58,21 +58,22 @@ export class WorkspaceListComponent implements OnInit {
   validateName(): void {
     this.nameValid = this.nameValidStates.loading;
 
-    this.workspaceService.validateNewWorkspaceName(this.organisationId || '', this.form.value.name).then((validationResult) => {
+    this.workspaceService.validateNewWorkspaceName(this.organisationName || '', this.form.value.name).then((validationResult) => {
       this.nameValid = validationResult.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
     });
   }
   onCreate(): void {
-    this.workspaceService.create(this.organisationId || '',
+    this.workspaceService.create(this.organisationName || '',
                                  this.form.value.name,
                                  this.form.value.description
                                  ).then((workspace) => {
       console.log(workspace);
-      this.router.navigateByUrl(`/${this.organisationId}/${workspace.data.attributes.name}`);
+      this.router.navigateByUrl(`/${this.organisationName}/${workspace.data.attributes.name}`);
     });
   }
 
   onWorkspaceClick(target: any) {
-    this.router.navigateByUrl(`/${this.organisationId}/${target.data.name}`)
+    console.log(target.data)
+    this.router.navigateByUrl(`/${this.organisationName}/${target.data.attributes.name}`)
   }
 }
