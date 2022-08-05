@@ -7,7 +7,16 @@
                     <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
-                        <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">{{row.data[column]}}</td>
+                        <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">
+                            <div *ngIf="column == 'runStatus'; then runStatusColumn; else defaultColumn"></div>
+                            <ng-template #runStatusColumn>
+                                <nb-icon icon="{{row.data[column].getIcon()}}"></nb-icon>
+                                {{row.data[column].getName()}}
+                            </ng-template>
+                            <ng-template #defaultColumn>
+                                {{row.data[column]}}
+                            </ng-template>
+                        </td>
                     </ng-container>
 
                 </table>

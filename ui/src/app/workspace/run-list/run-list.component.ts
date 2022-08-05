@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map, Observable, switchMap } from 'rxjs';
-import { OrganisationService } from 'src/app/organisation.service';
+import { map, Observable } from 'rxjs';
+import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { OrganisationStateType, StateService, WorkspaceStateType } from 'src/app/state.service';
 import { WorkspaceService } from 'src/app/workspace.service';
 
@@ -14,7 +14,7 @@ import { WorkspaceService } from 'src/app/workspace.service';
 export class RunListComponent implements OnInit {
 
   runs$: Observable<any> | null = null;
-  tableColumns: string[] = ['id', 'status', 'created-at'];
+  tableColumns: string[] = ['id', 'runStatus', 'created-at'];
   workspaceName: string | null = null;
   organisationName: string | null = null;
 
@@ -26,14 +26,18 @@ export class RunListComponent implements OnInit {
               private workspaceService: WorkspaceService,
               private router: Router,
               private route: ActivatedRoute,
-              private formBuilder: FormBuilder) {
+              private formBuilder: FormBuilder,
+              private runStatusFactory: RunStatusFactory) {
     this.state.currentWorkspace.subscribe((data) => {
       this.currentWorkspace = data;
       setInterval(() => {
         this.runs$ = this.workspaceService.getRuns(data.id || '').pipe(
           map((data) => {
             return Array.from({length: data.data.length},
-              (_, n) => ({'data': {id: data.data[n].id, ...data.data[n].attributes}}))
+              (_, n) => ({'data': {
+                id: data.data[n].id,
+                runStatus: this.runStatusFactory.getStatusByValue(data.data[n].attributes.status),
+                ...data.data[n].attributes}}))
           })
         );
       }, 1000);
