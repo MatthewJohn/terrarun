@@ -17,8 +17,7 @@ export class WorkspaceExistsGuard implements CanActivate {
         this.workspaceService.getDetailsByName(route.paramMap.get('organisationName') || '',
                                                route.paramMap.get('workspaceName') || '').subscribe({
           next: (data) => {
-            console.log("workspace fouind!");
-            this.stateService.currentWorkspace.next({id: data.id, name: data.attributes.name});
+            this.stateService.currentWorkspace.next({id: data.data.id, name: data.data.attributes.name});
             resolve(true);
           },
           error: (err) => {
