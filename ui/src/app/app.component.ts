@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { NbMenuItem, NbSidebarService } from '@nebular/theme';
 import { AccountService } from './account.service';
 import { HomeComponent } from './home/home.component';
-import { AuthenticationStateType, OrganisationStateType, StateService } from './state.service';
+import { AuthenticationStateType, OrganisationStateType, StateService, WorkspaceStateType } from './state.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +14,7 @@ export class AppComponent {
   title = 'ui';
   _authenticationState: AuthenticationStateType = {authenticated: false, id: null, username: null};
   _currentOrganisationState: OrganisationStateType = {id: null, name: null};
+  _currentWorkspace: WorkspaceStateType = {id: null, name: null};
   items: NbMenuItem[] = [];
 
   constructor(private readonly sidebarService: NbSidebarService,
@@ -27,6 +28,10 @@ export class AppComponent {
     });
     this.stateService.currentOrganisation.subscribe((data) => {
       this._currentOrganisationState = data;
+      this.updateMenuItems();
+    });
+    this.stateService.currentWorkspace.subscribe((data) => {
+      this._currentWorkspace = data;
       this.updateMenuItems();
     });
   }
@@ -68,7 +73,7 @@ export class AppComponent {
 
       // Add links for current organisation
       if (this._currentOrganisationState.id) {
-        this.items[1].children?.push({
+        this.items.splice(2, 0, {
           title: `Organisation: ${this._currentOrganisationState.name}`,
           link: `/${this._currentOrganisationState.id}`,
           children: [
@@ -85,7 +90,19 @@ export class AppComponent {
               link: `/${this._currentOrganisationState.id}/settings`
             }
           ]
-        })
+        });
+        if (this._currentWorkspace.id) {
+          this.items.splice(3, 0, {
+            title: `Workspace: ${this._currentWorkspace.name}`,
+            link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}`,
+            children: [
+              {
+                title: 'Runs',
+                link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/runs`
+              }
+            ]
+          })
+        }
       }
     } else {
       this.items = [{
