@@ -30,20 +30,25 @@ export class RunListComponent implements OnInit {
               private runStatusFactory: RunStatusFactory) {
     this.state.currentWorkspace.subscribe((data) => {
       this.currentWorkspace = data;
+      this.updateRuns();
       setInterval(() => {
-        this.runs$ = this.workspaceService.getRuns(data.id || '').pipe(
-          map((data) => {
-            return Array.from({length: data.data.length},
-              (_, n) => ({'data': {
-                id: data.data[n].id,
-                runStatus: this.runStatusFactory.getStatusByValue(data.data[n].attributes.status),
-                ...data.data[n].attributes}}))
-          })
-        );
+        this.updateRuns();
       }, 1000);
     });
 
     this.state.currentOrganisation.subscribe((data) => this.currentOrganisation = data);
+  }
+
+  updateRuns(): void {
+    this.runs$ = this.workspaceService.getRuns(this.currentWorkspace?.id || '').pipe(
+      map((data) => {
+        return Array.from({length: data.data.length},
+          (_, n) => ({'data': {
+            id: data.data[n].id,
+            runStatus: this.runStatusFactory.getStatusByValue(data.data[n].attributes.status),
+            ...data.data[n].attributes}}))
+      })
+    );
   }
 
   ngOnInit(): void {
