@@ -8,17 +8,18 @@
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
                         <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">
-                            <div *ngIf="column == 'icon'; then runIcon; elseif column == 'runStatus'; then runStatusColumn; else defaultColumn"></div>
-                            <ng-template #runIcon>
-                                <nb-icon [icon]="row.data[column].getIcon()"></nb-icon>
-                            </ng-template>
-                            <ng-template #runStatusColumn>
-                                <nb-tag size="small" [status]="row.data[column].getColor()" appearance="outline" [text]="row.data[column].getName()">
-                                </nb-tag>
-                            </ng-template>
-                            <ng-template #defaultColumn>
-                                {{row.data[column]}}
-                            </ng-template>
+                            <ng-container [ngSwitch]="true">
+                                <div *ngSwitchCase="column == 'icon'">
+                                    <nb-icon [icon]="row.data.runStatus.getIcon()"></nb-icon>
+                                </div>
+                                <div *ngSwitchCase="column == 'runStatus'">
+                                    <nb-tag size="small" [status]="row.data[column].getColor()" appearance="outline" [text]="row.data[column].getName()">
+                                    </nb-tag>
+                                </div>
+                                <div *ngSwitchDefault>
+                                    {{row.data[column]}}
+                                </div>
+                            </ng-container>
                         </td>
                     </ng-container>
 
