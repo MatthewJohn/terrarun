@@ -122,6 +122,10 @@ class Run(Base, BaseObject):
         run.queue_plan()
         return run
 
+    def cancel(self):
+        """Cancel run"""
+        self.update_status(RunStatus.CANCELED)
+
     def execute_next_step(self):
         """Execute terraform command"""
         # Handle plan job

@@ -130,6 +130,10 @@ class Server(object):
             '/api/v2/runs/<string:run_id>'
         )
         self._api.add_resource(
+            ApiTerraformRunActionsCancel,
+            '/api/v2/runs/<string:run_id>/actions/cancel'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
         )
@@ -779,6 +783,32 @@ class ApiTerraformRun(AuthenticatedEndpoint):
 
         run = Run.create(cv, **create_attributes)
         return {"data": run.get_api_details()}
+
+
+class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
+    """Interface to cancel runs"""
+
+    def check_permissions_post(self, run_id, current_user):
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+        if run.plan_only:
+            return WorkspacePermissions(
+                current_user=current_user,
+                workspace=run.configuration_version.workspace
+            ).check_access_type(runs=TeamWorkspaceRunsPermission.PLAN)
+        return WorkspacePermissions(
+                current_user=current_user,
+                workspace=run.configuration_version.workspace
+            ).check_access_type(runs=TeamWorkspaceRunsPermission.APPLY)
+
+    def _post(self, run_id, current_user):
+        """Cancel run"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        run.cancel()
 
 
 class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
