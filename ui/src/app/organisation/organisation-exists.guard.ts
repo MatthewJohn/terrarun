@@ -17,6 +17,7 @@ export class OrganisationExistsGuard implements CanActivate {
       return new Promise<boolean>((resolve, reject) => {
         this.organisationService.getOrganisationDetails(route.paramMap.get('organisationName') || '').then((data) => {
           this.stateService.currentOrganisation.next({id: data.id, name: data.attributes.name});
+          this.stateService.currentWorkspace.next({id: null, name: null});
           resolve(true);
         }).catch(() => {
           reject();
