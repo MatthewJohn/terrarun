@@ -56,7 +56,7 @@ export class RunListComponent implements OnInit {
 
 
   onWorkspaceClick(target: any) {
-    this.router.navigateByUrl(`/${this.currentOrganisation?.id}/${target.data.name}`)
+    this.router.navigateByUrl(`/${this.currentOrganisation?.id}/${this.currentWorkspace?.name}/runs/${target.data.id}`)
   }
 
 }
