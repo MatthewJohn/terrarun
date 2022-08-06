@@ -8,9 +8,11 @@
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
                         <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">
-                            <div *ngIf="column == 'runStatus'; then runStatusColumn; else defaultColumn"></div>
-                            <ng-template #runStatusColumn>
+                            <div *ngIf="column == 'icon'; then runIcon; elseif column == 'runStatus'; then runStatusColumn; else defaultColumn"></div>
+                            <ng-template #runIcon>
                                 <nb-icon [icon]="row.data[column].getIcon()"></nb-icon>
+                            </ng-template>
+                            <ng-template #runStatusColumn>
                                 <nb-tag size="small" [status]="row.data[column].getColor()" appearance="outline" [text]="row.data[column].getName()">
                                 </nb-tag>
                             </ng-template>

@@ -14,7 +14,7 @@ import { WorkspaceService } from 'src/app/workspace.service';
 export class RunListComponent implements OnInit {
 
   runs$: Observable<any> | null = null;
-  tableColumns: string[] = ['id', 'runStatus', 'created-at'];
+  tableColumns: string[] = ['icon', 'id', 'runStatus', 'created-at'];
   workspaceName: string | null = null;
   organisationName: string | null = null;
 
