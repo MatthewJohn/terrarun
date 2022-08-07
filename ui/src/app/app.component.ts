@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { NbMenuItem, NbSidebarService } from '@nebular/theme';
 import { AccountService } from './account.service';
 import { HomeComponent } from './home/home.component';
-import { AuthenticationStateType, OrganisationStateType, StateService, WorkspaceStateType } from './state.service';
+import { AuthenticationStateType, OrganisationStateType, RunStateType, StateService, WorkspaceStateType } from './state.service';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +15,7 @@ export class AppComponent {
   _authenticationState: AuthenticationStateType = {authenticated: false, id: null, username: null};
   _currentOrganisationState: OrganisationStateType = {id: null, name: null};
   _currentWorkspace: WorkspaceStateType = {id: null, name: null};
+  _currentRun: RunStateType = {id: null};
   items: NbMenuItem[] = [];
 
   constructor(private readonly sidebarService: NbSidebarService,
@@ -32,6 +33,10 @@ export class AppComponent {
     });
     this.stateService.currentWorkspace.subscribe((data) => {
       this._currentWorkspace = data;
+      this.updateMenuItems();
+    });
+    this.stateService.currentRun.subscribe((data) => {
+      this._currentRun = data;
       this.updateMenuItems();
     });
   }
@@ -102,6 +107,12 @@ export class AppComponent {
               }
             ]
           })
+        }
+        if (this._currentRun.id) {
+          this.items.splice(4, 0, {
+            title: `Run: ${this._currentRun.id}`,
+            link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/${this._currentRun.id}`
+          });
         }
       }
     } else {

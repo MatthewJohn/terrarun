@@ -18,10 +18,12 @@ export class WorkspaceExistsGuard implements CanActivate {
                                                route.paramMap.get('workspaceName') || '').subscribe({
           next: (data) => {
             this.stateService.currentWorkspace.next({id: data.data.id, name: data.data.attributes.name});
+            this.stateService.currentRun.next({id: null});
             resolve(true);
           },
           error: (err) => {
             this.stateService.currentOrganisation.next({id: null, name: null});
+            this.stateService.currentRun.next({id: null});
             resolve(false);
           }
         });

@@ -18,9 +18,13 @@ export class OrganisationExistsGuard implements CanActivate {
         this.organisationService.getOrganisationDetails(route.paramMap.get('organisationName') || '').then((data) => {
           this.stateService.currentOrganisation.next({id: data.id, name: data.attributes.name});
           this.stateService.currentWorkspace.next({id: null, name: null});
+          this.stateService.currentRun.next({id: null});
           resolve(true);
         }).catch(() => {
-          reject();
+          this.stateService.currentOrganisation.next({id: null, name: null});
+          this.stateService.currentWorkspace.next({id: null, name: null});
+          this.stateService.currentRun.next({id: null});
+          resolve(false);
         });
     });
   }
