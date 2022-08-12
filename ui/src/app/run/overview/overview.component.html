@@ -1,1 +1,16 @@
 <p>Run overview works!</p>
+<nb-accordion>
+    <nb-accordion-item *ngIf="_planDetails">
+        <nb-accordion-item-header>Plan</nb-accordion-item-header>
+        <nb-accordion-item-body>
+            <code>{{_planDetails.attributes.status}}</code>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
+    <nb-accordion-item *ngIf="_applyDetails">
+        <nb-accordion-item-header>Apply</nb-accordion-item-header>
+        <nb-accordion-item-body>
+            <code>{{_applyDetails.attributes.status}}</code>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+</nb-accordion>
