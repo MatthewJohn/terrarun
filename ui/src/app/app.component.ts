@@ -111,7 +111,7 @@ export class AppComponent {
         if (this._currentRun.id) {
           this.items.splice(4, 0, {
             title: `Run: ${this._currentRun.id}`,
-            link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/${this._currentRun.id}`
+            link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/runs/${this._currentRun.id}`
           });
         }
       }
