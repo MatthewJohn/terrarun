@@ -897,8 +897,8 @@ class ApiTerraformPlanLog(Resource):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
-        parser.add_argument('offset', type=int, location='args')
-        parser.add_argument('limit', type=int, location='args')
+        parser.add_argument('offset', type=int, location='args', default=0)
+        parser.add_argument('limit', type=int, location='args', default=-1)
         args = parser.parse_args()
         plan = Plan.get_by_api_id(plan_id)
         if not plan:
@@ -911,7 +911,11 @@ class ApiTerraformPlanLog(Resource):
             if plan.log:
                 session.refresh(plan.log)
                 if plan.log.data:
-                    plan_output = plan.log.data[args.offset:(args.offset+args.limit)]
+                    plan_output = plan.log.data
+                    if args.limit >= 0:
+                        plan_output = plan_output[args.offset:(args.offset+args.limit)]
+                    else:
+                        plan_output = plan_output[args.offset:]
             if plan_output or plan.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
