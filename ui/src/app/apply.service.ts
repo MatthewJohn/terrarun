@@ -17,4 +17,10 @@ export class ApplyService {
       { headers: this.accountService.getAuthHeader() }
     );
   }
+
+  getLog(applyLogUrl: string): Observable<string> {
+    return this.http.get(applyLogUrl,
+      { headers: {'Content-Type': 'text/html', ...this.accountService.getAuthHeader()},
+        responseType: 'text' });
+  }
 }

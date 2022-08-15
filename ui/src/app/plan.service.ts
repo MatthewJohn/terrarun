@@ -17,4 +17,10 @@ export class PlanService {
       { headers: this.accountService.getAuthHeader() }
     );
   }
+
+  getLog(planLogUrl: string): Observable<string> {
+    return this.http.get(planLogUrl,
+      { headers: {'Content-Type': 'text/html', ...this.accountService.getAuthHeader()},
+        responseType: 'text' });
+  }
 }

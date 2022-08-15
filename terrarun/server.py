@@ -12,8 +12,9 @@ from sqlalchemy.orm import scoped_session
 import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
-from terrarun import workspace
+from ansi2html import Ansi2HTMLConverter
 
+from terrarun import workspace
 from terrarun.apply import Apply
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
@@ -926,6 +927,13 @@ class ApiTerraformPlanLog(Resource):
 
             sleep(0.5)
 
+        if request.content_type and request.content_type.startswith('text/html'):
+            conv = Ansi2HTMLConverter()
+            print(plan_output)
+            plan_output = conv.convert(plan_output.decode('utf-8'), full=False)
+            plan_output = plan_output.replace('\n', '<br/ >')
+
+
         response = make_response(plan_output)
         response.headers['Content-Type'] = 'text/plain'
         return response
@@ -1041,8 +1049,8 @@ class ApiTerraformApplyLog(Resource):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
-        parser.add_argument('offset', type=int, location='args')
-        parser.add_argument('limit', type=int, location='args')
+        parser.add_argument('offset', type=int, location='args', default=0)
+        parser.add_argument('limit', type=int, location='args', default=-1)
         args = parser.parse_args()
         apply = Apply.get_by_api_id(apply_id)
         if not apply:
@@ -1054,9 +1062,18 @@ class ApiTerraformApplyLog(Resource):
             session.refresh(apply)
             if apply.log:
                 session.refresh(apply.log)
+
                 if apply.log.data:
-                    output = apply.log.data[args.offset:(args.offset+args.limit)]
-            if output or apply.status not in [
+                    output = apply.log.data
+                    if args.limit >= 0:
+                        output = output[args.offset:(args.offset+args.limit)]
+                    else:
+                        output = output[args.offset:]
+
+            # If output has been captured or command has finished or
+            # limit is -1 (i.e. not a call from terraform), return
+            # and do not wait for (more) output
+            if output or args.limit == -1 or apply.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
                     TerraformCommandState.QUEUED,
@@ -1065,6 +1082,11 @@ class ApiTerraformApplyLog(Resource):
             print('Waiting as apply state is; ' + str(apply.status))
 
             sleep(0.5)
+
+        if request.content_type and request.content_type.startswith('text/html'):
+            conv = Ansi2HTMLConverter()
+            output = conv.convert(output.decode('utf-8'), full=False)
+            output = output.replace('\n', '<br/ >')
 
         response = make_response(output)
         response.headers['Content-Type'] = 'text/plain'
