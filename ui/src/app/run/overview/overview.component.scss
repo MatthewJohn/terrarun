@@ -1,3 +1,19 @@
+
+#runDetailsTable td {
+    padding: 10px;
+}
+
+/* Make first td of each row bold */
+#runDetailsTable > tr > td{
+    font-weight: bold;
+}
+#runDetailsTable > tr > td ~ td {
+    font-weight: normal;
+}
+
+
+
+/* Ansi2html */
 .ansi1 { font-weight: bold; }
 .ansi2 { font-weight: lighter; }
 .ansi3 { font-style: italic; }

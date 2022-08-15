@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Route, RouterModule } from '@angular/router';
 import { ApplyService } from 'src/app/apply.service';
+import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { PlanService } from 'src/app/plan.service';
 import { RunService } from 'src/app/run.service';
 
@@ -17,11 +18,13 @@ export class OverviewComponent implements OnInit {
   _applyDetails: any;
   _planLog: string;
   _applyLog: string;
+  _runStatus: any;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
               private planService: PlanService,
-              private applyService: ApplyService) {
+              private applyService: ApplyService,
+              private runStatusFactory: RunStatusFactory) {
     this._planLog = "";
     this._applyLog = "";
   }
@@ -32,6 +35,8 @@ export class OverviewComponent implements OnInit {
       if (runId) {
         this.runService.getDetailsById(runId).subscribe((runData) => {
           this._runDetails = runData.data;
+
+          this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
 
           if (this._runDetails.relationships.plan) {
             this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
