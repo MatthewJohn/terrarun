@@ -2,12 +2,27 @@
     <nb-layout-column>
         <nb-card>
             <nb-card-body>
-                <table [nbTreeGrid]="runs$ | async" equalColumnsWidth>
+                <table [nbTreeGrid]="runs$ | async" style="table-layout: auto;">
 
                     <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
+                    <!-- <ng-container [nbTreeGridColumnDef]="icon">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef style="width: 20px">{{customColumn}}</th>
+                        <td nbTreeGridCell *nbTreeGridCellDef="let row">
+                  
+                          <nb-tree-grid-row-toggle
+                            [expanded]="row.expanded"
+                            *ngIf="row.data.kind === 'dir'">
+                          </nb-tree-grid-row-toggle>
+                  
+                          {{row.data[customColumn]}}
+                  
+                        </td>
+                      </ng-container> -->
+
+
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
-                        <td nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">
+                        <td class="row-{{ column }}" nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">
                             <ng-container [ngSwitch]="true">
                                 <div *ngSwitchCase="column == 'icon'">
                                     <nb-icon [icon]="row.data.runStatus.getIcon()"></nb-icon>
