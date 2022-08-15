@@ -4,6 +4,7 @@ import { ApplyService } from 'src/app/apply.service';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { PlanService } from 'src/app/plan.service';
 import { RunService } from 'src/app/run.service';
+import { UserService } from 'src/app/user.service';
 
 @Component({
   selector: 'app-overview',
@@ -19,11 +20,13 @@ export class OverviewComponent implements OnInit {
   _planLog: string;
   _applyLog: string;
   _runStatus: any;
+  _createdByDetails: any;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
               private planService: PlanService,
               private applyService: ApplyService,
+              private userService: UserService,
               private runStatusFactory: RunStatusFactory) {
     this._planLog = "";
     this._applyLog = "";
@@ -36,8 +39,17 @@ export class OverviewComponent implements OnInit {
         this.runService.getDetailsById(runId).subscribe((runData) => {
           this._runDetails = runData.data;
 
+          // Obtain run status model
           this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
 
+          // Obtain "created by" user details
+          if (this._runDetails.relationships["created-by"].data) {
+            this.userService.getUserDetailsById(this._runDetails.relationships["created-by"].data.id).subscribe((userDetails) => {
+              this._createdByDetails = userDetails.data;
+            })
+          }
+
+          // Obtain plan details
           if (this._runDetails.relationships.plan) {
             this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
               this._planDetails = planData.data;
@@ -45,6 +57,7 @@ export class OverviewComponent implements OnInit {
             })
           }
 
+          // Obtain apply details
           if (this._runDetails.relationships.apply) {
             this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
               this._applyDetails = applyData.data;
@@ -55,5 +68,4 @@ export class OverviewComponent implements OnInit {
       }
     });
   }
-
 }

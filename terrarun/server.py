@@ -164,6 +164,10 @@ class Server(object):
             '/api/v2/applies/<string:apply_id>/log'
         )
         self._api.add_resource(
+            ApiTerraformUserDetails,
+            '/api/v2/users/<string:user_id>'
+        )
+        self._api.add_resource(
             ApiTerraformUserTokens,
             '/api/v2/users/<string:user_id>/authentication-tokens'
         )
@@ -349,7 +353,7 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
                 for user_token in user.user_tokens
             ]
         }
-    
+
     def check_permissions_post(self, current_user, user_id, *args, **kwargs):
         """Check if user has permission to modify user tokens"""
         target_user = User.get_by_api_id(user_id)
@@ -376,6 +380,23 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
         return {
             "data": user_token.get_creation_api_details()
         }
+
+
+class ApiTerraformUserDetails(AuthenticatedEndpoint):
+    """Interface to obtain user details"""
+
+    def check_permissions_get(self, user_id, current_user):
+        """Check permissions"""
+        user = User.get_by_api_id(user_id)
+        if not user:
+            return False
+        # @TODO check if users are part of a common organisation
+        return True
+
+    def _get(self, user_id, current_user):
+        """Obtain user details"""
+        user = User.get_by_api_id(user_id)
+        return {"data": user.get_api_details(effective_user=current_user)}
 
 
 class ApiTerraformWellKnown(Resource):
@@ -782,7 +803,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }
 
-        run = Run.create(cv, **create_attributes)
+        run = Run.create(configuration_version=cv, created_by=current_user, **create_attributes)
         return {"data": run.get_api_details()}
 
 
