@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { AccountService } from './account.service';
 
 @Injectable({
@@ -8,6 +9,13 @@ import { AccountService } from './account.service';
 export class UserService {
 
   constructor(private http: HttpClient, private accountService: AccountService) {
+  }
+
+  getUserDetailsById(userId: string): Observable<any> {
+    return this.http.get<any>(
+      `https://${window.location.hostname}:5000/api/v2/users/${userId}`,
+      { headers: this.accountService.getAuthHeader() }
+    );
   }
 
   getUserTokens(userId: string): Promise<any> {

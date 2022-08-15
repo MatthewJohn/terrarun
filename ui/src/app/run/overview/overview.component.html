@@ -1,0 +1,42 @@
+
+<nb-card [accent]="_runStatus.getColor()">
+    <nb-card-header>Run: {{_runDetails.id}}</nb-card-header>
+    <nb-card-body>
+        <table id="runDetailsTable">
+            <tr>
+                <td>Status: </td>
+                <td>{{_runStatus.getName()}}</td>
+            </tr>
+            <tr>
+                <td>Started at: </td>
+                <td>{{_runDetails.attributes["created-at"]}}</td>
+            </tr>
+            <tr>
+                <td>Started by: </td>
+                <td>{{_createdByDetails.attributes.username}}</td>
+            </tr>
+            <tr>
+                <td>Has changes: </td>
+                <td>{{_runDetails.attributes["has-changes"]}}</td>
+            </tr>
+        </table>
+    </nb-card-body>
+  </nb-card>
+
+
+<nb-accordion>
+    <nb-accordion-item *ngIf="_planDetails">
+        <nb-accordion-item-header>Plan</nb-accordion-item-header>
+        <nb-accordion-item-body>
+            <div [innerHTML]="_planLog">
+            </div>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
+    <nb-accordion-item *ngIf="_applyDetails">
+        <nb-accordion-item-header>Apply</nb-accordion-item-header>
+        <nb-accordion-item-body>
+            <div [innerHTML]="_applyLog"></div>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+</nb-accordion>

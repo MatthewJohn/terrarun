@@ -9,6 +9,7 @@ import { ListComponent } from './list/list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 import { OverviewComponent } from './overview/overview.component';
 import { SettingsComponent } from './settings/settings.component';
+import { WorkspaceModule } from '../workspace/workspace.module';
 
 
 @NgModule({
@@ -33,6 +34,7 @@ import { SettingsComponent } from './settings/settings.component';
 
     FormsModule,
     ReactiveFormsModule,
+    WorkspaceModule,
   ]
 })
 export class OrganisationModule { }
