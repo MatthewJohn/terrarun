@@ -1006,6 +1006,7 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
+        Apply.create(plan=run.plan)
         run.queue_apply(comment=flask.request.get_json().get('comment', None))
         return {}, 202
 

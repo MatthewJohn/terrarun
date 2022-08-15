@@ -115,8 +115,7 @@ class Run(Base, BaseObject):
             **attributes)
         session.add(run)
         session.commit()
-        plan = terrarun.plan.Plan.create(run=run)
-        terrarun.apply.Apply.create(plan=plan)
+        terrarun.plan.Plan.create(run=run)
 
         # Queue plan job
         run.queue_plan()
@@ -132,8 +131,9 @@ class Run(Base, BaseObject):
         print("Job Status: " + str(self.status))
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
+            plan = self.plan
             self.plan.execute()
-            if self.plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            if plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
