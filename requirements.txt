@@ -4,3 +4,4 @@ sqlalchemy==1.4.39
 alembic==1.8.1
 bcrypt==3.2.2
 flask-cors==3.0.10
+ansi2html==1.8.0

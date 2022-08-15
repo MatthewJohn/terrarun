@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { LoggedInGuard } from '../logged-in.guard';
+import { WorkspaceExistsGuard } from '../workspace-exists.guard';
 import { CreateComponent } from './create/create.component';
 import { ListComponent } from './list/list.component';
 import { OrganisationExistsGuard } from './organisation-exists.guard';
@@ -20,19 +21,24 @@ const routes: Routes = [
     canActivate: [LoggedInGuard]
   },
   {
-    path: ':organisationId',
+    path: ':organisationName',
     component: OverviewComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
-    path: ':organisationId/workspaces',
+    path: ':organisationName/workspaces',
     component: WorkspaceListComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
-    path: ':organisationId/settings',
+    path: ':organisationName/settings',
     component: SettingsComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
+  },
+  {
+    path: ':organisationName/:workspaceName',
+    loadChildren: () => import(`../workspace/workspace.module`).then(m => m.WorkspaceModule),
+    canActivate: [LoggedInGuard, OrganisationExistsGuard, WorkspaceExistsGuard]
   }
 ];
 

@@ -12,8 +12,9 @@ from sqlalchemy.orm import scoped_session
 import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
-from terrarun import workspace
+from ansi2html import Ansi2HTMLConverter
 
+from terrarun import workspace
 from terrarun.apply import Apply
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
@@ -130,6 +131,10 @@ class Server(object):
             '/api/v2/runs/<string:run_id>'
         )
         self._api.add_resource(
+            ApiTerraformRunActionsCancel,
+            '/api/v2/runs/<string:run_id>/actions/cancel'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
         )
@@ -157,6 +162,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformApplyLog,
             '/api/v2/applies/<string:apply_id>/log'
+        )
+        self._api.add_resource(
+            ApiTerraformUserDetails,
+            '/api/v2/users/<string:user_id>'
         )
         self._api.add_resource(
             ApiTerraformUserTokens,
@@ -344,7 +353,7 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
                 for user_token in user.user_tokens
             ]
         }
-    
+
     def check_permissions_post(self, current_user, user_id, *args, **kwargs):
         """Check if user has permission to modify user tokens"""
         target_user = User.get_by_api_id(user_id)
@@ -371,6 +380,23 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
         return {
             "data": user_token.get_creation_api_details()
         }
+
+
+class ApiTerraformUserDetails(AuthenticatedEndpoint):
+    """Interface to obtain user details"""
+
+    def check_permissions_get(self, user_id, current_user):
+        """Check permissions"""
+        user = User.get_by_api_id(user_id)
+        if not user:
+            return False
+        # @TODO check if users are part of a common organisation
+        return True
+
+    def _get(self, user_id, current_user):
+        """Obtain user details"""
+        user = User.get_by_api_id(user_id)
+        return {"data": user.get_api_details(effective_user=current_user)}
 
 
 class ApiTerraformWellKnown(Resource):
@@ -777,8 +803,34 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }
 
-        run = Run.create(cv, **create_attributes)
+        run = Run.create(configuration_version=cv, created_by=current_user, **create_attributes)
         return {"data": run.get_api_details()}
+
+
+class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
+    """Interface to cancel runs"""
+
+    def check_permissions_post(self, run_id, current_user):
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+        if run.plan_only:
+            return WorkspacePermissions(
+                current_user=current_user,
+                workspace=run.configuration_version.workspace
+            ).check_access_type(runs=TeamWorkspaceRunsPermission.PLAN)
+        return WorkspacePermissions(
+                current_user=current_user,
+                workspace=run.configuration_version.workspace
+            ).check_access_type(runs=TeamWorkspaceRunsPermission.APPLY)
+
+    def _post(self, run_id, current_user):
+        """Cancel run"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        run.cancel()
 
 
 class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
@@ -867,8 +919,8 @@ class ApiTerraformPlanLog(Resource):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
-        parser.add_argument('offset', type=int, location='args')
-        parser.add_argument('limit', type=int, location='args')
+        parser.add_argument('offset', type=int, location='args', default=0)
+        parser.add_argument('limit', type=int, location='args', default=-1)
         args = parser.parse_args()
         plan = Plan.get_by_api_id(plan_id)
         if not plan:
@@ -881,7 +933,11 @@ class ApiTerraformPlanLog(Resource):
             if plan.log:
                 session.refresh(plan.log)
                 if plan.log.data:
-                    plan_output = plan.log.data[args.offset:(args.offset+args.limit)]
+                    plan_output = plan.log.data
+                    if args.limit >= 0:
+                        plan_output = plan_output[args.offset:(args.offset+args.limit)]
+                    else:
+                        plan_output = plan_output[args.offset:]
             if plan_output or plan.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
@@ -891,6 +947,13 @@ class ApiTerraformPlanLog(Resource):
             print('Waiting as plan state is; ' + str(plan.status))
 
             sleep(0.5)
+
+        if request.content_type and request.content_type.startswith('text/html'):
+            conv = Ansi2HTMLConverter()
+            print(plan_output)
+            plan_output = conv.convert(plan_output.decode('utf-8'), full=False)
+            plan_output = plan_output.replace('\n', '<br/ >')
+
 
         response = make_response(plan_output)
         response.headers['Content-Type'] = 'text/plain'
@@ -964,6 +1027,7 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
+        Apply.create(plan=run.plan)
         run.queue_apply(comment=flask.request.get_json().get('comment', None))
         return {}, 202
 
@@ -1007,8 +1071,8 @@ class ApiTerraformApplyLog(Resource):
         """Return information for plan(s)"""
 
         parser = reqparse.RequestParser()
-        parser.add_argument('offset', type=int, location='args')
-        parser.add_argument('limit', type=int, location='args')
+        parser.add_argument('offset', type=int, location='args', default=0)
+        parser.add_argument('limit', type=int, location='args', default=-1)
         args = parser.parse_args()
         apply = Apply.get_by_api_id(apply_id)
         if not apply:
@@ -1020,9 +1084,18 @@ class ApiTerraformApplyLog(Resource):
             session.refresh(apply)
             if apply.log:
                 session.refresh(apply.log)
+
                 if apply.log.data:
-                    output = apply.log.data[args.offset:(args.offset+args.limit)]
-            if output or apply.status not in [
+                    output = apply.log.data
+                    if args.limit >= 0:
+                        output = output[args.offset:(args.offset+args.limit)]
+                    else:
+                        output = output[args.offset:]
+
+            # If output has been captured or command has finished or
+            # limit is -1 (i.e. not a call from terraform), return
+            # and do not wait for (more) output
+            if output or args.limit == -1 or apply.status not in [
                     TerraformCommandState.PENDING,
                     TerraformCommandState.MANAGE_QUEUED,
                     TerraformCommandState.QUEUED,
@@ -1031,6 +1104,11 @@ class ApiTerraformApplyLog(Resource):
             print('Waiting as apply state is; ' + str(apply.status))
 
             sleep(0.5)
+
+        if request.content_type and request.content_type.startswith('text/html'):
+            conv = Ansi2HTMLConverter()
+            output = conv.convert(output.decode('utf-8'), full=False)
+            output = output.replace('\n', '<br/ >')
 
         response = make_response(output)
         response.headers['Content-Type'] = 'text/plain'

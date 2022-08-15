@@ -81,6 +81,9 @@ class Run(Base, BaseObject):
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
+    created_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_created_by_id_user_id"))
+    created_by = sqlalchemy.orm.relation("User", foreign_keys=[created_by_id])
+
     @property
     def replace_addrs(self):
         return json.loads(self._replace_addrs)
@@ -106,21 +109,25 @@ class Run(Base, BaseObject):
         self._variables = json.dumps(value)
 
     @classmethod
-    def create(cls, configuration_version, **attributes):
+    def create(cls, configuration_version, created_by, **attributes):
         """Create run and return instance."""
         session = Database.get_session()
         run = Run(
             configuration_version=configuration_version,
             status=RunStatus.PENDING,
+            created_by=created_by,
             **attributes)
         session.add(run)
         session.commit()
-        plan = terrarun.plan.Plan.create(run=run)
-        terrarun.apply.Apply.create(plan=plan)
+        terrarun.plan.Plan.create(run=run)
 
         # Queue plan job
         run.queue_plan()
         return run
+
+    def cancel(self):
+        """Cancel run"""
+        self.update_status(RunStatus.CANCELED)
 
     def execute_next_step(self):
         """Execute terraform command"""
@@ -128,8 +135,9 @@ class Run(Base, BaseObject):
         print("Job Status: " + str(self.status))
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
+            plan = self.plan
             self.plan.execute()
-            if self.plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            if plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
@@ -249,7 +257,15 @@ class Run(Base, BaseObject):
                     'data': {'id': self.configuration_version.api_id, 'type': 'configuration-versions'}
                 },
                 "cost-estimate": {},
-                "created-by": {},
+                "created-by": {
+                    "data": {
+                        "id": self.created_by.api_id,
+                        "type": "users"
+                    },
+                    "links": {
+                        "related": f"/api/v2/runs/{self.api_id}/created-by"
+                    }
+                } if self.created_by else {},
                 "input-state-version": {},
                 "plan": {'data': {'id': self.plan.api_id, 'type': 'plans'}} if self.plan is not None else {},
                 "run-events": {},

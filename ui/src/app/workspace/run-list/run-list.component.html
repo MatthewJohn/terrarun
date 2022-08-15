@@ -1,0 +1,31 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-body>
+                <table [nbTreeGrid]="runs$ | async" style="table-layout: auto;">
+
+                    <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <td class="row-{{ column }}" nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">
+                            <ng-container [ngSwitch]="true">
+                                <div *ngSwitchCase="column == 'icon'">
+                                    <nb-icon [icon]="row.data.runStatus.getIcon()"></nb-icon>
+                                </div>
+                                <div *ngSwitchCase="column == 'runStatus'">
+                                    <nb-tag size="small" [status]="row.data[column].getColor()" appearance="outline" [text]="row.data[column].getName()">
+                                    </nb-tag>
+                                </div>
+                                <div *ngSwitchDefault>
+                                    {{row.data[column]}}
+                                </div>
+                            </ng-container>
+                        </td>
+                    </ng-container>
+
+                </table>
+            </nb-card-body>
+
+        </nb-card>
+    </nb-layout-column>
+</nb-layout>

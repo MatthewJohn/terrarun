@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { AccountService } from './account.service';
 
 @Injectable({
@@ -43,7 +44,18 @@ export class WorkspaceService {
       });
     });
   }
+
+  getDetailsByName(organisationName: string, workspaceName: string) {
+    return this.http.get<any>(
+      `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/workspaces/${workspaceName}`,
+      { headers: this.accountService.getAuthHeader() }
+    );
+  }
+
+  getRuns(workspaceId: string): Observable<any> {
+    return this.http.get<any>(
+        `https://${window.location.hostname}:5000/api/v2/workspaces/${workspaceId}/runs`,
+        { headers: this.accountService.getAuthHeader() }
+      );
+  }
 }
-
-
-// 

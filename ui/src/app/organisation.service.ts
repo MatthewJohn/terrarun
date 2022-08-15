@@ -93,8 +93,8 @@ export class OrganisationService {
     });
   }
 
-  getAllWorkspaces(organisationId: string): Observable<any> {
-    return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationId}/workspaces`,
+  getAllWorkspaces(organisationName: string): Observable<any> {
+    return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/workspaces`,
                               { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
 
   }

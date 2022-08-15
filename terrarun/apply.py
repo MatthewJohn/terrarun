@@ -126,7 +126,7 @@ Executed remotely on terrarun server
                     # "agent-pool-name": "first-pool",
                     # "mode": "agent",
                 },
-                "status": "finished",
+                "status": self.status.value,
                 "status-timestamps": {
                     "queued-at": "2018-10-17T18:58:27+00:00",
                     "started-at": "2018-10-17T18:58:29+00:00",
