@@ -28,6 +28,7 @@ export class OverviewComponent implements OnInit {
   _applyStatus: any;
     
   _createdByDetails: any;
+  _updateInterval: any;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -46,10 +47,15 @@ export class OverviewComponent implements OnInit {
       this._runId = runId;
       this.getRunStatus();
 
-      setInterval(() => {
+      this._updateInterval = setInterval(() => {
         this.getRunStatus();
       }, 1000);
     });
+  }
+  ngOnDestroy() {
+    if (this._updateInterval) {
+      window.clearTimeout(this._updateInterval);
+    }
   }
 
   getRunStatus() {
