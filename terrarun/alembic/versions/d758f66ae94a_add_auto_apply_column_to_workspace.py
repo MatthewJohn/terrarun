@@ -1,3 +1,6 @@
+# Copyright (C) Matt Comben - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly prohibited
+# Proprietary and confidential
 """Add auto_apply column to workspace
 
 Revision ID: d758f66ae94a
