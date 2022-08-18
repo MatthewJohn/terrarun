@@ -8,6 +8,7 @@ abstract class RunStatusBaseClass implements IRunStatus {
     public abstract _labelColour: string;
     public abstract _icon: string;
     public _availableActions: RunAction[] = [];
+    public _isFinal: boolean = false;
 
     getName(): string {
         return this._nameString
@@ -21,12 +22,16 @@ abstract class RunStatusBaseClass implements IRunStatus {
     getAvailableActions(): RunAction[] {
         return this._availableActions;
     }
+    isFinal(): boolean {
+        return this._isFinal;
+    }
 }
 
 class RunStatusApplied extends RunStatusBaseClass {
     _nameString = "Applied";
     _labelColour = "success";
     _icon = "done-all-outline";
+    public override _isFinal = true;
 }
 class RunStatusApplying extends RunStatusBaseClass {
     _nameString = "Applying";
@@ -69,6 +74,7 @@ class RunStatusErrored extends RunStatusBaseClass {
     _nameString = "Errored";
     _labelColour = "danger";
     _icon = "alert-circle-outline";
+    public override _isFinal = true;
 }
 class RunStatusFetching extends RunStatusBaseClass {
     _nameString = "Fetching";
@@ -95,6 +101,7 @@ class RunStatusPlannedAndFinished extends RunStatusBaseClass {
     _nameString = "Planned and finished";
     _labelColour = "success";
     _icon = "checkmark-outline";
+    public override _isFinal = true;
 }
 class RunStatusPlanning extends RunStatusBaseClass {
     _nameString = "Planning";

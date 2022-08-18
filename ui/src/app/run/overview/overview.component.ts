@@ -45,11 +45,10 @@ export class OverviewComponent implements OnInit {
     this.route.paramMap.subscribe((routeParams) => {
       let runId = routeParams.get('runId');
       this._runId = runId;
-      this.getRunStatus();
-
       this._updateInterval = setInterval(() => {
         this.getRunStatus();
       }, 1000);
+      this.getRunStatus();
     });
   }
   ngOnDestroy() {
@@ -64,7 +63,10 @@ export class OverviewComponent implements OnInit {
         this._runDetails = runData.data;
 
         // Obtain run status model
-        this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
+       this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
+       if (this._runStatus.isFinal()) {
+         window.clearTimeout(this._updateInterval);
+       }
 
         // Obtain "created by" user details
         if (this._runDetails.relationships["created-by"].data) {
