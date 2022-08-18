@@ -1,3 +1,6 @@
+# Copyright (C) Matt Comben - All Rights Reserved
+# Unauthorized copying of this file, via any medium is strictly prohibited
+# Proprietary and confidential
 """empty message
 
 Revision ID: e1cad9bf1857
