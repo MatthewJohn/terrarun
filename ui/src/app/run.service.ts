@@ -17,4 +17,12 @@ export class RunService {
       { headers: this.accountService.getAuthHeader() }
     );
   }
+
+  applyRun(runId: string): Observable<any> {
+    return this.http.post<any>(
+      `https://${window.location.hostname}:5000/api/v2/runs/${runId}/actions/apply`,
+      {},
+      { headers: this.accountService.getAuthHeader() }
+    )
+  }
 }

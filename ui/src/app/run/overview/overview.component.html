@@ -17,7 +17,15 @@
             </tr>
             <tr>
                 <td>Has changes: </td>
-                <td>{{_runDetails.attributes["has-changes"]}}</td>
+                <td>{{_runDetails.attributes["has-changes"] ? 'Yes' : 'No'}}</td>
+            </tr>
+            <tr>
+                <td>Actions</td>
+                <td>
+                    <button nbButton (click)="applyRun()" *ngIf="applyActionAvailable()">
+                        Apply
+                    </button>
+                </td>
             </tr>
         </table>
     </nb-card-body>

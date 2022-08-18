@@ -1,4 +1,5 @@
 import { Injectable } from "@angular/core";
+import { RunAction } from "../RunAction/run-action-enum";
 import { IRunStatus } from "./run-status";
 import { RunStatusEnum } from "./run-status-enum";
 
@@ -6,6 +7,7 @@ abstract class RunStatusBaseClass implements IRunStatus {
     public abstract _nameString: string;
     public abstract _labelColour: string;
     public abstract _icon: string;
+    public _availableActions: RunAction[] = [];
 
     getName(): string {
         return this._nameString
@@ -15,6 +17,9 @@ abstract class RunStatusBaseClass implements IRunStatus {
     }
     getIcon(): string {
         return this._icon;
+    }
+    getAvailableActions(): RunAction[] {
+        return this._availableActions;
     }
 }
 
@@ -27,6 +32,7 @@ class RunStatusApplying extends RunStatusBaseClass {
     _nameString = "Applying";
     _labelColour = "info";
     _icon = "activity-outline";
+    public override _availableActions = [RunAction.CANCEL_RUN];
 }
 class RunStatusApplyQueued extends RunStatusBaseClass {
     _nameString = "Applying";
@@ -37,6 +43,7 @@ class RunStatusCancelled extends RunStatusBaseClass {
     _nameString = "Cancelled";
     _labelColour = "danger";
     _icon = "alert-circle-outline";
+    public override _availableActions = [RunAction.FORCE_CANCEL_RUN];
 }
 class RunStatusConfirmed extends RunStatusBaseClass {
     _nameString = "Confirmed";
@@ -82,6 +89,7 @@ class RunStatusPlanned extends RunStatusBaseClass {
     _nameString = "Planned";
     _labelColour = "success";
     _icon = "checkmark-square-outline";
+    public override _availableActions = [RunAction.CONFIRM_AND_APPLY];
 }
 class RunStatusPlannedAndFinished extends RunStatusBaseClass {
     _nameString = "Planned and finished";
@@ -92,6 +100,7 @@ class RunStatusPlanning extends RunStatusBaseClass {
     _nameString = "Planning";
     _labelColour = "info";
     _icon = "activity-outline";
+    public override _availableActions = [RunAction.CANCEL_RUN];
 }
 class RunStatusPlanQueued extends RunStatusBaseClass {
     _nameString = "Plan queued";
@@ -117,6 +126,7 @@ class RunStatusPolicySoftFailed extends RunStatusBaseClass {
     _nameString = "Policy soft failed";
     _labelColour = "warning";
     _icon = "alert-triangle-outline";
+    public override _availableActions = [RunAction.OVERRIDE_AND_CONTINUE];
 }
 class RunStatusPostPlanCompleted extends RunStatusBaseClass {
     _nameString = "Post-plan completed";

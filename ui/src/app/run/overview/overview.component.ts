@@ -2,6 +2,7 @@ import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Route, RouterModule } from '@angular/router';
 import { ApplyService } from 'src/app/apply.service';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
+import { RunAction } from 'src/app/models/RunAction/run-action-enum';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { PlanService } from 'src/app/plan.service';
 import { RunService } from 'src/app/run.service';
@@ -76,13 +77,27 @@ export class OverviewComponent implements OnInit {
         }
 
         // Obtain apply details
-        if (this._runDetails.relationships.apply) {
+        if (this._runDetails.relationships.apply.data !== undefined) {
           this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
             this._applyDetails = applyData.data;
             this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
             this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
           })
         }
+      });
+    }
+  }
+
+  applyActionAvailable(): boolean {
+    if (this._runStatus.getAvailableActions().indexOf(RunAction.CONFIRM_AND_APPLY) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  applyRun() {
+    if (this._runId) {
+      this.runService.applyRun(this._runId).subscribe((data) => {
+        console.log("got data");
       });
     }
   }

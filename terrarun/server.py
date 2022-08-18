@@ -953,7 +953,6 @@ class ApiTerraformPlanLog(Resource):
 
         if request.content_type and request.content_type.startswith('text/html'):
             conv = Ansi2HTMLConverter()
-            print(plan_output)
             plan_output = conv.convert(plan_output.decode('utf-8'), full=False)
             plan_output = plan_output.replace('\n', '<br/ >')
 
