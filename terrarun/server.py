@@ -29,6 +29,7 @@ from terrarun.plan import Plan
 from terrarun.run import Run
 from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
+from terrarun.tag import Tag
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
@@ -119,6 +120,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceLatestStateVersion,
             '/api/v2/workspaces/<string:workspace_id>/current-state-version'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceRelationshipsTags,
+            '/api/v2/workspaces/<string:workspace_id>/relationships/tags'
         )
         self._api.add_resource(
             ApiTerraformConfigurationVersionUpload,
@@ -675,6 +680,38 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
             speculative=attributes.get('speculative', False)
         )
         return cv.get_api_details()
+
+
+class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
+    """Interface to manage workspace tags"""
+
+    def check_permissions_post(self, workspace_id, current_user):
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if workspace is None:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_MANAGE_TAGS)
+
+    def _post(self, current_user, workspace_id):
+        """Handle updating workspace tags"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return 404
+
+        request_data = request.json
+        print(request_data)
+        db = Database.get_session()
+        for row in request_data.get('data', []):
+            if row.get('type', None) != 'tags':
+                return {}, 400
+            tag_name = row.get('attributes', None).get('name', None)
+            if not tag_name:
+                return {}, 400
+            tag = Tag.get_by_organisation_and_name(organisation=workspace.organisation, tag_name=tag_name)
+            if not tag:
+                tag = Tag.create(organisation=workspace.organisation, tag_name=tag_name)
+            workspace.add_tag(tag)
 
 
 class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
