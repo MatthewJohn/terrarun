@@ -987,7 +987,7 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        state = Workspace.get_by_api_id(workspace_id)._latest_state
+        state = Workspace.get_by_api_id(workspace_id).latest_state
         if not state:
             return {}, 404
         
