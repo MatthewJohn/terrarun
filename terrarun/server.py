@@ -423,6 +423,10 @@ class ApiTerraformPing(Resource):
         # Create empty response with 204 status
         response = make_response({}, 204)
         response.headers['Content-Type'] = 'application/vnd.api+json'
+        response.headers['tfp-api-version'] = '2.5'
+        response.headers['x-ratelimit-limit'] = '30'
+        response.headers['x-ratelimit-remaining'] = '30'
+        response.headers['x-ratelimit-reset'] = '1'
         return response
 
 
