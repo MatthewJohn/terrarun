@@ -1012,7 +1012,7 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
             return {}, 404
-        return state_version._state_json
+        return json.loads(state_version._state_json)
 
 
 class ApiTerraformApplyRun(AuthenticatedEndpoint):
