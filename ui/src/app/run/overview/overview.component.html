@@ -25,6 +25,9 @@
                     <button nbButton (click)="applyRun()" *ngIf="applyActionAvailable()">
                         Apply
                     </button>
+                    <button nbButton (click)="cancelRun()" *ngIf="cancelActionAvailable()">
+                        Cancel
+                    </button>
                 </td>
             </tr>
         </table>

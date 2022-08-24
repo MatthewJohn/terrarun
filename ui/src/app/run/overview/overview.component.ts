@@ -105,7 +105,18 @@ export class OverviewComponent implements OnInit {
   applyRun() {
     if (this._runId) {
       this.runService.applyRun(this._runId).subscribe((data) => {
-        console.log("got data");
+      });
+    }
+  }
+  cancelActionAvailable(): boolean {
+    if (this._runStatus.getAvailableActions().indexOf(RunAction.CANCEL_RUN) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  cancelRun() {
+    if (this._runId) {
+      this.runService.cancelRun(this._runId).subscribe((data) => {
       });
     }
   }

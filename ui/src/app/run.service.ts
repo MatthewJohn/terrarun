@@ -25,4 +25,11 @@ export class RunService {
       { headers: this.accountService.getAuthHeader() }
     )
   }
+  cancelRun(runId: string): Observable<any> {
+    return this.http.post<any>(
+      `https://${window.location.hostname}:5000/api/v2/runs/${runId}/actions/cancel`,
+      {},
+      { headers: this.accountService.getAuthHeader() }
+    )
+  }
 }
