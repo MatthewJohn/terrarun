@@ -17,6 +17,7 @@ export class RunListComponent implements OnInit {
   tableColumns: string[] = ['icon', 'id', 'runStatus', 'created-at'];
   workspaceName: string | null = null;
   organisationName: string | null = null;
+  _updateInterval: any;
 
 
   currentOrganisation: OrganisationStateType | null = null;
@@ -31,12 +32,17 @@ export class RunListComponent implements OnInit {
     this.state.currentWorkspace.subscribe((data) => {
       this.currentWorkspace = data;
       this.updateRuns();
-      setInterval(() => {
+      this._updateInterval = setInterval(() => {
         this.updateRuns();
       }, 1000);
     });
 
     this.state.currentOrganisation.subscribe((data) => this.currentOrganisation = data);
+  }
+  ngOnDestroy() {
+    if (this._updateInterval) {
+      window.clearTimeout(this._updateInterval);
+    }
   }
 
   updateRuns(): void {
