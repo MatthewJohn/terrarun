@@ -80,6 +80,7 @@ class Organisation(Base, BaseObject):
     owners_team_saml_role_id = sqlalchemy.Column(sqlalchemy.String, default=None)
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="organisation")
+    tags = sqlalchemy.orm.relation("Tag", back_populates="organisation")
 
     teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
 
@@ -177,6 +178,7 @@ class Organisation(Base, BaseObject):
                 "id": self.api_id,
                 "type": "entitlement-sets",
                 "attributes": {
+                    "cloud": True,
                     "cost-estimation": self.cost_estimation_enabled,
                     "configuration-designer": self.configuration_designer_enabled,
                     "operations": self.operations_enabled,

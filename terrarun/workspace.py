@@ -13,6 +13,7 @@ from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.run
 import terrarun.configuration
 from terrarun.database import Base, Database
+from terrarun.workspace_tag import WorkspaceTag
 
 
 class Workspace(Base, BaseObject):
@@ -33,6 +34,8 @@ class Workspace(Base, BaseObject):
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
+
+    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag")
 
     _latest_state = None
     _latest_configuration_version = None
@@ -73,6 +76,14 @@ class Workspace(Base, BaseObject):
         session.add(ws)
         session.commit()
         return ws
+
+    def add_tag(self, tag):
+        """Add tag to list of tags"""
+        if tag not in self.tags:
+            self.tags.append(tag)
+            session = Database.get_session()
+            session.add(self)
+            session.commit()
 
     @property
     def runs(self):
@@ -207,6 +218,9 @@ class Workspace(Base, BaseObject):
                 },
                 "outputs": {
                     "data": []
+                },
+                "tags": {
+                    "data": [tag.get_relationship() for tag in self.tags]
                 },
                 "readme": {
                     "data": {

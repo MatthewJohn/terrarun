@@ -4,7 +4,7 @@
             <nb-card-body>
                 <table [nbTreeGrid]="runs$ | async" style="table-layout: auto;">
 
-                    <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+                    <tr class="runRow" nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
                         <td class="row-{{ column }}" nbTreeGridCell class="workspaceRow" (click)="onWorkspaceClick(row)" *nbTreeGridCellDef="let row">
