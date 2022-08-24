@@ -199,7 +199,8 @@ class Server(object):
         kwargs = {
             'host': self.host,
             'port': self.port,
-            'debug': True
+            'debug': True,
+            'threaded': True
         }
         if self.ssl_public_key and self.ssl_private_key:
             kwargs['ssl_context'] = (self.ssl_public_key, self.ssl_private_key)
@@ -994,7 +995,6 @@ class ApiTerraformPlanLog(Resource):
 
         if request.content_type and request.content_type.startswith('text/html'):
             conv = Ansi2HTMLConverter()
-            print(plan_output)
             plan_output = conv.convert(plan_output.decode('utf-8'), full=False)
             plan_output = plan_output.replace('\n', '<br/ >')
 

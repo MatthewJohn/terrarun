@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { RunRoutingModule } from './run-routing.module';
 import { OverviewComponent } from './overview/overview.component';
-import { NbAccordionModule, NbAlertModule, NbCardModule } from '@nebular/theme';
+import { NbAccordionModule, NbAlertModule, NbButtonModule, NbCardModule } from '@nebular/theme';
 
 
 @NgModule({
@@ -16,7 +16,8 @@ import { NbAccordionModule, NbAlertModule, NbCardModule } from '@nebular/theme';
 
     NbAccordionModule,
     NbCardModule,
-    NbAlertModule
+    NbAlertModule,
+    NbButtonModule
   ]
 })
 export class RunModule { }

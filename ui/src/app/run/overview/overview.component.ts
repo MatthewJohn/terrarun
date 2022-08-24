@@ -2,6 +2,7 @@ import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Route, RouterModule } from '@angular/router';
 import { ApplyService } from 'src/app/apply.service';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
+import { RunAction } from 'src/app/models/RunAction/run-action-enum';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { PlanService } from 'src/app/plan.service';
 import { RunService } from 'src/app/run.service';
@@ -27,6 +28,7 @@ export class OverviewComponent implements OnInit {
   _applyStatus: any;
     
   _createdByDetails: any;
+  _updateInterval: any;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -43,12 +45,16 @@ export class OverviewComponent implements OnInit {
     this.route.paramMap.subscribe((routeParams) => {
       let runId = routeParams.get('runId');
       this._runId = runId;
-      this.getRunStatus();
-
-      setInterval(() => {
+      this._updateInterval = setInterval(() => {
         this.getRunStatus();
       }, 1000);
+      this.getRunStatus();
     });
+  }
+  ngOnDestroy() {
+    if (this._updateInterval) {
+      window.clearTimeout(this._updateInterval);
+    }
   }
 
   getRunStatus() {
@@ -57,7 +63,10 @@ export class OverviewComponent implements OnInit {
         this._runDetails = runData.data;
 
         // Obtain run status model
-        this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
+       this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
+       if (this._runStatus.isFinal()) {
+         window.clearTimeout(this._updateInterval);
+       }
 
         // Obtain "created by" user details
         if (this._runDetails.relationships["created-by"].data) {
@@ -76,13 +85,38 @@ export class OverviewComponent implements OnInit {
         }
 
         // Obtain apply details
-        if (this._runDetails.relationships.apply) {
+        if (this._runDetails.relationships.apply.data !== undefined) {
           this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
             this._applyDetails = applyData.data;
             this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
             this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
           })
         }
+      });
+    }
+  }
+
+  applyActionAvailable(): boolean {
+    if (this._runStatus.getAvailableActions().indexOf(RunAction.CONFIRM_AND_APPLY) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  applyRun() {
+    if (this._runId) {
+      this.runService.applyRun(this._runId).subscribe((data) => {
+      });
+    }
+  }
+  cancelActionAvailable(): boolean {
+    if (this._runStatus.getAvailableActions().indexOf(RunAction.CANCEL_RUN) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  cancelRun() {
+    if (this._runId) {
+      this.runService.cancelRun(this._runId).subscribe((data) => {
       });
     }
   }
