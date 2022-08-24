@@ -35,7 +35,7 @@ class Workspace(Base, BaseObject):
 
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
 
-    tags = sqlalchemy.orm.relationship("WorkspaceTag", back_populates="workspace")
+    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag")
 
     _latest_state = None
     _latest_configuration_version = None
@@ -79,10 +79,11 @@ class Workspace(Base, BaseObject):
 
     def add_tag(self, tag):
         """Add tag to list of tags"""
-        workspace_tag = WorkspaceTag(workspace=self, tag=tag)
-        session = Database.get_session()
-        session.add(workspace_tag)
-        session.commit()
+        if tag not in self.tags:
+            self.tags.append(tag)
+            session = Database.get_session()
+            session.add(self)
+            session.commit()
 
     @property
     def runs(self):
@@ -219,7 +220,7 @@ class Workspace(Base, BaseObject):
                     "data": []
                 },
                 "tags": {
-                    "data": [tag.tag.get_relationship() for tag in self.tags]
+                    "data": [tag.get_relationship() for tag in self.tags]
                 },
                 "readme": {
                     "data": {

@@ -14,6 +14,4 @@ class WorkspaceTag(Base):
     __tablename__ = "workspace_tag"
 
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), primary_key=True)
-    workspace = sqlalchemy.orm.relationship("Workspace", back_populates="tags")
     tag_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tag.id"), primary_key=True)
-    tag = sqlalchemy.orm.relationship("Tag", back_populates="workspaces")
