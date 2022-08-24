@@ -1,3 +1,10 @@
 .row-icon {
     max-width: 30px;
 }
+.runRow {
+    cursor: pointer;
+}
+.runRow:hover {
+    background-color: #444444;
+    color: #dddddd;
+}

@@ -15,3 +15,5 @@ from terrarun.team import Team
 from terrarun.team_user_membership import TeamUserMembership
 from terrarun.team_workspace_access import TeamWorkspaceAccess
 from terrarun.organisation_owner import OrganisationOwner
+from terrarun.tag import Tag
+from terrarun.workspace_tag import WorkspaceTag
