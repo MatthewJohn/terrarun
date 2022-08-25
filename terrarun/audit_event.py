@@ -15,6 +15,12 @@ from terrarun.database import Base, Database
 import terrarun.user
 
 
+class AuditEventType(Enum):
+    """Audit event types"""
+
+    STATUS_CHANGE = "status_change"
+
+
 class AuditEvent(Base, BaseObject):
 
     ID_PREFIX = 'ae'
@@ -35,7 +41,7 @@ class AuditEvent(Base, BaseObject):
     old_value = sqlalchemy.Column(sqlalchemy.LargeBinary)
     new_value = sqlalchemy.Column(sqlalchemy.LargeBinary)
 
-    event_type = sqlalchemy.Column(sqlalchemy.String)
+    event_type = sqlalchemy.Column(sqlalchemy.Enum(AuditEventType))
     event_description = sqlalchemy.Column(sqlalchemy.String)
 
     comment = sqlalchemy.Column(sqlalchemy.String)

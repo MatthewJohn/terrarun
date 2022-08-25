@@ -10,7 +10,7 @@ import queue
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
-from terrarun.audit_event import AuditEvent
+from terrarun.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
 import terrarun.plan
@@ -55,12 +55,6 @@ class RunOperations:
     REFRESH_ONLY = 'refresh_only'
     DESTROY = 'destroy'
     EMPTY_APPLY = 'empty_apply'
-
-
-class RunAutitEvent(Enum):
-    """Run audit event types"""
-
-    STATUS_CHANGE = "status_change"
 
 
 class Run(Base, BaseObject):
@@ -194,7 +188,7 @@ class Run(Base, BaseObject):
             object_type=self.ID_PREFIX,
             old_value=Database.encode_value(self.status.value),
             new_value=Database.encode_value(new_status.value),
-            event_type=RunAutitEvent.STATUS_CHANGE.value)
+            event_type=AuditEventType.STATUS_CHANGE)
 
         self.status = new_status
 
@@ -241,7 +235,7 @@ class Run(Base, BaseObject):
             for event in session.query(AuditEvent).where(
                 AuditEvent.object_id==self.id,
                 AuditEvent.object_type==self.ID_PREFIX,
-                AuditEvent.event_type==RunAutitEvent.STATUS_CHANGE.value)
+                AuditEvent.event_type==AuditEventType.STATUS_CHANGE)
         }
 
         return {

@@ -13,6 +13,8 @@ import sqlalchemy.orm
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 from terrarun.blob import Blob
+import terrarun.audit_event
+import terrarun.utils
 
 
 class Plan(TerraformCommand, Base):
@@ -112,15 +114,6 @@ Executed remotely on terrarun server
         else:
             self.update_status(TerraformCommandState.FINISHED)
 
-    def update_status(self, new_status):
-        """Update state of plan."""
-        print(f"Updating plan status to from {str(self.status)} to {str(new_status)}")
-        session = Database.get_session()
-        session.refresh(self)
-        self.status = new_status
-        session.add(self)
-        session.commit()
-
     @property
     def plan_output(self):
         """Return plan output value"""
@@ -218,12 +211,7 @@ Executed remotely on terrarun server
                 "resource-changes": self.resource_changes,
                 "resource-destructions": self.resource_destructions,
                 "status": self.status.value,
-                "status-timestamps": {
-                    "queued-at": "2018-07-02T22:29:53+00:00",
-                    "pending-at": "2018-07-02T22:29:53+00:00",
-                    "started-at": "2018-07-02T22:29:54+00:00",
-                    "finished-at": "2018-07-02T22:29:58+00:00"
-                },
+                "status-timestamps": self.status_timestamps,
                 "log-read-url": f"https://local-dev.dock.studio:5000/api/v2/plans/{self.api_id}/log"
             },
             "relationships": {

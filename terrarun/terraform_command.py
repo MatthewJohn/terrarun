@@ -111,3 +111,40 @@ class TerraformCommand(BaseObject):
         with Database.get_session() as session:
             self.output += output
             session.commit()
+
+    def update_status(self, new_status):
+        """Update state of plan."""
+        print(f"Updating {self.ID_PREFIX} status to from {str(self.status)} to {str(new_status)}")
+        session = Database.get_session()
+        session.refresh(self)
+
+        audit_event = terrarun.audit_event.AuditEvent(
+            organisation=self.run.configuration_version.workspace.organisation,
+            object_id=self.id,
+            object_type=self.ID_PREFIX,
+            old_value=Database.encode_value(self.status.value),
+            new_value=Database.encode_value(new_status.value),
+            event_type=terrarun.audit_event.AuditEventType.STATUS_CHANGE)
+
+        self.status = new_status
+        session.add(self)
+        session.add(audit_event)
+        session.commit()
+
+    @property
+    def status_timestamps(self):
+        """Return dict of status timestamps for API"""
+
+        session = Database.get_session()
+        def convert_event_name(event):
+            name = Database.decode_blob(event)
+            if name == TerraformCommandState.RUNNING:
+                name = 'started'
+            return '{}-at'.format(name.replace('_', '-'))
+        return {
+            convert_event_name(event.new_value): terrarun.utils.datetime_to_json(event.timestamp)
+            for event in session.query(terrarun.audit_event.AuditEvent).where(
+                terrarun.audit_event.AuditEvent.object_id==self.id,
+                terrarun.audit_event.AuditEvent.object_type==self.ID_PREFIX,
+                terrarun.audit_event.AuditEvent.event_type==terrarun.audit_event.AuditEventType.STATUS_CHANGE)
+        }
