@@ -237,25 +237,12 @@ class Run(Base, BaseObject):
         # Get status change audit events
         session = Database.get_session()
         audit_events = {
-            Database.decode_blob(event.new_value): terrarun.utils.datetime_to_json(event.timestamp)
+            Database.decode_blob(event.new_value).replace('_', '-'): terrarun.utils.datetime_to_json(event.timestamp)
             for event in session.query(AuditEvent).where(
                 AuditEvent.object_id==self.id,
                 AuditEvent.object_type==self.ID_PREFIX,
                 AuditEvent.event_type==RunAutitEvent.STATUS_CHANGE.value)
         }
-        status_timestamps = {}
-        for status in [
-                ['applied-at', RunStatus.APPLIED.value],
-                ['planned-at', RunStatus.PLANNED.value],
-                ['applying-at', RunStatus.APPLYING.value],
-                ['planning-at', RunStatus.PLANNING.value],
-                ['confirmed-at', RunStatus.CONFIRMED.value],
-                ['plan-queued-at', RunStatus.PLAN_QUEUED.value],
-                ['apply-queued-at', RunStatus.APPLY_QUEUED.value],
-                ['plan-queueable-at', RunStatus.PENDING.value],
-                ['policy-checked-at', RunStatus.POLICY_CHECKED.value]]:
-            if status[1] in audit_events:
-                status_timestamps[status[0]] = audit_events[status[1]]
 
         return {
             "id": self.api_id,
@@ -276,7 +263,7 @@ class Run(Base, BaseObject):
                 "message": self.message,
                 "plan-only": self.plan_only,
                 "source": "tfe-api",
-                "status-timestamps": status_timestamps,
+                "status-timestamps": audit_events,
                 "status": self.status.value,
                 "trigger-reason": "manual",
                 "target-addrs": self.target_addrs,
