@@ -18,6 +18,7 @@ class Database:
     _ENGINE = None
     _SESSION_MAKER = None
     _SESSIONS = {}
+    blob_encoding_format = 'utf-8'
 
     @classmethod
     def get_engine(cls):
@@ -46,6 +47,21 @@ class Database:
                 bind=cls.get_engine()
             )
         return cls._SESSION_MAKER
+
+    @classmethod
+    def encode_value(cls, value):
+        """Encode value for binary blob"""
+        if not value:
+            value = ''
+        return value.encode(cls.blob_encoding_format)
+
+    @classmethod
+    def decode_blob(cls, value):
+        """Decode blob as a string."""
+        if value is None:
+            return None
+        return value.decode(cls.blob_encoding_format)
+
 
 Base = sqlalchemy.orm.declarative_base()
 Base.query = Database.get_session().query_property()

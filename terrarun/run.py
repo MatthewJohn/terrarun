@@ -10,6 +10,7 @@ import queue
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
+from terrarun.audit_event import AuditEvent
 
 from terrarun.database import Base, Database
 import terrarun.plan
@@ -18,6 +19,7 @@ import terrarun.state_version
 from terrarun.run_queue import RunQueue
 import terrarun.terraform_command
 from terrarun.base_object import BaseObject
+import terrarun.utils
 
 
 class RunStatus(Enum):
@@ -53,6 +55,12 @@ class RunOperations:
     REFRESH_ONLY = 'refresh_only'
     DESTROY = 'destroy'
     EMPTY_APPLY = 'empty_apply'
+
+
+class RunAutitEvent(Enum):
+    """Run audit event types"""
+
+    STATUS_CHANGE = "status_change"
 
 
 class Run(Base, BaseObject):
@@ -173,13 +181,25 @@ class Run(Base, BaseObject):
 
         return state_version
 
-    def update_status(self, new_status):
+    def update_status(self, new_status, current_user=None):
         """Update state of run."""
         print(f"Updating job status to from {str(self.status)} to {str(new_status)}")
         session = Database.get_session()
         session.refresh(self)
+
+        audit_event = AuditEvent(
+            organisation=self.configuration_version.workspace.organisation,
+            user_id=current_user.id if current_user else None,
+            object_id=self.id,
+            object_type=self.ID_PREFIX,
+            old_value=Database.encode_value(self.status.value),
+            new_value=Database.encode_value(new_status.value),
+            event_type=RunAutitEvent.STATUS_CHANGE.value)
+
         self.status = new_status
+
         session.add(self)
+        session.add(audit_event)
         session.commit()
 
     def queue_plan(self):
@@ -214,6 +234,16 @@ class Run(Base, BaseObject):
 
     def get_api_details(self):
         """Return API details."""
+        # Get status change audit events
+        session = Database.get_session()
+        audit_events = {
+            "{}-at".format(Database.decode_blob(event.new_value).replace('_', '-')): terrarun.utils.datetime_to_json(event.timestamp)
+            for event in session.query(AuditEvent).where(
+                AuditEvent.object_id==self.id,
+                AuditEvent.object_type==self.ID_PREFIX,
+                AuditEvent.event_type==RunAutitEvent.STATUS_CHANGE.value)
+        }
+
         return {
             "id": self.api_id,
             "type": "runs",
@@ -225,7 +255,7 @@ class Run(Base, BaseObject):
                     "is-force-cancelable": False
                 },
                 "canceled-at": None,
-                "created-at": "2021-05-24T07:38:04.171Z",
+                "created-at": terrarun.utils.datetime_to_json(self.created_at),
                 "has-changes": self.plan.has_changes if self.plan else False,
                 "auto-apply": self.auto_apply,
                 "allow-empty-apply": False,
@@ -233,9 +263,7 @@ class Run(Base, BaseObject):
                 "message": self.message,
                 "plan-only": self.plan_only,
                 "source": "tfe-api",
-                "status-timestamps": {
-                    "plan-queueable-at": "2021-05-24T07:38:04+00:00"
-                },
+                "status-timestamps": audit_events,
                 "status": self.status.value,
                 "trigger-reason": "manual",
                 "target-addrs": self.target_addrs,
