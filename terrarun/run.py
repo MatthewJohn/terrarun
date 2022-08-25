@@ -235,7 +235,7 @@ class Run(Base, BaseObject):
         # Get status change audit events
         session = Database.get_session()
         audit_events = {
-            Database.decode_blob(event.new_value).replace('_', '-'): terrarun.utils.datetime_to_json(event.timestamp)
+            '{}-at'.format(Database.decode_blob(event.new_value).replace('_', '-')): terrarun.utils.datetime_to_json(event.timestamp)
             for event in session.query(AuditEvent).where(
                 AuditEvent.object_id==self.id,
                 AuditEvent.object_type==self.ID_PREFIX,
