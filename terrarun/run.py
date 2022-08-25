@@ -119,10 +119,10 @@ class Run(Base, BaseObject):
         session = Database.get_session()
         run = Run(
             configuration_version=configuration_version,
-            status=RunStatus.PENDING,
             created_by=created_by,
             **attributes)
         session.add(run)
+        run.update_status(RunStatus.PENDING, session=session)
         session.commit()
         terrarun.plan.Plan.create(run=run)
 
@@ -175,18 +175,21 @@ class Run(Base, BaseObject):
 
         return state_version
 
-    def update_status(self, new_status, current_user=None):
+    def update_status(self, new_status, current_user=None, session=None):
         """Update state of run."""
         print(f"Updating job status to from {str(self.status)} to {str(new_status)}")
-        session = Database.get_session()
-        session.refresh(self)
+        should_commit = False
+        if session is None:
+            session = Database.get_session()
+            session.refresh(self)
+            should_commit = True
 
         audit_event = AuditEvent(
             organisation=self.configuration_version.workspace.organisation,
             user_id=current_user.id if current_user else None,
             object_id=self.id,
             object_type=self.ID_PREFIX,
-            old_value=Database.encode_value(self.status.value),
+            old_value=Database.encode_value(self.status.value) if self.status else None,
             new_value=Database.encode_value(new_status.value),
             event_type=AuditEventType.STATUS_CHANGE)
 
@@ -194,7 +197,8 @@ class Run(Base, BaseObject):
 
         session.add(self)
         session.add(audit_event)
-        session.commit()
+        if should_commit:
+            session.commit()
 
     def queue_plan(self):
         """Queue for plan"""

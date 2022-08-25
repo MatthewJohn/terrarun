@@ -112,24 +112,28 @@ class TerraformCommand(BaseObject):
             self.output += output
             session.commit()
 
-    def update_status(self, new_status):
+    def update_status(self, new_status, session=None):
         """Update state of plan."""
         print(f"Updating {self.ID_PREFIX} status to from {str(self.status)} to {str(new_status)}")
-        session = Database.get_session()
-        session.refresh(self)
+        should_commit = False
+        if session is None:
+            session = Database.get_session()
+            session.refresh(self)
+            should_commit = True
 
         audit_event = terrarun.audit_event.AuditEvent(
             organisation=self.run.configuration_version.workspace.organisation,
             object_id=self.id,
             object_type=self.ID_PREFIX,
-            old_value=Database.encode_value(self.status.value),
+            old_value=Database.encode_value(self.status.value) if self.status else None,
             new_value=Database.encode_value(new_status.value),
             event_type=terrarun.audit_event.AuditEventType.STATUS_CHANGE)
 
         self.status = new_status
         session.add(self)
         session.add(audit_event)
-        session.commit()
+        if should_commit:
+            session.commit()
 
     @property
     def status_timestamps(self):

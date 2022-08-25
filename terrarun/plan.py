@@ -44,9 +44,10 @@ class Plan(TerraformCommand, Base):
     @classmethod
     def create(cls, run):
         """Create plan and return instance."""
-        plan = cls(run=run, status=TerraformCommandState.PENDING)
+        plan = cls(run=run)
         session = Database.get_session()
         session.add(plan)
+        plan.update_status(TerraformCommandState.PENDING, session=session)
         session.commit()
         return plan
 
