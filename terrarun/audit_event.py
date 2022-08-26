@@ -13,6 +13,7 @@ import terrarun.run
 import terrarun.configuration
 from terrarun.database import Base, Database
 import terrarun.user
+import terrarun.utils
 
 
 class AuditEventType(Enum):
@@ -46,27 +47,30 @@ class AuditEvent(Base, BaseObject):
 
     comment = sqlalchemy.Column(sqlalchemy.String)
 
+    @classmethod
+    def get_by_object_type_and_object_id(cls, object_type, object_id):
+        """Return audit events for given object"""
+        session = Database.get_session()
+        return session.query(cls).where(cls.object_type==object_type, cls.object_id==object_id)
 
     def get_api_details(self):
         """Return API details for audit event"""
         return {
             "attributes": {
-                "old-value": self.old_value,
-                "new-value": self.new_value,
-                "type": self.event_type,
+                "old-value": Database.decode_blob(self.old_value),
+                "new-value": Database.decode_blob(self.new_value),
+                "type": self.event_type.value,
                 "description": self.event_description,
-                "comment": self.comment
+                "comment": self.comment,
+                "timestamp": terrarun.utils.datetime_to_json(self.timestamp)
             },
             "id": self.api_id,
             "links": {
                 "self": f"/api/v2/audit-events/{self.api_id}"
             },
             "relationships": {
-                "authentication-token": {
-                    "meta": {}
-                },
                 "user": {
-                    "data": { "id": terrarun.user.User.api_id_from_db_id(self.user_id), "type": "users" }
+                    "data": { "id": terrarun.user.User.api_id_from_db_id(self.user_id), "type": "users" } if self.user_id else {}
                 }
             },
             "type": "audit-events"
