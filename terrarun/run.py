@@ -130,9 +130,9 @@ class Run(Base, BaseObject):
         run.queue_plan()
         return run
 
-    def cancel(self):
+    def cancel(self, user):
         """Cancel run"""
-        self.update_status(RunStatus.CANCELED)
+        self.update_status(RunStatus.CANCELED, current_user=user)
 
     def execute_next_step(self):
         """Execute terraform command"""
@@ -214,9 +214,9 @@ class Run(Base, BaseObject):
         # Requeue to be applied
         self.add_to_queue_table()
 
-    def queue_apply(self, comment=None):
+    def queue_apply(self, comment, user):
         """Queue apply job"""
-        self.update_status(RunStatus.APPLY_QUEUED)
+        self.update_status(RunStatus.APPLY_QUEUED, current_user=user)
 
         # Requeue to be applied
         self.add_to_queue_table()

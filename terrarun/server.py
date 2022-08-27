@@ -908,7 +908,7 @@ class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
         if not run:
             return {}, 404
 
-        run.cancel()
+        run.cancel(user=current_user)
 
 
 class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
@@ -1105,7 +1105,7 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
         if not run:
             return {}, 404
         Apply.create(plan=run.plan)
-        run.queue_apply(comment=flask.request.get_json().get('comment', None))
+        run.queue_apply(comment=flask.request.get_json().get('comment', None), user=current_user)
         return {}, 202
 
 
