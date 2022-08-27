@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { lastValueFrom, Observable } from 'rxjs';
 import { AccountService } from './account.service';
 
 @Injectable({
@@ -8,7 +8,10 @@ import { AccountService } from './account.service';
 })
 export class UserService {
 
+  cachedUserDetailsById: any;
+
   constructor(private http: HttpClient, private accountService: AccountService) {
+    this.cachedUserDetailsById = {};
   }
 
   getUserDetailsById(userId: string): Observable<any> {
@@ -16,6 +19,18 @@ export class UserService {
       `https://${window.location.hostname}:5000/api/v2/users/${userId}`,
       { headers: this.accountService.getAuthHeader() }
     );
+  }
+
+  async getUserDetailsByIdSync(userId: string): Promise<any> {
+    if (this.cachedUserDetailsById[userId] !== undefined) {
+      return this.cachedUserDetailsById[userId];
+    }
+    var result = await lastValueFrom(this.http.get<any>(
+      `https://${window.location.hostname}:5000/api/v2/users/${userId}`,
+      { headers: this.accountService.getAuthHeader() }
+    ));
+    this.cachedUserDetailsById[userId];
+    return result;
   }
 
   getUserTokens(userId: string): Promise<any> {

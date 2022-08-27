@@ -46,6 +46,7 @@
                 <tr *ngFor="let event of _auditEvents">
                     <td>{{ event.timestamp }}</td>
                     <td>{{ event.description }}</td>
+                    <td>{{ event.user }}</td>
                 </tr>
             </table>
         </nb-accordion-item-body>

@@ -98,13 +98,18 @@ export class OverviewComponent implements OnInit {
       // Obtain plan audit events
       this.runService.getAuditEventsByRunId(this._runId).subscribe((auditEvents) => {
         let auditEventsArray: object[] = [];
-        console.log(auditEvents.data);
-        auditEvents.data.forEach((event: any) => {
-          console.log('Checking item: ' + event)
+
+        auditEvents.data.forEach(async (event: any) => {
           if (event.attributes.type == 'status_change') {
+            let description = 'Status changed: ' + this.runStatusFactory.getStatusByValue(event.attributes['new-value']).getName();
+            let user = 'system';
+            if (event.relationships.user.data.id !== undefined) {
+              user = (await this.userService.getUserDetailsByIdSync(event.relationships.user.data.id)).data.attributes.username;
+            }
             auditEventsArray.push({
-              description: 'Status changed: ' + this.runStatusFactory.getStatusByValue(event.attributes['new-value']).getName(),
-              timestamp: new Date(event.attributes.timestamp).toLocaleString()
+              description: description,
+              timestamp: new Date(event.attributes.timestamp).toLocaleString(),
+              user: user
             })
           }
         });
