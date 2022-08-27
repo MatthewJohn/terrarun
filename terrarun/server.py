@@ -31,6 +31,7 @@ from terrarun.run import Run
 from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
 from terrarun.tag import Tag
+from terrarun.task import Task
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
@@ -108,6 +109,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspace,
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationTasks,
+            '/api/v2/organizations/<string:organisation_name>/tasks'
         )
         self._api.add_resource(
             ApiTerraformOrganisationQueue,
@@ -630,6 +635,63 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
             "data": workspace.get_api_details(effective_user=current_user)
         }
 
+
+class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
+    """Interface to interact with organisation tasks."""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of tasks for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                task.get_api_details()
+                for task in organisation.tasks
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            print('NOT ORG FOND')
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _post(self, organisation_name, current_user):
+        """Create organisation task"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "tasks":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        task = Task.create(
+            organisation=organisation,
+            name=attributes.get('name'),
+            description=attributes.get('description'),
+            enabled=attributes.get('enabled'),
+            hmac_key=attributes.get('hmac_key'),
+            url=attributes.get('url')
+        )
+
+        return {
+            "data": task.get_api_details()
+        }
 
 
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
