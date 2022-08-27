@@ -136,13 +136,17 @@ class Run(Base, BaseObject):
 
     def execute_next_step(self):
         """Execute terraform command"""
+        session = Database.get_session()
         # Handle plan job
         print("Job Status: " + str(self.status))
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
             plan = self.plan
             self.plan.execute()
-            if plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            session.refresh(self)
+            if self.status == RunStatus.CANCELED:
+                return
+            elif plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
@@ -159,7 +163,10 @@ class Run(Base, BaseObject):
         elif self.status is RunStatus.APPLY_QUEUED:
             self.update_status(RunStatus.APPLYING)
             self.plan.apply.execute()
-            if self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            session.refresh(self)
+            if self.status == RunStatus.CANCELED:
+                return
+            elif self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
