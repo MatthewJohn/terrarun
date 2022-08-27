@@ -37,8 +37,8 @@ class Apply(TerraformCommand, Base):
         apply = cls(plan=plan)
         session = Database.get_session()
         session.add(apply)
-        apply.update_status(TerraformCommandState.PENDING, session=session)
         session.commit()
+        apply.update_status(TerraformCommandState.PENDING)
         return apply
 
     def _pull_plan_output(self, work_dir):

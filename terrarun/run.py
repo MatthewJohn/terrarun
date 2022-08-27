@@ -153,7 +153,7 @@ class Run(Base, BaseObject):
             else:
                 self.update_status(RunStatus.PLANNED)
 
-            if self.plan_only or self.configuration_version.speculative:
+            if self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
                 self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
 

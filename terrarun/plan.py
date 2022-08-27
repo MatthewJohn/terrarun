@@ -47,8 +47,8 @@ class Plan(TerraformCommand, Base):
         plan = cls(run=run)
         session = Database.get_session()
         session.add(plan)
-        plan.update_status(TerraformCommandState.PENDING, session=session)
         session.commit()
+        plan.update_status(TerraformCommandState.PENDING)
         return plan
 
     @property
