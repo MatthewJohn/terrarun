@@ -36,16 +36,20 @@ class BaseObject:
     @property
     def api_id(self):
         """Generate API ID for object"""
-        if self.ID_PREFIX is None:
+        return self.api_id_from_db_id(self.id)
+    
+    @classmethod
+    def api_id_from_db_id(cls, id):
+        """Convert DB ID to API ID"""
+        if cls.ID_PREFIX is None:
             raise Exception('Object must override ID_PREFIX')
 
-        id = self.id
         api_id = ''
         while id != 0:
-            api_id = self.ID_BASE_62[id % self.ID_BASE] + api_id    
-            id //= self.ID_BASE
-        api_id = api_id.zfill(self.ID_LENGTH)
-        return f'{self.ID_PREFIX}-{api_id}'
+            api_id = cls.ID_BASE_62[id % cls.ID_BASE] + api_id    
+            id //= cls.ID_BASE
+        api_id = api_id.zfill(cls.ID_LENGTH)
+        return f'{cls.ID_PREFIX}-{api_id}'
 
     @classmethod
     def get_by_api_id(cls, id):

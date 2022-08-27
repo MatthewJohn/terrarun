@@ -10,6 +10,7 @@ import queue
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
+from terrarun.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
 import terrarun.plan
@@ -18,6 +19,7 @@ import terrarun.state_version
 from terrarun.run_queue import RunQueue
 import terrarun.terraform_command
 from terrarun.base_object import BaseObject
+import terrarun.utils
 
 
 class RunStatus(Enum):
@@ -117,36 +119,41 @@ class Run(Base, BaseObject):
         session = Database.get_session()
         run = Run(
             configuration_version=configuration_version,
-            status=RunStatus.PENDING,
             created_by=created_by,
             **attributes)
         session.add(run)
         session.commit()
+        session.refresh(run)
+        run.update_status(RunStatus.PENDING, current_user=created_by)
         terrarun.plan.Plan.create(run=run)
 
         # Queue plan job
         run.queue_plan()
         return run
 
-    def cancel(self):
+    def cancel(self, user):
         """Cancel run"""
-        self.update_status(RunStatus.CANCELED)
+        self.update_status(RunStatus.CANCELED, current_user=user)
 
     def execute_next_step(self):
         """Execute terraform command"""
+        session = Database.get_session()
         # Handle plan job
         print("Job Status: " + str(self.status))
         if self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
             plan = self.plan
             self.plan.execute()
-            if plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            session.refresh(self)
+            if self.status == RunStatus.CANCELED:
+                return
+            elif plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
                 self.update_status(RunStatus.PLANNED)
 
-            if self.plan_only or self.configuration_version.speculative:
+            if self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
                 self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
 
@@ -157,7 +164,10 @@ class Run(Base, BaseObject):
         elif self.status is RunStatus.APPLY_QUEUED:
             self.update_status(RunStatus.APPLYING)
             self.plan.apply.execute()
-            if self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            session.refresh(self)
+            if self.status == RunStatus.CANCELED:
+                return
+            elif self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
             else:
@@ -173,14 +183,30 @@ class Run(Base, BaseObject):
 
         return state_version
 
-    def update_status(self, new_status):
+    def update_status(self, new_status, current_user=None, session=None):
         """Update state of run."""
         print(f"Updating job status to from {str(self.status)} to {str(new_status)}")
-        session = Database.get_session()
-        session.refresh(self)
+        should_commit = False
+        if session is None:
+            session = Database.get_session()
+            session.refresh(self)
+            should_commit = True
+
+        audit_event = AuditEvent(
+            organisation=self.configuration_version.workspace.organisation,
+            user_id=current_user.id if current_user else None,
+            object_id=self.id,
+            object_type=self.ID_PREFIX,
+            old_value=Database.encode_value(self.status.value) if self.status else None,
+            new_value=Database.encode_value(new_status.value),
+            event_type=AuditEventType.STATUS_CHANGE)
+
         self.status = new_status
+
         session.add(self)
-        session.commit()
+        session.add(audit_event)
+        if should_commit:
+            session.commit()
 
     def queue_plan(self):
         """Queue for plan"""
@@ -189,8 +215,9 @@ class Run(Base, BaseObject):
         # Requeue to be applied
         self.add_to_queue_table()
 
-    def queue_apply(self, comment=None):
+    def queue_apply(self, comment, user):
         """Queue apply job"""
+        self.update_status(RunStatus.CONFIRMED, current_user=user)
         self.update_status(RunStatus.APPLY_QUEUED)
 
         # Requeue to be applied
@@ -214,6 +241,16 @@ class Run(Base, BaseObject):
 
     def get_api_details(self):
         """Return API details."""
+        # Get status change audit events
+        session = Database.get_session()
+        audit_events = {
+            '{}-at'.format(Database.decode_blob(event.new_value).replace('_', '-')): terrarun.utils.datetime_to_json(event.timestamp)
+            for event in session.query(AuditEvent).where(
+                AuditEvent.object_id==self.id,
+                AuditEvent.object_type==self.ID_PREFIX,
+                AuditEvent.event_type==AuditEventType.STATUS_CHANGE)
+        }
+
         return {
             "id": self.api_id,
             "type": "runs",
@@ -225,7 +262,7 @@ class Run(Base, BaseObject):
                     "is-force-cancelable": False
                 },
                 "canceled-at": None,
-                "created-at": "2021-05-24T07:38:04.171Z",
+                "created-at": terrarun.utils.datetime_to_json(self.created_at),
                 "has-changes": self.plan.has_changes if self.plan else False,
                 "auto-apply": self.auto_apply,
                 "allow-empty-apply": False,
@@ -233,9 +270,7 @@ class Run(Base, BaseObject):
                 "message": self.message,
                 "plan-only": self.plan_only,
                 "source": "tfe-api",
-                "status-timestamps": {
-                    "plan-queueable-at": "2021-05-24T07:38:04+00:00"
-                },
+                "status-timestamps": audit_events,
                 "status": self.status.value,
                 "trigger-reason": "manual",
                 "target-addrs": self.target_addrs,

@@ -40,7 +40,7 @@ class RunStatusApplying extends RunStatusBaseClass {
     public override _availableActions = [RunAction.CANCEL_RUN];
 }
 class RunStatusApplyQueued extends RunStatusBaseClass {
-    _nameString = "Applying";
+    _nameString = "Apply queued";
     _labelColour = "info";
     _icon = "radio-button-on-outline";
 }

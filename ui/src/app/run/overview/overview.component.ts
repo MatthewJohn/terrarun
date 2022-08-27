@@ -26,6 +26,7 @@ export class OverviewComponent implements OnInit {
   _applyDetails: any;
   _applyLog: string;
   _applyStatus: any;
+  _auditEvents: any;
     
   _createdByDetails: any;
   _updateInterval: any;
@@ -92,6 +93,28 @@ export class OverviewComponent implements OnInit {
             this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
           })
         }
+      });
+
+      // Obtain plan audit events
+      this.runService.getAuditEventsByRunId(this._runId).subscribe(async (auditEvents) => {
+        let auditEventsArray: object[] = [];
+
+        for (const event of auditEvents.data) {
+          if (event.attributes.type == 'status_change') {
+            let description = 'Status changed: ' + this.runStatusFactory.getStatusByValue(event.attributes['new-value']).getName();
+            let user = 'system';
+            if (event.relationships.user.data.id !== undefined) {
+              user = (await this.userService.getUserDetailsByIdSync(event.relationships.user.data.id)).data.attributes.username;
+            }
+            auditEventsArray.push({
+              description: description,
+              timestamp: new Date(event.attributes.timestamp).toLocaleString(),
+              date: new Date(event.attributes.timestamp),
+              user: user
+            })
+          }
+        }
+        this._auditEvents = auditEventsArray;
       });
     }
   }
