@@ -19,6 +19,7 @@ from ansi2html import Ansi2HTMLConverter
 
 from terrarun import workspace
 from terrarun.apply import Apply
+from terrarun.audit_event import AuditEvent
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.organisation import Organisation
@@ -137,6 +138,10 @@ class Server(object):
             ApiTerraformRun,
             '/api/v2/runs',
             '/api/v2/runs/<string:run_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformRunAuditEvents,
+            '/api/v2/runs/<string:run_id>/relationships/audit-events'
         )
         self._api.add_resource(
             ApiTerraformRunActionsCancel,
@@ -852,6 +857,34 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         return {"data": run.get_api_details()}
 
 
+class ApiTerraformRunAuditEvents(AuthenticatedEndpoint):
+    """Interface to obtain audit events for run"""
+
+    def check_permissions_get(self, current_user, run_id):
+        """Check permissions"""
+        run = Run.get_by_api_id(run_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace.organisation
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, run_id, current_user):
+        """Return all audit events for run."""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        events = AuditEvent.get_by_object_type_and_object_id(object_type='run', object_id=run.id)
+
+        return {"data": [
+            event.get_api_details()
+            for event in events
+        ]}
+
+
 class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
     """Interface to cancel runs"""
 
@@ -875,7 +908,7 @@ class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
         if not run:
             return {}, 404
 
-        run.cancel()
+        run.cancel(user=current_user)
 
 
 class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
@@ -1072,7 +1105,7 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
         if not run:
             return {}, 404
         Apply.create(plan=run.plan)
-        run.queue_apply(comment=flask.request.get_json().get('comment', None))
+        run.queue_apply(comment=flask.request.get_json().get('comment', None), user=current_user)
         return {}, 202
 
 

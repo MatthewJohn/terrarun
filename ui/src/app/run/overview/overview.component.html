@@ -36,6 +36,22 @@
 
 
 <nb-accordion>
+
+    <nb-accordion-item>
+        <nb-accordion-item-header>
+            Events
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+            <table id="runEventTable">
+                <tr *ngFor="let event of _auditEvents">
+                    <td>{{ event.timestamp }}</td>
+                    <td>{{ event.description }}</td>
+                    <td>{{ event.user }}</td>
+                </tr>
+            </table>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
     <nb-accordion-item *ngIf="_planDetails">
         <nb-accordion-item-header style="padding: 0;">
             <nb-alert style="width: 100%; height: 100%" [accent]="_planStatus.getColor()">Plan: {{_planDetails.id}}</nb-alert>

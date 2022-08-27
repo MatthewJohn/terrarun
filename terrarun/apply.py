@@ -34,10 +34,11 @@ class Apply(TerraformCommand, Base):
     @classmethod
     def create(cls, plan):
         """Create plan and return instance."""
-        apply = cls(plan=plan, status=TerraformCommandState.PENDING)
+        apply = cls(plan=plan)
         session = Database.get_session()
         session.add(apply)
         session.commit()
+        apply.update_status(TerraformCommandState.PENDING)
         return apply
 
     def _pull_plan_output(self, work_dir):
@@ -108,14 +109,6 @@ Executed remotely on terrarun server
 
         return relationships
 
-    def update_status(self, new_status):
-        """Update state of apply."""
-        session = Database.get_session()
-        session.refresh(self)
-        self.status = new_status
-        session.add(self)
-        session.commit()
-
     def get_api_details(self):
         """Return API details for apply"""
         return {
@@ -130,11 +123,7 @@ Executed remotely on terrarun server
                     # "mode": "agent",
                 },
                 "status": self.status.value,
-                "status-timestamps": {
-                    "queued-at": "2018-10-17T18:58:27+00:00",
-                    "started-at": "2018-10-17T18:58:29+00:00",
-                    "finished-at": "2018-10-17T18:58:37+00:00"
-                },
+                "status-timestamps": self.status_timestamps,
                 "log-read-url": f"https://local-dev.dock.studio:5000/api/v2/applies/{self.api_id}/log",
                 "resource-additions": 0,
                 "resource-changes": 0,

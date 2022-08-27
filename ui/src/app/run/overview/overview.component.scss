@@ -11,6 +11,19 @@
     font-weight: normal;
 }
 
+#runEventTable {
+    width: 80%;
+}
+#runEventTable tr {
+    border-top-color: #888888;
+    border-top-width: 1px;
+    border-top-style: solid;
+}
+#runEventTable td {
+    margin-top: 5px;
+    padding-right: 5px;
+}
+
 
 
 /* Ansi2html */

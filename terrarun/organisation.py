@@ -81,6 +81,7 @@ class Organisation(Base, BaseObject):
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="organisation")
     tags = sqlalchemy.orm.relation("Tag", back_populates="organisation")
+    audit_events = sqlalchemy.orm.relation("AuditEvent", back_populates="organisation")
 
     teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
 
