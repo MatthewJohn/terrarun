@@ -114,10 +114,6 @@ export class OverviewComponent implements OnInit {
             })
           }
         }
-        // Sort list of events by the date
-        auditEventsArray.sort((a: any, b: any): number => {
-          return a.date - b.date
-        });
         this._auditEvents = auditEventsArray;
       });
     }
