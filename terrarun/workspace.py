@@ -35,7 +35,7 @@ class Workspace(Base, BaseObject):
 
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
 
-    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag")
+    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag", back_populates="workspaces")
 
     _latest_state = None
     _latest_configuration_version = None
