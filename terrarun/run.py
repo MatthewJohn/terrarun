@@ -216,7 +216,8 @@ class Run(Base, BaseObject):
 
     def queue_apply(self, comment, user):
         """Queue apply job"""
-        self.update_status(RunStatus.APPLY_QUEUED, current_user=user)
+        self.update_status(RunStatus.CONFIRMED, current_user=user)
+        self.update_status(RunStatus.APPLY_QUEUED)
 
         # Requeue to be applied
         self.add_to_queue_table()
