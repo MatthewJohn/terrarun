@@ -122,8 +122,9 @@ class Run(Base, BaseObject):
             created_by=created_by,
             **attributes)
         session.add(run)
-        run.update_status(RunStatus.PENDING, session=session)
         session.commit()
+        session.refresh(run)
+        run.update_status(RunStatus.PENDING, current_user=created_by)
         terrarun.plan.Plan.create(run=run)
 
         # Queue plan job
