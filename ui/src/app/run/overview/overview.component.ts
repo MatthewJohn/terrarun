@@ -96,10 +96,10 @@ export class OverviewComponent implements OnInit {
       });
 
       // Obtain plan audit events
-      this.runService.getAuditEventsByRunId(this._runId).subscribe((auditEvents) => {
+      this.runService.getAuditEventsByRunId(this._runId).subscribe(async (auditEvents) => {
         let auditEventsArray: object[] = [];
 
-        auditEvents.data.forEach(async (event: any) => {
+        for (const event of auditEvents.data) {
           if (event.attributes.type == 'status_change') {
             let description = 'Status changed: ' + this.runStatusFactory.getStatusByValue(event.attributes['new-value']).getName();
             let user = 'system';
@@ -109,12 +109,16 @@ export class OverviewComponent implements OnInit {
             auditEventsArray.push({
               description: description,
               timestamp: new Date(event.attributes.timestamp).toLocaleString(),
+              date: new Date(event.attributes.timestamp),
               user: user
             })
           }
+        }
+        // Sort list of events by the date
+        auditEventsArray.sort((a: any, b: any): number => {
+          return a.date - b.date
         });
         this._auditEvents = auditEventsArray;
-
       });
     }
   }
