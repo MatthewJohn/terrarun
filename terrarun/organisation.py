@@ -85,6 +85,8 @@ class Organisation(Base, BaseObject):
 
     teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
 
+    tasks = sqlalchemy.orm.relation("Task", back_populates="organisation")
+
     @classmethod
     def get_by_name_id(cls, name_id):
         """Return organisation object by name of organisation"""

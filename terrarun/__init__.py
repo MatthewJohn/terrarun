@@ -18,4 +18,4 @@ from terrarun.organisation_owner import OrganisationOwner
 from terrarun.tag import Tag
 from terrarun.workspace_tag import WorkspaceTag
 from terrarun.audit_event import AuditEvent
-
+from terrarun.task import Task
