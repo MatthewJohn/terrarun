@@ -36,19 +36,22 @@ export class TaskListComponent implements OnInit {
               private router: Router,
               private route: ActivatedRoute,
               private formBuilder: FormBuilder) {
-    this.tasks$ = this.route.paramMap.pipe(
-      switchMap(params => {
+    this.tasks$ = new Observable();
+    this.route.paramMap.subscribe(params => {
         this.organisationName = params.get('organisationName');
-        return this.taskService.getTasksByOrganisation(this.organisationName || "").pipe(
-          map((data) => {
-            return Array.from({length: data.data.length},
-              (_, n) => ({'data': data.data[n]}))
-          })
-        );
-      })
-    );
+        this.getTaskList();
+    });
 
     this.state.currentOrganisation.subscribe((data) => this.currentOrganisation = data);
+  }
+
+  getTaskList(): void {
+    this.tasks$ = this.taskService.getTasksByOrganisation(this.organisationName || "").pipe(
+      map((data) => {
+        return Array.from({length: data.data.length},
+          (_, n) => ({'data': data.data[n]}))
+      })
+    );
   }
 
   ngOnInit(): void {
@@ -70,13 +73,14 @@ export class TaskListComponent implements OnInit {
                             this.form.value.hmacKey,
                             true
                             ).then((task) => {
-      console.log(task);
-      this.router.navigateByUrl(`/${this.organisationName}/${task.data.attributes.name}`);
+      // Refresh task list
+      this.getTaskList();
     });
   }
 
   onTaskClick(target: any) {
-    console.log(target.data)
-    this.router.navigateByUrl(`/${this.organisationName}/${target.data.attributes.name}`)
+    // Do nothing
+    console.log(target.data);
+    //this.router.navigateByUrl(`/${this.organisationName}/${target.data.attributes.name}`)
   }
 }
