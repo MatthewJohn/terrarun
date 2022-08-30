@@ -48,11 +48,6 @@
                             <input nbInput placeholder="" id="hmacKey" formControlName="hmacKey" type="text">
                         </nb-form-field>
                         <br />
-                        <nb-form-field>
-                            <label for="enabled">Enabled:</label>
-                            <input nbCheckbox id="enabled" formControlName="enabled" type="checkbox">
-                        </nb-form-field>
-                        <br />
                         <button [disabled]="!nameValid.valid" nbButton>Create</button>
                     </form>
                 </nb-card-body>

@@ -26,14 +26,12 @@ export class TaskListComponent implements OnInit {
     name: '',
     description: '',
     url: '',
-    hmacKey: '',
-    enabled: true
+    hmacKey: ''
   });
 
   currentOrganisation: OrganisationStateType | null = null;
 
   constructor(private state: StateService,
-              private organisationService: OrganisationService,
               private taskService: TaskService,
               private router: Router,
               private route: ActivatedRoute,
@@ -70,7 +68,7 @@ export class TaskListComponent implements OnInit {
                             this.form.value.description,
                             this.form.value.url,
                             this.form.value.hmacKey,
-                            this.form.value.enabled
+                            true
                             ).then((task) => {
       console.log(task);
       this.router.navigateByUrl(`/${this.organisationName}/${task.data.attributes.name}`);
