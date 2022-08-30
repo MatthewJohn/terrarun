@@ -203,6 +203,10 @@ class Server(object):
             ApiTerrarunWorkspaceCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/workspace-name-validate'
         )
+        self._api.add_resource(
+            ApiTerrarunTaskCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/task-name-validate'
+        )
 
     def run(self, debug=None):
         """Run flask server."""
@@ -1305,4 +1309,34 @@ class ApiTerrarunWorkspaceCreateNameValidation(AuthenticatedEndpoint):
                 "name": args.name
             }
         }
+
+
+class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new workspace name"""
+
+    def check_permissions_post(self, organisation_name, current_user):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _post(self, organisation_name, current_user):
+        """Validate new organisation name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": Task.validate_new_name(organisation, args.name),
+                "name": args.name
+            }
+        }
+
 

@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+import re
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -14,6 +15,9 @@ class Task(Base, BaseObject):
     ID_PREFIX = 'task'
 
     __tablename__ = 'task'
+
+    MINIMUM_NAME_LENGTH = 3
+    RESERVED_NAMES = []
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
@@ -35,6 +39,21 @@ class Task(Base, BaseObject):
         ).first()
 
         return task
+
+    @classmethod
+    def validate_new_name(cls, organisation, name):
+        """Ensure task does not already exist and name isn't reserved"""
+        session = Database.get_session()
+        existing_workspace = session.query(cls).filter(cls.name==name, cls.organisation==organisation).first()
+        if existing_workspace:
+            return False
+        if name in cls.RESERVED_NAMES:
+            return False
+        if len(name) < cls.MINIMUM_NAME_LENGTH:
+            return False
+        if not re.match(r'^[a-zA-Z0-9-_]+$', name):
+            return False
+        return True
 
     @classmethod
     def create(cls, organisation, tag_name):
