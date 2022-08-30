@@ -56,8 +56,9 @@ class Task(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, organisation, tag_name):
-        task = cls(organisation=organisation, name=tag_name)
+    def create(cls, organisation, name, description, url, hmac_key, enabled):
+        task = cls(organisation=organisation, name=name,
+                   description=description, url=url, hmac_key=hmac_key, enabled=enabled)
         session = Database.get_session()
         session.add(task)
         session.commit()
