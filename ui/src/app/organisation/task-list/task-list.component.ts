@@ -124,6 +124,9 @@ export class TaskListComponent implements OnInit {
     });
     this.editTaskNameValid = this.nameValidStates.valid;
   }
+  cancelEdit() {
+    this.editTask = null;
+  }
   onEdit() {
     this.taskService.updateAttributes(
       this.editTask.id,
