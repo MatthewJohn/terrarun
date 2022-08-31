@@ -108,6 +108,10 @@ export class AppComponent {
               {
                 title: 'Runs',
                 link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/runs`
+              },
+              {
+                title: 'Tasks',
+                link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/tasks`
               }
             ]
           })
