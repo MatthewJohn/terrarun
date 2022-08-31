@@ -693,7 +693,7 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
             name=attributes.get('name'),
             description=attributes.get('description'),
             enabled=attributes.get('enabled'),
-            hmac_key=attributes.get('hmac_key'),
+            hmac_key=attributes.get('hmac-key'),
             url=attributes.get('url')
         )
 
@@ -729,7 +729,7 @@ class ApiTerraformTaskDetails(AuthenticatedEndpoint):
             name=attributes.get('name'),
             description=attributes.get('description'),
             enabled=attributes.get('enabled'),
-            hmac_key=attributes.get('hmac_key'),
+            hmac_key=attributes.get('hmac-key'),
             url=attributes.get('url')
         )
 
