@@ -278,7 +278,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_get(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
 
         return self._get(*args, current_user=current_user, **kwargs)
 
@@ -297,7 +297,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_post(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
         return self._post(*args, current_user=current_user, **kwargs)
 
     def _patch(self, *args, **kwargs):
@@ -315,7 +315,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_patch(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
 
         return self._patch(*args, current_user=current_user, **kwargs)
 
@@ -334,7 +334,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_put(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
 
         return self._put(*args, current_user=current_user, **kwargs)
 
