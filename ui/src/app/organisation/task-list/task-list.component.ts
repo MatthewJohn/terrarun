@@ -16,13 +16,24 @@ export class TaskListComponent implements OnInit {
   tableColumns: string[] = ['name', 'description', 'enabled'];
   organisationName: string | null = null;
 
+  editTask: any = null;
+
   nameValidStates = {
     invalid: {icon: 'close-outline', valid: false, iconStatus: 'danger'},
     valid: {icon: 'checkmark-circle-outline', valid: true, iconStatus: 'success'},
     loading: {icon: 'loader-outline', valid: false, iconStatus: 'info'}
   };
-  nameValid: {icon: string, valid: boolean, iconStatus: string} = this.nameValidStates.invalid;
-  form = this.formBuilder.group({
+
+  createTaskNameValid: {icon: string, valid: boolean, iconStatus: string} = this.nameValidStates.invalid;
+  createForm = this.formBuilder.group({
+    name: '',
+    description: '',
+    url: '',
+    hmacKey: ''
+  });
+
+  editTaskNameValid: {icon: string, valid: boolean, iconStatus: string} = this.nameValidStates.invalid;
+  editForm = this.formBuilder.group({
     name: '',
     description: '',
     url: '',
@@ -58,29 +69,72 @@ export class TaskListComponent implements OnInit {
 
   }
 
-  validateName(): void {
-    this.nameValid = this.nameValidStates.loading;
+  validateNewTaskName(): void {
+    this.createTaskNameValid = this.nameValidStates.loading;
 
-    this.taskService.validateNewTaskName(this.organisationName || '', this.form.value.name).then((validationResult) => {
-      this.nameValid = validationResult.data.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
+    this.taskService.validateNewTaskName(this.organisationName || '', this.createForm.value.name).then((validationResult) => {
+      this.createTaskNameValid = validationResult.data.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
     });
   }
   onCreate(): void {
     this.taskService.create(this.organisationName || '',
-                            this.form.value.name,
-                            this.form.value.description,
-                            this.form.value.url,
-                            this.form.value.hmacKey,
+                            this.createForm.value.name,
+                            this.createForm.value.description,
+                            this.createForm.value.url,
+                            this.createForm.value.hmacKey,
                             true
                             ).then((task) => {
       // Refresh task list
       this.getTaskList();
+
+      // Reset create form
+      this.editForm.setValue({
+        name: '',
+        description: '',
+        url: '',
+        hmacKey: ''
+      })
+    });
+  }
+
+  validateEditTaskName(): void {
+
+    this.editTaskNameValid = this.nameValidStates.loading;
+
+    // If name matches original value, set as valid
+    if (this.editForm.value.name == this.editTask.attributes.name) {
+      this.editTaskNameValid = this.nameValidStates.valid;
+      return;
+    }
+
+    this.taskService.validateNewTaskName(this.organisationName || '', this.editForm.value.name).then((validationResult) => {
+      this.editTaskNameValid = validationResult.data.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
     });
   }
 
   onTaskClick(target: any) {
-    // Do nothing
+    // Setup edit form for task
+    this.editTask = target.data;
     console.log(target.data);
-    //this.router.navigateByUrl(`/${this.organisationName}/${target.data.attributes.name}`)
+    this.editForm.setValue({
+      name: this.editTask.attributes.name,
+      description: this.editTask.attributes.description,
+      url: this.editTask.attributes.url,
+      hmacKey: this.editTask.attributes['hmac-key']
+    });
+    this.editTaskNameValid = this.nameValidStates.valid;
+  }
+  onEdit() {
+    this.taskService.updateAttributes(
+      this.editTask.id,
+      this.editForm.value.name,
+      this.editForm.value.description,
+      this.editForm.value.url,
+      this.editForm.value.hmacKey,
+      true
+    ).then(() => {
+      this.editTask = null;
+      this.getTaskList();
+    });
   }
 }

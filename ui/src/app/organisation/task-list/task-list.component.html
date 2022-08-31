@@ -21,17 +21,16 @@
                 </table>
             </nb-card-body>
 
-            <nb-card>
-                <nb-card-header>
-                    Create task
-                </nb-card-header>
+            <nb-card *ngIf="editTask != null">
+                <nb-card-header>Edit task</nb-card-header>
+
                 <nb-card-body>
-                    <form [formGroup]="form" (ngSubmit)="onCreate()">
+                    <form [formGroup]="editForm" (ngSubmit)="onEdit()">
                         <nb-form-field>
                             <label for="name">Name:</label>
-                            <input nbInput (change)="validateName()" placeholder="My App" id="name"
+                            <input nbInput (change)="validateEditTaskName()" placeholder="My App" id="name"
                                 formControlName="name" type="text">
-                            <nb-icon nbSuffix [icon]="nameValid.icon" [status]="nameValid.iconStatus" pack="eva">
+                            <nb-icon nbSuffix [icon]="editTaskNameValid.icon" [status]="editTaskNameValid.iconStatus" pack="eva">
                             </nb-icon>
                         </nb-form-field>
 
@@ -52,7 +51,43 @@
                             <input nbInput placeholder="" id="hmacKey" formControlName="hmacKey" type="text">
                         </nb-form-field>
                         <br />
-                        <button [disabled]="!nameValid.valid" nbButton>Create</button>
+                        <button [disabled]="!editTaskNameValid.valid" nbButton>Save</button>
+                    </form>
+                </nb-card-body>
+            </nb-card>
+
+            <nb-card>
+                <nb-card-header>
+                    Create task
+                </nb-card-header>
+                <nb-card-body>
+                    <form [formGroup]="createForm" (ngSubmit)="onCreate()">
+                        <nb-form-field>
+                            <label for="name">Name:</label>
+                            <input nbInput (change)="validateNewTaskName()" placeholder="My App" id="name"
+                                formControlName="name" type="text">
+                            <nb-icon nbSuffix [icon]="createTaskNameValid.icon" [status]="createTaskNameValid.iconStatus" pack="eva">
+                            </nb-icon>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="description">Description:</label>
+                            <input nbInput placeholder="" id="description" formControlName="description" type="text">
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="url">URL:</label>
+                            <input nbInput placeholder="https://example.com/task-hook" id="url" formControlName="url"
+                                type="text">
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="hmacKey">HMAC Key:</label>
+                            <input nbInput placeholder="" id="hmacKey" formControlName="hmacKey" type="text">
+                        </nb-form-field>
+                        <br />
+                        <button [disabled]="!createTaskNameValid.valid" nbButton>Create</button>
                     </form>
                 </nb-card-body>
             </nb-card>

@@ -132,6 +132,10 @@ class Server(object):
             '/api/v2/workspaces/<string:workspace_id>/relationships/tags'
         )
         self._api.add_resource(
+            ApiTerraformTaskDetails,
+            '/api/v2/tasks/<string:task_id>'
+        )
+        self._api.add_resource(
             ApiTerraformConfigurationVersionUpload,
             '/api/v2/upload-configuration/<string:configuration_version_id>'
         )
@@ -566,7 +570,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
             return {}, 400
         return {"data": organisation.get_api_details(effective_user=current_user)}
 
-        
+
 
 class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
     """Organisation entitlement endpoint."""
@@ -696,6 +700,38 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
         return {
             "data": task.get_api_details()
         }
+
+
+class ApiTerraformTaskDetails(AuthenticatedEndpoint):
+    """Interface to view/edit a task"""
+
+    def check_permissions_patch(self, task_id, current_user):
+        """Check permissions"""
+        task = Task.get_by_api_id(task_id)
+        if not task:
+            return False
+        return OrganisationPermissions(
+                organisation=task.organisation,
+                current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _patch(self, task_id, current_user):
+        """Update task details"""
+        task = Task.get_by_api_id(task_id)
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "tasks":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+
+        task.update_attributes(
+            name=attributes.get('name'),
+            description=attributes.get('description'),
+            enabled=attributes.get('enabled'),
+            hmac_key=attributes.get('hmac_key'),
+            url=attributes.get('url')
+        )
 
 
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
