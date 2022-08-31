@@ -37,6 +37,8 @@ class Workspace(Base, BaseObject):
 
     tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag", back_populates="workspaces")
 
+    workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace")
+
     _latest_state = None
     _latest_configuration_version = None
     _latest_run = None
