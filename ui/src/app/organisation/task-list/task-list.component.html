@@ -7,10 +7,14 @@
             <nb-card-body>
 
                 <table [nbTreeGrid]="tasks$ | async" equalColumnsWidth>
-                    <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+                    <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
+                    <tr nbTreeGridRow class="taskRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
-                        <td nbTreeGridCell class="taskRow" (click)="onTaskClick(row)" *nbTreeGridCellDef="let row">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+                            {{column}}
+                          </th>
+                        <td nbTreeGridCell (click)="onTaskClick(row)" *nbTreeGridCellDef="let row">
                             {{row.data.attributes[column]}}</td>
                     </ng-container>
 
