@@ -39,6 +39,7 @@ from terrarun.user import User
 from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
 from terrarun.team_user_membership import TeamUserMembership
 from terrarun.team import Team
+from terrarun.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 
 
 class Server(object):
@@ -159,6 +160,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceTasks,
+            '/api/v2/workspaces/<string:workspace_id>/tasks'
         )
         self._api.add_resource(
             ApiTerraformPlans,
@@ -1376,3 +1381,82 @@ class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
         }
 
 
+class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
+    """Interface to manage workspace tasks"""
+
+    def check_permissions_get(self, workspace_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def get(self, workspace_id, current_user):
+        """Return list of workspace tasks"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+        
+        return {
+            "data": [
+                workspace_task.get_api_details()
+                for workspace_task in workspace.tasks
+            ],
+            "links": {
+                "self": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+                "first": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+                "prev": None,
+                "next": None,
+                "last": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20"
+            },
+            "meta": {
+                # @TODO populate and respect pagination
+                "pagination": {
+                    "current-page": 1,
+                    "page-size": 20,
+                    "prev-page": None,
+                    "next-page": None,
+                    "total-pages": 1,
+                    "total-count": 1
+                }
+            }
+        }
+
+    def check_permissions_post(self, workspace_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def post(self, workspace_id, current_user):
+        """Associate a task with a workspace"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        data = flask.request.get_json().get("data", {})
+        if data.get("type") != "workspace-tasks":
+            return {}, 400
+
+        attributes = data.get("attributes", {})
+        task_data = data.get("relationships", {}).get("task", {}).get("data", {})
+        if task_data.get("type") != "tasks":
+            return {}, 400
+
+        task_id = task_data.get("id")
+        if not task_id:
+            return {}, 400
+        
+        task = Task.get_by_api_id(task_id)
+
+        workspace_task = workspace.associate_task(
+            task=task,
+            enforcement_level=WorkspaceTaskEnforcementLevel(attributes.get("enforcement-level")),
+            stage=WorkspaceTaskStage(attributes.get('stage', WorkspaceTaskStage.POST_PLAN.value))
+        )
+        return workspace_task.get_api_details()

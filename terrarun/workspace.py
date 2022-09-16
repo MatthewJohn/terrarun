@@ -12,6 +12,8 @@ import terrarun.organisation
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.run
 import terrarun.configuration
+import terrarun.workspace_task
+import terrarun.user
 from terrarun.database import Base, Database
 from terrarun.workspace_tag import WorkspaceTag
 
@@ -124,7 +126,24 @@ class Workspace(Base, BaseObject):
         ).first()
         return run
 
-    def get_api_details(self, effective_user):
+    def associate_task(
+            self,
+            task: terrarun.workspace_task.WorkspaceTaskEnforcementLevel,
+            enforcement_level: terrarun.workspace_task.WorkspaceTaskEnforcementLevel,
+            stage: terrarun.workspace_task.WorkspaceTaskStage):
+        """Associate a task with the workspace"""
+        workspace_task = terrarun.workspace_task.WorkspaceTask(
+            workspace=self,
+            task=task,
+            enforcement_level=enforcement_level,
+            stage=stage
+        )
+        session = Database.get_session()
+        session.add(workspace_task)
+        session.commit()
+        return workspace_task
+
+    def get_api_details(self, effective_user: terrarun.user.User):
         """Return details for workspace."""
         workspace_permissions = WorkspacePermissions(current_user=effective_user, workspace=self)
         return {
