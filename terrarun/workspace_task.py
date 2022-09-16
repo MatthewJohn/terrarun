@@ -21,6 +21,7 @@ class WorkspaceTaskStage(Enum):
     """Stage of workspace task"""
     PRE_PLAN = "pre_plan"
     POST_PLAN = "post_plan"
+    POST_APPLY = "pre_apply"
 
 
 class WorkspaceTask(Base, BaseObject):
