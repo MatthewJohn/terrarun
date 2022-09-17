@@ -347,6 +347,25 @@ class AuthenticatedEndpoint(Resource):
 
         return self._put(*args, current_user=current_user, **kwargs)
 
+    def _delete(self, *args, **kwargs):
+        """Handle DELETE request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_delete(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def delete(self, *args, **kwargs):
+        """Handle PUT request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_delete(*args, current_user=current_user, **kwargs):
+            return {}, 404
+
+        return self._delete(*args, current_user=current_user, **kwargs)
+
 
 class ApiAuthenticate(Resource):
     """Interface to authenticate user"""
@@ -1494,3 +1513,26 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
         return {
             "data": workspace_task.get_api_details()
         }
+
+    def check_permissions_delete(self, workspace_id, workspace_task_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _delete(self, workspace_id, workspace_task_id, current_user):
+        """Associate a task with a workspace"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace_task = WorkspaceTask.get_by_api_id(workspace_task_id)
+        # Ensure workspace task exists and it's associated with the
+        # specified workspace
+        if not workspace_task or workspace_task.workspace.id != workspace.id:
+            return {}, 404
+
+        workspace_task.delete()

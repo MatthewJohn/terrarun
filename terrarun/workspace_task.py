@@ -8,7 +8,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
-from terrarun.database import Base
+from terrarun.database import Base, Database
 
 
 class WorkspaceTaskEnforcementLevel(Enum):
@@ -39,6 +39,12 @@ class WorkspaceTask(Base, BaseObject):
 
     enforcement_level = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskEnforcementLevel))
     stage = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskStage))
+
+    def delete(self):
+        """Delete workspace task association"""
+        session = Database.get_session()
+        session.delete(self)
+        session.commit()
 
     def get_api_details(self):
         """Return API details"""
