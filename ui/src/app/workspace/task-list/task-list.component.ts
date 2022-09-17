@@ -66,20 +66,20 @@ export class TaskListComponent implements OnInit {
   }
 
   onAssociate(): void {
-    // this.workspaceTaskService.associateTask(this.workspaceId || '',
-    //                                         this.associateForm.value.taskId,
-    //                                         this.associateForm.value.stage,
-    //                                         this.associateForm.value.enforcementLevel
-    //                                        ).then((task) => {
-    //   // Refresh task list
-    //   this.getWorkspaceTaskList();
+    this.workspaceTaskService.associateTask(this.currentWorkspace?.id || '',
+                                            this.associateForm.value.taskId,
+                                            this.associateForm.value.stage,
+                                            this.associateForm.value.enforcementLevel
+                                           ).then((task) => {
+      // Refresh task list
+      this.getWorkspaceTaskList();
 
-    //   // Reset create form
-    //   this.associateForm.setValue({
-    //     taskId: null,
-    //     stage: '',
-    //     enforcementLevel: ''
-    //   })
-    // });
+      // Reset create form
+      this.associateForm.setValue({
+        taskId: null,
+        stage: '',
+        enforcementLevel: ''
+      })
+    });
   }
 }
