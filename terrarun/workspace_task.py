@@ -31,9 +31,10 @@ class WorkspaceTask(Base, BaseObject):
 
     __tablename__ = "workspace_task"
 
-    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), primary_key=True)
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"))
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="workspace_tasks")
-    task_id = sqlalchemy.Column(sqlalchemy.ForeignKey("task.id"), primary_key=True)
+    task_id = sqlalchemy.Column(sqlalchemy.ForeignKey("task.id"))
     task = sqlalchemy.orm.relationship("Task", back_populates="workspace_tasks")
 
     enforcement_level = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskEnforcementLevel))
