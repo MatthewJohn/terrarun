@@ -13,9 +13,23 @@
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
                         <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
                             {{column}}
-                          </th>
+                        </th>
                         <td nbTreeGridCell *nbTreeGridCellDef="let row">
-                            {{row.data.attributes[column]}}</td>
+                            <ng-container [ngSwitch]="true">
+                                <div *ngSwitchCase="column == 'Name'">
+                                    {{tasksById[row.data.relationships.task.data.id] === undefined ? '' : tasksById[row.data.relationships.task.data.id].attributes.name}}
+                                </div>
+                                <div *ngSwitchCase="column == 'Enforcement'">
+                                    {{row.data.attributes['enforcement-level']}}
+                                </div>
+                                <div *ngSwitchCase="column == 'Stage'">
+                                    {{row.data.attributes.stage}}
+                                </div>
+                                <div *ngSwitchDefault>
+                                    Unknown column
+                                </div>
+                            </ng-container>
+                        </td>
                     </ng-container>
 
                 </table>

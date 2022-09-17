@@ -12,8 +12,12 @@ import { WorkspaceTaskService } from 'src/app/workspace-task.service';
   styleUrls: ['./task-list.component.scss']
 })
 export class TaskListComponent implements OnInit {
+  // All tasks associated with workspace
   workspaceTasks: any[];
+  // All tasks available in organisation
   organisationTasks: any[];
+  // Map of task details by task Id
+  tasksById: any;
   tableColumns: string[] = ['Name', 'Enforcement', 'Stage'];
 
   associateForm = this.formBuilder.group({
@@ -34,6 +38,7 @@ export class TaskListComponent implements OnInit {
                 
     this.workspaceTasks = [];
     this.organisationTasks = [];
+    this.tasksById = {};
 
     this.state.currentOrganisation.subscribe((data) => {
       this.currentOrganisation = data;
@@ -51,6 +56,9 @@ export class TaskListComponent implements OnInit {
   getOrganisationTasks(): void {
     this.taskService.getTasksByOrganisation(this.currentOrganisation?.id || "").subscribe((data) => {
       this.organisationTasks = data.data;
+      this.organisationTasks.forEach((taskDetails) => {
+        this.tasksById[taskDetails.id] = taskDetails;
+      });
     });
   }
 

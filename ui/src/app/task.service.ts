@@ -61,7 +61,7 @@ export class TaskService {
     });
   }
 
-  updateAttributes(taskId: string, name: string, description: string, url: string, hmacKey: string, enabled: boolean) {
+  updateAttributes(taskId: string, name: string, description: string, url: string, hmacKey: string, enabled: boolean): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
         `https://${window.location.hostname}:5000/api/v2/tasks/${taskId}`,
@@ -77,6 +77,22 @@ export class TaskService {
             }
           }
         },
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data) => {
+          resolve(data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
+
+  getTaskDetailsById(taskId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `https://${window.location.hostname}:5000/api/v2/tasks/${taskId}`,
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data) => {
