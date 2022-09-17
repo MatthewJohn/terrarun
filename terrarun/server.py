@@ -39,7 +39,7 @@ from terrarun.user import User
 from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
 from terrarun.team_user_membership import TeamUserMembership
 from terrarun.team import Team
-from terrarun.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+from terrarun.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 
 
 class Server(object):
@@ -164,6 +164,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceTasks,
             '/api/v2/workspaces/<string:workspace_id>/tasks'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceTask,
+            '/api/v2/workspaces/<string:workspace_id>/tasks/<string:workspace_task_id>'
         )
         self._api.add_resource(
             ApiTerraformPlans,
@@ -1460,3 +1464,33 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
             stage=WorkspaceTaskStage(attributes.get('stage', WorkspaceTaskStage.POST_PLAN.value))
         )
         return workspace_task.get_api_details()
+
+
+
+class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
+    """Interface to manage workspace task"""
+
+    def check_permissions_get(self, workspace_id, workspace_task_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, workspace_id, workspace_task_id, current_user):
+        """Return list of workspace tasks"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace_task = WorkspaceTask.get_by_api_id(workspace_task_id)
+        # Ensure workspace task exists and it's associated with the
+        # specified workspace
+        if not workspace_task or workspace_task.workspace.id != workspace.id:
+            return {}, 404
+
+        return {
+            "data": workspace_task.get_api_details()
+        }
