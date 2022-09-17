@@ -12,9 +12,9 @@ import { WorkspaceTaskService } from 'src/app/workspace-task.service';
   styleUrls: ['./task-list.component.scss']
 })
 export class TaskListComponent implements OnInit {
-  workspaceTasks$: Observable<any>;
-  organisationTasks$: Observable<any>;
-  tableColumns: string[] = ['Name', '', 'enabled'];
+  workspaceTasks: any[];
+  organisationTasks: any[];
+  tableColumns: string[] = ['Name', 'Enforcement', 'Stage'];
 
   associateForm = this.formBuilder.group({
     taskId: '',
@@ -31,8 +31,9 @@ export class TaskListComponent implements OnInit {
               private router: Router,
               private route: ActivatedRoute,
               private formBuilder: FormBuilder) {
-    this.workspaceTasks$ = new Observable();
-    this.organisationTasks$ = new Observable();
+                
+    this.workspaceTasks = [];
+    this.organisationTasks = [];
 
     this.state.currentOrganisation.subscribe((data) => {
       this.currentOrganisation = data;
@@ -48,11 +49,16 @@ export class TaskListComponent implements OnInit {
   }
 
   getOrganisationTasks(): void {
-    this.organisationTasks$ = this.taskService.getTasksByOrganisation(this.currentOrganisation?.id || "").pipe();
+    this.taskService.getTasksByOrganisation(this.currentOrganisation?.id || "").subscribe((data) => {
+      this.organisationTasks = data.data;
+    });
   }
 
   getWorkspaceTaskList(): void {
-    this.workspaceTasks$ = this.workspaceTaskService.getWorkspaceTasksByWorkspace(this.currentWorkspace?.id || "");
+    this.workspaceTaskService.getWorkspaceTasksByWorkspace(
+      this.currentWorkspace?.id || "").subscribe((data) => {
+        this.workspaceTasks = data.data;
+      });
   }
 
   ngOnInit(): void {

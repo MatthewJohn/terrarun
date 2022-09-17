@@ -6,7 +6,7 @@
             </nb-card-header>
             <nb-card-body>
 
-                <table [nbTreeGrid]="(workspaceTasks$ | async)?.data || []" equalColumnsWidth>
+                <table [nbTreeGrid]="workspaceTasks" equalColumnsWidth>
                     <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
                     <tr nbTreeGridRow class="taskRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
@@ -30,7 +30,7 @@
                         <nb-form-field>
                             <label for="taskId">Task:</label>
                             <nb-select id="taskId" formControlName="taskId">
-                                <nb-option *ngFor="let task of (organisationTasks$ | async).data" [value]="task.id">{{task.attributes.name}}</nb-option>
+                                <nb-option *ngFor="let task of organisationTasks" [value]="task.id">{{task.attributes.name}}</nb-option>
                             </nb-select>
                         </nb-form-field>
 
