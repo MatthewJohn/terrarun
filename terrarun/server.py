@@ -1157,8 +1157,10 @@ class ApiTerraformPlanLog(Resource):
             sleep(0.5)
 
         if request.content_type and request.content_type.startswith('text/html'):
+            plan_output = plan_output.decode('utf-8')
+            plan_output = plan_output.replace(' ', '\u00a0')
             conv = Ansi2HTMLConverter()
-            plan_output = conv.convert(plan_output.decode('utf-8'), full=False)
+            plan_output = conv.convert(plan_output, full=False)
             plan_output = plan_output.replace('\n', '<br/ >')
 
 
@@ -1313,9 +1315,12 @@ class ApiTerraformApplyLog(Resource):
             sleep(0.5)
 
         if request.content_type and request.content_type.startswith('text/html'):
+            output = output.decode('utf-8')
+            output = output.replace(' ', '\u00a0')
             conv = Ansi2HTMLConverter()
-            output = conv.convert(output.decode('utf-8'), full=False)
+            output = conv.convert(output, full=False)
             output = output.replace('\n', '<br/ >')
+            output = output.replace(' ', '&nbsp;')
 
         response = make_response(output)
         response.headers['Content-Type'] = 'text/plain'
