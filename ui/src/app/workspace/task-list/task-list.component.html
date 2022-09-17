@@ -25,6 +25,9 @@
                                 <div *ngSwitchCase="column == 'Stage'">
                                     {{row.data.attributes.stage}}
                                 </div>
+                                <div *ngSwitchCase="column == 'Delete'">
+                                    <button size="small" nbButton (click)="deleteWorkspaceTask(row.data.id)">Delete</button>
+                                </div>
                                 <div *ngSwitchDefault>
                                     Unknown column
                                 </div>

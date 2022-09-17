@@ -18,7 +18,7 @@ export class TaskListComponent implements OnInit {
   organisationTasks: any[];
   // Map of task details by task Id
   tasksById: any;
-  tableColumns: string[] = ['Name', 'Enforcement', 'Stage'];
+  tableColumns: string[] = ['Name', 'Enforcement', 'Stage', 'Delete'];
 
   associateForm = this.formBuilder.group({
     taskId: '',
@@ -88,6 +88,12 @@ export class TaskListComponent implements OnInit {
         stage: '',
         enforcementLevel: ''
       })
+    });
+  }
+
+  deleteWorkspaceTask(workspaceTaskId: string): void {
+    this.workspaceTaskService.delete(this.currentWorkspace?.id || "", workspaceTaskId).then(() => {
+      this.getWorkspaceTaskList();
     });
   }
 }

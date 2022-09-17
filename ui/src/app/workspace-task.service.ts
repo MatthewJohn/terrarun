@@ -48,4 +48,20 @@ export class WorkspaceTaskService {
       });
     });
   }
+
+  delete(workspaceId: string, workspaceTaskId: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.delete<any>(
+        `https://${window.location.hostname}:5000/api/v2/workspaces/${workspaceId}/tasks/${workspaceTaskId}`,
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data) => {
+          resolve(data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
 }
