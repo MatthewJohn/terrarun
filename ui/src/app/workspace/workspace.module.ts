@@ -5,8 +5,9 @@ import { WorkspaceRoutingModule } from './workspace-routing.module';
 import { RunModule } from '../run/run.module';
 import { OverviewComponent } from './overview/overview.component';
 import { RunListComponent } from './run-list/run-list.component';
-import { NbCardModule, NbIconModule, NbLayoutModule, NbTagModule, NbTreeGridModule } from '@nebular/theme';
+import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbSelectComponent, NbSelectModule, NbTagModule, NbToggleModule, NbTreeGridModule } from '@nebular/theme';
 import { TaskListComponent } from './task-list/task-list.component';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 
 @NgModule({
@@ -20,11 +21,20 @@ import { TaskListComponent } from './task-list/task-list.component';
     WorkspaceRoutingModule,
     RunModule,
 
+    NbFormFieldModule,
+    NbInputModule,
+    NbToggleModule,
+    NbButtonModule,
+    NbSelectModule,
+
     NbLayoutModule,
     NbCardModule,
     NbTreeGridModule,
     NbIconModule,
-    NbTagModule
+    NbTagModule,
+
+    FormsModule,
+    ReactiveFormsModule,
   ]
 })
 export class WorkspaceModule { }

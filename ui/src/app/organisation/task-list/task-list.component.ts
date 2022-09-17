@@ -115,7 +115,6 @@ export class TaskListComponent implements OnInit {
   onTaskClick(target: any) {
     // Setup edit form for task
     this.editTask = target.data;
-    console.log(target.data);
     this.editForm.setValue({
       name: this.editTask.attributes.name,
       description: this.editTask.attributes.description,

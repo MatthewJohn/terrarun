@@ -1393,7 +1393,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
             current_user=current_user, workspace=workspace
         ).check_permission(WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def get(self, workspace_id, current_user):
+    def _get(self, workspace_id, current_user):
         """Return list of workspace tasks"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1402,7 +1402,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
         return {
             "data": [
                 workspace_task.get_api_details()
-                for workspace_task in workspace.tasks
+                for workspace_task in workspace.workspace_tasks
             ],
             "links": {
                 "self": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20",
@@ -1433,7 +1433,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
             current_user=current_user, workspace=workspace
         ).check_permission(WorkspacePermissions.Permissions.CAN_MANAGE_RUN_TASKS)
 
-    def post(self, workspace_id, current_user):
+    def _post(self, workspace_id, current_user):
         """Associate a task with a workspace"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:

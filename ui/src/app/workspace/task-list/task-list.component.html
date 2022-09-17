@@ -1,1 +1,64 @@
-<p>task-list works!</p>
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-header>
+                Workspace Tasks
+            </nb-card-header>
+            <nb-card-body>
+
+                <table [nbTreeGrid]="(workspaceTasks$ | async)?.data || []" equalColumnsWidth>
+                    <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
+                    <tr nbTreeGridRow class="taskRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+                            {{column}}
+                          </th>
+                        <td nbTreeGridCell *nbTreeGridCellDef="let row">
+                            {{row.data.attributes[column]}}</td>
+                    </ng-container>
+
+                </table>
+            </nb-card-body>
+
+            <nb-card>
+                <nb-card-header>
+                    Associate task
+                </nb-card-header>
+                <nb-card-body>
+                    <form [formGroup]="associateForm" (ngSubmit)="onAssociate()">
+                        <nb-form-field>
+                            <label for="taskId">Task:</label>
+                            <nb-select id="taskId" formControlName="taskId">
+                                <nb-option *ngFor="let task of (organisationTasks$ | async).data" [value]="task.id">{{task.attributes.name}}</nb-option>
+                            </nb-select>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="enforcementLevel">Enforcement:</label>
+                            <nb-select id="enforcementLevel" formControlName="enforcementLevel">
+                                <nb-option value="advisory">Advisory</nb-option>
+                                <nb-option value="mandatory">Mandatory</nb-option>
+                            </nb-select>
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="stage">Stage:</label>
+                            <nb-select id="stage" formControlName="stage">
+                                <nb-option value="pre_plan">Pre-plan</nb-option>
+                                <nb-option value="post_plan">Post-plan</nb-option>
+                                <nb-option value="pre_apply">Pre-apply</nb-option>
+                            </nb-select>
+                        </nb-form-field>
+
+                        <br />
+                        <button nbButton>Associate</button>
+                    </form>
+                </nb-card-body>
+            </nb-card>
+
+        </nb-card>
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>
