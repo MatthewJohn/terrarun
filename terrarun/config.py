@@ -14,7 +14,7 @@ class Config:
 
     @property
     def SESSION_EXPIRY_MINS(self):
-        return 10
+        return 120
 
     @property
     def BASE_URL(self):
