@@ -89,6 +89,8 @@ class Run(Base, BaseObject):
     created_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_created_by_id_user_id"))
     created_by = sqlalchemy.orm.relation("User", foreign_keys=[created_by_id])
 
+    task_stages = sqlalchemy.orm.relationship("TaskStage", back_populates="run")
+
     @property
     def replace_addrs(self):
         return json.loads(self._replace_addrs)

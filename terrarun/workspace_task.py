@@ -40,6 +40,8 @@ class WorkspaceTask(Base, BaseObject):
     enforcement_level = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskEnforcementLevel))
     stage = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskStage))
 
+    task_results = sqlalchemy.orm.relationship("TaskResult", back_populates="workspace_task")
+
     def delete(self):
         """Delete workspace task association"""
         session = Database.get_session()

@@ -19,4 +19,6 @@ from terrarun.tag import Tag
 from terrarun.workspace_tag import WorkspaceTag
 from terrarun.audit_event import AuditEvent
 from terrarun.task import Task
+from terrarun.task_stage import TaskStage
+from terrarun.task_result import TaskResult
 from terrarun.workspace_task import WorkspaceTask
