@@ -1431,6 +1431,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
             "data": [
                 workspace_task.get_api_details()
                 for workspace_task in workspace.workspace_tasks
+                if workspace_task.active
             ],
             "links": {
                 "self": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20",

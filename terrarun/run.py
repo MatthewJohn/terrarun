@@ -149,7 +149,7 @@ class Run(Base, BaseObject):
         return [
             workspace_task
             for workspace_task in self.configuration_version.workspace.workspace_tasks
-            if workspace_task.stage == WorkspaceTaskStage.PRE_PLAN
+            if workspace_task.stage == WorkspaceTaskStage.PRE_PLAN and workspace_task.active
         ]
 
     def execute_next_step(self):

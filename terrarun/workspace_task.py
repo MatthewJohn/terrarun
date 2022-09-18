@@ -37,6 +37,8 @@ class WorkspaceTask(Base, BaseObject):
     task_id = sqlalchemy.Column(sqlalchemy.ForeignKey("task.id"))
     task = sqlalchemy.orm.relationship("Task", back_populates="workspace_tasks")
 
+    active = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
+
     enforcement_level = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskEnforcementLevel))
     stage = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskStage))
 
@@ -45,7 +47,8 @@ class WorkspaceTask(Base, BaseObject):
     def delete(self):
         """Delete workspace task association"""
         session = Database.get_session()
-        session.delete(self)
+        self.active = False
+        session.add(self)
         session.commit()
 
     def get_api_details(self):
