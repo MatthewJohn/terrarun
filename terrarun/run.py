@@ -26,6 +26,10 @@ class RunStatus(Enum):
 
     PENDING = 'pending'
     FETCHING = 'fetching'
+    FETCHING_COMPLETED = 'fetching_completed'
+    PRE_PLAN_RUNNING = 'pre_plan_running'
+    PRE_PLAN_COMPLETED = 'pre_plan_completed'
+    QUEUING = 'queuing'
     PLAN_QUEUED = 'plan_queued'
     PLANNING = 'planning'
     PLANNED = 'planned'
@@ -39,6 +43,8 @@ class RunStatus(Enum):
     POST_PLAN_RUNNING = 'post_plan_running'
     POST_PLAN_COMPLETED = 'post_plan_completed'
     PLANNED_AND_FINISHED = 'planned_and_finished'
+    PRE_APPLY_RUNNING = 'pre_apply_running'  # Not yet part of official documentation
+    POST_APPLY_RUNNING = 'post_apply_running'  # Not yet part of official documentation
     APPLY_QUEUED = 'apply_queued'
     APPLYING = 'applying'
     APPLIED = 'applied'
