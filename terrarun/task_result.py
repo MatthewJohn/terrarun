@@ -8,6 +8,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
+from terrarun.utils import update_object_status
 from terrarun.blob import Blob
 from terrarun.database import Base, Database
 from terrarun.workspace_task import WorkspaceTaskStage
@@ -69,15 +70,15 @@ class TaskResult(Base, BaseObject):
         session.add(self)
         session.commit()
 
-    def update_attributes(self, **kwargs):
-        """Update attributes of task result"""
+    @property
+    def organisation(self):
+        """Return organisation"""
+        return self.workspace_task.workspace.organisation
 
-        for attr in kwargs:
-            setattr(self, attr, kwargs[attr])
-
-        session = Database.get_session()
-        session.add(self)
-        session.commit()
+    def execute(self):
+        """Execute task"""
+        update_object_status(self, TaskResultStatus.RUNNING)
+        update_object_status(self, TaskResultStatus.PASSED)
 
     def get_api_details(self):
         """Return API details for task"""
@@ -111,6 +112,6 @@ class TaskResult(Base, BaseObject):
                 }
             },
             "links": {
-            "self": f"/api/v2/task-results/{self.api_id}"
+                "self": f"/api/v2/task-results/{self.api_id}"
             }
         }

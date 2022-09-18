@@ -9,6 +9,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+from terrarun.task_result import TaskResult, TaskResultStatus
 from terrarun.workspace_task import WorkspaceTaskStage
 
 
@@ -39,6 +40,22 @@ class TaskStage(Base, BaseObject):
     run = sqlalchemy.orm.relationship("Run", back_populates="task_stages")
 
     task_results = sqlalchemy.orm.relationship("TaskResult", back_populates="task_stage")
+
+    @classmethod
+    def create(cls, run, stage, workspace_tasks):
+        """Create task stage and task result objects"""
+        # Create task stage
+        session = Database.get_session()
+        task_stage = cls(run=run, stage=stage, status=TaskStageStatus.PENDING)
+        session.add(task_stage)
+
+        # Create result objects for each workspace task
+        for workspace_task in workspace_tasks:
+            task_result = TaskResult(workspace_task=workspace_task, task_stage=task_stage, status=TaskResultStatus.PENDING)
+            session.add(task_result)
+        session.commit()
+
+        return task_stage
 
     def update_attributes(self, **kwargs):
         """Update attributes of task"""

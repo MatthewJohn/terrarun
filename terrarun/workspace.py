@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+from enum import Enum
 import re
 import sqlalchemy
 import sqlalchemy.orm
@@ -16,6 +17,14 @@ import terrarun.workspace_task
 import terrarun.user
 from terrarun.database import Base, Database
 from terrarun.workspace_tag import WorkspaceTag
+
+
+class WorkspaceExecutionMode(Enum):
+    """Type of workspace execution."""
+
+    REMOTE = "remote"
+    LOCAL = "local"
+    AGENT = "agent"
 
 
 class Workspace(Base, BaseObject):
@@ -153,7 +162,7 @@ class Workspace(Base, BaseObject):
                 },
                 "allow-destroy-plan": True,
                 "apply-duration-average": 158000,
-                "auto-apply": False,
+                "auto-apply": self.auto_apply,
                 "auto-destroy-at": None,
                 "created-at": "2021-06-03T17:50:20.307Z",
                 "description": "An example workspace for documentation.",

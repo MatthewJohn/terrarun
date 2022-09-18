@@ -17,9 +17,11 @@ import terrarun.plan
 import terrarun.apply
 import terrarun.state_version
 from terrarun.run_queue import RunQueue
+from terrarun.task_stage import TaskStage, TaskStageStatus
 import terrarun.terraform_command
 from terrarun.base_object import BaseObject
 import terrarun.utils
+from terrarun.workspace_task import WorkspaceTaskStage
 
 
 class RunStatus(Enum):
@@ -141,6 +143,15 @@ class Run(Base, BaseObject):
         """Cancel run"""
         self.update_status(RunStatus.CANCELED, current_user=user)
 
+    @property
+    def pre_plan_workspace_tasks(self):
+        """Return list of workspace tasks for pre-plan"""
+        return [
+            workspace_task
+            for workspace_task in self.configuration_version.workspace.workspace_tasks
+            if workspace_task.stage == WorkspaceTaskStage.PRE_PLAN
+        ]
+
     def execute_next_step(self):
         """Execute terraform command"""
         session = Database.get_session()
@@ -148,6 +159,16 @@ class Run(Base, BaseObject):
         print("Job Status: " + str(self.status))
         if self.status is RunStatus.PENDING:
             # Handle pre-run tasks.
+            if self.pre_plan_workspace_tasks:
+                task_stage = TaskStage.create(
+                    run=self,
+                    stage=WorkspaceTaskStage.PRE_PLAN,
+                    workspace_tasks=self.pre_plan_workspace_tasks)
+                self.update_status(RunStatus.PRE_PLAN_RUNNING)
+
+                # Iterate over task results and execute
+                for task_result in task_stage.task_results:
+                    task_result.execute()
 
             # Create plan and queue
             terrarun.plan.Plan.create(run=self)
