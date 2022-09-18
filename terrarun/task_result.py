@@ -94,17 +94,17 @@ class TaskResult(Base, BaseObject):
             "is_speculative": self.task_stage.run.configuration_version.speculative,
             "task_result_id": self.api_id,
             "task_result_enforcement_level": self.workspace_task.enforcement_level.value,
-            "task_result_callback_url": f"https://{config.DOMAIN_NAME}/api/v2/task-results/5ea8d46c-2ceb-42cd-83f2-82e54697bddd/callback",
-            "run_app_url": f"https://{config.DOMAIN_NAME}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}/runs/{self.task_stage.run.api_id}",
+            "task_result_callback_url": f"{config.BASE_URL}/api/v2/task-results/5ea8d46c-2ceb-42cd-83f2-82e54697bddd/callback",
+            "run_app_url": f"{config.BASE_URL}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}/runs/{self.task_stage.run.api_id}",
             "run_id": self.task_stage.run.api_id,
             "run_message": self.task_stage.run.message,
             "run_created_at": self.task_stage.run.created_at,
             "run_created_by": self.task_stage.run.created_by.username,
             "workspace_id": self.task_stage.run.configuration_version.workspace.api_id,
             "workspace_name": self.task_stage.run.configuration_version.workspace.name,
-            "workspace_app_url": f"https://{config.DOMAIN_NAME}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}",
+            "workspace_app_url": f"{config.BASE_URL}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}",
             "organization_name": self.task_stage.run.configuration_version.workspace.organisation.name,
-            "plan_json_api_url": f"https://{config.DOMAIN_NAME}/api/v2/plans/{self.task_stage.run.plan.api_id}/json-output" if self.task_stage.run.plan else None,
+            "plan_json_api_url": f"{config.BASE_URL}/api/v2/plans/{self.task_stage.run.plan.api_id}/json-output" if self.task_stage.run.plan else None,
             "vcs_repo_url": None,
             "vcs_branch": None,
             "vcs_pull_request_url": None,
@@ -116,7 +116,7 @@ class TaskResult(Base, BaseObject):
             payload["configuration_version_download_url"] = ""
             payload["workspace_working_directory"] = ""
         elif self.task_stage.stage in [WorkspaceTaskStage.POST_PLAN, WorkspaceTaskStage.PRE_APPLY]:
-            payload["plan_json_api_url"] = f"https://{config.DOMAIN_NAME}/api/v2/plans/{self.task_stage.run.plan.api_id}/json-output"
+            payload["plan_json_api_url"] = f"{config.BASE_URL}/api/v2/plans/{self.task_stage.run.plan.api_id}/json-output"
 
     def get_api_details(self):
         """Return API details for task"""

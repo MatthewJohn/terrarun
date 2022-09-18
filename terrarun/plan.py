@@ -215,7 +215,7 @@ Executed remotely on terrarun server
                 "resource-destructions": self.resource_destructions,
                 "status": self.status.value,
                 "status-timestamps": self.status_timestamps,
-                "log-read-url": f"https://{config.DOMAIN_NAME}:5000/api/v2/plans/{self.api_id}/log"
+                "log-read-url": f"{config.BASE_URL}/api/v2/plans/{self.api_id}/log"
             },
             "relationships": {
                 "state-versions": {'data': {'id': self.state_version.api_id, 'type': 'state-versions'}} if self.state_version else {}

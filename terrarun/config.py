@@ -17,6 +17,10 @@ class Config:
         return 10
 
     @property
-    def DOMAIN_NAME(self):
-        """Domain of the Terrarun instance"""
-        return os.environ.get('DOMAIN_NAME', None)
+    def BASE_URL(self):
+        """
+        Base URL of externally accessible URL/domain for Terrarun instance,
+        including protocol, domain and port (as necessary).
+        E.g. https://my-terrarun-instance:5000
+        """
+        return os.environ.get('BASE_URL', None)

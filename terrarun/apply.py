@@ -125,7 +125,7 @@ Executed remotely on terrarun server
                 },
                 "status": self.status.value,
                 "status-timestamps": self.status_timestamps,
-                "log-read-url": f"https://{config.DOMAIN_NAME}:5000/api/v2/applies/{self.api_id}/log",
+                "log-read-url": f"{config.BASE_URL}/api/v2/applies/{self.api_id}/log",
                 "resource-additions": 0,
                 "resource-changes": 0,
                 "resource-destructions": 0
