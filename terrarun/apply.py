@@ -7,8 +7,8 @@ import os
 import sqlalchemy
 import sqlalchemy.orm
 
+import terrarun.config
 from terrarun.database import Base, Database
-
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
 
@@ -111,6 +111,7 @@ Executed remotely on terrarun server
 
     def get_api_details(self):
         """Return API details for apply"""
+        config = terrarun.config.Config()
         return {
             "id": self.api_id,
             "type": "applies",
@@ -124,7 +125,7 @@ Executed remotely on terrarun server
                 },
                 "status": self.status.value,
                 "status-timestamps": self.status_timestamps,
-                "log-read-url": f"https://local-dev.dock.studio:5000/api/v2/applies/{self.api_id}/log",
+                "log-read-url": f"https://{config.DOMAIN_NAME}:5000/api/v2/applies/{self.api_id}/log",
                 "resource-additions": 0,
                 "resource-changes": 0,
                 "resource-destructions": 0
