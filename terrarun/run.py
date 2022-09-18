@@ -133,10 +133,8 @@ class Run(Base, BaseObject):
         session.commit()
         session.refresh(run)
         run.update_status(RunStatus.PENDING, current_user=created_by)
-        terrarun.plan.Plan.create(run=run)
-
-        # Queue plan job
-        run.queue_plan()
+        # Queue to be processed
+        run.add_to_queue_table()
         return run
 
     def cancel(self, user):
@@ -148,7 +146,13 @@ class Run(Base, BaseObject):
         session = Database.get_session()
         # Handle plan job
         print("Job Status: " + str(self.status))
-        if self.status is RunStatus.PLAN_QUEUED:
+        if self.status is RunStatus.PENDING:
+            # Handle pre-run tasks.
+
+            # Create plan and queue
+            terrarun.plan.Plan.create(run=self)
+            self.queue_plan()
+        elif self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
             plan = self.plan
             self.plan.execute()
@@ -218,6 +222,7 @@ class Run(Base, BaseObject):
 
     def queue_plan(self):
         """Queue for plan"""
+        self.update_status(RunStatus.QUEUING)
         self.update_status(RunStatus.PLAN_QUEUED)
 
         # Requeue to be applied
