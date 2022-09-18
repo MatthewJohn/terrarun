@@ -5,7 +5,7 @@
 from enum import Enum
 import json
 import os
-import queue
+import datetime
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -17,11 +17,13 @@ import terrarun.plan
 import terrarun.apply
 import terrarun.state_version
 from terrarun.run_queue import RunQueue
+from terrarun.task_result import TaskResultStatus
 from terrarun.task_stage import TaskStage, TaskStageStatus
 import terrarun.terraform_command
 from terrarun.base_object import BaseObject
 import terrarun.utils
-from terrarun.workspace_task import WorkspaceTaskStage
+import terrarun.config
+from terrarun.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 
 
 class RunStatus(Enum):
@@ -155,11 +157,13 @@ class Run(Base, BaseObject):
     def execute_next_step(self):
         """Execute terraform command"""
         session = Database.get_session()
+        config = terrarun.config.Config()
         # Handle plan job
         print("Job Status: " + str(self.status))
         # Create plan and queue
         terrarun.plan.Plan.create(run=self)
         if self.status is RunStatus.PENDING:
+
             # Handle pre-run tasks.
             if self.pre_plan_workspace_tasks:
                 task_stage = TaskStage.create(
@@ -172,8 +176,63 @@ class Run(Base, BaseObject):
                 for task_result in task_stage.task_results:
                     task_result.execute()
 
+            self.update_status(RunStatus.PRE_PLAN_RUNNING)
             # Queue plan
+            self.add_to_queue_table()
+
+        # Check status of pre-plan tasks
+        elif self.status is RunStatus.PRE_PLAN_RUNNING:
+            task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN]
+
+            still_running = 0
+
+            # No task stages - no tasks available
+            if len(task_stages) == 0:
+                pass
+            elif len(task_stages) == 1:
+                task_stage = task_stages[0]
+                # Iterate through each task stage result
+                for task_result in task_stage.task_results:
+                    is_mandatory = task_result.workspace_task.enforcement_level is WorkspaceTaskEnforcementLevel.MANDATORY
+
+                    # If task result was cancelled and the
+                    # check is mandatory, move to complete
+                    if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
+                        self.update_status(RunStatus.CANCELED)
+                        return
+
+                    # Check if any mandatory tasks have errored
+                    elif (task_result.status in [
+                            TaskResultStatus.FAILED,
+                            TaskResultStatus.ERRRORED,
+                            TaskResultStatus.UNREACHABLE] and
+                            is_mandatory):
+                        self.update_status(RunStatus.ERRORED)
+                        return
+
+                    # If task is still running, check if time has elapsed
+                    elif task_result.status in [TaskResultStatus.PENDING, TaskResultStatus.RUNNING]:
+                        if task_result.start_time and task_result.start_time + datetime.timedetlta(minutes=10) < datetime.datetime.now():
+                            # Update task result status to errored
+                            task_result.update_status(TaskResultStatus.ERRRORED)
+                            # If task is mandatory, treat run as errored
+                            if is_mandatory:
+                                self.update_status(RunStatus.ERRORED)
+                                return
+                        still_running += 1
+                    
+                    else:
+                        print('Unknown task result status: ', task_result.status)
+
+            # If no tasks are still running, update
+            # state to completed
+            if not still_running:
+                self.update_status(RunStatus.PRE_PLAN_COMPLETED)
+                self.add_to_queue_table()
+
+        elif self.status is RunStatus.PRE_PLAN_COMPLETED:
             self.queue_plan()
+
         elif self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
             plan = self.plan

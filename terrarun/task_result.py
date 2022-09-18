@@ -102,16 +102,20 @@ class TaskResult(Base, BaseObject):
 
         # Attempt to call external URL
         for _ in range(config.TASK_CALL_MAX_ATTEMPTS):
-            res = requests.post(
-                self.workspace_task.task.url,
-                data=payload,
-                headers={
-                    'Content-Type': 'application/json',
-                    'User-Agent': f'TRC/1.0 (+%${config.BASE_URL}; TRC)',
-                    'X-TFC-Task-Signature': hmac_signature
-                })
-            if res.status_code == 200:
-                break
+            try:
+                res = requests.post(
+                    self.workspace_task.task.url,
+                    data=payload,
+                    headers={
+                        'Content-Type': 'application/json',
+                        'User-Agent': f'TRC/1.0 (+%${config.BASE_URL}; TRC)',
+                        'X-TFC-Task-Signature': hmac_signature
+                    })
+                print('GOT HERE')
+                if res.status_code == 200:
+                    break
+            except requests.exceptions.ConnectionError:
+                pass
         else:
             # If unable to get 200 response from remote,
             # mark task result as failed
