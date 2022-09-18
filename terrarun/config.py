@@ -24,3 +24,13 @@ class Config:
         E.g. https://my-terrarun-instance:5000
         """
         return os.environ.get('BASE_URL', None)
+
+    @property
+    def TASK_CALL_MAX_ATTEMPTS(self):
+        """Maximum number of attempts to call a remote task url"""
+        return 3
+
+    @property
+    def TASK_CALL_ATTEMPT_INTERVAL(self):
+        """Number of seconds to wait between attempts to call a remote task url"""
+        return 10

@@ -9,7 +9,7 @@ from terrarun.state_version import StateVersion
 from terrarun.plan import Plan
 from terrarun.apply import Apply
 from terrarun.run_queue import RunQueue
-from terrarun.user import User
+from terrarun.user import User, TaskExecutionUserAccess
 from terrarun.user_token import UserToken
 from terrarun.team import Team
 from terrarun.team_user_membership import TeamUserMembership

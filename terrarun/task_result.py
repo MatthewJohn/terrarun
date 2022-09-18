@@ -3,12 +3,18 @@
 # Proprietary and confidential
 
 from enum import Enum
-import re
+import datetime
+import hashlib
+import hmac
+import json
+import requests
 import sqlalchemy
 import sqlalchemy.orm
 from terrarun.audit_event import AuditEvent, AuditEventType
 
 from terrarun.base_object import BaseObject
+from terrarun.user import TaskExecutionUserAccess, User, UserType
+from terrarun.user_token import UserToken
 from terrarun.utils import update_object_status
 from terrarun.blob import Blob
 from terrarun.database import Base, Database
@@ -47,6 +53,8 @@ class TaskResult(Base, BaseObject):
     workspace_task_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace_task.id"), nullable=False)
     workspace_task = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="task_results")
 
+    start_time = sqlalchemy.DateTime()
+
     @property
     def message(self):
         """Return plan output value"""
@@ -80,16 +88,72 @@ class TaskResult(Base, BaseObject):
 
     def execute(self):
         """Execute task"""
+        payload = json.dumps(self.generate_payload())
+
+        hmac_signature = None
+        if self.workspace_task.task.hmac_key:
+            hmac_signature = hmac.new(
+                self.workspace_task.task.hmac_key,
+                payload,
+                hashlib.sha512
+            ).hexdigest()
+
+        config = terrarun.config.Config()
+
+        # Attempt to call external URL
+        for _ in range(config.TASK_CALL_MAX_ATTEMPTS):
+            res = requests.post(
+                self.workspace_task.task.url,
+                data=payload,
+                headers={
+                    'Content-Type': 'application/json',
+                    'User-Agent': f'TRC/1.0 (+%${config.BASE_URL}; TRC)',
+                    'X-TFC-Task-Signature': hmac_signature
+                })
+            if res.status_code == 200:
+                break
+        else:
+            # If unable to get 200 response from remote,
+            # mark task result as failed
+            update_object_status(self, TaskResultStatus.FAILED)
+            return
+
+        # Update start time of request and mark as running
+        self.update_attributes(start_time=datetime.datetime.now())
         update_object_status(self, TaskResultStatus.RUNNING)
-        update_object_status(self, TaskResultStatus.PASSED)
-        print(self.generate_payload())
 
     def generate_payload(self):
         """Create payload to sent to remote endpoint"""
+        # Create temporary user, mapping and token
+        callback_user = User(
+            # Give a fake username
+            username=self.api_id,
+            email=None,
+            service_account=False,
+            user_type=UserType.TASK_EXECUTION_USER
+        )
+        session = Database.get_session()
+        session.add(callback_user)
+
+        task_exec_access = TaskExecutionUserAccess(
+            user=callback_user,
+            run=self.task_stage.run
+        )
+        session.add(task_exec_access)
+
+        callback_token = UserToken.generate_token()
+        user_token = UserToken(
+            expiry=datetime.datetime.now() + datetime.timedelta(minutes=10),
+            user=callback_user,
+            token=callback_token)
+        session.add(user_token)
+
+        session.commit()
+
         config = terrarun.config.Config()
         payload = {
             "payload_version": 1,
-            "access_token": "TO_GENERATE",
+            "access_token": callback_token,
             "stage": self.workspace_task.stage.value,
             "is_speculative": self.task_stage.run.configuration_version.speculative,
             "task_result_id": self.api_id,
@@ -117,6 +181,8 @@ class TaskResult(Base, BaseObject):
             payload["workspace_working_directory"] = ""
         elif self.task_stage.stage in [WorkspaceTaskStage.POST_PLAN, WorkspaceTaskStage.PRE_APPLY]:
             payload["plan_json_api_url"] = f"{config.BASE_URL}/api/v2/plans/{self.task_stage.run.plan.api_id}/json-output"
+        
+        return payload
 
     def get_api_details(self):
         """Return API details for task"""
