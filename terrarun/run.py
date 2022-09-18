@@ -157,6 +157,8 @@ class Run(Base, BaseObject):
         session = Database.get_session()
         # Handle plan job
         print("Job Status: " + str(self.status))
+        # Create plan and queue
+        terrarun.plan.Plan.create(run=self)
         if self.status is RunStatus.PENDING:
             # Handle pre-run tasks.
             if self.pre_plan_workspace_tasks:
@@ -170,8 +172,7 @@ class Run(Base, BaseObject):
                 for task_result in task_stage.task_results:
                     task_result.execute()
 
-            # Create plan and queue
-            terrarun.plan.Plan.create(run=self)
+            # Queue plan
             self.queue_plan()
         elif self.status is RunStatus.PLAN_QUEUED:
             self.update_status(RunStatus.PLANNING)
