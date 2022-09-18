@@ -78,6 +78,13 @@ class TaskStage(Base, BaseObject):
         session.add(self)
         session.commit()
 
+    def get_relationship(self):
+        """Return relationship data for tag."""
+        return {
+            "id": self.api_id,
+            "type": "task-stages"
+        }
+
     def get_api_details(self):
         """Return API details for task"""
         return     {

@@ -343,7 +343,10 @@ class Run(Base, BaseObject):
                 "run-events": {},
                 "policy-checks": {},
                 "workspace": {'data': {'id': self.configuration_version.workspace.api_id, 'type': 'workspaces'}},
-                "workspace-run-alerts": {}
+                "workspace-run-alerts": {},
+                "task-stages": {
+                    "data": [task_stage.get_relationship() for task_stage in self.task_stages]
+                }
             },
             "links": {
                 "self": f"/api/v2/runs/{self.api_id}"
