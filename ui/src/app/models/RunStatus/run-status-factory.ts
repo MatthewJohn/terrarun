@@ -145,6 +145,11 @@ class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
+class RunStatusQueuing extends RunStatusBaseClass {
+    _nameString = "Queuing";
+    _labelColour = "info";
+    _icon = "radio-button-on-outline";
+}
 
 
 const RunStatusMap: Record<RunStatusEnum, new (...args: any[]) => IRunStatus> = {
@@ -170,6 +175,7 @@ const RunStatusMap: Record<RunStatusEnum, new (...args: any[]) => IRunStatus> = 
     [RunStatusEnum.POLICY_SOFT_FAILED]: RunStatusPolicySoftFailed,
     [RunStatusEnum.POST_PLAN_COMPLETED]: RunStatusPostPlanCompleted,
     [RunStatusEnum.POST_PLAN_RUNNING]: RunStatusPostPlanRunning,
+    [RunStatusEnum.QUEUING]: RunStatusQueuing
 }
 
 @Injectable({
@@ -179,7 +185,8 @@ export class RunStatusFactory {
 
     // @TODO Update signure to match instance of 'new (...args: any[]) => IRunStatus)'
     getStatusByValue(statusEnumValue: string): any {
-        return new RunStatusMap[statusEnumValue as RunStatusEnum]();
+        console.log(statusEnumValue);
+        return new (RunStatusMap[statusEnumValue as RunStatusEnum])();
     }
 }
 
