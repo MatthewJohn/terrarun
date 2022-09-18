@@ -2,6 +2,8 @@ export enum RunStatusEnum {
     PENDING = "pending",
     FETCHING = "fetching",
     QUEUING = "queuing",
+    PRE_PLAN_RUNNING = "pre_plan_running",
+    PRE_PLAN_COMPLETED = "pre_plan_completed",
     PLAN_QUEUED = "plan_queued",
     PLANNING = "planning",
     PLANNED = "planned",

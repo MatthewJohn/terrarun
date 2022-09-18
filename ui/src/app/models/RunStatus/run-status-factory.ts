@@ -145,6 +145,16 @@ class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
+class RunStatusPrePlanCompleted extends RunStatusBaseClass {
+    _nameString = "Pre-plan completed";
+    _labelColour = "success";
+    _icon = "radio-button-on-outline";
+}
+class RunStatusPrePlanRunning extends RunStatusBaseClass {
+    _nameString = "Pre-plan running";
+    _labelColour = "info";
+    _icon = "radio-button-on-outline";
+}
 class RunStatusQueuing extends RunStatusBaseClass {
     _nameString = "Queuing";
     _labelColour = "info";
@@ -175,6 +185,8 @@ const RunStatusMap: Record<RunStatusEnum, new (...args: any[]) => IRunStatus> = 
     [RunStatusEnum.POLICY_SOFT_FAILED]: RunStatusPolicySoftFailed,
     [RunStatusEnum.POST_PLAN_COMPLETED]: RunStatusPostPlanCompleted,
     [RunStatusEnum.POST_PLAN_RUNNING]: RunStatusPostPlanRunning,
+    [RunStatusEnum.PRE_PLAN_COMPLETED]: RunStatusPrePlanCompleted,
+    [RunStatusEnum.PRE_PLAN_RUNNING]: RunStatusPrePlanRunning,
     [RunStatusEnum.QUEUING]: RunStatusQueuing
 }
 
