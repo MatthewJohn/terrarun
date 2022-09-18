@@ -6,12 +6,14 @@ from enum import Enum
 import re
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.audit_event import AuditEvent, AuditEventType
 
 from terrarun.base_object import BaseObject
 from terrarun.utils import update_object_status
 from terrarun.blob import Blob
 from terrarun.database import Base, Database
 from terrarun.workspace_task import WorkspaceTaskStage
+import terrarun.utils
 
 
 class TaskResultStatus(Enum):
@@ -82,16 +84,21 @@ class TaskResult(Base, BaseObject):
 
     def get_api_details(self):
         """Return API details for task"""
+        session = Database.get_session()
+        audit_events = {
+            '{}-at'.format(Database.decode_blob(event.new_value).replace('_', '-')): terrarun.utils.datetime_to_json(event.timestamp)
+            for event in session.query(AuditEvent).where(
+                AuditEvent.object_id==self.id,
+                AuditEvent.object_type==self.ID_PREFIX,
+                AuditEvent.event_type==AuditEventType.STATUS_CHANGE)
+        }
         return {
             "id": self.api_id,
             "type": "task-results",
             "attributes": {
-                "message": "No issues found.\nSeverity threshold is set to low.",
+                "message": self.message,
                 "status": self.status.value,
-                "status-timestamps": {
-                    "passed-at": "2022-06-08T20:32:12+08:00",
-                    "running-at": "2022-06-08T20:32:11+08:00"
-                },
+                "status-timestamps": audit_events,
                 "url": "https://external.service/project/task-123abc",
                 "created-at": "2022-06-08T12:31:56.954Z",
                 "updated-at": "2022-06-08T12:32:12.27Z",
@@ -99,7 +106,7 @@ class TaskResult(Base, BaseObject):
                 "task-name": self.workspace_task.task.name,
                 "task-url": self.workspace_task.task.url,
                 "stage": self.task_stage.stage.value,
-                "is-speculative": False,
+                "is-speculative": self.task_stage.run.configuration_version.speculative,
                 "workspace-task-id": self.workspace_task.api_id,
                 "workspace-task-enforcement-level": self.workspace_task.enforcement_level.value
             },
