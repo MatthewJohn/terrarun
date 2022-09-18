@@ -15,7 +15,7 @@ from terrarun.audit_event import AuditEvent, AuditEventType
 from terrarun.base_object import BaseObject
 from terrarun.user import TaskExecutionUserAccess, User, UserType
 from terrarun.user_token import UserToken
-from terrarun.utils import update_object_status
+from terrarun.utils import datetime_to_json, update_object_status
 from terrarun.blob import Blob
 from terrarun.database import Base, Database
 from terrarun.workspace_task import WorkspaceTaskStage
@@ -93,8 +93,8 @@ class TaskResult(Base, BaseObject):
         hmac_signature = None
         if self.workspace_task.task.hmac_key:
             hmac_signature = hmac.new(
-                self.workspace_task.task.hmac_key,
-                payload,
+                self.workspace_task.task.hmac_key.encode('utf-8'),
+                payload.encode('utf-8'),
                 hashlib.sha512
             ).hexdigest()
 
@@ -162,7 +162,7 @@ class TaskResult(Base, BaseObject):
             "run_app_url": f"{config.BASE_URL}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}/runs/{self.task_stage.run.api_id}",
             "run_id": self.task_stage.run.api_id,
             "run_message": self.task_stage.run.message,
-            "run_created_at": self.task_stage.run.created_at,
+            "run_created_at": datetime_to_json(self.task_stage.run.created_at),
             "run_created_by": self.task_stage.run.created_by.username,
             "workspace_id": self.task_stage.run.configuration_version.workspace.api_id,
             "workspace_name": self.task_stage.run.configuration_version.workspace.name,
