@@ -46,7 +46,7 @@ class RunStatus(Enum):
     POST_PLAN_COMPLETED = 'post_plan_completed'
     PLANNED_AND_FINISHED = 'planned_and_finished'
     PRE_APPLY_RUNNING = 'pre_apply_running'  # Not yet part of official documentation
-    POST_APPLY_RUNNING = 'post_apply_running'  # Not yet part of official documentation
+    PRE_APPLY_COMPLETED = 'pre_apply_completed'  # Not yet part of official documentation
     APPLY_QUEUED = 'apply_queued'
     APPLYING = 'applying'
     APPLIED = 'applied'
