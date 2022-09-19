@@ -109,6 +109,18 @@ class User(Base, BaseObject):
             self.password
         )
 
+    def has_task_execution_run_access(self, run):
+        """Check access permissions for task execution users"""
+        if self.user_type is not UserType.TASK_EXECUTION_USER:
+            return False
+
+        session = Database.get_session()
+        access = session.query(TaskExecutionUserAccess).filter(
+            TaskExecutionUserAccess.user==self,
+            TaskExecutionUserAccess.run==run).first()
+
+        return bool(access)
+
     @property
     def organisations(self):
         """List of organisations that the user is a member of."""

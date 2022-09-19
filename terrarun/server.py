@@ -904,10 +904,12 @@ class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
         if not run:
             return False
 
-        return WorkspacePermissions(
-            current_user=current_user,
-            workspace=run.configuration_version.workspace
-        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+        return (WorkspacePermissions(
+                current_user=current_user,
+                workspace=run.configuration_version.workspace
+            ).check_access_type(runs=TeamWorkspaceRunsPermission.READ) or
+            current_user.has_task_execution_run_access(run=run)
+        )
 
     def _get(self, current_user, run_id):
         """Download configuration versinon"""
