@@ -1136,7 +1136,7 @@ class ApiTerraformPlanLog(Resource):
 
         plan_output = b""
         session = Database.get_session()
-        for _ in range(60):
+        for _ in range(20):
             session.refresh(plan)
             if plan.log:
                 session.refresh(plan.log)
@@ -1154,7 +1154,7 @@ class ApiTerraformPlanLog(Resource):
                 break
             print('Waiting as plan state is; ' + str(plan.status))
 
-            sleep(0.5)
+            sleep(0.2)
 
         if request.content_type and request.content_type.startswith('text/html'):
             plan_output = plan_output.decode('utf-8')
@@ -1289,7 +1289,7 @@ class ApiTerraformApplyLog(Resource):
 
         output = b""
         session = Database.get_session()
-        for _ in range(60):
+        for _ in range(20):
             session.refresh(apply)
             if apply.log:
                 session.refresh(apply.log)
@@ -1312,7 +1312,7 @@ class ApiTerraformApplyLog(Resource):
                 break
             print('Waiting as apply state is; ' + str(apply.status))
 
-            sleep(0.5)
+            sleep(0.2)
 
         if request.content_type and request.content_type.startswith('text/html'):
             output = output.decode('utf-8')
