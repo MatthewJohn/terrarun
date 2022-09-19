@@ -160,9 +160,12 @@ class Run(Base, BaseObject):
         config = terrarun.config.Config()
         # Handle plan job
         print("Job Status: " + str(self.status))
-        # Create plan and queue
-        terrarun.plan.Plan.create(run=self)
+
         if self.status is RunStatus.PENDING:
+
+            # Create plan, as the terraform client expects this
+            # to immediately exist
+            terrarun.plan.Plan.create(run=self)
 
             # Handle pre-run tasks.
             if self.pre_plan_workspace_tasks:
