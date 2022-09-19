@@ -145,6 +145,10 @@ class Server(object):
             '/api/v2/configuration-versions/<string:configuration_version_id>'
         )
         self._api.add_resource(
+            ApiTerraformRunConfigurationVersionDownload,
+            '/api/v2/runs/<string:run_id>/configuration-version/download'
+        )
+        self._api.add_resource(
             ApiTerraformRun,
             '/api/v2/runs',
             '/api/v2/runs/<string:run_id>'
@@ -889,6 +893,32 @@ class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
             return {}, 404
 
         cv.process_upload(request.data)
+
+
+class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
+    """Interface to download configuration version"""
+
+    def check_permissions_get(self, current_user, run_id):
+        """Check permissions"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, current_user, run_id):
+        """Download configuration versinon"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        response = make_response(run.configuration_version.configuration_blob.data)
+        # Considered wheteher to use application/gzip, application/tar
+        response.headers['Content-Type'] = 'application/tar+gzip'
+        return response
 
 
 class ApiTerraformRun(AuthenticatedEndpoint):
