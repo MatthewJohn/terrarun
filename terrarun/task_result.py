@@ -181,7 +181,7 @@ class TaskResult(Base, BaseObject):
 
         if self.task_stage.stage is WorkspaceTaskStage.PRE_PLAN:
             payload["configuration_version_id"] = self.task_stage.run.configuration_version.api_id
-            payload["configuration_version_download_url"] = f"{config.BASE_URL}/runs/{self.task_stage.run.api_id}/configuration-version/download"
+            payload["configuration_version_download_url"] = f"{config.BASE_URL}/api/v2/runs/{self.task_stage.run.api_id}/configuration-version/download"
             payload["workspace_working_directory"] = None
 
         elif self.task_stage.stage in [WorkspaceTaskStage.POST_PLAN, WorkspaceTaskStage.PRE_APPLY]:
