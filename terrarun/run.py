@@ -215,7 +215,7 @@ class Run(Base, BaseObject):
 
                     # If task is still running, check if time has elapsed
                     elif task_result.status in [TaskResultStatus.PENDING, TaskResultStatus.RUNNING]:
-                        if task_result.start_time and task_result.start_time + datetime.timedetlta(minutes=10) < datetime.datetime.now():
+                        if task_result.start_time and (task_result.start_time + datetime.timedelta(minutes=10)) < datetime.datetime.now():
                             # Update task result status to errored
                             task_result.update_status(TaskResultStatus.ERRRORED)
                             # If task is mandatory, treat run as errored

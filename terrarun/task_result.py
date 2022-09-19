@@ -53,7 +53,7 @@ class TaskResult(Base, BaseObject):
     workspace_task_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace_task.id"), nullable=False)
     workspace_task = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="task_results")
 
-    start_time = sqlalchemy.DateTime()
+    start_time = sqlalchemy.Column(sqlalchemy.DateTime)
 
     @property
     def message(self):
