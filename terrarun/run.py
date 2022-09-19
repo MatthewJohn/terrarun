@@ -254,6 +254,7 @@ class Run(Base, BaseObject):
                 return
 
             if self.auto_apply:
+                terrarun.apply.Apply.create(plan=self.plan)
                 self.queue_apply()
 
         # Handle apply job
