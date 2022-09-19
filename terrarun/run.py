@@ -217,7 +217,7 @@ class Run(Base, BaseObject):
                     elif task_result.status in [TaskResultStatus.PENDING, TaskResultStatus.RUNNING]:
                         if task_result.start_time and (task_result.start_time + datetime.timedelta(minutes=10)) < datetime.datetime.now():
                             # Update task result status to errored
-                            task_result.update_status(TaskResultStatus.ERRRORED)
+                            terrarun.utils.update_object_status(task_result, TaskResultStatus.ERRRORED)
                             # If task is mandatory, treat run as errored
                             if is_mandatory:
                                 self.update_status(RunStatus.ERRORED)
