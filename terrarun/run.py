@@ -231,7 +231,7 @@ class Run(Base, BaseObject):
             # state to completed
             if not still_running:
                 self.update_status(RunStatus.PRE_PLAN_COMPLETED)
-                self.add_to_queue_table()
+            self.add_to_queue_table()
 
         elif self.status is RunStatus.PRE_PLAN_COMPLETED:
             self.queue_plan()
