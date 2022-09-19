@@ -1320,7 +1320,6 @@ class ApiTerraformApplyLog(Resource):
             conv = Ansi2HTMLConverter()
             output = conv.convert(output, full=False)
             output = output.replace('\n', '<br/ >')
-            output = output.replace(' ', '&nbsp;')
 
         response = make_response(output)
         response.headers['Content-Type'] = 'text/plain'
