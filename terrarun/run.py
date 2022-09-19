@@ -326,7 +326,7 @@ class Run(Base, BaseObject):
     def add_to_queue_table(self):
         """Queue a run to be executed."""
         session = Database.get_session()
-        run_queue = RunQueue(run=self)
+        run_queue = RunQueue(run_id=self.id)
         session.add(run_queue)
         session.commit()
 
