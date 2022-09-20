@@ -173,7 +173,6 @@ class Run(Base, BaseObject):
                     run=self,
                     stage=WorkspaceTaskStage.PRE_PLAN,
                     workspace_tasks=self.pre_plan_workspace_tasks)
-                self.update_status(RunStatus.PRE_PLAN_RUNNING)
 
                 # Iterate over task results and execute
                 for task_result in task_stage.task_results:
