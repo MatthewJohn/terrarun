@@ -32,6 +32,7 @@ from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
 from terrarun.tag import Tag
 from terrarun.task import Task
+from terrarun.task_result import TaskResult, TaskResultStatus
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
@@ -172,6 +173,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceTask,
             '/api/v2/workspaces/<string:workspace_id>/tasks/<string:workspace_task_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformTaskResultsCallback,
+            '/api/v2/task-results/<string:callback_id>'
         )
         self._api.add_resource(
             ApiTerraformPlans,
@@ -1573,3 +1578,36 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
             return {}, 404
 
         workspace_task.delete()
+
+
+class ApiTerraformTaskResultsCallback(AuthenticatedEndpoint):
+    """Interface to handle callbacks for task results"""
+
+    def check_permissions_post(self, callback_id, current_user):
+        task_result = TaskResult.get_by_callback_id(callback_id)
+        if not task_result:
+            return False
+
+        run = task_result.task_stage.run
+        if not run:
+            return False
+
+        return current_user.has_task_execution_run_access(run=run)
+
+    def _post(self, callback_id, current_user):
+        task_result = TaskResult.get_by_callback_id(callback_id)
+        if not task_result:
+            return {}, 404
+
+        data = flask.request.get_json().get("data", {})
+
+        if data.get("type") != "task-results":
+            return {}, 404
+        attributes = data.get("attributes", {})
+
+        task_result.handle_callback(
+            status=TaskResultStatus(attributes.get("status")),
+            message=attributes.get("message"),
+            url=attributes.get("url"))
+
+        return {}, 200

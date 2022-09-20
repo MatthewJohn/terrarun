@@ -7,6 +7,7 @@ import datetime
 import hashlib
 import hmac
 import json
+import uuid
 import requests
 import sqlalchemy
 import sqlalchemy.orm
@@ -46,6 +47,9 @@ class TaskResult(Base, BaseObject):
     status = sqlalchemy.Column(sqlalchemy.Enum(TaskResultStatus))
     message_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     _message = sqlalchemy.orm.relation("Blob", foreign_keys=[message_id])
+    url = sqlalchemy.Column(sqlalchemy.String)
+
+    callback_id = sqlalchemy.Column(sqlalchemy.String)
 
     task_stage_id = sqlalchemy.Column(sqlalchemy.ForeignKey("task_stage.id"), nullable=False)
     task_stage = sqlalchemy.orm.relationship("TaskStage", back_populates="task_results")
@@ -54,6 +58,12 @@ class TaskResult(Base, BaseObject):
     workspace_task = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="task_results")
 
     start_time = sqlalchemy.Column(sqlalchemy.DateTime)
+
+    @classmethod
+    def get_by_callback_id(cls, callback_id):
+        """Return task result for callback ID"""
+        session = Database.get_session()
+        return session.query(cls).where(cls.callback_id==callback_id).first()
 
     @property
     def message(self):
@@ -152,6 +162,8 @@ class TaskResult(Base, BaseObject):
             token=callback_token)
         session.add(user_token)
 
+        self.callback_id = str(uuid.uuid4())
+        session.add(self)
         session.commit()
 
         config = terrarun.config.Config()
@@ -162,7 +174,7 @@ class TaskResult(Base, BaseObject):
             "is_speculative": self.task_stage.run.configuration_version.speculative,
             "task_result_id": self.api_id,
             "task_result_enforcement_level": self.workspace_task.enforcement_level.value,
-            "task_result_callback_url": f"{config.BASE_URL}/api/v2/task-results/5ea8d46c-2ceb-42cd-83f2-82e54697bddd/callback",
+            "task_result_callback_url": f"{config.BASE_URL}/api/v2/task-results/{self.callback_id}",
             "run_app_url": f"{config.BASE_URL}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}/runs/{self.task_stage.run.api_id}",
             "run_id": self.task_stage.run.api_id,
             "run_message": self.task_stage.run.message,
@@ -188,6 +200,12 @@ class TaskResult(Base, BaseObject):
             payload["plan_json_api_url"] = f"{config.BASE_URL}/api/v2/plans/{self.task_stage.run.plan.api_id}/json-output"
         
         return payload
+
+    def handle_callback(self, status, message, url):
+        """Handle callback"""
+        self.update_attributes(url=url)
+        update_object_status(self, status)
+        self.message = message
 
     def get_api_details(self):
         """Return API details for task"""
