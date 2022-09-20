@@ -77,13 +77,13 @@ class TaskResult(Base, BaseObject):
         """Set message"""
         session = Database.get_session()
 
-        if self._plan_output_binary:
+        if self._message:
             message = self._message
             session.refresh(message)
         else:
             message = Blob()
 
-        message.data = value
+        message.data = value.encode('utf-8')
 
         session.add(message)
         session.refresh(self)
