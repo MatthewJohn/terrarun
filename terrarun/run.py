@@ -202,6 +202,8 @@ class Run(Base, BaseObject):
                     # check is mandatory, move to complete
                     if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
                         self.update_status(RunStatus.CANCELED)
+                        # Since plan already exists, mark as failed
+                        self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
                         return
 
                     # Check if any mandatory tasks have errored
@@ -211,6 +213,7 @@ class Run(Base, BaseObject):
                             TaskResultStatus.UNREACHABLE] and
                             is_mandatory):
                         self.update_status(RunStatus.ERRORED)
+                        self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
                         return
 
                     # If task is still running, check if time has elapsed
@@ -221,6 +224,7 @@ class Run(Base, BaseObject):
                             # If task is mandatory, treat run as errored
                             if is_mandatory:
                                 self.update_status(RunStatus.ERRORED)
+                                self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
                                 return
                         still_running += 1
                     
