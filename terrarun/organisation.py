@@ -58,7 +58,7 @@ class Organisation(Base, BaseObject):
     operations_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     private_registry_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     sentinel_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-    run_tasks_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+    run_tasks_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     state_storage_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     team_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     vcs_integration_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
