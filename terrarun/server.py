@@ -1584,7 +1584,7 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
 class ApiTerraformTaskResultsCallback(AuthenticatedEndpoint):
     """Interface to handle callbacks for task results"""
 
-    def check_permissions_post(self, callback_id, current_user):
+    def check_permissions_patch(self, callback_id, current_user):
         task_result = TaskResult.get_by_callback_id(callback_id)
         if not task_result:
             return False
@@ -1595,7 +1595,7 @@ class ApiTerraformTaskResultsCallback(AuthenticatedEndpoint):
 
         return current_user.has_task_execution_run_access(run=run)
 
-    def _post(self, callback_id, current_user):
+    def _patch(self, callback_id, current_user):
         task_result = TaskResult.get_by_callback_id(callback_id)
         if not task_result:
             return {}, 404
