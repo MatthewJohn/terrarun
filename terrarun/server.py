@@ -1598,12 +1598,12 @@ class ApiTerraformTaskResultsCallback(AuthenticatedEndpoint):
     def _patch(self, callback_id, current_user):
         task_result = TaskResult.get_by_callback_id(callback_id)
         if not task_result:
-            return {}, 404
+            return {}, 422
 
         data = flask.request.get_json().get("data", {})
 
         if data.get("type") != "task-results":
-            return {}, 404
+            return {}, 422
         attributes = data.get("attributes", {})
 
         task_result.handle_callback(
