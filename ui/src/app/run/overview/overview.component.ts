@@ -120,7 +120,7 @@ export class OverviewComponent implements OnInit {
   }
 
   applyActionAvailable(): boolean {
-    if (this._runStatus.getAvailableActions().indexOf(RunAction.CONFIRM_AND_APPLY) !== -1) {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.CONFIRM_AND_APPLY) !== -1) {
       return true;
     }
     return false;
@@ -132,7 +132,7 @@ export class OverviewComponent implements OnInit {
     }
   }
   cancelActionAvailable(): boolean {
-    if (this._runStatus.getAvailableActions().indexOf(RunAction.CANCEL_RUN) !== -1) {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.CANCEL_RUN) !== -1) {
       return true;
     }
     return false;
