@@ -87,7 +87,7 @@ class TaskStage(Base, BaseObject):
 
     def get_api_details(self):
         """Return API details for task"""
-        return     {
+        return {
             "id": self.api_id,
             "type": "task-stages",
             "attributes": {
@@ -117,6 +117,6 @@ class TaskStage(Base, BaseObject):
                 }
             },
             "links": {
-                "self": "/api/v2/task-stages/ts-rL5ZsuwfjqfPJcdi"
+                "self": f"/api/v2/task-stages/{self.api_id}"
             }
         }

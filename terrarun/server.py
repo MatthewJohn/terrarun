@@ -961,6 +961,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
+        print({"data": run.get_api_details()})
         return {"data": run.get_api_details()}
 
     def check_permissions_post(self, current_user, run_id=None,):

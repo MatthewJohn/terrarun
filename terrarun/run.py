@@ -416,7 +416,10 @@ class Run(Base, BaseObject):
                 "workspace": {'data': {'id': self.configuration_version.workspace.api_id, 'type': 'workspaces'}},
                 "workspace-run-alerts": {},
                 "task-stages": {
-                    "data": [task_stage.get_relationship() for task_stage in self.task_stages]
+                    "data": [
+                        task_stage.get_relationship()
+                        for task_stage in self.task_stages
+                    ]
                 }
             },
             "links": {

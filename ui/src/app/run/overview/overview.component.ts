@@ -4,8 +4,11 @@ import { ApplyService } from 'src/app/apply.service';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
 import { RunAction } from 'src/app/models/RunAction/run-action-enum';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
+import { TaskStage } from 'src/app/models/TaskStage/task-stage';
 import { PlanService } from 'src/app/plan.service';
 import { RunService } from 'src/app/run.service';
+import { TaskResultService } from 'src/app/task-result.service';
+import { TaskStageService } from 'src/app/task-stage.service';
 import { UserService } from 'src/app/user.service';
 
 @Component({
@@ -27,6 +30,10 @@ export class OverviewComponent implements OnInit {
   _applyLog: string;
   _applyStatus: any;
   _auditEvents: any;
+
+  _prePlanTaskStage: any;
+  _postPlanTaskStage: any;
+  _preApplyTaskStage: any;
     
   _createdByDetails: any;
   _updateInterval: any;
@@ -37,7 +44,9 @@ export class OverviewComponent implements OnInit {
               private applyService: ApplyService,
               private userService: UserService,
               private runStatusFactory: RunStatusFactory,
-              private planApplyStatusFactory: PlanApplyStatusFactory) {
+              private planApplyStatusFactory: PlanApplyStatusFactory,
+              private taskStageService: TaskStageService,
+              private taskResultService: TaskResultService) {
     this._planLog = "";
     this._applyLog = "";
   }
@@ -92,6 +101,24 @@ export class OverviewComponent implements OnInit {
             this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
             this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
           })
+        }
+
+        // Iterate over plan stages, obtain details and populate in
+        // appropriate member variables
+        for (let taskStageRelationship of this._runDetails.relationships['task-stages'].data) {
+          let taskStageId = taskStageRelationship.id;
+          if (taskStageId) {
+            console.log(taskStageId);
+            let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
+            ts.getDetails().subscribe((taskStageData) => {
+              if (taskStageData.data.attributes.stage == 'pre_plan' && this._prePlanTaskStage === undefined) {
+                this._prePlanTaskStage = new TaskStage(
+                  taskStageData.data.id,
+                  this.taskStageService,
+                  this.taskResultService);
+              }
+            })
+          }
         }
       });
 
