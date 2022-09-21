@@ -33,6 +33,7 @@ from terrarun.state_version import StateVersion
 from terrarun.tag import Tag
 from terrarun.task import Task
 from terrarun.task_result import TaskResult, TaskResultStatus
+from terrarun.task_stage import TaskStage
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
@@ -157,6 +158,14 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformRunAuditEvents,
             '/api/v2/runs/<string:run_id>/relationships/audit-events'
+        )
+        self._api.add_resource(
+            ApiTerraformRunTaskStages,
+            '/api/v2/runs/<string:run_id>/task-stages'
+        )
+        self._api.add_resource(
+            ApiTerraformTaskStage,
+            '/api/v2/task-stages/<string:task_stage_id>'
         )
         self._api.add_resource(
             ApiTerraformRunActionsCancel,
@@ -1528,7 +1537,6 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
         return workspace_task.get_api_details()
 
 
-
 class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
     """Interface to manage workspace task"""
 
@@ -1612,3 +1620,55 @@ class ApiTerraformTaskResultsCallback(AuthenticatedEndpoint):
             url=attributes.get("url"))
 
         return {}, 200
+
+
+class ApiTerraformRunTaskStages(AuthenticatedEndpoint):
+    """Interface to view run task stages"""
+
+    def check_permissions_get(self, run_id, current_user):
+        """Check permissions"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, run_id, current_user):
+        """Return list of run task stages"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        return {
+            "data": [
+                task_stage.get_api_details()
+                for task_stage in run.task_stages
+            ]
+        }
+
+
+
+class ApiTerraformTaskStage(AuthenticatedEndpoint):
+    """Interface to view task stage"""
+
+    def check_permissions_get(self, task_stage_id, current_user):
+        """Check permissions"""
+        task_stage = TaskStage.get_by_api_id(task_stage_id)
+        if not task_stage:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=task_stage.run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, task_stage_id, current_user):
+        """Return list of run task stages"""
+        task_stage = TaskStage.get_by_api_id(task_stage_id)
+        if not task_stage:
+            return {}, 404
+
+        return {
+            "data": task_stage.get_api_details()
+        }
