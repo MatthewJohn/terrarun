@@ -137,6 +137,13 @@ class Run(Base, BaseObject):
         session.commit()
         session.refresh(run)
         run.update_status(RunStatus.PENDING, current_user=created_by)
+
+        # Create all task stages
+        TaskStage.create(
+            run=run,
+            stage=WorkspaceTaskStage.PRE_PLAN,
+            workspace_tasks=run.pre_plan_workspace_tasks)
+
         # Queue to be processed
         run.add_to_queue_table()
         return run
@@ -169,10 +176,6 @@ class Run(Base, BaseObject):
 
             # Handle pre-run tasks.
             if self.pre_plan_workspace_tasks:
-                task_stage = TaskStage.create(
-                    run=self,
-                    stage=WorkspaceTaskStage.PRE_PLAN,
-                    workspace_tasks=self.pre_plan_workspace_tasks)
 
                 # Iterate over task results and execute
                 for task_result in task_stage.task_results:
