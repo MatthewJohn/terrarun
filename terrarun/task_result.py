@@ -8,6 +8,7 @@ import hashlib
 import hmac
 import json
 import uuid
+from ansi2html import Ansi2HTMLConverter
 import requests
 import sqlalchemy
 import sqlalchemy.orm
@@ -201,6 +202,15 @@ class TaskResult(Base, BaseObject):
         
         return payload
 
+    def message_as_html(self):
+        """Return message text as HTML"""
+        message = self.message.decode('utf-8')
+        message = message.replace(' ', '\u00a0')
+        conv = Ansi2HTMLConverter()
+        message = conv.convert(message, full=False)
+        message = message.replace('\n', '<br/ >')
+        return message
+
     def handle_callback(self, status, message, url):
         """Handle callback"""
         self.update_attributes(url=url)
@@ -221,7 +231,7 @@ class TaskResult(Base, BaseObject):
             "id": self.api_id,
             "type": "task-results",
             "attributes": {
-                "message": self.message.decode('utf-8'),
+                "message": self.message_as_html(),
                 "status": self.status.value,
                 "status-timestamps": audit_events,
                 "url": "https://external.service/project/task-123abc",
