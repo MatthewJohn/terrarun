@@ -68,8 +68,8 @@ class TaskResult(Base, BaseObject):
     @property
     def message(self):
         """Return plan output value"""
-        if self._plan_output_binary and self._plan_output_binary.data:
-            return self._plan_output_binary.data
+        if self._message and self._message.data:
+            return self._message.data
         return {}
 
     @message.setter
@@ -221,7 +221,7 @@ class TaskResult(Base, BaseObject):
             "id": self.api_id,
             "type": "task-results",
             "attributes": {
-                "message": self.message,
+                "message": self.message.decode('utf-8'),
                 "status": self.status.value,
                 "status-timestamps": audit_events,
                 "url": "https://external.service/project/task-123abc",

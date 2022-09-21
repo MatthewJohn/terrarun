@@ -184,8 +184,8 @@ class Server(object):
             '/api/v2/workspaces/<string:workspace_id>/tasks/<string:workspace_task_id>'
         )
         self._api.add_resource(
-            ApiTerraformTaskResultsCallback,
-            '/api/v2/task-results/<string:callback_id>'
+            ApiTerraformTaskResults,
+            '/api/v2/task-results/<string:task_result_id>'
         )
         self._api.add_resource(
             ApiTerraformPlans,
@@ -1590,11 +1590,29 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
         workspace_task.delete()
 
 
-class ApiTerraformTaskResultsCallback(AuthenticatedEndpoint):
-    """Interface to handle callbacks for task results"""
+class ApiTerraformTaskResults(AuthenticatedEndpoint):
+    """Interface to handle details/callbacks for task results"""
 
-    def check_permissions_patch(self, callback_id, current_user):
-        task_result = TaskResult.get_by_callback_id(callback_id)
+    def check_permissions_get(self, task_result_id, current_user):
+        task_result = TaskResult.get_by_api_id(task_result_id)
+        if not task_result:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=task_result.task_stage.run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, task_result_id, current_user):
+        """Get task result details"""
+        task_result = TaskResult.get_by_api_id(task_result_id)
+        if not task_result:
+            return {}, 422
+
+        return {'data': task_result.get_api_details()}
+
+    def check_permissions_patch(self, task_result_id, current_user):
+        task_result = TaskResult.get_by_callback_id(task_result_id)
         if not task_result:
             return False
 
@@ -1604,8 +1622,9 @@ class ApiTerraformTaskResultsCallback(AuthenticatedEndpoint):
 
         return current_user.has_task_execution_run_access(run=run)
 
-    def _patch(self, callback_id, current_user):
-        task_result = TaskResult.get_by_callback_id(callback_id)
+    def _patch(self, task_result_id, current_user):
+        """Update details from callback from task executor"""
+        task_result = TaskResult.get_by_callback_id(task_result_id)
         if not task_result:
             return {}, 422
 
