@@ -204,6 +204,9 @@ class TaskResult(Base, BaseObject):
 
     def message_as_html(self):
         """Return message text as HTML"""
+        message = self.message
+        if not message:
+            return ''
         message = self.message.decode('utf-8')
         message = message.replace(' ', '\u00a0')
         conv = Ansi2HTMLConverter()
