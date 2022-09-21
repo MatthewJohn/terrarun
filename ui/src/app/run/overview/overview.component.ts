@@ -49,6 +49,9 @@ export class OverviewComponent implements OnInit {
               private taskResultService: TaskResultService) {
     this._planLog = "";
     this._applyLog = "";
+    this._prePlanTaskStage = undefined;
+    this._postPlanTaskStage = undefined;
+    this._preApplyTaskStage = undefined;
   }
 
   ngOnInit(): void {
@@ -110,7 +113,7 @@ export class OverviewComponent implements OnInit {
           if (taskStageId) {
             console.log(taskStageId);
             let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
-            ts.getDetails().subscribe((taskStageData) => {
+            ts.getDetails().then((taskStageData) => {
               if (taskStageData.data.attributes.stage == 'pre_plan' && this._prePlanTaskStage === undefined) {
                 this._prePlanTaskStage = new TaskStage(
                   taskStageData.data.id,

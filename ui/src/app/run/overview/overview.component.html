@@ -59,13 +59,13 @@
         <nb-accordion-item-body>
 
             <nb-accordion>
-                <nb-accordion-item *ngFor="let preplanTask of _prePlanTaskStage.getTaskResults()">
+                <nb-accordion-item *ngFor="let preplanTask of (_prePlanTaskStage.getTaskResults() | async)">
                     <nb-accordion-item-header style="padding: 0;">
-                        <!-- <nb-alert style="width: 100%; height: 100%" [accent]="_planStatus.getColor()">Plan: {{_planDetails.id}}</nb-alert> -->
+                        <nb-alert style="width: 100%; height: 100%" [accent]="_planStatus.getColor()">Plan: {{_planDetails.id}}</nb-alert>
                     </nb-accordion-item-header>
                     <nb-accordion-item-body>
-                        <!-- <div [innerHTML]="_planLog">
-                        </div> -->
+                        <div [innerHTML]="_planLog">
+                        </div>
                     </nb-accordion-item-body>
                 </nb-accordion-item>
             </nb-accordion>
