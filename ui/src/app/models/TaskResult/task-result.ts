@@ -1,9 +1,10 @@
+import { map, Observable } from "rxjs";
 import { TaskResultService } from "src/app/task-result.service";
 
 export class TaskResult {
 
     _id: string;
-    _details: Promise<any> | undefined;
+    _details: Observable<any> | undefined;
     _color: string | undefined;
     _message: string | undefined;
     _title: string | undefined;
@@ -17,46 +18,40 @@ export class TaskResult {
         this._title = undefined;
     }
 
-    async getColor(): Promise<string> {
-        if (this._color === undefined) {
-            let details = await this.getDetails();
+    getColor(): Observable<string> {
+        return this.getDetails().pipe(map((details) => {
             let status = details.data.attributes.status;
+            let color = 'basic';
             if (status == 'pending') {
-                this._color = 'info';
+                color = 'info';
             } else if (status == 'running') {
-                this._color = 'info';
+                color = 'info';
             } else if (status == 'passed') {
-                this._color = 'success'
+                color = 'success'
             } else if (status == 'failed') {
-                this._color = 'danger';
+                color = 'danger';
             } else if (status == 'errored') {
-                this._color = 'danger';
+                color = 'danger';
             } else if (status == 'canceled') {
-                this._color = 'danger';
-            } else {
-                this._color = 'basic';
+                color = 'danger';
             }
-        }
-        return this._color;
+            return color;
+        }));
     }
 
-    async getTitle(): Promise<string> {
-        if (this._title === undefined) {
-            let details = await this.getDetails();
-            this._title = details.data.id;
-        }
-        return this._title || '';
+    getTitle(): Observable<string> {
+        return this.getDetails().pipe(map((details) => {
+            return details.data.id;
+        }));
     }
 
-    async getMessage(): Promise<string> {
-        if (this._message === undefined) {
-            let details = await this.getDetails();
-            this._message = details.data.attributes.message;
-        }
-        return this._message || '';
+    getMessage(): Observable<string> {
+        return this.getDetails().pipe(map((details) => {
+            return details.data.attributes.message;
+        }));
     }
 
-    getDetails(refreshDetails: boolean=false): Promise<any> {
+    getDetails(refreshDetails: boolean=false): Observable<any> {
         // Return details for task stage, caching in object
         if (this._details === undefined || refreshDetails) {
             this._details = this.taskResultService.getTaskResultDetailsById(this._id);

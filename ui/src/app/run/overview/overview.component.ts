@@ -113,7 +113,7 @@ export class OverviewComponent implements OnInit {
           if (taskStageId) {
             console.log(taskStageId);
             let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
-            ts.getDetails().then((taskStageData) => {
+            ts.getDetails().subscribe((taskStageData) => {
               if (taskStageData.data.attributes.stage == 'pre_plan' && this._prePlanTaskStage === undefined) {
                 this._prePlanTaskStage = new TaskStage(
                   taskStageData.data.id,

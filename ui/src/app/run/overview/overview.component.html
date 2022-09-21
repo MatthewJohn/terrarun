@@ -59,12 +59,12 @@
         <nb-accordion-item-body>
 
             <nb-accordion>
-                <nb-accordion-item *ngFor="let preplanTask of (_prePlanTaskStage.getTaskResults() | async)">
+                <nb-accordion-item *ngFor="let preplanTask of _prePlanTaskStage.getTaskResults()">
                     <nb-accordion-item-header style="padding: 0;">
-                        <nb-alert style="width: 100%; height: 100%" [accent]="preplanTask.getColor()">Task: {{(preplanTask.getTitle() | async)}}</nb-alert>
+                        <nb-alert style="width: 100%; height: 100%" [accent]="preplanTask.getColor()">Task: {{preplanTask.getTitle()}}</nb-alert>
                     </nb-accordion-item-header>
                     <nb-accordion-item-body>
-                        <!-- <div [innerHTML]="preplanTask.getMessage() | async">
+                        <!-- <div [innerHTML]="preplanTask.getMessage()">
                         </div> -->
                     </nb-accordion-item-body>
                 </nb-accordion-item>

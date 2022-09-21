@@ -11,19 +11,10 @@ export class TaskStageService {
   constructor(private http: HttpClient,
     private accountService: AccountService) { }
 
-  getTaskStageDetailsById(taskStageId: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      this.http.get<any>(
+  getTaskStageDetailsById(taskStageId: string): Observable<any> {
+    return this.http.get<any>(
         `https://${window.location.hostname}:5000/api/v2/task-stages/${taskStageId}`,
         { headers: this.accountService.getAuthHeader() }
-      ).subscribe({
-        next: (data) => {
-          resolve(data);
-        },
-        error: () => {
-          reject();
-        }
-      });
-    });
+      );
   }
 }
