@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Route, RouterModule } from '@angular/router';
+import { Observable } from 'rxjs';
 import { ApplyService } from 'src/app/apply.service';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
 import { RunAction } from 'src/app/models/RunAction/run-action-enum';
@@ -37,6 +38,7 @@ export class OverviewComponent implements OnInit {
     
   _createdByDetails: any;
   _updateInterval: any;
+  _prePlanTaskResults$: Observable<any>;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -52,15 +54,16 @@ export class OverviewComponent implements OnInit {
     this._prePlanTaskStage = undefined;
     this._postPlanTaskStage = undefined;
     this._preApplyTaskStage = undefined;
+    this._prePlanTaskResults$ = new Observable();
   }
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((routeParams) => {
       let runId = routeParams.get('runId');
       this._runId = runId;
-      this._updateInterval = setInterval(() => {
-        this.getRunStatus();
-      }, 1000);
+      // this._updateInterval = setInterval(() => {
+      //   this.getRunStatus();
+      // }, 1000);
       this.getRunStatus();
     });
   }
@@ -113,12 +116,13 @@ export class OverviewComponent implements OnInit {
           if (taskStageId) {
             console.log(taskStageId);
             let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
-            ts.getDetails().subscribe((taskStageData) => {
+            ts.details$.subscribe((taskStageData) => {
               if (taskStageData.data.attributes.stage == 'pre_plan' && this._prePlanTaskStage === undefined) {
                 this._prePlanTaskStage = new TaskStage(
                   taskStageData.data.id,
                   this.taskStageService,
                   this.taskResultService);
+                // this._prePlanTaskStage = ts;
               }
             })
           }

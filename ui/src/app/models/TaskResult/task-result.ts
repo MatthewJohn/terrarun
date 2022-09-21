@@ -4,58 +4,37 @@ import { TaskResultService } from "src/app/task-result.service";
 export class TaskResult {
 
     _id: string;
-    _details: Observable<any> | undefined;
-    _color: string | undefined;
-    _message: string | undefined;
-    _title: string | undefined;
+    details$: Observable<any>;
+    color: string;
+    message: string;
+    name: string;
 
     constructor(id: string,
             private taskResultService: TaskResultService) {
         this._id = id;
-        this._details = undefined;
-        this._color = undefined;
-        this._message = undefined;
-        this._title = undefined;
-    }
+        this.color = 'basic';
+        this.message = '';
+        this.name = '';
 
-    getColor(): Observable<string> {
-        return this.getDetails().pipe(map((details) => {
+        this.details$ = this.taskResultService.getTaskResultDetailsById(this._id);
+        this.details$.subscribe((details) => {
             let status = details.data.attributes.status;
-            let color = 'basic';
             if (status == 'pending') {
-                color = 'info';
+                this.color = 'info';
             } else if (status == 'running') {
-                color = 'info';
+                this.color = 'info';
             } else if (status == 'passed') {
-                color = 'success'
+                this.color = 'success'
             } else if (status == 'failed') {
-                color = 'danger';
+                this.color = 'danger';
             } else if (status == 'errored') {
-                color = 'danger';
+                this.color = 'danger';
             } else if (status == 'canceled') {
-                color = 'danger';
+                this.color = 'danger';
             }
-            return color;
-        }));
-    }
 
-    getTitle(): Observable<string> {
-        return this.getDetails().pipe(map((details) => {
-            return details.data.id;
-        }));
-    }
-
-    getMessage(): Observable<string> {
-        return this.getDetails().pipe(map((details) => {
-            return details.data.attributes.message;
-        }));
-    }
-
-    getDetails(refreshDetails: boolean=false): Observable<any> {
-        // Return details for task stage, caching in object
-        if (this._details === undefined || refreshDetails) {
-            this._details = this.taskResultService.getTaskResultDetailsById(this._id);
-        }
-        return this._details
+            this.message = details.data.attributes.message;
+            this.name = details.data.id;
+        });
     }
 }
