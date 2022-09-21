@@ -61,9 +61,9 @@ export class OverviewComponent implements OnInit {
     this.route.paramMap.subscribe((routeParams) => {
       let runId = routeParams.get('runId');
       this._runId = runId;
-      // this._updateInterval = setInterval(() => {
-      //   this.getRunStatus();
-      // }, 1000);
+      this._updateInterval = setInterval(() => {
+        this.getRunStatus();
+      }, 1000);
       this.getRunStatus();
     });
   }
