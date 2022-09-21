@@ -176,6 +176,7 @@ class Run(Base, BaseObject):
 
             # Handle pre-run tasks.
             if self.pre_plan_workspace_tasks:
+                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN][0]
 
                 # Iterate over task results and execute
                 for task_result in task_stage.task_results:
