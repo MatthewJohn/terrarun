@@ -61,3 +61,18 @@ class BaseObject:
 
         session = Database.get_session()
         return session.query(cls).where(cls.id==id).first()
+
+    def update_attributes(self, session=None, **kwargs):
+        """Update attributes of task result"""
+
+        for attr in kwargs:
+            setattr(self, attr, kwargs[attr])
+
+        if session is None:
+            session = Database.get_session()
+            should_commit = True
+        else:
+            should_commit = False
+        session.add(self)
+        if should_commit:
+            session.commit()

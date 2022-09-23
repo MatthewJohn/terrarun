@@ -1,11 +1,15 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Route, RouterModule } from '@angular/router';
+import { Observable } from 'rxjs';
 import { ApplyService } from 'src/app/apply.service';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
 import { RunAction } from 'src/app/models/RunAction/run-action-enum';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
+import { TaskStage } from 'src/app/models/TaskStage/task-stage';
 import { PlanService } from 'src/app/plan.service';
 import { RunService } from 'src/app/run.service';
+import { TaskResultService } from 'src/app/task-result.service';
+import { TaskStageService } from 'src/app/task-stage.service';
 import { UserService } from 'src/app/user.service';
 
 @Component({
@@ -27,9 +31,14 @@ export class OverviewComponent implements OnInit {
   _applyLog: string;
   _applyStatus: any;
   _auditEvents: any;
+
+  _prePlanTaskStage: any;
+  _postPlanTaskStage: any;
+  _preApplyTaskStage: any;
     
   _createdByDetails: any;
   _updateInterval: any;
+  _prePlanTaskResults$: Observable<any>;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -37,9 +46,15 @@ export class OverviewComponent implements OnInit {
               private applyService: ApplyService,
               private userService: UserService,
               private runStatusFactory: RunStatusFactory,
-              private planApplyStatusFactory: PlanApplyStatusFactory) {
+              private planApplyStatusFactory: PlanApplyStatusFactory,
+              private taskStageService: TaskStageService,
+              private taskResultService: TaskResultService) {
     this._planLog = "";
     this._applyLog = "";
+    this._prePlanTaskStage = undefined;
+    this._postPlanTaskStage = undefined;
+    this._preApplyTaskStage = undefined;
+    this._prePlanTaskResults$ = new Observable();
   }
 
   ngOnInit(): void {
@@ -64,10 +79,10 @@ export class OverviewComponent implements OnInit {
         this._runDetails = runData.data;
 
         // Obtain run status model
-       this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
-       if (this._runStatus.isFinal()) {
-         window.clearTimeout(this._updateInterval);
-       }
+        this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
+        if (this._runStatus.isFinal()) {
+          window.clearTimeout(this._updateInterval);
+        }
 
         // Obtain "created by" user details
         if (this._runDetails.relationships["created-by"].data) {
@@ -92,6 +107,46 @@ export class OverviewComponent implements OnInit {
             this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
             this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
           })
+        }
+
+        // Iterate over plan stages, obtain details and populate in
+        // appropriate member variables
+        for (let taskStageRelationship of this._runDetails.relationships['task-stages'].data) {
+          let taskStageId = taskStageRelationship.id;
+          if (taskStageId) {
+            let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
+            ts.details$.subscribe((taskStageData) => {
+              if (taskStageData.data.attributes.stage == 'pre_plan') {
+                if (this._prePlanTaskStage === undefined) {
+                  this._prePlanTaskStage = new TaskStage(
+                    taskStageData.data.id,
+                    this.taskStageService,
+                    this.taskResultService);
+                  } else {
+                    this._prePlanTaskStage.update();
+                  }
+                // this._prePlanTaskStage = ts;
+              } else if (taskStageData.data.attributes.stage == 'post_plan') {
+                if (this._postPlanTaskStage === undefined) {
+                  this._postPlanTaskStage = new TaskStage(
+                    taskStageData.data.id,
+                    this.taskStageService,
+                    this.taskResultService);
+                } else {
+                  this._postPlanTaskStage.update();
+                }
+              } else if (taskStageData.data.attributes.stage == 'pre_apply') {
+                if (this._preApplyTaskStage === undefined) {
+                  this._preApplyTaskStage = new TaskStage(
+                    taskStageData.data.id,
+                    this.taskStageService,
+                    this.taskResultService);
+                } else {
+                  this._preApplyTaskStage.update();
+                }
+              }
+            })
+          }
         }
       });
 
@@ -120,7 +175,7 @@ export class OverviewComponent implements OnInit {
   }
 
   applyActionAvailable(): boolean {
-    if (this._runStatus.getAvailableActions().indexOf(RunAction.CONFIRM_AND_APPLY) !== -1) {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.CONFIRM_AND_APPLY) !== -1) {
       return true;
     }
     return false;
@@ -132,7 +187,7 @@ export class OverviewComponent implements OnInit {
     }
   }
   cancelActionAvailable(): boolean {
-    if (this._runStatus.getAvailableActions().indexOf(RunAction.CANCEL_RUN) !== -1) {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.CANCEL_RUN) !== -1) {
       return true;
     }
     return false;

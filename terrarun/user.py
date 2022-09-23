@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+from enum import Enum
 import json
 import sqlalchemy
 import sqlalchemy.orm
@@ -12,6 +13,26 @@ import terrarun.organisation
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.permissions.user import UserPermissions
+
+
+class UserType(Enum):
+
+    # Normal user of the site
+    NORMAL = "normal"
+    # Task execution user for a single run
+    TASK_EXECUTION_USER = "task-execution"
+
+
+class TaskExecutionUserAccess(Base):
+    """Table to bind temporary task execution users to the run"""
+
+    __tablename__ = 'task_execution_user_access'
+
+    user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=False, primary_key=True)
+    user = sqlalchemy.orm.relation("User")
+    run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
+    run = sqlalchemy.orm.relation("Run")
+    
 
 
 class User(Base, BaseObject):
@@ -27,6 +48,7 @@ class User(Base, BaseObject):
     email = sqlalchemy.Column(sqlalchemy.String, unique=True)
     service_account = sqlalchemy.Column(sqlalchemy.Boolean)
     site_admin = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+    user_type = sqlalchemy.Column(sqlalchemy.Enum(UserType, default=UserType.NORMAL))
 
     user_tokens = sqlalchemy.orm.relation("UserToken", back_populates="user")
 
@@ -56,7 +78,8 @@ class User(Base, BaseObject):
         user = cls(
             username=username,
             email=email,
-            service_account=False)
+            service_account=False,
+            user_type=UserType.NORMAL)
         user.password = password
         session.add(user)
         session.commit()
@@ -76,12 +99,27 @@ class User(Base, BaseObject):
 
     def check_password(self, password):
         """Check password."""
+        # Only authenticate 'Normal' users with passwords
+        if not self.user_type == UserType.NORMAL:
+            return False
         if not self.password:
             return False
         return bcrypt.checkpw(
             password.encode(encoding='UTF-8', errors='strict'),
             self.password
         )
+
+    def has_task_execution_run_access(self, run):
+        """Check access permissions for task execution users"""
+        if self.user_type is not UserType.TASK_EXECUTION_USER:
+            return False
+
+        session = Database.get_session()
+        access = session.query(TaskExecutionUserAccess).filter(
+            TaskExecutionUserAccess.user==self,
+            TaskExecutionUserAccess.run==run).first()
+
+        return bool(access)
 
     @property
     def organisations(self):

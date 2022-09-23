@@ -23,7 +23,7 @@ class Tag(Base, BaseObject):
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="tags")
 
-    workspaces = sqlalchemy.orm.relationship("Workspace", secondary="workspace_tag")
+    workspaces = sqlalchemy.orm.relationship("Workspace", secondary="workspace_tag", back_populates="tags")
 
     @classmethod
     def get_by_organisation_and_name(cls, organisation, tag_name):

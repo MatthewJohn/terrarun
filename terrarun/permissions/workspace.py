@@ -210,8 +210,9 @@ class WorkspacePermissions:
 
         # If user is an organisation owner,
         # give all permissions
-        if self._current_user.api_id in [owner.api_id for owner in self._workspace.organisation.owners]:
-            return True
+        # @TODO Owners is not yet implemented in organisation
+        # if self._current_user.api_id in [owner.api_id for owner in self._workspace.organisation.owners]:
+        #     return True
 
         user_teams = self._current_user.teams
 
