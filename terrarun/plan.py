@@ -71,7 +71,7 @@ class Plan(TerraformCommand, Base):
         else:
             action = 'plan'
 
-        self._append_output(b"""================================================
+        self.append_output(b"""================================================
 Command has started
 
 Executed remotely on terrarun server

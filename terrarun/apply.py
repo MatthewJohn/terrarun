@@ -55,7 +55,7 @@ class Apply(TerraformCommand, Base):
         self.update_status(TerraformCommandState.RUNNING)
         action = 'apply'
 
-        self._append_output(b"""
+        self.append_output(b"""
 ================================================
 Command has started
 
