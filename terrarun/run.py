@@ -248,16 +248,20 @@ class Run(Base, BaseObject):
                 self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
             else:
-                # If successfully planned, move to pre-plan tasks
-                self.update_status(RunStatus.POST_PLAN_RUNNING)
-                if self.post_plan_workspace_tasks:
-                    task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
-
-                    # Iterate over task results and execute
-                    for task_result in task_stage.task_results:
-                        task_result.execute()
-
+                self.update_status(RunStatus.PLANNED)
                 self.add_to_queue_table()
+
+        elif self.status is RunStatus.PLANNED:
+            # If successfully planned, move to pre-plan tasks
+            self.update_status(RunStatus.POST_PLAN_RUNNING)
+            if self.post_plan_workspace_tasks:
+                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
+
+                # Iterate over task results and execute
+                for task_result in task_stage.task_results:
+                    task_result.execute()
+
+            self.add_to_queue_table()
 
         # Check status of post-plan tasks
         elif self.status is RunStatus.POST_PLAN_RUNNING:
@@ -275,9 +279,14 @@ class Run(Base, BaseObject):
             if should_continue:
                 if completed:
                     self.update_status(RunStatus.POST_PLAN_COMPLETED)
-                    self.update_status(RunStatus.PLANNED)
                 self.add_to_queue_table()
 
+
+        elif self.status is RunStatus.POST_PLAN_COMPLETED:
+            # Check if plan was confirmed before entering the state
+            if self.confirmed:
+                self.update_status(RunStatus.CONFIRMED)
+            self.add_to_queue_table()
 
         # Handle confirmed, starting pre-apply tasks
         elif self.status is RunStatus.CONFIRMED:
@@ -371,10 +380,17 @@ class Run(Base, BaseObject):
 
     def confirm(self, comment, user):
         """Queue apply job"""
-        self.update_status(RunStatus.CONFIRMED, current_user=user)
+        # Mark job as confirmed
+        self.update_attributes(confirmed=True)
+        # If job is current in state ready to apply and no post-plan tasks running
+        # queue for apply.
+        # Otherwise, the task will be automatically moved to CONFIRMED
+        # once the post-plan tasks complete
+        if self.status is RunStatus.POST_PLAN_COMPLETED:
+            self.update_status(RunStatus.CONFIRMED, current_user=user)
 
-        # Requeue to be applied
-        self.add_to_queue_table()
+            # Requeue to be applied
+            self.add_to_queue_table()
 
         # @TODO Do something with comment
 
