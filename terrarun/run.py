@@ -249,6 +249,7 @@ class Run(Base, BaseObject):
                 return
             else:
                 self.update_status(RunStatus.PLANNED)
+                terrarun.apply.Apply.create(plan=self.plan)
                 self.add_to_queue_table()
 
         elif self.status is RunStatus.PLANNED:
@@ -317,7 +318,6 @@ class Run(Base, BaseObject):
             if should_continue:
                 if completed:
                     self.update_status(RunStatus.PRE_APPLY_COMPLETED)
-                    terrarun.apply.Apply.create(plan=self.plan)
                     self.update_status(RunStatus.APPLY_QUEUED)
                 self.add_to_queue_table()
 
