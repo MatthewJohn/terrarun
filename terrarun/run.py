@@ -248,6 +248,7 @@ class Run(Base, BaseObject):
                 return
             else:
                 self.update_status(RunStatus.PLANNED)
+                self.add_to_queue_table()
 
         # Handle confirmed, starting post-plan tasks
         elif self.status is RunStatus.PLANNED:
