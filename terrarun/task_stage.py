@@ -23,7 +23,7 @@ class TaskStageStatus(Enum):
     RUNNING = "running"
     PASSED = "passed"
     FAILED = "failed"
-    ERRRORED = "errored"
+    ERRORED = "errored"
     CANCELED = "canceled"
     UNREACHABLE = "unreachable"
 
@@ -107,7 +107,7 @@ class TaskStage(Base, BaseObject):
             # Check if any mandatory tasks have errored
             elif (task_result.status in [
                     TaskResultStatus.FAILED,
-                    TaskResultStatus.ERRRORED,
+                    TaskResultStatus.ERRORED,
                     TaskResultStatus.UNREACHABLE] and
                     is_mandatory):
 
@@ -115,7 +115,7 @@ class TaskStage(Base, BaseObject):
                 task_stage_status = (
                     TaskStageStatus.FAILED
                     if task_result.status is TaskResultStatus.FAILED else (
-                        TaskStageStatus.ERRRORED if task_result.status is TaskResultStatus.ERRRORED else TaskStageStatus.UNREACHABLE
+                        TaskStageStatus.ERRORED if task_result.status is TaskResultStatus.ERRORED else TaskStageStatus.UNREACHABLE
                     )
                 )
                 self.set_errored(task_stage_status)
@@ -127,7 +127,7 @@ class TaskStage(Base, BaseObject):
                         (task_result.start_time + datetime.timedelta(minutes=10)) <
                         datetime.datetime.now()):
                     # Update task result status to errored
-                    terrarun.utils.update_object_status(task_result, TaskResultStatus.ERRRORED)
+                    terrarun.utils.update_object_status(task_result, TaskResultStatus.ERRORED)
                     # If task is mandatory, treat run as errored
                     if is_mandatory:
                         self.set_errored()
@@ -150,7 +150,7 @@ class TaskStage(Base, BaseObject):
     def set_errored(self, task_stage_status=None):
         """Set task stage and associated resources as errored."""
         if task_stage_status is None:
-            task_stage_status = TaskStageStatus.ERRRORED
+            task_stage_status = TaskStageStatus.ERRORED
         # Update task stage, plan and run statuses
         terrarun.utils.update_object_status(self, task_stage_status)
         if self.stage is WorkspaceTaskStage.PRE_PLAN:

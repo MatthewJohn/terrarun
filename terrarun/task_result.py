@@ -32,7 +32,7 @@ class TaskResultStatus(Enum):
     RUNNING = "running"
     PASSED = "passed"
     FAILED = "failed"
-    ERRRORED = "errored"
+    ERRORED = "errored"
     CANCELED = "canceled"
     UNREACHABLE = "unreachable"
 

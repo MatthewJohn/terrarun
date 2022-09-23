@@ -21,14 +21,14 @@ def upgrade() -> None:
     op.create_table('task_stage',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('stage', sa.Enum('PRE_PLAN', 'POST_PLAN', 'POST_APPLY', name='workspacetaskstage'), nullable=True),
-    sa.Column('status', sa.Enum('PENDING', 'RUNNING', 'PASSED', 'FAILED', 'ERRRORED', 'CANCELED', 'UNREACHABLE', name='taskstagestatus'), nullable=True),
+    sa.Column('status', sa.Enum('PENDING', 'RUNNING', 'PASSED', 'FAILED', 'ERRORED', 'CANCELED', 'UNREACHABLE', name='taskstagestatus'), nullable=True),
     sa.Column('run_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['run_id'], ['run.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('task_result',
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('status', sa.Enum('PENDING', 'RUNNING', 'PASSED', 'FAILED', 'ERRRORED', 'CANCELED', 'UNREACHABLE', name='taskresultstatus'), nullable=True),
+    sa.Column('status', sa.Enum('PENDING', 'RUNNING', 'PASSED', 'FAILED', 'ERRORED', 'CANCELED', 'UNREACHABLE', name='taskresultstatus'), nullable=True),
     sa.Column('message_id', sa.Integer(), nullable=True),
     sa.Column('task_stage_id', sa.Integer(), nullable=False),
     sa.Column('workspace_task_id', sa.Integer(), nullable=False),
