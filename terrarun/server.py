@@ -855,7 +855,6 @@ class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
             return 404
 
         request_data = request.json
-        print(request_data)
         db = Database.get_session()
         for row in request_data.get('data', []):
             if row.get('type', None) != 'tags':
@@ -961,7 +960,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
-        print({"data": run.get_api_details()})
+        # print({"data": run.get_api_details()})
         return {"data": run.get_api_details()}
 
     def check_permissions_post(self, current_user, run_id=None,):
@@ -989,8 +988,8 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         if run_id:
             return {}, 422
 
-        print("CREATE RUN JSON")
-        print(flask.request.get_json())
+        # print("CREATE RUN JSON")
+        # print(flask.request.get_json())
 
         data = flask.request.get_json().get('data', {})
         request_attributes = data.get('attributes', {})
@@ -1200,7 +1199,7 @@ class ApiTerraformPlanLog(Resource):
                     TerraformCommandState.QUEUED,
                     TerraformCommandState.RUNNING]:
                 break
-            print('Waiting as plan state is; ' + str(plan.status))
+            #print('Waiting as plan state is; ' + str(plan.status))
 
             sleep(0.2)
 
@@ -1284,7 +1283,6 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
-        Apply.create(plan=run.plan)
         run.confirm(comment=flask.request.get_json().get('comment', None), user=current_user)
         return {}, 202
 
@@ -1358,7 +1356,7 @@ class ApiTerraformApplyLog(Resource):
                     TerraformCommandState.QUEUED,
                     TerraformCommandState.RUNNING]:
                 break
-            print('Waiting as apply state is; ' + str(apply.status))
+            #print('Waiting as apply state is; ' + str(apply.status))
 
             sleep(0.2)
 

@@ -129,7 +129,6 @@ class User(Base, BaseObject):
         # Return user as being a member of all organisations,
         # if they're a site admin
         if self.site_admin:
-            print('Site ADMIN')
             return session.query(terrarun.organisation.Organisation).all()
 
         organisations = []
