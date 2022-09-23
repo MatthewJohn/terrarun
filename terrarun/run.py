@@ -247,20 +247,16 @@ class Run(Base, BaseObject):
                 self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
             else:
-                self.update_status(RunStatus.PLANNED)
+                # If successfully planned, move to pre-plan tasks
+                if self.pre_apply_workspace_tasks:
+                    task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
+
+                    # Iterate over task results and execute
+                    for task_result in task_stage.task_results:
+                        task_result.execute()
+
+                self.update_status(RunStatus.POST_PLAN_RUNNING)
                 self.add_to_queue_table()
-
-        # Handle confirmed, starting post-plan tasks
-        elif self.status is RunStatus.PLANNED:
-            if self.pre_apply_workspace_tasks:
-                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
-
-                # Iterate over task results and execute
-                for task_result in task_stage.task_results:
-                    task_result.execute()
-
-            self.update_status(RunStatus.POST_PLAN_RUNNING)
-            self.add_to_queue_table()
 
         # Check status of post-plan tasks
         elif self.status is RunStatus.POST_PLAN_RUNNING:
@@ -278,6 +274,7 @@ class Run(Base, BaseObject):
             if should_continue:
                 if completed:
                     self.update_status(RunStatus.POST_PLAN_COMPLETED)
+                    self.update_status(RunStatus.PLANNED)
                 self.add_to_queue_table()
 
 
