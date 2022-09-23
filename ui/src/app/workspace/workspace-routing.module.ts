@@ -5,6 +5,7 @@ import { RunExistsGuard } from '../run-exists.guard';
 import { WorkspaceExistsGuard } from '../workspace-exists.guard';
 import { OverviewComponent } from './overview/overview.component';
 import { RunListComponent } from './run-list/run-list.component';
+import { TaskListComponent } from './task-list/task-list.component';
 
 const routes: Routes = [
   {
@@ -14,6 +15,10 @@ const routes: Routes = [
   {
     path: 'runs',
     component: RunListComponent,
+  },
+  {
+    path: 'tasks',
+    component: TaskListComponent
   },
   {
     path: 'runs/:runId',

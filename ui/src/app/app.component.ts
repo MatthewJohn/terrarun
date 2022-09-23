@@ -91,6 +91,10 @@ export class AppComponent {
               link: `/${this._currentOrganisationState.id}/workspaces`
             },
             {
+              title: 'Tasks',
+              link: `/${this._currentOrganisationState.id}/tasks`
+            },
+            {
               title: 'Settings',
               link: `/${this._currentOrganisationState.id}/settings`
             }
@@ -104,6 +108,10 @@ export class AppComponent {
               {
                 title: 'Runs',
                 link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/runs`
+              },
+              {
+                title: 'Tasks',
+                link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/tasks`
               }
             ]
           })

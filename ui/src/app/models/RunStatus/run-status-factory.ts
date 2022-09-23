@@ -49,6 +49,7 @@ class RunStatusCancelled extends RunStatusBaseClass {
     _labelColour = "danger";
     _icon = "alert-circle-outline";
     public override _availableActions = [RunAction.FORCE_CANCEL_RUN];
+    public override _isFinal = true;
 }
 class RunStatusConfirmed extends RunStatusBaseClass {
     _nameString = "Confirmed";
@@ -145,6 +146,31 @@ class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
+class RunStatusPrePlanCompleted extends RunStatusBaseClass {
+    _nameString = "Pre-plan completed";
+    _labelColour = "success";
+    _icon = "radio-button-on-outline";
+}
+class RunStatusPrePlanRunning extends RunStatusBaseClass {
+    _nameString = "Pre-plan running";
+    _labelColour = "info";
+    _icon = "radio-button-on-outline";
+}
+class RunStatusPreApplyCompleted extends RunStatusBaseClass {
+    _nameString = "Pre-apply completed";
+    _labelColour = "success";
+    _icon = "radio-button-on-outline";
+}
+class RunStatusPreApplyRunning extends RunStatusBaseClass {
+    _nameString = "Pre-apply running";
+    _labelColour = "info";
+    _icon = "radio-button-on-outline";
+}
+class RunStatusQueuing extends RunStatusBaseClass {
+    _nameString = "Queuing";
+    _labelColour = "info";
+    _icon = "radio-button-on-outline";
+}
 
 
 const RunStatusMap: Record<RunStatusEnum, new (...args: any[]) => IRunStatus> = {
@@ -170,6 +196,11 @@ const RunStatusMap: Record<RunStatusEnum, new (...args: any[]) => IRunStatus> = 
     [RunStatusEnum.POLICY_SOFT_FAILED]: RunStatusPolicySoftFailed,
     [RunStatusEnum.POST_PLAN_COMPLETED]: RunStatusPostPlanCompleted,
     [RunStatusEnum.POST_PLAN_RUNNING]: RunStatusPostPlanRunning,
+    [RunStatusEnum.PRE_PLAN_COMPLETED]: RunStatusPrePlanCompleted,
+    [RunStatusEnum.PRE_PLAN_RUNNING]: RunStatusPrePlanRunning,
+    [RunStatusEnum.PRE_APPLY_COMPLETED]: RunStatusPreApplyCompleted,
+    [RunStatusEnum.PRE_APPLY_RUNNING]: RunStatusPreApplyRunning,
+    [RunStatusEnum.QUEUING]: RunStatusQueuing
 }
 
 @Injectable({
@@ -179,7 +210,8 @@ export class RunStatusFactory {
 
     // @TODO Update signure to match instance of 'new (...args: any[]) => IRunStatus)'
     getStatusByValue(statusEnumValue: string): any {
-        return new RunStatusMap[statusEnumValue as RunStatusEnum]();
+        console.log(statusEnumValue);
+        return new (RunStatusMap[statusEnumValue as RunStatusEnum])();
     }
 }
 

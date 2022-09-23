@@ -1,0 +1,81 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-header>
+                Workspace Tasks
+            </nb-card-header>
+            <nb-card-body>
+
+                <table [nbTreeGrid]="workspaceTasks" equalColumnsWidth>
+                    <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
+                    <tr nbTreeGridRow class="taskRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+                            {{column}}
+                        </th>
+                        <td nbTreeGridCell *nbTreeGridCellDef="let row">
+                            <ng-container [ngSwitch]="true">
+                                <div *ngSwitchCase="column == 'Name'">
+                                    {{tasksById[row.data.relationships.task.data.id] === undefined ? '' : tasksById[row.data.relationships.task.data.id].attributes.name}}
+                                </div>
+                                <div *ngSwitchCase="column == 'Enforcement'">
+                                    {{row.data.attributes['enforcement-level']}}
+                                </div>
+                                <div *ngSwitchCase="column == 'Stage'">
+                                    {{row.data.attributes.stage}}
+                                </div>
+                                <div *ngSwitchCase="column == 'Delete'">
+                                    <button size="small" nbButton (click)="deleteWorkspaceTask(row.data.id)">Delete</button>
+                                </div>
+                                <div *ngSwitchDefault>
+                                    Unknown column
+                                </div>
+                            </ng-container>
+                        </td>
+                    </ng-container>
+
+                </table>
+            </nb-card-body>
+
+            <nb-card>
+                <nb-card-header>
+                    Associate task
+                </nb-card-header>
+                <nb-card-body>
+                    <form [formGroup]="associateForm" (ngSubmit)="onAssociate()">
+                        <nb-form-field>
+                            <label for="taskId">Task:</label>
+                            <nb-select id="taskId" formControlName="taskId">
+                                <nb-option *ngFor="let task of organisationTasks" [value]="task.id">{{task.attributes.name}}</nb-option>
+                            </nb-select>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="enforcementLevel">Enforcement:</label>
+                            <nb-select id="enforcementLevel" formControlName="enforcementLevel">
+                                <nb-option value="advisory">Advisory</nb-option>
+                                <nb-option value="mandatory">Mandatory</nb-option>
+                            </nb-select>
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="stage">Stage:</label>
+                            <nb-select id="stage" formControlName="stage">
+                                <nb-option value="pre_plan">Pre-plan</nb-option>
+                                <nb-option value="post_plan">Post-plan</nb-option>
+                                <nb-option value="pre_apply">Pre-apply</nb-option>
+                            </nb-select>
+                        </nb-form-field>
+
+                        <br />
+                        <button nbButton>Associate</button>
+                    </form>
+                </nb-card-body>
+            </nb-card>
+
+        </nb-card>
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>

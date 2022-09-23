@@ -31,6 +31,9 @@ from terrarun.run import Run
 from terrarun.run_queue import RunQueue
 from terrarun.state_version import StateVersion
 from terrarun.tag import Tag
+from terrarun.task import Task
+from terrarun.task_result import TaskResult, TaskResultStatus
+from terrarun.task_stage import TaskStage
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.user_token import UserToken, UserTokenType
 from terrarun.workspace import Workspace
@@ -38,6 +41,7 @@ from terrarun.user import User
 from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
 from terrarun.team_user_membership import TeamUserMembership
 from terrarun.team import Team
+from terrarun.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 
 
 class Server(object):
@@ -110,6 +114,10 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
         self._api.add_resource(
+            ApiTerraformOrganisationTasks,
+            '/api/v2/organizations/<string:organisation_name>/tasks'
+        )
+        self._api.add_resource(
             ApiTerraformOrganisationQueue,
             '/api/v2/organizations/<string:organisation_name>/runs/queue'
         )
@@ -127,12 +135,20 @@ class Server(object):
             '/api/v2/workspaces/<string:workspace_id>/relationships/tags'
         )
         self._api.add_resource(
+            ApiTerraformTaskDetails,
+            '/api/v2/tasks/<string:task_id>'
+        )
+        self._api.add_resource(
             ApiTerraformConfigurationVersionUpload,
             '/api/v2/upload-configuration/<string:configuration_version_id>'
         )
         self._api.add_resource(
             ApiTerraformConfigurationVersions,
             '/api/v2/configuration-versions/<string:configuration_version_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformRunConfigurationVersionDownload,
+            '/api/v2/runs/<string:run_id>/configuration-version/download'
         )
         self._api.add_resource(
             ApiTerraformRun,
@@ -144,12 +160,32 @@ class Server(object):
             '/api/v2/runs/<string:run_id>/relationships/audit-events'
         )
         self._api.add_resource(
+            ApiTerraformRunTaskStages,
+            '/api/v2/runs/<string:run_id>/task-stages'
+        )
+        self._api.add_resource(
+            ApiTerraformTaskStage,
+            '/api/v2/task-stages/<string:task_stage_id>'
+        )
+        self._api.add_resource(
             ApiTerraformRunActionsCancel,
             '/api/v2/runs/<string:run_id>/actions/cancel'
         )
         self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceTasks,
+            '/api/v2/workspaces/<string:workspace_id>/tasks'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceTask,
+            '/api/v2/workspaces/<string:workspace_id>/tasks/<string:workspace_task_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformTaskResults,
+            '/api/v2/task-results/<string:task_result_id>'
         )
         self._api.add_resource(
             ApiTerraformPlans,
@@ -198,6 +234,10 @@ class Server(object):
             ApiTerrarunWorkspaceCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/workspace-name-validate'
         )
+        self._api.add_resource(
+            ApiTerrarunTaskCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/task-name-validate'
+        )
 
     def run(self, debug=None):
         """Run flask server."""
@@ -224,7 +264,7 @@ class Server(object):
                 session = Database.get_session()
                 rq = session.query(RunQueue).first()
                 if not rq:
-                    sleep(5)
+                    sleep(3)
                     continue
 
                 run = rq.run
@@ -232,6 +272,7 @@ class Server(object):
                 session.commit()
                 print("Worker, found run: " + run.api_id)
                 run.execute_next_step()
+                sleep(2)
             except Exception as exc:
                 print('Error during worker run: ' + str(exc))
                 print(traceback.format_exc())
@@ -265,7 +306,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_get(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
 
         return self._get(*args, current_user=current_user, **kwargs)
 
@@ -284,7 +325,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_post(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
         return self._post(*args, current_user=current_user, **kwargs)
 
     def _patch(self, *args, **kwargs):
@@ -302,7 +343,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_patch(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
 
         return self._patch(*args, current_user=current_user, **kwargs)
 
@@ -321,9 +362,28 @@ class AuthenticatedEndpoint(Resource):
             return {}, 403
 
         if not self.check_permissions_put(*args, current_user=current_user, **kwargs):
-            return {}, 403
+            return {}, 404
 
         return self._put(*args, current_user=current_user, **kwargs)
+
+    def _delete(self, *args, **kwargs):
+        """Handle DELETE request method to re-implemented by overriding class."""
+        raise NotImplementedError
+
+    def check_permissions_delete(self, *args, **kwargs):
+        """Function to check permissions, must be set by implementer"""
+        raise NotImplementedError
+
+    def delete(self, *args, **kwargs):
+        """Handle PUT request"""
+        current_user = self._get_current_user()
+        if not current_user:
+            return {}, 403
+
+        if not self.check_permissions_delete(*args, current_user=current_user, **kwargs):
+            return {}, 404
+
+        return self._delete(*args, current_user=current_user, **kwargs)
 
 
 class ApiAuthenticate(Resource):
@@ -557,7 +617,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
             return {}, 400
         return {"data": organisation.get_api_details(effective_user=current_user)}
 
-        
+
 
 class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
     """Organisation entitlement endpoint."""
@@ -630,6 +690,95 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
             "data": workspace.get_api_details(effective_user=current_user)
         }
 
+
+class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
+    """Interface to interact with organisation tasks."""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of tasks for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                task.get_api_details()
+                for task in organisation.tasks
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            print('NOT ORG FOND')
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _post(self, organisation_name, current_user):
+        """Create organisation task"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "tasks":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        task = Task.create(
+            organisation=organisation,
+            name=attributes.get('name'),
+            description=attributes.get('description'),
+            enabled=attributes.get('enabled'),
+            hmac_key=attributes.get('hmac-key'),
+            url=attributes.get('url')
+        )
+
+        return {
+            "data": task.get_api_details()
+        }
+
+
+class ApiTerraformTaskDetails(AuthenticatedEndpoint):
+    """Interface to view/edit a task"""
+
+    def check_permissions_patch(self, task_id, current_user):
+        """Check permissions"""
+        task = Task.get_by_api_id(task_id)
+        if not task:
+            return False
+        return OrganisationPermissions(
+                organisation=task.organisation,
+                current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _patch(self, task_id, current_user):
+        """Update task details"""
+        task = Task.get_by_api_id(task_id)
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "tasks":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+
+        task.update_attributes(
+            name=attributes.get('name'),
+            description=attributes.get('description'),
+            enabled=attributes.get('enabled'),
+            hmac_key=attributes.get('hmac-key'),
+            url=attributes.get('url')
+        )
 
 
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
@@ -761,6 +910,34 @@ class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
         cv.process_upload(request.data)
 
 
+class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
+    """Interface to download configuration version"""
+
+    def check_permissions_get(self, current_user, run_id):
+        """Check permissions"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+
+        return (WorkspacePermissions(
+                current_user=current_user,
+                workspace=run.configuration_version.workspace
+            ).check_access_type(runs=TeamWorkspaceRunsPermission.READ) or
+            current_user.has_task_execution_run_access(run=run)
+        )
+
+    def _get(self, current_user, run_id):
+        """Download configuration versinon"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        response = make_response(run.configuration_version.configuration_blob.data)
+        # Considered wheteher to use application/gzip, application/tar
+        response.headers['Content-Type'] = 'application/tar+gzip'
+        return response
+
+
 class ApiTerraformRun(AuthenticatedEndpoint):
     """Run interface."""
 
@@ -784,6 +961,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
+        print({"data": run.get_api_details()})
         return {"data": run.get_api_details()}
 
     def check_permissions_post(self, current_user, run_id=None,):
@@ -1006,7 +1184,7 @@ class ApiTerraformPlanLog(Resource):
 
         plan_output = b""
         session = Database.get_session()
-        for _ in range(60):
+        for _ in range(20):
             session.refresh(plan)
             if plan.log:
                 session.refresh(plan.log)
@@ -1024,11 +1202,13 @@ class ApiTerraformPlanLog(Resource):
                 break
             print('Waiting as plan state is; ' + str(plan.status))
 
-            sleep(0.5)
+            sleep(0.2)
 
         if request.content_type and request.content_type.startswith('text/html'):
+            plan_output = plan_output.decode('utf-8')
+            plan_output = plan_output.replace(' ', '\u00a0')
             conv = Ansi2HTMLConverter()
-            plan_output = conv.convert(plan_output.decode('utf-8'), full=False)
+            plan_output = conv.convert(plan_output, full=False)
             plan_output = plan_output.replace('\n', '<br/ >')
 
 
@@ -1105,7 +1285,7 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
         if not run:
             return {}, 404
         Apply.create(plan=run.plan)
-        run.queue_apply(comment=flask.request.get_json().get('comment', None), user=current_user)
+        run.confirm(comment=flask.request.get_json().get('comment', None), user=current_user)
         return {}, 202
 
 
@@ -1157,7 +1337,7 @@ class ApiTerraformApplyLog(Resource):
 
         output = b""
         session = Database.get_session()
-        for _ in range(60):
+        for _ in range(20):
             session.refresh(apply)
             if apply.log:
                 session.refresh(apply.log)
@@ -1180,11 +1360,13 @@ class ApiTerraformApplyLog(Resource):
                 break
             print('Waiting as apply state is; ' + str(apply.status))
 
-            sleep(0.5)
+            sleep(0.2)
 
         if request.content_type and request.content_type.startswith('text/html'):
+            output = output.decode('utf-8')
+            output = output.replace(' ', '\u00a0')
             conv = Ansi2HTMLConverter()
-            output = conv.convert(output.decode('utf-8'), full=False)
+            output = conv.convert(output, full=False)
             output = output.replace('\n', '<br/ >')
 
         response = make_response(output)
@@ -1244,3 +1426,269 @@ class ApiTerrarunWorkspaceCreateNameValidation(AuthenticatedEndpoint):
             }
         }
 
+
+class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new workspace name"""
+
+    def check_permissions_post(self, organisation_name, current_user):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _post(self, organisation_name, current_user):
+        """Validate new organisation name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": Task.validate_new_name(organisation, args.name),
+                "name": args.name
+            }
+        }
+
+
+class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
+    """Interface to manage workspace tasks"""
+
+    def check_permissions_get(self, workspace_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, workspace_id, current_user):
+        """Return list of workspace tasks"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+        
+        return {
+            "data": [
+                workspace_task.get_api_details()
+                for workspace_task in workspace.workspace_tasks
+                if workspace_task.active
+            ],
+            "links": {
+                "self": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+                "first": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20",
+                "prev": None,
+                "next": None,
+                "last": "https://app.terraform.io/api/v2/workspaces/ws-kRsDRPtTmtcEme4t/tasks?page%5Bnumber%5D=1&page%5Bsize%5D=20"
+            },
+            "meta": {
+                # @TODO populate and respect pagination
+                "pagination": {
+                    "current-page": 1,
+                    "page-size": 20,
+                    "prev-page": None,
+                    "next-page": None,
+                    "total-pages": 1,
+                    "total-count": 1
+                }
+            }
+        }
+
+    def check_permissions_post(self, workspace_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _post(self, workspace_id, current_user):
+        """Associate a task with a workspace"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        data = flask.request.get_json().get("data", {})
+        if data.get("type") != "workspace-tasks":
+            return {}, 400
+
+        attributes = data.get("attributes", {})
+        task_data = data.get("relationships", {}).get("task", {}).get("data", {})
+        if task_data.get("type") != "tasks":
+            return {}, 400
+
+        task_id = task_data.get("id")
+        if not task_id:
+            return {}, 400
+        
+        task = Task.get_by_api_id(task_id)
+
+        workspace_task = workspace.associate_task(
+            task=task,
+            enforcement_level=WorkspaceTaskEnforcementLevel(attributes.get("enforcement-level")),
+            stage=WorkspaceTaskStage(attributes.get('stage', WorkspaceTaskStage.POST_PLAN.value))
+        )
+        return workspace_task.get_api_details()
+
+
+class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
+    """Interface to manage workspace task"""
+
+    def check_permissions_get(self, workspace_id, workspace_task_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, workspace_id, workspace_task_id, current_user):
+        """Return list of workspace tasks"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace_task = WorkspaceTask.get_by_api_id(workspace_task_id)
+        # Ensure workspace task exists and it's associated with the
+        # specified workspace
+        if not workspace_task or workspace_task.workspace.id != workspace.id:
+            return {}, 404
+
+        return {
+            "data": workspace_task.get_api_details()
+        }
+
+    def check_permissions_delete(self, workspace_id, workspace_task_id, current_user):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user, workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _delete(self, workspace_id, workspace_task_id, current_user):
+        """Associate a task with a workspace"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace_task = WorkspaceTask.get_by_api_id(workspace_task_id)
+        # Ensure workspace task exists and it's associated with the
+        # specified workspace
+        if not workspace_task or workspace_task.workspace.id != workspace.id:
+            return {}, 404
+
+        workspace_task.delete()
+
+
+class ApiTerraformTaskResults(AuthenticatedEndpoint):
+    """Interface to handle details/callbacks for task results"""
+
+    def check_permissions_get(self, task_result_id, current_user):
+        task_result = TaskResult.get_by_api_id(task_result_id)
+        if not task_result:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=task_result.task_stage.run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, task_result_id, current_user):
+        """Get task result details"""
+        task_result = TaskResult.get_by_api_id(task_result_id)
+        if not task_result:
+            return {}, 422
+
+        return {'data': task_result.get_api_details()}
+
+    def check_permissions_patch(self, task_result_id, current_user):
+        task_result = TaskResult.get_by_callback_id(task_result_id)
+        if not task_result:
+            return False
+
+        run = task_result.task_stage.run
+        if not run:
+            return False
+
+        return current_user.has_task_execution_run_access(run=run)
+
+    def _patch(self, task_result_id, current_user):
+        """Update details from callback from task executor"""
+        task_result = TaskResult.get_by_callback_id(task_result_id)
+        if not task_result:
+            return {}, 422
+
+        data = flask.request.get_json().get("data", {})
+
+        if data.get("type") != "task-results":
+            return {}, 422
+        attributes = data.get("attributes", {})
+
+        task_result.handle_callback(
+            status=TaskResultStatus(attributes.get("status")),
+            message=attributes.get("message"),
+            url=attributes.get("url"))
+
+        return {}, 200
+
+
+class ApiTerraformRunTaskStages(AuthenticatedEndpoint):
+    """Interface to view run task stages"""
+
+    def check_permissions_get(self, run_id, current_user):
+        """Check permissions"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, run_id, current_user):
+        """Return list of run task stages"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        return {
+            "data": [
+                task_stage.get_api_details()
+                for task_stage in run.task_stages
+            ]
+        }
+
+
+
+class ApiTerraformTaskStage(AuthenticatedEndpoint):
+    """Interface to view task stage"""
+
+    def check_permissions_get(self, task_stage_id, current_user):
+        """Check permissions"""
+        task_stage = TaskStage.get_by_api_id(task_stage_id)
+        if not task_stage:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=task_stage.run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, task_stage_id, current_user):
+        """Return list of run task stages"""
+        task_stage = TaskStage.get_by_api_id(task_stage_id)
+        if not task_stage:
+            return {}, 404
+
+        return {
+            "data": task_stage.get_api_details()
+        }

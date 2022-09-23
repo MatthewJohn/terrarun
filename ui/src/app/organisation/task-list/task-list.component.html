@@ -1,0 +1,100 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-header>
+                Tasks
+            </nb-card-header>
+            <nb-card-body>
+
+                <table [nbTreeGrid]="tasks$ | async" equalColumnsWidth>
+                    <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
+                    <tr nbTreeGridRow class="taskRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+                            {{column}}
+                          </th>
+                        <td nbTreeGridCell (click)="onTaskClick(row)" *nbTreeGridCellDef="let row">
+                            {{row.data.attributes[column]}}</td>
+                    </ng-container>
+
+                </table>
+            </nb-card-body>
+
+            <nb-card *ngIf="editTask != null">
+                <nb-card-header>Edit task</nb-card-header>
+
+                <nb-card-body>
+                    <form [formGroup]="editForm" (ngSubmit)="onEdit()">
+                        <nb-form-field>
+                            <label for="name">Name:</label>
+                            <input nbInput (change)="validateEditTaskName()" placeholder="My App" id="name"
+                                formControlName="name" type="text">
+                            <nb-icon nbSuffix [icon]="editTaskNameValid.icon" [status]="editTaskNameValid.iconStatus" pack="eva">
+                            </nb-icon>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="description">Description:</label>
+                            <input nbInput placeholder="" id="description" formControlName="description" type="text">
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="url">URL:</label>
+                            <input nbInput placeholder="https://example.com/task-hook" id="url" formControlName="url"
+                                type="text">
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="hmacKey">HMAC Key:</label>
+                            <input nbInput placeholder="" id="hmacKey" formControlName="hmacKey" type="text">
+                        </nb-form-field>
+                        <br />
+                        <button [disabled]="!editTaskNameValid.valid" nbButton>Save</button>
+                    </form>
+                    <br />
+                    <button (click)="cancelEdit()" nbButton>Cancel</button>
+                </nb-card-body>
+            </nb-card>
+
+            <nb-card>
+                <nb-card-header>
+                    Create task
+                </nb-card-header>
+                <nb-card-body>
+                    <form [formGroup]="createForm" (ngSubmit)="onCreate()">
+                        <nb-form-field>
+                            <label for="name">Name:</label>
+                            <input nbInput (change)="validateNewTaskName()" placeholder="My App" id="name"
+                                formControlName="name" type="text">
+                            <nb-icon nbSuffix [icon]="createTaskNameValid.icon" [status]="createTaskNameValid.iconStatus" pack="eva">
+                            </nb-icon>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="description">Description:</label>
+                            <input nbInput placeholder="" id="description" formControlName="description" type="text">
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="url">URL:</label>
+                            <input nbInput placeholder="https://example.com/task-hook" id="url" formControlName="url"
+                                type="text">
+                        </nb-form-field>
+                        <br />
+                        <nb-form-field>
+                            <label for="hmacKey">HMAC Key:</label>
+                            <input nbInput placeholder="" id="hmacKey" formControlName="hmacKey" type="text">
+                        </nb-form-field>
+                        <br />
+                        <button [disabled]="!createTaskNameValid.valid" nbButton>Create</button>
+                    </form>
+                </nb-card-body>
+            </nb-card>
+
+        </nb-card>
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>

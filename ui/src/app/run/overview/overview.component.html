@@ -1,23 +1,23 @@
 
-<nb-card [accent]="_runStatus.getColor()">
-    <nb-card-header>Run: {{_runDetails.id}}</nb-card-header>
+<nb-card [accent]="_runStatus ? _runStatus.getColor() : ''">
+    <nb-card-header>Run: {{_runDetails ? _runDetails.id : ''}}</nb-card-header>
     <nb-card-body>
         <table id="runDetailsTable">
             <tr>
                 <td>Status: </td>
-                <td>{{_runStatus.getName()}}</td>
+                <td>{{_runStatus ? _runStatus.getName() : ""}}</td>
             </tr>
             <tr>
                 <td>Started at: </td>
-                <td>{{_runDetails.attributes["created-at"]}}</td>
+                <td>{{_runDetails ? _runDetails.attributes["created-at"] : ""}}</td>
             </tr>
             <tr>
                 <td>Started by: </td>
-                <td>{{_createdByDetails.attributes.username || 'Unknown'}}</td>
+                <td>{{_createdByDetails ? (_createdByDetails.attributes.username || 'Unknown') : ''}}</td>
             </tr>
             <tr>
                 <td>Has changes: </td>
-                <td>{{_runDetails.attributes["has-changes"] ? 'Yes' : 'No'}}</td>
+                <td>{{_runDetails ? (_runDetails.attributes["has-changes"] ? 'Yes' : 'No') : ''}}</td>
             </tr>
             <tr>
                 <td>Actions</td>
@@ -52,6 +52,26 @@
         </nb-accordion-item-body>
     </nb-accordion-item>
 
+    <nb-accordion-item *ngIf="_prePlanTaskStage && _prePlanTaskStage.show">
+        <nb-accordion-item-header style="padding: 0;">
+            <nb-alert style="width: 100%; height: 100%" [accent]="_prePlanTaskStage.color">Pre-plan tasks</nb-alert>
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+
+            <nb-accordion>
+                <nb-accordion-item *ngFor="let preplanTask of _prePlanTaskStage.taskResults">
+                    <nb-accordion-item-header style="padding: 0;">
+                        <nb-alert style="width: 100%; height: 100%" [accent]="preplanTask.color">Task: {{preplanTask.name}}</nb-alert>
+                    </nb-accordion-item-header>
+                    <nb-accordion-item-body>
+                        <div [innerHTML]="preplanTask.message">
+                        </div>
+                    </nb-accordion-item-body>
+                </nb-accordion-item>
+            </nb-accordion>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
     <nb-accordion-item *ngIf="_planDetails">
         <nb-accordion-item-header style="padding: 0;">
             <nb-alert style="width: 100%; height: 100%" [accent]="_planStatus.getColor()">Plan: {{_planDetails.id}}</nb-alert>
@@ -59,6 +79,47 @@
         <nb-accordion-item-body>
             <div [innerHTML]="_planLog">
             </div>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
+    <nb-accordion-item *ngIf="_postPlanTaskStage && _postPlanTaskStage.show">
+        <nb-accordion-item-header style="padding: 0;">
+            <nb-alert style="width: 100%; height: 100%" [accent]="_postPlanTaskStage.color">Post-plan tasks</nb-alert>
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+
+            <nb-accordion>
+                <nb-accordion-item *ngFor="let postPlanTask of _postPlanTaskStage.taskResults">
+                    <nb-accordion-item-header style="padding: 0;">
+                        <nb-alert style="width: 100%; height: 100%" [accent]="postPlanTask.color">Task: {{postPlanTask.name}}</nb-alert>
+                    </nb-accordion-item-header>
+                    <nb-accordion-item-body>
+                        <div [innerHTML]="postPlanTask.message">
+                        </div>
+                    </nb-accordion-item-body>
+                </nb-accordion-item>
+            </nb-accordion>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
+
+    <nb-accordion-item *ngIf="_preApplyTaskStage && _preApplyTaskStage.show">
+        <nb-accordion-item-header style="padding: 0;">
+            <nb-alert style="width: 100%; height: 100%" [accent]="_preApplyTaskStage.color">Pre-apply tasks</nb-alert>
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+
+            <nb-accordion>
+                <nb-accordion-item *ngFor="let preApplyTask of _preApplyTaskStage.taskResults">
+                    <nb-accordion-item-header style="padding: 0;">
+                        <nb-alert style="width: 100%; height: 100%" [accent]="preApplyTask.color">Task: {{preApplyTask.name}}</nb-alert>
+                    </nb-accordion-item-header>
+                    <nb-accordion-item-body>
+                        <div [innerHTML]="preApplyTask.message">
+                        </div>
+                    </nb-accordion-item-body>
+                </nb-accordion-item>
+            </nb-accordion>
         </nb-accordion-item-body>
     </nb-accordion-item>
 

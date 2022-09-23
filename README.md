@@ -11,15 +11,22 @@ Current backend features (all partial):
  * Authentication
  * Terraform state management
  * Configuration versions
+ * Tasks/Workspace tasks/Task stage/Task results
+ * Tags (partial)
  * Support for:
    * Terraform init
    * Terraform plan
    * Terraform apply
+   * Terraform state
 
 Current UI implementation:
  * Authentication
  * Organisation create/list
  * User token view/create
+ * Workspace create/list
+ * Tasks
+ * Workspace tasks
+ * View runs, plan output, apply output and perform actions on runs
 
 ## WARNING
 

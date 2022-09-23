@@ -58,7 +58,7 @@ class Organisation(Base, BaseObject):
     operations_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     private_registry_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     sentinel_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-    run_tasks_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+    run_tasks_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     state_storage_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     team_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     vcs_integration_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
@@ -84,6 +84,8 @@ class Organisation(Base, BaseObject):
     audit_events = sqlalchemy.orm.relation("AuditEvent", back_populates="organisation")
 
     teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
+
+    tasks = sqlalchemy.orm.relation("Task", back_populates="organisation")
 
     @classmethod
     def get_by_name_id(cls, name_id):

@@ -7,6 +7,7 @@ import { ListComponent } from './list/list.component';
 import { OrganisationExistsGuard } from './organisation-exists.guard';
 import { OverviewComponent } from './overview/overview.component';
 import { SettingsComponent } from './settings/settings.component';
+import { TaskListComponent } from './task-list/task-list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 
 const routes: Routes = [
@@ -28,6 +29,11 @@ const routes: Routes = [
   {
     path: ':organisationName/workspaces',
     component: WorkspaceListComponent,
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
+  },
+  {
+    path: ':organisationName/tasks',
+    component: TaskListComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {

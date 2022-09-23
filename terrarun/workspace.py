@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+from enum import Enum
 import re
 import sqlalchemy
 import sqlalchemy.orm
@@ -12,8 +13,18 @@ import terrarun.organisation
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.run
 import terrarun.configuration
+import terrarun.workspace_task
+import terrarun.user
 from terrarun.database import Base, Database
 from terrarun.workspace_tag import WorkspaceTag
+
+
+class WorkspaceExecutionMode(Enum):
+    """Type of workspace execution."""
+
+    REMOTE = "remote"
+    LOCAL = "local"
+    AGENT = "agent"
 
 
 class Workspace(Base, BaseObject):
@@ -35,7 +46,9 @@ class Workspace(Base, BaseObject):
 
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
 
-    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag")
+    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag", back_populates="workspaces")
+
+    workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace")
 
     _latest_state = None
     _latest_configuration_version = None
@@ -122,7 +135,24 @@ class Workspace(Base, BaseObject):
         ).first()
         return run
 
-    def get_api_details(self, effective_user):
+    def associate_task(
+            self,
+            task: terrarun.workspace_task.WorkspaceTaskEnforcementLevel,
+            enforcement_level: terrarun.workspace_task.WorkspaceTaskEnforcementLevel,
+            stage: terrarun.workspace_task.WorkspaceTaskStage):
+        """Associate a task with the workspace"""
+        workspace_task = terrarun.workspace_task.WorkspaceTask(
+            workspace=self,
+            task=task,
+            enforcement_level=enforcement_level,
+            stage=stage
+        )
+        session = Database.get_session()
+        session.add(workspace_task)
+        session.commit()
+        return workspace_task
+
+    def get_api_details(self, effective_user: terrarun.user.User):
         """Return details for workspace."""
         workspace_permissions = WorkspacePermissions(current_user=effective_user, workspace=self)
         return {
@@ -132,7 +162,7 @@ class Workspace(Base, BaseObject):
                 },
                 "allow-destroy-plan": True,
                 "apply-duration-average": 158000,
-                "auto-apply": False,
+                "auto-apply": self.auto_apply,
                 "auto-destroy-at": None,
                 "created-at": "2021-06-03T17:50:20.307Z",
                 "description": "An example workspace for documentation.",
