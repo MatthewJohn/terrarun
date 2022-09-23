@@ -49,6 +49,7 @@ class RunStatusCancelled extends RunStatusBaseClass {
     _labelColour = "danger";
     _icon = "alert-circle-outline";
     public override _availableActions = [RunAction.FORCE_CANCEL_RUN];
+    public override _isFinal = true;
 }
 class RunStatusConfirmed extends RunStatusBaseClass {
     _nameString = "Confirmed";
