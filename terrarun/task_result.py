@@ -185,7 +185,6 @@ class TaskResult(Base, BaseObject):
             "workspace_name": self.task_stage.run.configuration_version.workspace.name,
             "workspace_app_url": f"{config.BASE_URL}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}",
             "organization_name": self.task_stage.run.configuration_version.workspace.organisation.name,
-            "plan_json_api_url": f"{config.BASE_URL}/api/v2/plans/{self.task_stage.run.plan.api_id}/json-output" if self.task_stage.run.plan else None,
             "vcs_repo_url": None,
             "vcs_branch": None,
             "vcs_pull_request_url": None,
