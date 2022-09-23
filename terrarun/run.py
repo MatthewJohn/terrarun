@@ -193,7 +193,7 @@ class Run(Base, BaseObject):
         session = Database.get_session()
         config = terrarun.config.Config()
         # Handle plan job
-        print("Job Status: " + str(self.status))
+        print("Run Status: " + str(self.status))
 
         if self.status is RunStatus.PENDING:
 

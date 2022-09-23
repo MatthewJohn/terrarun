@@ -122,7 +122,6 @@ class TaskResult(Base, BaseObject):
                         'User-Agent': f'TRC/1.0 (+%${config.BASE_URL}; TRC)',
                         'X-TFC-Task-Signature': hmac_signature
                     })
-                print('GOT HERE')
                 if res.status_code == 200:
                     break
             except requests.exceptions.ConnectionError:
