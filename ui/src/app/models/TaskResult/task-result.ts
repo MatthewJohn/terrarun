@@ -34,7 +34,7 @@ export class TaskResult {
             }
 
             this.message = details.data.attributes.message;
-            this.name = details.data.id;
+            this.name = details.data.attributes['task-name'];
         });
     }
 }
