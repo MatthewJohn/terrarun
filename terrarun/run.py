@@ -193,7 +193,7 @@ class Run(Base, BaseObject):
         session = Database.get_session()
         config = terrarun.config.Config()
         # Handle plan job
-        print("Job Status: " + str(self.status))
+        print("Run Status: " + str(self.status))
 
         if self.status is RunStatus.PENDING:
 
@@ -286,7 +286,6 @@ class Run(Base, BaseObject):
             # Check if plan was confirmed before entering the state
             if self.confirmed:
                 self.update_status(RunStatus.CONFIRMED)
-            self.add_to_queue_table()
 
         # Handle confirmed, starting pre-apply tasks
         elif self.status is RunStatus.CONFIRMED:
