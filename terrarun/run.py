@@ -190,68 +190,16 @@ class Run(Base, BaseObject):
         elif self.status is RunStatus.PRE_PLAN_RUNNING:
             task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN]
 
-            still_running = 0
-
-            # No task stages - no tasks available
+            should_continue = True
             if len(task_stages) == 0:
+                # No task stages - no tasks available
                 pass
             elif len(task_stages) == 1:
                 task_stage = task_stages[0]
-                # Iterate through each task stage result
-                for task_result in task_stage.task_results:
-                    is_mandatory = task_result.workspace_task.enforcement_level is WorkspaceTaskEnforcementLevel.MANDATORY
+                should_continue = task_stage.check_status()
 
-                    # If task result was cancelled and the
-                    # check is mandatory, move to complete
-                    if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
-                        terrarun.utils.update_object_status(task_stage, TaskStageStatus.CANCELED)
-                        self.update_status(RunStatus.CANCELED)
-                        # Since plan already exists, mark as failed
-                        self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
-                        return
-
-                    # Check if any mandatory tasks have errored
-                    elif (task_result.status in [
-                            TaskResultStatus.FAILED,
-                            TaskResultStatus.ERRRORED,
-                            TaskResultStatus.UNREACHABLE] and
-                            is_mandatory):
-
-                        # Update task stage, plan and run statuses
-                        task_stage_status = (
-                            TaskStageStatus.FAILED
-                            if task_result.status is TaskResultStatus.FAILED else (
-                                TaskStageStatus.ERRRORED if task_result.status is TaskResultStatus.ERRRORED else TaskStageStatus.UNREACHABLE
-                            )
-                        )
-                        terrarun.utils.update_object_status(task_stage, task_stage_status)
-                        self.update_status(RunStatus.ERRORED)
-                        self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
-                        return
-
-                    # If task is still running, check if time has elapsed
-                    elif task_result.status in [TaskResultStatus.PENDING, TaskResultStatus.RUNNING]:
-                        if task_result.start_time and (task_result.start_time + datetime.timedelta(minutes=10)) < datetime.datetime.now():
-                            # Update task result status to errored
-                            terrarun.utils.update_object_status(task_result, TaskResultStatus.ERRRORED)
-                            # If task is mandatory, treat run as errored
-                            if is_mandatory:
-                                # Update task stage, plan and run statuses
-                                terrarun.utils.update_object_status(task_stage, TaskStageStatus.ERRRORED)
-                                self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
-                                self.update_status(RunStatus.ERRORED)
-                                return
-                        still_running += 1
-                    
-                    else:
-                        print('Unknown task result status: ', task_result.status)
-
-            # If no tasks are still running, update
-            # state to completed
-            if not still_running:
-                terrarun.utils.update_object_status(task_stage, TaskStageStatus.PASSED)
-                self.update_status(RunStatus.PRE_PLAN_COMPLETED)
-            self.add_to_queue_table()
+            if should_continue:
+                self.add_to_queue_table()
 
         elif self.status is RunStatus.PRE_PLAN_COMPLETED:
             self.queue_plan()

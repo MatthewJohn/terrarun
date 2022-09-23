@@ -3,14 +3,17 @@
 # Proprietary and confidential
 
 from enum import Enum
-import re
 import sqlalchemy
 import sqlalchemy.orm
+import datetime
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+import terrarun.run
 from terrarun.task_result import TaskResult, TaskResultStatus
-from terrarun.workspace_task import WorkspaceTaskStage
+from terrarun.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+import terrarun.utils
+import terrarun.terraform_command
 
 
 class TaskStageStatus(Enum):
@@ -82,6 +85,68 @@ class TaskStage(Base, BaseObject):
         session = Database.get_session()
         session.add(self)
         session.commit()
+
+    def check_status(self):
+        """Check status of tasks and update statuses accordingly"""
+        # Iterate through each task stage result
+        still_running = 0
+        for task_result in self.task_results:
+            is_mandatory = task_result.workspace_task.enforcement_level is WorkspaceTaskEnforcementLevel.MANDATORY
+
+            # If task result was cancelled and the
+            # check is mandatory, move to complete
+            if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
+                terrarun.utils.update_object_status(self, TaskStageStatus.CANCELED)
+                self.run.update_status(terrarun.run.RunStatus.CANCELED)
+                # Since plan already exists, mark as failed
+                self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
+                return False
+
+            # Check if any mandatory tasks have errored
+            elif (task_result.status in [
+                    TaskResultStatus.FAILED,
+                    TaskResultStatus.ERRRORED,
+                    TaskResultStatus.UNREACHABLE] and
+                    is_mandatory):
+
+                # Update task stage, plan and run statuses
+                task_stage_status = (
+                    TaskStageStatus.FAILED
+                    if task_result.status is TaskResultStatus.FAILED else (
+                        TaskStageStatus.ERRRORED if task_result.status is TaskResultStatus.ERRRORED else TaskStageStatus.UNREACHABLE
+                    )
+                )
+                terrarun.utils.update_object_status(self, task_stage_status)
+                self.run.update_status(terrarun.run.RunStatus.ERRORED)
+                self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
+                return False
+
+            # If task is still running, check if time has elapsed
+            elif task_result.status in [TaskResultStatus.PENDING, TaskResultStatus.RUNNING]:
+                if task_result.start_time and (task_result.start_time + datetime.timedelta(minutes=10)) < datetime.datetime.now():
+                    # Update task result status to errored
+                    terrarun.utils.update_object_status(task_result, TaskResultStatus.ERRRORED)
+                    # If task is mandatory, treat run as errored
+                    if is_mandatory:
+                        # Update task stage, plan and run statuses
+                        terrarun.utils.update_object_status(self, TaskStageStatus.ERRRORED)
+                        self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
+                        self.run.update_status(terrarun.run.RunStatus.ERRORED)
+                        return False
+                still_running += 1
+            
+            else:
+                print('Unknown task result status: ', task_result.status)
+
+        # If no tasks are still running, update
+        # state to completed
+        if not still_running:
+            terrarun.utils.update_object_status(self, TaskStageStatus.PASSED)
+            self.run.update_status(terrarun.run.RunStatus.PRE_PLAN_COMPLETED)
+
+        # Return True to indicate that that the run is still
+        # in progress
+        return True
 
     def get_relationship(self):
         """Return relationship data for tag."""
