@@ -243,12 +243,11 @@ class Run(Base, BaseObject):
             elif plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
                 self.update_status(RunStatus.ERRORED)
                 return
-            else:
-                self.update_status(RunStatus.PLANNED)
-
-            if self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
+            elif self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
                 self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
+            else:
+                self.update_status(RunStatus.PLANNED)
 
         # Handle confirmed, starting post-plan tasks
         elif self.status is RunStatus.PLANNED:
