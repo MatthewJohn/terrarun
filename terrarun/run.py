@@ -249,6 +249,7 @@ class Run(Base, BaseObject):
             # If no tasks are still running, update
             # state to completed
             if not still_running:
+                terrarun.utils.update_object_status(task_stage, TaskStageStatus.PASSED)
                 self.update_status(RunStatus.PRE_PLAN_COMPLETED)
             self.add_to_queue_table()
 
