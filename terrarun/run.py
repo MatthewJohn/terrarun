@@ -286,7 +286,6 @@ class Run(Base, BaseObject):
             # Check if plan was confirmed before entering the state
             if self.confirmed:
                 self.update_status(RunStatus.CONFIRMED)
-            self.add_to_queue_table()
 
         # Handle confirmed, starting pre-apply tasks
         elif self.status is RunStatus.CONFIRMED:
