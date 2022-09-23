@@ -199,6 +199,7 @@ class Run(Base, BaseObject):
             # Create plan, as the terraform client expects this
             # to immediately exist
             terrarun.plan.Plan.create(run=self)
+            self.update_status(RunStatus.PRE_PLAN_RUNNING)
 
             # Handle pre-run tasks.
             if self.pre_plan_workspace_tasks:
@@ -208,7 +209,6 @@ class Run(Base, BaseObject):
                 for task_result in task_stage.task_results:
                     task_result.execute()
 
-            self.update_status(RunStatus.PRE_PLAN_RUNNING)
             # Queue plan
             self.add_to_queue_table()
 
@@ -248,6 +248,7 @@ class Run(Base, BaseObject):
                 return
             else:
                 # If successfully planned, move to pre-plan tasks
+                self.update_status(RunStatus.POST_PLAN_RUNNING)
                 if self.pre_apply_workspace_tasks:
                     task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
 
@@ -255,7 +256,6 @@ class Run(Base, BaseObject):
                     for task_result in task_stage.task_results:
                         task_result.execute()
 
-                self.update_status(RunStatus.POST_PLAN_RUNNING)
                 self.add_to_queue_table()
 
         # Check status of post-plan tasks
