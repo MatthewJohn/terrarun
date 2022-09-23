@@ -307,8 +307,9 @@ class Run(Base, BaseObject):
 
             if should_continue:
                 if completed:
+                    self.update_status(RunStatus.PRE_APPLY_COMPLETED)
                     terrarun.apply.Apply.create(plan=self.plan)
-                    self.queue_apply()
+                    self.update_status(RunStatus.APPLY_QUEUED)
                 self.add_to_queue_table()
 
         # Handle apply job
@@ -367,7 +368,7 @@ class Run(Base, BaseObject):
         # Requeue to be applied
         self.add_to_queue_table()
 
-    def queue_apply(self, comment, user):
+    def confirm(self, comment, user):
         """Queue apply job"""
         self.update_status(RunStatus.CONFIRMED, current_user=user)
 
