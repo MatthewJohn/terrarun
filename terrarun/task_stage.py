@@ -57,6 +57,11 @@ class TaskStage(Base, BaseObject):
 
         return task_stage
 
+    @property
+    def organisation(self):
+        """Return organisation."""
+        return self.run.configuration_version.workspace.organisation
+
     def update_attributes(self, **kwargs):
         """Update attributes of task"""
 

@@ -204,6 +204,7 @@ class Run(Base, BaseObject):
                     # If task result was cancelled and the
                     # check is mandatory, move to complete
                     if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
+                        terrarun.utils.update_object_status(task_stage, TaskStageStatus.CANCELED)
                         self.update_status(RunStatus.CANCELED)
                         # Since plan already exists, mark as failed
                         self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
@@ -215,6 +216,15 @@ class Run(Base, BaseObject):
                             TaskResultStatus.ERRRORED,
                             TaskResultStatus.UNREACHABLE] and
                             is_mandatory):
+
+                        # Update task stage, plan and run statuses
+                        task_stage_status = (
+                            TaskStageStatus.FAILED
+                            if task_result.status is TaskResultStatus.FAILED else (
+                                TaskStageStatus.ERRRORED if task_result.status is TaskResultStatus.ERRRORED else TaskStageStatus.UNREACHABLE
+                            )
+                        )
+                        terrarun.utils.update_object_status(task_stage, task_stage_status)
                         self.update_status(RunStatus.ERRORED)
                         self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
                         return
@@ -226,8 +236,10 @@ class Run(Base, BaseObject):
                             terrarun.utils.update_object_status(task_result, TaskResultStatus.ERRRORED)
                             # If task is mandatory, treat run as errored
                             if is_mandatory:
-                                self.update_status(RunStatus.ERRORED)
+                                # Update task stage, plan and run statuses
+                                terrarun.utils.update_object_status(task_stage, TaskStageStatus.ERRRORED)
                                 self.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
+                                self.update_status(RunStatus.ERRORED)
                                 return
                         still_running += 1
                     
