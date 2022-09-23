@@ -135,7 +135,7 @@ class TaskStage(Base, BaseObject):
                 still_running += 1
             
             else:
-                print('Unknown task result status: ', task_result.status)
+                print('task result combination that is not covered:', task_result.status, "Mandatory:", is_mandatory)
 
         # If no tasks are still running, update
         # state to completed
