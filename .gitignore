@@ -4,4 +4,3 @@ venv
 data
 modules.db
 *.db
-bin/

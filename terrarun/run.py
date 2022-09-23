@@ -83,6 +83,7 @@ class Run(Base, BaseObject):
     run_queue = sqlalchemy.orm.relation("RunQueue", back_populates="run", uselist=False)
 
     status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
+    confirmed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     message = sqlalchemy.Column(sqlalchemy.String)
     plan_only = sqlalchemy.Column(sqlalchemy.Boolean)
