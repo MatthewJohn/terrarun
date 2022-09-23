@@ -52,7 +52,7 @@
         </nb-accordion-item-body>
     </nb-accordion-item>
 
-    <nb-accordion-item *ngIf="_prePlanTaskStage">
+    <nb-accordion-item *ngIf="_prePlanTaskStage && _prePlanTaskStage.show">
         <nb-accordion-item-header style="padding: 0;">
             <nb-alert style="width: 100%; height: 100%" [accent]="_prePlanTaskStage.color">Pre-plan tasks</nb-alert>
         </nb-accordion-item-header>
@@ -79,6 +79,47 @@
         <nb-accordion-item-body>
             <div [innerHTML]="_planLog">
             </div>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
+    <nb-accordion-item *ngIf="_postPlanTaskStage && _postPlanTaskStage.show">
+        <nb-accordion-item-header style="padding: 0;">
+            <nb-alert style="width: 100%; height: 100%" [accent]="_postPlanTaskStage.color">Post-plan tasks</nb-alert>
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+
+            <nb-accordion>
+                <nb-accordion-item *ngFor="let postPlanTask of _postPlanTaskStage.taskResults">
+                    <nb-accordion-item-header style="padding: 0;">
+                        <nb-alert style="width: 100%; height: 100%" [accent]="postPlanTask.color">Task: {{postPlanTask.name}}</nb-alert>
+                    </nb-accordion-item-header>
+                    <nb-accordion-item-body>
+                        <div [innerHTML]="postPlanTask.message">
+                        </div>
+                    </nb-accordion-item-body>
+                </nb-accordion-item>
+            </nb-accordion>
+        </nb-accordion-item-body>
+    </nb-accordion-item>
+
+
+    <nb-accordion-item *ngIf="_preApplyTaskStage && _preApplyTaskStage.show">
+        <nb-accordion-item-header style="padding: 0;">
+            <nb-alert style="width: 100%; height: 100%" [accent]="_preApplyTaskStage.color">Pre-apply tasks</nb-alert>
+        </nb-accordion-item-header>
+        <nb-accordion-item-body>
+
+            <nb-accordion>
+                <nb-accordion-item *ngFor="let preApplyTask of _preApplyTaskStage.taskResults">
+                    <nb-accordion-item-header style="padding: 0;">
+                        <nb-alert style="width: 100%; height: 100%" [accent]="preApplyTask.color">Task: {{preApplyTask.name}}</nb-alert>
+                    </nb-accordion-item-header>
+                    <nb-accordion-item-body>
+                        <div [innerHTML]="preApplyTask.message">
+                        </div>
+                    </nb-accordion-item-body>
+                </nb-accordion-item>
+            </nb-accordion>
         </nb-accordion-item-body>
     </nb-accordion-item>
 

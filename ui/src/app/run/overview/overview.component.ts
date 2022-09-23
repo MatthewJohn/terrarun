@@ -114,7 +114,6 @@ export class OverviewComponent implements OnInit {
         for (let taskStageRelationship of this._runDetails.relationships['task-stages'].data) {
           let taskStageId = taskStageRelationship.id;
           if (taskStageId) {
-            console.log(taskStageId);
             let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
             ts.details$.subscribe((taskStageData) => {
               if (taskStageData.data.attributes.stage == 'pre_plan' && this._prePlanTaskStage === undefined) {
@@ -123,6 +122,16 @@ export class OverviewComponent implements OnInit {
                   this.taskStageService,
                   this.taskResultService);
                 // this._prePlanTaskStage = ts;
+              } else if (taskStageData.data.attributes.stage == 'post_plan' && this._postPlanTaskStage === undefined) {
+                this._postPlanTaskStage = new TaskStage(
+                  taskStageData.data.id,
+                  this.taskStageService,
+                  this.taskResultService);
+              } else if (taskStageData.data.attributes.stage == 'pre_apply' && this._preApplyTaskStage === undefined) {
+                this._preApplyTaskStage = new TaskStage(
+                  taskStageData.data.id,
+                  this.taskStageService,
+                  this.taskResultService);
               }
             })
           }

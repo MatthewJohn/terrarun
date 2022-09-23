@@ -8,6 +8,7 @@ export class TaskStage {
     details$: Observable<any>;
     taskResults: TaskResult[];
     color: string;
+    show: boolean;
 
     constructor(id: string,
             private taskStageService: TaskStageService,
@@ -17,8 +18,15 @@ export class TaskStage {
 
         this.taskResults = [];
         this.color = 'basic';
+        this.show = false;
         this.details$.subscribe((data) => {
             let status = data.data.attributes.status;
+            // If status is not pending (running etc.) and tasks are present,
+            // show the task stage in the UI
+            if (status != 'pending' && data.data.relationships['task-results'].data) {
+                this.show = true;
+            }
+
             if (status == 'pending') {
                 this.color = 'info';
             } else if (status == 'running') {
