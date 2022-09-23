@@ -249,7 +249,7 @@ class Run(Base, BaseObject):
             else:
                 # If successfully planned, move to pre-plan tasks
                 self.update_status(RunStatus.POST_PLAN_RUNNING)
-                if self.pre_apply_workspace_tasks:
+                if self.post_plan_workspace_tasks:
                     task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
 
                     # Iterate over task results and execute
