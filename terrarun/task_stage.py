@@ -98,8 +98,10 @@ class TaskStage(Base, BaseObject):
             if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
                 terrarun.utils.update_object_status(self, TaskStageStatus.CANCELED)
                 self.run.update_status(terrarun.run.RunStatus.CANCELED)
-                # Since plan already exists, mark as failed
-                self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
+                if self.stage is WorkspaceTaskStage.PRE_PLAN:
+                    # Since plan already exists, mark as failed
+                    self.run.plan.append_output(b'Plan was not executed due to cancellation of mandatory pre-plan task(s)')
+                    self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
                 return False
 
             # Check if any mandatory tasks have errored
@@ -116,22 +118,19 @@ class TaskStage(Base, BaseObject):
                         TaskStageStatus.ERRRORED if task_result.status is TaskResultStatus.ERRRORED else TaskStageStatus.UNREACHABLE
                     )
                 )
-                terrarun.utils.update_object_status(self, task_stage_status)
-                self.run.update_status(terrarun.run.RunStatus.ERRORED)
-                self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
+                self.set_errored(task_stage_status)
                 return False
 
             # If task is still running, check if time has elapsed
             elif task_result.status in [TaskResultStatus.PENDING, TaskResultStatus.RUNNING]:
-                if task_result.start_time and (task_result.start_time + datetime.timedelta(minutes=10)) < datetime.datetime.now():
+                if (task_result.start_time and
+                        (task_result.start_time + datetime.timedelta(minutes=10)) <
+                        datetime.datetime.now()):
                     # Update task result status to errored
                     terrarun.utils.update_object_status(task_result, TaskResultStatus.ERRRORED)
                     # If task is mandatory, treat run as errored
                     if is_mandatory:
-                        # Update task stage, plan and run statuses
-                        terrarun.utils.update_object_status(self, TaskStageStatus.ERRRORED)
-                        self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
-                        self.run.update_status(terrarun.run.RunStatus.ERRORED)
+                        self.set_errored()
                         return False
                 still_running += 1
             
@@ -147,6 +146,17 @@ class TaskStage(Base, BaseObject):
         # Return True to indicate that that the run is still
         # in progress
         return True
+
+    def set_errored(self, task_stage_status=None):
+        """Set task stage and associated resources as errored."""
+        if task_stage_status is None:
+            task_stage_status = TaskStageStatus.ERRRORED
+        # Update task stage, plan and run statuses
+        terrarun.utils.update_object_status(self, task_stage_status)
+        if self.stage is WorkspaceTaskStage.PRE_PLAN:
+            self.run.plan.append_output(b'Plan was not executed due to failure of mandatory pre-plan task(s)')
+            self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.CANCELED)
+        self.run.update_status(terrarun.run.RunStatus.ERRORED)
 
     def get_relationship(self):
         """Return relationship data for tag."""
