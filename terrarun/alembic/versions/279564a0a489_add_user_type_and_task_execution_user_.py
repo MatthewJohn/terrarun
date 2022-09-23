@@ -25,7 +25,9 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('user_id')
     )
-    op.add_column('user', sa.Column('user_type', sa.Enum('NORMAL', 'TASK_EXECUTION_USER', name='usertype'), nullable=True))
+    op.add_column('user', sa.Column('user_type', sa.Enum('NORMAL', 'TASK_EXECUTION_USER', name='usertype'), default='NORMAL'))
+    c = op.get_bind()
+    c.execute("""UPDATE user SET user_type='NORMAL'""")
     # ### end Alembic commands ###
 
 
