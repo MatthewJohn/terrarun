@@ -155,6 +155,16 @@ class RunStatusPrePlanRunning extends RunStatusBaseClass {
     _labelColour = "info";
     _icon = "radio-button-on-outline";
 }
+class RunStatusPreApplyCompleted extends RunStatusBaseClass {
+    _nameString = "Pre-apply completed";
+    _labelColour = "success";
+    _icon = "radio-button-on-outline";
+}
+class RunStatusPreApplyRunning extends RunStatusBaseClass {
+    _nameString = "Pre-apply running";
+    _labelColour = "info";
+    _icon = "radio-button-on-outline";
+}
 class RunStatusQueuing extends RunStatusBaseClass {
     _nameString = "Queuing";
     _labelColour = "info";
@@ -187,6 +197,8 @@ const RunStatusMap: Record<RunStatusEnum, new (...args: any[]) => IRunStatus> = 
     [RunStatusEnum.POST_PLAN_RUNNING]: RunStatusPostPlanRunning,
     [RunStatusEnum.PRE_PLAN_COMPLETED]: RunStatusPrePlanCompleted,
     [RunStatusEnum.PRE_PLAN_RUNNING]: RunStatusPrePlanRunning,
+    [RunStatusEnum.PRE_APPLY_COMPLETED]: RunStatusPreApplyCompleted,
+    [RunStatusEnum.PRE_APPLY_RUNNING]: RunStatusPreApplyRunning,
     [RunStatusEnum.QUEUING]: RunStatusQueuing
 }
 

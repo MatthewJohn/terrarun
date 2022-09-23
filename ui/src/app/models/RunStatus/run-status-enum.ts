@@ -17,6 +17,8 @@ export enum RunStatusEnum {
     POST_PLAN_RUNNING = "post_plan_running",
     POST_PLAN_COMPLETED = "post_plan_completed",
     PLANNED_AND_FINISHED = "planned_and_finished",
+    PRE_APPLY_RUNNING = "pre_apply_running",
+    PRE_APPLY_COMPLETED = "pre_apply_completed",
     APPLY_QUEUED = "apply_queued",
     APPLYING = "applying",
     APPLIED = "applied",
