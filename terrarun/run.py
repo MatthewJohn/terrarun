@@ -143,6 +143,14 @@ class Run(Base, BaseObject):
             run=run,
             stage=WorkspaceTaskStage.PRE_PLAN,
             workspace_tasks=run.pre_plan_workspace_tasks)
+        TaskStage.create(
+            run=run,
+            stage=WorkspaceTaskStage.POST_PLAN,
+            workspace_tasks=run.post_plan_workspace_tasks)
+        TaskStage.create(
+            run=run,
+            stage=WorkspaceTaskStage.PRE_APPLY,
+            workspace_tasks=run.pre_apply_workspace_tasks)
 
         # Queue to be processed
         run.add_to_queue_table()
@@ -159,6 +167,24 @@ class Run(Base, BaseObject):
             workspace_task
             for workspace_task in self.configuration_version.workspace.workspace_tasks
             if workspace_task.stage == WorkspaceTaskStage.PRE_PLAN and workspace_task.active
+        ]
+
+    @property
+    def post_plan_workspace_tasks(self):
+        """Return list of workspace tasks for post-plan"""
+        return [
+            workspace_task
+            for workspace_task in self.configuration_version.workspace.workspace_tasks
+            if workspace_task.stage == WorkspaceTaskStage.POST_PLAN and workspace_task.active
+        ]
+
+    @property
+    def pre_apply_workspace_tasks(self):
+        """Return list of workspace tasks for pre-apply"""
+        return [
+            workspace_task
+            for workspace_task in self.configuration_version.workspace.workspace_tasks
+            if workspace_task.stage == WorkspaceTaskStage.PRE_APPLY and workspace_task.active
         ]
 
     def execute_next_step(self):
@@ -191,14 +217,17 @@ class Run(Base, BaseObject):
             task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN]
 
             should_continue = True
+            completed = True
             if len(task_stages) == 0:
                 # No task stages - no tasks available
                 pass
             elif len(task_stages) == 1:
                 task_stage = task_stages[0]
-                should_continue = task_stage.check_status()
+                should_continue, completed = task_stage.check_status()
 
             if should_continue:
+                if completed:
+                    self.update_status(RunStatus.PRE_PLAN_COMPLETED)
                 self.add_to_queue_table()
 
         elif self.status is RunStatus.PRE_PLAN_COMPLETED:
@@ -221,9 +250,69 @@ class Run(Base, BaseObject):
                 self.update_status(RunStatus.PLANNED_AND_FINISHED)
                 return
 
-            if self.auto_apply:
-                terrarun.apply.Apply.create(plan=self.plan)
-                self.queue_apply()
+        # Handle confirmed, starting post-plan tasks
+        elif self.status is RunStatus.PLANNED:
+            if self.pre_apply_workspace_tasks:
+                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
+
+                # Iterate over task results and execute
+                for task_result in task_stage.task_results:
+                    task_result.execute()
+
+            self.update_status(RunStatus.POST_PLAN_RUNNING)
+            self.add_to_queue_table()
+
+        # Check status of post-plan tasks
+        elif self.status is RunStatus.POST_PLAN_RUNNING:
+            task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN]
+
+            completed = True
+            should_continue = True
+            if len(task_stages) == 0:
+                # No task stages - no tasks available
+                pass
+            elif len(task_stages) == 1:
+                task_stage = task_stages[0]
+                should_continue, completed = task_stage.check_status()
+
+            if should_continue:
+                if completed:
+                    self.update_status(RunStatus.POST_PLAN_COMPLETED)
+                self.add_to_queue_table()
+
+
+        # Handle confirmed, starting pre-apply tasks
+        elif self.status is RunStatus.CONFIRMED:
+            # Handle pre-apply tasks.
+            if self.pre_apply_workspace_tasks:
+                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_APPLY][0]
+
+                # Iterate over task results and execute
+                for task_result in task_stage.task_results:
+                    task_result.execute()
+
+
+            self.update_status(RunStatus.PRE_APPLY_RUNNING)
+            self.add_to_queue_table()
+
+        # Check status of pre-apply tasks
+        elif self.status is RunStatus.PRE_APPLY_RUNNING:
+            task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_APPLY]
+
+            completed = True
+            should_continue = True
+            if len(task_stages) == 0:
+                # No task stages - no tasks available
+                pass
+            elif len(task_stages) == 1:
+                task_stage = task_stages[0]
+                should_continue, completed = task_stage.check_status()
+
+            if should_continue:
+                if completed:
+                    terrarun.apply.Apply.create(plan=self.plan)
+                    self.queue_apply()
+                self.add_to_queue_table()
 
         # Handle apply job
         elif self.status is RunStatus.APPLY_QUEUED:
@@ -284,7 +373,6 @@ class Run(Base, BaseObject):
     def queue_apply(self, comment, user):
         """Queue apply job"""
         self.update_status(RunStatus.CONFIRMED, current_user=user)
-        self.update_status(RunStatus.APPLY_QUEUED)
 
         # Requeue to be applied
         self.add_to_queue_table()

@@ -102,7 +102,7 @@ class TaskStage(Base, BaseObject):
                     # Since plan already exists, mark as failed
                     self.run.plan.append_output(b'Plan was not executed due to cancellation of mandatory pre-plan task(s)')
                     self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.ERRORED)
-                return False
+                return False, False
 
             # Check if any mandatory tasks have errored
             elif (task_result.status in [
@@ -119,7 +119,7 @@ class TaskStage(Base, BaseObject):
                     )
                 )
                 self.set_errored(task_stage_status)
-                return False
+                return False, False
 
             # If task is still running, check if time has elapsed
             elif task_result.status in [TaskResultStatus.PENDING, TaskResultStatus.RUNNING]:
@@ -131,7 +131,7 @@ class TaskStage(Base, BaseObject):
                     # If task is mandatory, treat run as errored
                     if is_mandatory:
                         self.set_errored()
-                        return False
+                        return False, False
                 still_running += 1
             
             else:
@@ -141,11 +141,13 @@ class TaskStage(Base, BaseObject):
         # state to completed
         if not still_running:
             terrarun.utils.update_object_status(self, TaskStageStatus.PASSED)
-            self.run.update_status(terrarun.run.RunStatus.PRE_PLAN_COMPLETED)
+            # Return to indicate that the run has not errored
+            # and that the task stage is complete
+            return True, True
 
         # Return True to indicate that that the run is still
-        # in progress
-        return True
+        # in progress, and False to indicate the task stage is not complete
+        return True, False
 
     def set_errored(self, task_stage_status=None):
         """Set task stage and associated resources as errored."""
