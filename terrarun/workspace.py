@@ -62,9 +62,6 @@ class Workspace(Base, BaseObject):
             Workspace.name==workspace_name,
             Workspace.organisation==organisation
         ).first()
-
-        if not ws and Config().AUTO_CREATE_WORKSPACES:
-            ws = Workspace.create(organisation=organisation, name=workspace_name)
         return ws
 
     @classmethod
