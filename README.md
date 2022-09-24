@@ -66,7 +66,20 @@ Under no circumstances should this project be used _ANYWHERE_ outside of develop
     python ./terrarun.py --ssl-cert-private-key ./private.pem --ssl-cert-public-key ./public.pem
     cd ui
     ng serve -o --public-host=<hostname> --ssl --ssl-cert ../public.pem --ssl-key ../private.pem
-    
+
+## Dev SSL certs
+
+    # An example script to generate CA certificate and SSL certs is in `bin/create_dev_ssl_certs.sh`.
+    ./bin/create_dev_ssl_certs.sh localhost  ## Or whichever domain is to be used for local development
+    # The private/public key can be found at ./example/ssl-certs/dev.key and ./example/ssl-certs/dev.crt, respectively.
+    # The public CA key can be found at ./example/ssl-certs/myCA.pem, which can be added to system trusted certs for browser and verication by Terraform CLI
+
+ 
+## Contributing
+
+This project is solely based on the API documentation by Hashicorp at https://www.terraform.io/cloud-docs/api-docs/.
+
+To avoid any issues with Hashicorp, it is required that contributors state that they have never used, trialled or viewed any in-depth training/videos of Terraform Cloud or Terraform Enterprise.
 
 
 ## Authors and acknowledgment
