@@ -824,6 +824,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
         """Create configuration version"""
         data = flask.request.get_json().get('data', {})
         attributes = data.get('attributes', {})
+        print(data)
 
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1029,7 +1030,6 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'terraform_version': request_attributes.get('terraform-version'),
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }
-
         run = Run.create(configuration_version=cv, created_by=current_user, **create_attributes)
         return {"data": run.get_api_details()}
 

@@ -78,6 +78,11 @@ Executed remotely on terrarun server
 ================================================
 """)
 
+        environment_variables = os.environ.copy()
+        for var in self.run.variables:
+            if var is not None and 'Key' in var and 'Value' in var:
+                environment_variables[f"TF_VAR_{var['Key']}"] = var['Value']
+
         terraform_version = self.run.terraform_version or '1.1.7'
         terraform_binary = f'terraform-{terraform_version}'
         command = [terraform_binary, action, '-input=false', f'-out={self.PLAN_OUTPUT_FILE}']
@@ -88,7 +93,9 @@ Executed remotely on terrarun server
             return
 
         if self.run.refresh:
-            refresh_rc = self._run_command([terraform_binary, 'refresh', '-input=false'], work_dir=work_dir)
+            refresh_rc = self._run_command([terraform_binary, 'refresh', '-input=false'],
+                                           work_dir=work_dir,
+                                           environment_variables=environment_variables)
             if refresh_rc:
                 self.update_status(TerraformCommandState.ERRORED)
                 return
@@ -100,7 +107,7 @@ Executed remotely on terrarun server
             session.add(self)
             session.commit()
 
-        plan_rc = self._run_command(command, work_dir=work_dir)
+        plan_rc = self._run_command(command, work_dir=work_dir, environment_variables=environment_variables)
 
         with open(os.path.join(work_dir, self.PLAN_OUTPUT_FILE), 'rb') as plan_out_file_fh:
             self.plan_output_binary = plan_out_file_fh.read()
