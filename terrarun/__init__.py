@@ -22,3 +22,7 @@ from terrarun.task import Task
 from terrarun.task_stage import TaskStage
 from terrarun.task_result import TaskResult
 from terrarun.workspace_task import WorkspaceTask
+from terrarun.meta_workspace import MetaWorkspace
+from terrarun.lifecycle import Lifecycle
+from terrarun.lifecycle_environment import LifecycleEnvironment
+from terrarun.environment import Environment

@@ -39,6 +39,16 @@ class Workspace(Base, BaseObject):
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
 
+    meta_workspace_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("meta_workspace.id", name="workspace_meta_workspace_id_meta_workspace_id"),
+        nullable=False)
+    meta_workspace = sqlalchemy.orm.relationship("MetaWorkspace", back_populates="workspaces")
+
+    environment_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("environment.id", name="fk_workspace_environment_id_environment_id"),
+        nullable=False)
+    environment = sqlalchemy.orm.relationship("Environment", back_populates="workspaces")
+
     state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
     configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
 

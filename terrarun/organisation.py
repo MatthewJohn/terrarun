@@ -10,6 +10,7 @@ import sqlalchemy.orm
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.config import Config
+from terrarun.lifecycle import Lifecycle
 from terrarun.permissions.organisation import OrganisationPermissions
 import terrarun.run
 import terrarun.run_queue
@@ -82,6 +83,15 @@ class Organisation(Base, BaseObject):
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="organisation")
     tags = sqlalchemy.orm.relation("Tag", back_populates="organisation")
     audit_events = sqlalchemy.orm.relation("AuditEvent", back_populates="organisation")
+    environments = sqlalchemy.orm.relation("Environment", back_populates="organisation")
+    lifecycles = sqlalchemy.orm.relation("Lifecycle", back_populates="organisation", foreign_keys=[Lifecycle.organisation_id])
+    meta_workspaces = sqlalchemy.orm.relation("MetaWorkspace", back_populates="organisation")
+
+    default_lifecycle_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("lifecycle.id", name="fk_organisation_default_lifecycle_id_lifecycle_id"),
+        default=None, nullable=True
+    )
+    default_lifecycle = sqlalchemy.orm.relationship("Lifecycle", foreign_keys=[default_lifecycle_id], lazy=True)
 
     teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
 
