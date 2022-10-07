@@ -82,12 +82,13 @@ Executed remotely on terrarun server
         for var in self.run.variables:
             if var is not None and 'Key' in var and 'Value' in var:
                 environment_variables[f"TF_VAR_{var['Key']}"] = var['Value']
-
+            
         terraform_version = self.run.terraform_version or '1.1.7'
-        terraform_binary = f'terraform-{terraform_version}'
+        environment_variables[f"TFENV_TERRAFORM_VERSION"] = terraform_version
+        terraform_binary = f'terraform'
         command = [terraform_binary, action, '-input=false', f'-out={self.PLAN_OUTPUT_FILE}']
 
-        init_rc = self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir)
+        init_rc = self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir, environment_variables=environment_variables)
         if init_rc:
             self.update_status(TerraformCommandState.ERRORED)
             return
