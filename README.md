@@ -55,6 +55,26 @@ Under no circumstances should this project be used _ANYWHERE_ outside of develop
     npm install  # Verify this
     popd
 
+## Running inside Docker
+    
+    # Build Image
+    docker build -t terrarun:<YOUR_TAG> .
+
+    # Run container
+    docker run -d -p 5000:5000 -e TFENV_TERRAFORM_VERSION="1.1.7" -e MIGRATE_DATABASE="True" -e BASE_URL=https://localhost:5000 -v ~/.aws:/root/.aws  terrarun:<YOUR_TAG>
+
+    # Create admin user
+    python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin
+
+### Save and reuse your local config
+
+    # Copy database file into your repository
+    docker cp <CONTAINER_ID>:/app/test.db .
+
+    # Attach local file as a volume into a docker container by adding this to your docker run execution
+    -v $PWD/test.db:/app/test.db
+
+
 ## Usage
 
     # Running without SSL certs (not recommended)
