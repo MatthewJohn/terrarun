@@ -1,4 +1,5 @@
-example/*
+/bin/example/*
+**/.DS_Store
 *.pyc
 venv
 data
