@@ -13,18 +13,11 @@ import terrarun.organisation
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.run
 import terrarun.configuration
+from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.workspace_task
 import terrarun.user
 from terrarun.database import Base, Database
 from terrarun.workspace_tag import WorkspaceTag
-
-
-class WorkspaceExecutionMode(Enum):
-    """Type of workspace execution."""
-
-    REMOTE = "remote"
-    LOCAL = "local"
-    AGENT = "agent"
 
 
 class Workspace(Base, BaseObject):
@@ -35,7 +28,9 @@ class Workspace(Base, BaseObject):
 
     __tablename__ = 'workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String)
+    _name = sqlalchemy.Column(sqlalchemy.String, default=None, name="name")
+    _description = sqlalchemy.Column(sqlalchemy.String, default=None, name="description")
+
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
 
@@ -52,13 +47,31 @@ class Workspace(Base, BaseObject):
     state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
     configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
 
-    auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
 
     tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag", back_populates="workspaces")
 
     workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace")
+
+    _allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="allow_destroy_plan")
+    _auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="auto_apply")
+    _execution_mode = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceExecutionMode), nullable=True, default=None, name="execution_mode")
+    _file_triggers_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="file_triggers_enabled")
+    _global_remote_state = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="global_remote_state")
+    _operations = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="operations")
+    _queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="queue_all_runs")
+    _speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="speculative_enabled")
+    _terraform_version = sqlalchemy.Column(sqlalchemy.String, default=None, name="terraform_version")
+    _trigger_prefixes = sqlalchemy.Column(sqlalchemy.String, default=None, name="trigger_prefixes")
+    _trigger_patterns = sqlalchemy.Column(sqlalchemy.String, default=None, name="trigger_patterns")
+    _vcs_repo = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo")
+    _vcs_repo_oath_token_id = None
+    _vcs_repo_branch = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo_branch")
+    _vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="vcs_repo_ingress_submodules")
+    _vcs_repo_identifier = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo_identifier")
+    _vcs_repo_tags_regex = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo_tags_regex")
+    _working_directory = sqlalchemy.Column(sqlalchemy.String, default=None, name="working_directory")
+    _assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="assessments_enabled")
 
     _latest_state = None
     _latest_configuration_version = None
@@ -141,6 +154,258 @@ class Workspace(Base, BaseObject):
             terrarun.run.Run.created_at.desc()
         ).first()
         return run
+
+    @property
+    def name(self):
+        """Return name"""
+        if self._name is not None:
+            return self._name
+        return f"{self.meta_workspace.name}-{self.environment.name}"
+
+    @name.setter
+    def name(self, value):
+        """Set name, default to None, if non-truthful value."""
+        self._name = value if value else None
+
+    @property
+    def description(self):
+        """Return description"""
+        if self._description is not None:
+            return self._description
+        return self.meta_workspace.description
+
+    @description.setter
+    def description(self, value):
+        """Set description, default to None, if non-truthful value."""
+        self._description = value if value else None
+
+    @property
+    def allow_destroy_plan(self):
+        """Return allow_destroy_plan"""
+        if self._allow_destroy_plan is not None:
+            return self._allow_destroy_plan
+        return self.meta_workspace.allow_destroy_plan
+
+    @allow_destroy_plan.setter
+    def allow_destroy_plan(self, value):
+        """Set allow_destroy_plan"""
+        self._allow_destroy_plan = value
+
+    @property
+    def auto_apply(self):
+        """Return auto_apply"""
+        if self._auto_apply is not None:
+            return self._auto_apply
+        return self.meta_workspace.auto_apply
+
+    @auto_apply.setter
+    def auto_apply(self, value):
+        """Set auto_apply"""
+        self._auto_apply = value
+
+    @property
+    def execution_mode(self):
+        """Return execution_mode"""
+        if self._execution_mode is not None:
+            return self._execution_mode
+        return self.meta_workspace.execution_mode
+
+    @execution_mode.setter
+    def execution_mode(self, value):
+        """Set execution_mode"""
+        self._execution_mode = value
+
+    @property
+    def file_triggers_enabled(self):
+        """Return file_triggers_enabled"""
+        if self._file_triggers_enabled is not None:
+            return self._file_triggers_enabled
+        return self.meta_workspace.file_triggers_enabled
+
+    @file_triggers_enabled.setter
+    def file_triggers_enabled(self, value):
+        """Set file_triggers_enabled"""
+        self._file_triggers_enabled = value
+
+    @property
+    def global_remote_state(self):
+        """Return file_triggers_enabled"""
+        if self._global_remote_state is not None:
+            return self._global_remote_state
+        return self.meta_workspace.global_remote_state
+
+    @global_remote_state.setter
+    def global_remote_state(self, value):
+        """Set global_remote_state"""
+        self._global_remote_state = value
+
+    @property
+    def operations(self):
+        """Return operations"""
+        if self._operations is not None:
+            return self._operations
+        return self.meta_workspace.operations
+
+    @operations.setter
+    def operations(self, value):
+        """Set operations"""
+        self._operations = value
+
+    @property
+    def queue_all_runs(self):
+        """Return queue_all_runs"""
+        if self._queue_all_runs is not None:
+            return self._queue_all_runs
+        return self.meta_workspace.queue_all_runs
+
+    @queue_all_runs.setter
+    def queue_all_runs(self, value):
+        """Set queue_all_runs"""
+        self._queue_all_runs = value
+
+    @property
+    def speculative_enabled(self):
+        """Return speculative_enabled"""
+        if self._speculative_enabled is not None:
+            return self._speculative_enabled
+        return self.meta_workspace.speculative_enabled
+
+    @speculative_enabled.setter
+    def speculative_enabled(self, value):
+        """Set speculative_enabled"""
+        self._speculative_enabled = value
+
+    @property
+    def terraform_version(self):
+        """Return terraform_version"""
+        if self._terraform_version is not None:
+            return self._terraform_version
+        return self.meta_workspace.terraform_version
+
+    @terraform_version.setter
+    def terraform_version(self, value):
+        """Set terraform_version"""
+        self._terraform_version = value if value else None
+
+    @property
+    def trigger_prefixes(self):
+        """Return trigger_prefixes"""
+        if self._trigger_prefixes is not None:
+            return self._trigger_prefixes
+        return self.meta_workspace.trigger_prefixes
+
+    @trigger_prefixes.setter
+    def trigger_prefixes(self, value):
+        """Set trigger_prefixes"""
+        self._trigger_prefixes = value if value else None
+
+    @property
+    def trigger_patterns(self):
+        """Return trigger_patterns"""
+        if self._trigger_patterns is not None:
+            return self._trigger_patterns
+        return self.meta_workspace.trigger_patterns
+
+    @trigger_patterns.setter
+    def trigger_patterns(self, value):
+        """Set trigger_patterns"""
+        self._trigger_patterns = value if value else None
+
+    @property
+    def vcs_repo(self):
+        """Return vcs_repo"""
+        if self._vcs_repo is not None:
+            return self._vcs_repo
+        return self.meta_workspace.vcs_repo
+
+    @vcs_repo.setter
+    def vcs_repo(self, value):
+        """Set vcs_repo"""
+        self._vcs_repo = value if value else None
+
+    @property
+    def vcs_repo_oath_token_id(self):
+        """Return vcs_repo_oath_token_id"""
+        if self._vcs_repo_oath_token_id is not None:
+            return self._vcs_repo_oath_token_id
+        return self.meta_workspace.vcs_repo_oath_token_id
+
+    @vcs_repo_oath_token_id.setter
+    def vcs_repo_oath_token_id(self, value):
+        """Set vcs_repo_oath_token_id"""
+        self._vcs_repo_oath_token_id = value if value else None
+
+    @property
+    def vcs_repo_branch(self):
+        """Return vcs_repo_branch"""
+        if self._vcs_repo_branch is not None:
+            return self._vcs_repo_branch
+        return self.meta_workspace.vcs_repo_branch
+
+    @vcs_repo_branch.setter
+    def vcs_repo_branch(self, value):
+        """Set vcs_repo_branch"""
+        self._vcs_repo_branch = value if value else None
+
+    @property
+    def vcs_repo_ingress_submodules(self):
+        """Return vcs_repo_ingress_submodules"""
+        if self._vcs_repo_ingress_submodules is not None:
+            return self._vcs_repo_ingress_submodules
+        return self.meta_workspace.vcs_repo_ingress_submodules
+
+    @vcs_repo_ingress_submodules.setter
+    def vcs_repo_ingress_submodules(self, value):
+        """Set vcs_repo_ingress_submodules"""
+        self._vcs_repo_ingress_submodules = value
+
+    @property
+    def vcs_repo_identifier(self):
+        """Return vcs_repo_identifier"""
+        if self._vcs_repo_identifier is not None:
+            return self._vcs_repo_identifier
+        return self.meta_workspace.vcs_repo_identifier
+
+    @vcs_repo_identifier.setter
+    def vcs_repo_identifier(self, value):
+        """Set vcs_repo_identifier"""
+        self._vcs_repo_identifier = value if value else None
+
+    @property
+    def vcs_repo_tags_regex(self):
+        """Return vcs_repo_tags_regex"""
+        if self._vcs_repo_tags_regex is not None:
+            return self._vcs_repo_tags_regex
+        return self.meta_workspace.vcs_repo_tags_regex
+
+    @vcs_repo_tags_regex.setter
+    def vcs_repo_tags_regex(self, value):
+        """Set vcs_repo_tags_regex"""
+        self._vcs_repo_tags_regex = value if value else None
+
+    @property
+    def working_directory(self):
+        """Return working_directory"""
+        if self._working_directory is not None:
+            return self._working_directory
+        return self.meta_workspace.working_directory
+
+    @working_directory.setter
+    def working_directory(self, value):
+        """Set working_directory"""
+        self._working_directory = value if value else None
+
+    @property
+    def assessments_enabled(self):
+        """Return assessments_enabled"""
+        if self._assessments_enabled is not None:
+            return self._assessments_enabled
+        return self.meta_workspace.assessments_enabled
+
+    @assessments_enabled.setter
+    def assessments_enabled(self, value):
+        """Set assessments_enabled"""
+        self._assessments_enabled = value
 
     def associate_task(
             self,
