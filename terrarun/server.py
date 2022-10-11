@@ -42,6 +42,7 @@ from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRun
 from terrarun.team_user_membership import TeamUserMembership
 from terrarun.team import Team
 from terrarun.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+from terrarun.environment import Environment
 
 
 class Server(object):
@@ -120,6 +121,14 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformOrganisationQueue,
             '/api/v2/organizations/<string:organisation_name>/runs/queue'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationEnvironments,
+            '/api/v2/organizations/<string:organisation_name>/environments'
+        )
+        self._api.add_resource(
+            ApiTerraformEnvironments,
+            '/api/v2/environments/<string:envirionment_id>'
         )
 
         self._api.add_resource(
@@ -746,6 +755,114 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
 
         return {
             "data": task.get_api_details()
+        }
+
+
+class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
+    """Interface to list/create organisation environments"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of environments for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                environment.get_api_details()
+                for environment in organisation.environments
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, organisation_name, current_user):
+        """Create environment"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "environments":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        if not name:
+            return {}, 400
+
+        environment = Environment.create(organisation=organisation, name=name)
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+
+class ApiTerraformEnvironments(AuthenticatedEndpoint):
+    """Interface to show/update environment"""
+
+    def check_permissions_get(self, environment_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return False
+        return OrganisationPermissions(organisation=environment.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, environment_id, current_user):
+        """Return list of environments for organisation"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return {}, 404
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+    def check_permissions_patch(self, environment_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return False
+        return OrganisationPermissions(organisation=environment.organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, environment_id, current_user):
+        """Create environment"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "environments":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+
+        environment.update_attributes(
+            name=name,
+            variables=json.dumps(attributes.get('variables', {}))
+        )
+
+        return {
+            "data": environment.get_api_details()
         }
 
 
