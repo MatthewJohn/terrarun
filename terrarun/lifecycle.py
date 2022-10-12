@@ -27,7 +27,7 @@ class Lifecycle(Base, BaseObject):
     meta_workspaces = sqlalchemy.orm.relation("MetaWorkspace", back_populates="lifecycle")
 
     @classmethod
-    def validate_new_name_id(cls, organisation, name):
+    def validate_new_name(cls, organisation, name):
         """Ensure lifecycle does not already exist and name isn't reserved"""
         session = Database.get_session()
         existing_org = session.query(cls).filter(
@@ -45,7 +45,7 @@ class Lifecycle(Base, BaseObject):
     @classmethod
     def create(cls, organisation, name):
         """Create lifecycle"""
-        if not cls.validate_new_name_id(organisation, name):
+        if not cls.validate_new_name(organisation, name):
             return None
 
         lifecycle = cls(organisation=organisation, name=name)

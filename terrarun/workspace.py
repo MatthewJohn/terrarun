@@ -34,6 +34,8 @@ class Workspace(Base, BaseObject):
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
 
+    enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, nullable=False)
+
     meta_workspace_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("meta_workspace.id", name="workspace_meta_workspace_id_meta_workspace_id"),
         nullable=False)
@@ -103,8 +105,8 @@ class Workspace(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, organisation, name):
-        ws = cls(organisation=organisation, name=name)
+    def create(cls, organisation, meta_workspace, environment):
+        ws = cls(organisation=organisation, meta_workspace=meta_workspace, environment=environment)
         session = Database.get_session()
         session.add(ws)
         session.commit()
