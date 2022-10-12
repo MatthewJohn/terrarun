@@ -22,6 +22,8 @@ from terrarun.apply import Apply
 from terrarun.audit_event import AuditEvent
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
+from terrarun.lifecycle import Lifecycle
+from terrarun.meta_workspace import MetaWorkspace
 from terrarun.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
@@ -121,14 +123,6 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformOrganisationQueue,
             '/api/v2/organizations/<string:organisation_name>/runs/queue'
-        )
-        self._api.add_resource(
-            ApiTerraformOrganisationEnvironments,
-            '/api/v2/organizations/<string:organisation_name>/environments'
-        )
-        self._api.add_resource(
-            ApiTerraformEnvironments,
-            '/api/v2/environments/<string:envirionment_id>'
         )
 
         self._api.add_resource(
@@ -230,7 +224,31 @@ class Server(object):
             '/api/v2/users/<string:user_id>/authentication-tokens'
         )
 
-        # Custom endpoints
+        # Custom Terrarun-specific endpoints
+        self._api.add_resource(
+            ApiTerraformOrganisationEnvironments,
+            '/api/v2/organizations/<string:organisation_name>/environments'
+        )
+        self._api.add_resource(
+            ApiTerraformEnvironments,
+            '/api/v2/environments/<string:envirionment_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationMetaWorkspaces,
+            '/api/v2/organizations/<string:organisation_name>/meta-workspaces'
+        )
+        self._api.add_resource(
+            ApiTerraformMetaWorkspaces,
+            '/api/v2/meta-workspaces/<string:meta_workspace_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationLifecycles,
+            '/api/v2/organizations/<string:organisation_name>/lifecycles'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycles,
+            '/api/v2/lifecycles/<string:lifecycle_id>'
+        )
         self._api.add_resource(
             ApiAuthenticate,
             '/api/terrarun/v1/authenticate'
@@ -768,7 +786,7 @@ class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
             return False
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             # Most admin permission
-            OrganisationPermissions.Permissions.CAN_DESTROY)
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
     def _get(self, organisation_name, current_user):
         """Return list of environments for organisation"""
@@ -863,6 +881,220 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
 
         return {
             "data": environment.get_api_details()
+        }
+
+
+class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
+    """Interface to list/create organisation meta-workspaces"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of meta-workspaces for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                meta_workspace.get_api_details()
+                for meta_workspace in organisation.meta_workspaces
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
+
+    def _post(self, organisation_name, current_user):
+        """Create meta-workspace"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "environments":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        if not name:
+            return {}, 400
+
+        environment = MetaWorkspace.create(organisation=organisation, name=name)
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+
+class ApiTerraformMetaWorkspaces(AuthenticatedEndpoint):
+    """Interface to show/update meta-workspaces"""
+
+    def check_permissions_get(self, meta_workspace_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
+        if not meta_workspace:
+            return False
+        return OrganisationPermissions(organisation=meta_workspace.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, meta_workspace_id, current_user):
+        """Return list of environments for organisation"""
+        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
+        if not meta_workspace:
+            return {}, 404
+
+        return {
+            "data": meta_workspace.get_api_details()
+        }
+
+    def check_permissions_patch(self, meta_workspace_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
+        if not meta_workspace:
+            return False
+        return OrganisationPermissions(organisation=meta_workspace.organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, meta_workspace_id, current_user):
+        """Create environment"""
+        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
+        if not meta_workspace:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "environments":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+
+        meta_workspace.update_attributes(
+            name=name,
+            variables=json.dumps(attributes.get('variables', {}))
+        )
+
+        return {
+            "data": meta_workspace.get_api_details()
+        }
+
+
+class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
+    """Interface to list/create organisation lifecycles"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of meta-workspaces for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                lifecycle.get_api_details()
+                for lifecycle in organisation.lifecycles
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, organisation_name, current_user):
+        """Create meta-workspace"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "lifecycles":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        if not name:
+            return {}, 400
+
+        environment = Lifecycle.create(organisation=organisation, name=name)
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+
+class ApiTerraformLifecycles(AuthenticatedEndpoint):
+    """Interface to show/update lifecycles"""
+
+    def check_permissions_get(self, lifecycle_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return False
+        return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, lifecycle_id, current_user):
+        """Return list of environments for organisation"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return {}, 404
+
+        return {
+            "data": lifecycle.get_api_details()
+        }
+
+    def check_permissions_patch(self, lifecycle_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return False
+        return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, lifecycle_id, current_user):
+        """Update lifecycle"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "lifecycles":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+
+        lifecycle.update_attributes(
+            name=name
+        )
+
+        return {
+            "data": lifecycle.get_api_details()
         }
 
 
