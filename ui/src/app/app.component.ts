@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { NbMenuItem, NbSidebarService } from '@nebular/theme';
 import { AccountService } from './account.service';
 import { HomeComponent } from './home/home.component';
-import { AuthenticationStateType, OrganisationStateType, RunStateType, StateService, WorkspaceStateType } from './state.service';
+import { AuthenticationStateType, OrganisationStateType, MetaWorkspaceStateType, RunStateType, StateService, WorkspaceStateType } from './state.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +14,7 @@ export class AppComponent {
   title = 'ui';
   _authenticationState: AuthenticationStateType = {authenticated: false, id: null, username: null};
   _currentOrganisationState: OrganisationStateType = {id: null, name: null};
+  _currentMetaWorkspaceState: MetaWorkspaceStateType = {id: null, name: null};
   _currentWorkspace: WorkspaceStateType = {id: null, name: null};
   _currentRun: RunStateType = {id: null};
   items: NbMenuItem[] = [];
@@ -31,6 +32,10 @@ export class AppComponent {
       this._currentOrganisationState = data;
       this.updateMenuItems();
     });
+    this.stateService.currentMetaWorkspace.subscribe((data) => {
+      this._currentMetaWorkspaceState = data;
+      this.updateMenuItems();
+    })
     this.stateService.currentWorkspace.subscribe((data) => {
       this._currentWorkspace = data;
       this.updateMenuItems();
@@ -87,8 +92,8 @@ export class AppComponent {
               link: `/${this._currentOrganisationState.id}`
             },
             {
-              title: 'Workspaces',
-              link: `/${this._currentOrganisationState.id}/workspaces`
+              title: 'Projects',
+              link: `/${this._currentOrganisationState.id}/projects`
             },
             {
               title: 'Tasks',
@@ -100,8 +105,14 @@ export class AppComponent {
             }
           ]
         });
-        if (this._currentWorkspace.id) {
+        if (this._currentMetaWorkspaceState.id) {
           this.items.splice(3, 0, {
+            title: `Project: ${this._currentMetaWorkspaceState.name}`,
+            link: `/${this._currentOrganisationState.id}/projects/${this._currentMetaWorkspaceState.name}`
+          });
+        }
+        if (this._currentWorkspace.id) {
+          this.items.splice(4, 0, {
             title: `Workspace: ${this._currentWorkspace.name}`,
             link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}`,
             children: [

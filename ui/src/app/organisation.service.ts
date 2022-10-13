@@ -98,4 +98,10 @@ export class OrganisationService {
                               { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
 
   }
+
+  getAllMetaWorkspaces(organisationName: string): Observable<any> {
+    return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/meta-workspaces`,
+                              { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
+
+  }
 }

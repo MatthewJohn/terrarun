@@ -15,6 +15,11 @@ export interface OrganisationStateType {
     name: string | null;
 }
 
+export interface MetaWorkspaceStateType {
+    id: string | null;
+    name: string | null;
+}
+
 export interface WorkspaceStateType {
     id: string | null;
     name: string | null;
@@ -32,6 +37,7 @@ export class StateService {
 
     authenticationState: BehaviorSubject<AuthenticationStateType> = new BehaviorSubject<AuthenticationStateType>({authenticated: null, id: null, username: null});
     currentOrganisation: BehaviorSubject<OrganisationStateType> = new BehaviorSubject<OrganisationStateType>({id: null, name: null});
+    currentMetaWorkspace: BehaviorSubject<MetaWorkspaceStateType> = new BehaviorSubject<MetaWorkspaceStateType>({id: null, name: null});
     currentWorkspace: BehaviorSubject<WorkspaceStateType> = new BehaviorSubject<WorkspaceStateType>({id: null, name: null});
     currentRun: BehaviorSubject<RunStateType> = new BehaviorSubject<RunStateType>({id: null});
 

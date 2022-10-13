@@ -23,7 +23,7 @@ from terrarun.workspace_tag import WorkspaceTag
 class Workspace(Base, BaseObject):
 
     ID_PREFIX = 'ws'
-    RESERVED_NAMES = ['setttings']
+    RESERVED_NAMES = ['setttings', 'projects']
     MINIMUM_NAME_LENGTH = 3
 
     __tablename__ = 'workspace'

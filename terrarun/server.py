@@ -262,6 +262,10 @@ class Server(object):
             '/api/terrarun/v1/organisation/<string:organisation_name>/workspace-name-validate'
         )
         self._api.add_resource(
+            ApiTerrarunMetaWorkspaceCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/meta-workspace-name-validate'
+        )
+        self._api.add_resource(
             ApiTerrarunTaskCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/task-name-validate'
         )
@@ -924,7 +928,7 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
             return {}, 404
 
         json_data = flask.request.get_json().get('data', {})
-        if json_data.get('type') != "environments":
+        if json_data.get('type') != "meta-workspaces":
             return {}, 400
 
         attributes = json_data.get('attributes', {})
@@ -932,7 +936,11 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
         if not name:
             return {}, 400
 
-        environment = MetaWorkspace.create(organisation=organisation, name=name)
+        environment = MetaWorkspace.create(
+            organisation=organisation,
+            name=name,
+            description=attributes.get('description')
+        )
 
         return {
             "data": environment.get_api_details()
@@ -1741,6 +1749,35 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
                 "valid": Organisation.validate_new_name_id(name_id),
                 "name": args.name,
                 "name_id": name_id
+            }
+        }
+
+
+class ApiTerrarunMetaWorkspaceCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new workspace name"""
+
+    def check_permissions_post(self, organisation_name, current_user):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
+
+    def _post(self, organisation_name, current_user):
+        """Validate new organisation name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": MetaWorkspace.validate_new_name(organisation, args.name),
+                "name": args.name
             }
         }
 

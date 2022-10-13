@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+import re
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -15,6 +16,7 @@ class MetaWorkspace(Base, BaseObject):
 
     ID_PREFIX = 'mws'
     MINIMUM_NAME_LENGTH = 3
+    RESERVED_NAMES = []
 
     __tablename__ = 'meta_workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
@@ -56,6 +58,10 @@ class MetaWorkspace(Base, BaseObject):
     @classmethod
     def validate_new_name(cls, organisation, name):
         """Ensure meta-workspace does not already exist and name isn't reserved"""
+        # Ensure name doesn't contain invalid characters
+        if not re.match(r'^[A-Za-z0-9][A-Za-z0-9-_]+[A-Za-z0-9]$', name):
+            return False
+
         session = Database.get_session()
         existing_org = session.query(cls).filter(
             cls.organisation == organisation,
@@ -70,17 +76,17 @@ class MetaWorkspace(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, organisation, name):
+    def create(cls, organisation, name, **kwargs):
         """Create meta-workspace"""
         if not cls.validate_new_name(organisation, name):
             return None
 
-        lifecycle = cls(organisation=organisation, name=name)
+        meta_workspace = cls(organisation=organisation, name=name, **kwargs)
         session = Database.get_session()
-        session.add(lifecycle)
+        session.add(meta_workspace)
         session.commit()
 
-        return lifecycle
+        return meta_workspace
 
     def update_attributes(self, session=None, **kwargs):
         """Determine if lifecycle is being updated."""
