@@ -56,18 +56,24 @@ class MetaWorkspace(Base, BaseObject):
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
 
     @classmethod
+    def get_by_name(cls, organisation, name):
+        """Return meta-workspace by organisation and name"""
+        session = Database.get_session()
+        return session.query(
+            cls
+        ).filter(
+            cls.organisation == organisation,
+            cls.name == name
+        ).first()
+
+    @classmethod
     def validate_new_name(cls, organisation, name):
         """Ensure meta-workspace does not already exist and name isn't reserved"""
         # Ensure name doesn't contain invalid characters
         if not re.match(r'^[A-Za-z0-9][A-Za-z0-9-_]+[A-Za-z0-9]$', name):
             return False
 
-        session = Database.get_session()
-        existing_org = session.query(cls).filter(
-            cls.organisation == organisation,
-            cls.name == name
-        ).first()
-        if existing_org:
+        if cls.get_by_name(organisation, name):
             return False
         if name in cls.RESERVED_NAMES:
             return False

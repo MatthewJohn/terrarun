@@ -18,6 +18,7 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
 
 from terrarun import workspace
+from terrarun import meta_workspace
 from terrarun.apply import Apply
 from terrarun.audit_event import AuditEvent
 from terrarun.configuration import ConfigurationVersion
@@ -235,7 +236,8 @@ class Server(object):
         )
         self._api.add_resource(
             ApiTerraformOrganisationMetaWorkspaces,
-            '/api/v2/organizations/<string:organisation_name>/meta-workspaces'
+            '/api/v2/organizations/<string:organisation_name>/meta-workspaces',
+            '/api/v2/organizations/<string:organisation_name>/meta-workspaces/<string:meta_workspace_name>'
         )
         self._api.add_resource(
             ApiTerraformMetaWorkspaces,
@@ -891,20 +893,37 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
 class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
     """Interface to list/create organisation meta-workspaces"""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, *args, meta_workspace_name=None, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return False
+
+        if meta_workspace_name:
+            meta_workspace = MetaWorkspace.get_by_name(organisation=organisation, name=meta_workspace_name)
+            if not meta_workspace:
+                return False
+
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user):
+    def _get(self, organisation_name, current_user, meta_workspace_name=None):
         """Return list of meta-workspaces for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
+
+        # If meta-workspace has been defined in URL,
+        # return just the details for this meta-workspace
+        if meta_workspace_name:
+            if meta_workspace := MetaWorkspace.get_by_name(organisation=organisation, name=meta_workspace_name):
+                return {
+                    "data": meta_workspace.get_api_details()
+                }
+            # Meta-workspace doesn't exist
+            else:
+                return {}, 404
 
         return {
             "data": [
@@ -913,7 +932,7 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_post(self, organisation_name, current_user, *args, meta_workspace_name=None, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -921,11 +940,15 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, meta_workspace_name=None):
         """Create meta-workspace"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
+
+        if meta_workspace_name:
+            # Meta-workspace cannot be defined in URL for a POST
+            return {}, 400
 
         json_data = flask.request.get_json().get('data', {})
         if json_data.get('type') != "meta-workspaces":
