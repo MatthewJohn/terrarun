@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
 import { AccountService } from './account.service';
 
 @Injectable({
@@ -42,5 +43,12 @@ export class MetaWorkspaceService {
         }
       });
     });
+  }
+
+  getDetailsByName(organisationName: string, name: string): Observable<any> {
+    return this.http.get<any>(
+      `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/meta-workspaces/${name}`,
+      { headers: this.accountService.getAuthHeader() }
+    );
   }
 }

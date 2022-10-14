@@ -10,6 +10,7 @@ import { MetaWorkspaceListComponent } from './meta-workspace-list/meta-workspace
 import { SettingsComponent } from './settings/settings.component';
 import { TaskListComponent } from './task-list/task-list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
+import { MetaWorkspaceExistsGuard } from '../meta-workspace-exists.guard';
 
 const routes: Routes = [
   {
@@ -38,6 +39,11 @@ const routes: Routes = [
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
+    path: ':organisationName/projects/:metaWorkspaceName',
+    loadChildren:  () => import('../project/project.module'),
+    canActivate: [LoggedInGuard, OrganisationExistsGuard, MetaWorkspaceExistsGuard]
+  },
+  {
     path: ':organisationName/tasks',
     component: TaskListComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
@@ -50,7 +56,7 @@ const routes: Routes = [
   {
     path: ':organisationName/:workspaceName',
     loadChildren: () => import(`../workspace/workspace.module`).then(m => m.WorkspaceModule),
-    canActivate: [LoggedInGuard, OrganisationExistsGuard, WorkspaceExistsGuard]
+    canActivate: [LoggedInGuard, OrganisationExistsGuard, MetaWorkspaceExistsGuard, WorkspaceExistsGuard]
   }
 ];
 
