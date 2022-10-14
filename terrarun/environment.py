@@ -7,7 +7,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
-from terrarun.lifecycle_environment import LifecycleEnvironment
+import terrarun.lifecycle_environment
 
 
 class Environment(Base, BaseObject):
@@ -60,10 +60,10 @@ class Environment(Base, BaseObject):
         """Return list of lifecycle environment objects"""
         session = Database.get_session()
         return session.query(
-            LifecycleEnvironment
+            terrarun.lifecycle_environment.LifecycleEnvironment
         ).filter(
-            LifecycleEnvironment.environment_id==self.id
-        ).fetchall()
+            terrarun.lifecycle_environment.LifecycleEnvironment.environment_id==self.id
+        )
 
     def get_api_details(self):
         """Return API details for environment"""

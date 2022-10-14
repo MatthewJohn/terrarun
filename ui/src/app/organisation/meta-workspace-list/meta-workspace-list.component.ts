@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map, Observable, switchMap } from 'rxjs';
+import { EnvironmentService } from 'src/app/environment.service';
+import { LifecycleService } from 'src/app/lifecycle.service';
 import { MetaWorkspaceService } from 'src/app/meta-workspace.service';
 import { OrganisationService } from 'src/app/organisation.service';
 import { OrganisationStateType, StateService } from 'src/app/state.service';
@@ -15,6 +17,7 @@ import { WorkspaceService } from 'src/app/workspace.service';
 export class MetaWorkspaceListComponent implements OnInit {
 
   metaWorkspaces$: Observable<any>;
+  organisationLifecycles$: Observable<any>;
   tableColumns: string[] = ['name', 'description'];
 
   nameValidStates = {
@@ -25,7 +28,8 @@ export class MetaWorkspaceListComponent implements OnInit {
   nameValid: {icon: string, valid: boolean, iconStatus: string} = this.nameValidStates.invalid;
   form = this.formBuilder.group({
     name: '',
-    description: ''
+    description: '',
+    lifecycle: null
   });
 
   currentOrganisation: OrganisationStateType | null = null;
@@ -33,13 +37,19 @@ export class MetaWorkspaceListComponent implements OnInit {
   constructor(private state: StateService,
               private organisationService: OrganisationService,
               private metaWorkspaceService: MetaWorkspaceService,
+              private lifecycleService: LifecycleService,
               private router: Router,
               private route: ActivatedRoute,
               private formBuilder: FormBuilder) {
     this.metaWorkspaces$ = new Observable();
+    this.organisationLifecycles$ = new Observable();
+
     this.state.currentOrganisation.subscribe((organisationData) => {
       if (organisationData.name) {
+        this.organisationLifecycles$ = this.lifecycleService.getOrganisationLifecycles(organisationData.name);
+
         this.currentOrganisation = organisationData;
+
         this.metaWorkspaces$ = this.organisationService.getAllMetaWorkspaces(organisationData.name).pipe(
           map((data) => {
             return Array.from({length: data.length},
@@ -63,10 +73,12 @@ export class MetaWorkspaceListComponent implements OnInit {
     });
   }
   onCreate(): void {
-    this.metaWorkspaceService.create(this.currentOrganisation?.name || '',
-                                 this.form.value.name,
-                                 this.form.value.description
-                                 ).then((metaWorkspace) => {
+    this.metaWorkspaceService.create(
+      this.currentOrganisation?.name || '',
+      this.form.value.name,
+      this.form.value.description,
+      this.form.value.lifecycle
+    ).then((metaWorkspace) => {
       console.log(metaWorkspace);
       this.router.navigateByUrl(`/${this.currentOrganisation?.name}/projects/${metaWorkspace.data.attributes.name}`);
     });

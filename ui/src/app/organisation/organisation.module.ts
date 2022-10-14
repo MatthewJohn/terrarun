@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { OrganisationRoutingModule } from './organisation-routing.module';
 import { CreateComponent } from './create/create.component';
-import { NbButtonModule, NbCardModule, NbCheckboxModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbToggleModule, NbTreeGridModule } from '@nebular/theme';
+import { NbButtonModule, NbCardModule, NbCheckboxModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbSelectModule, NbToggleModule, NbTreeGridModule } from '@nebular/theme';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ListComponent } from './list/list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
@@ -36,6 +36,7 @@ import { MetaWorkspaceListComponent } from './meta-workspace-list/meta-workspace
     NbIconModule,
     NbButtonModule,
     NbTreeGridModule,
+    NbSelectModule,
 
     FormsModule,
     ReactiveFormsModule,

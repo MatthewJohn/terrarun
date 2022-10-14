@@ -27,11 +27,11 @@ export class MetaWorkspaceService {
     });
   }
 
-  create(organisationName: string, name: string, description: string): Promise<any> {
+  create(organisationName: string, name: string, description: string, lifecycle: number): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.post<any>(
         `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/meta-workspaces`,
-        { data: { type: 'meta-workspaces', attributes: {'name': name, 'description': description }}},
+        { data: { type: 'meta-workspaces', attributes: {'name': name, 'description': description, 'lifecycle': lifecycle}}},
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data) => {

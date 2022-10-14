@@ -34,8 +34,17 @@
                             <label for="description">Description:</label>
                             <input nbInput placeholder="" id="description" formControlName="description" type="text">
                         </nb-form-field>
+
                         <br />
-                        <button [disabled]="!nameValid.valid" nbButton>Create</button>
+                        <nb-form-field>
+                            <label for="lifecycle">Lifecycle: </label>
+                            <nb-select id="lifecycle" formControlName="lifecycle">
+                                <nb-option *ngFor="let lifecycle of (organisationLifecycles$ | async)" [value]="lifecycle.id">{{lifecycle.attributes.name}}</nb-option>
+                            </nb-select>
+                        </nb-form-field>
+
+                        <br />
+                        <button [disabled]="!nameValid.valid || !form.value.lifecycle" nbButton>Create</button>
                     </form>
                 </nb-card-body>
             </nb-card>    

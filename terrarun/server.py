@@ -933,17 +933,24 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
 
         attributes = json_data.get('attributes', {})
         name = attributes.get('name')
-        if not name:
+        lifecycle_id = attributes.get('lifecycle')
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not name or not lifecycle:
             return {}, 400
 
-        environment = MetaWorkspace.create(
+        meta_workspace = MetaWorkspace.create(
             organisation=organisation,
             name=name,
-            description=attributes.get('description')
+            description=attributes.get('description'),
+            lifecycle=lifecycle
         )
 
+        # If meta workspace failed to be cr
+        if not meta_workspace:
+            return {}, 400
+
         return {
-            "data": environment.get_api_details()
+            "data": meta_workspace.get_api_details()
         }
 
 

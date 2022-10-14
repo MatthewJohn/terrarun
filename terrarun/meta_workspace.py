@@ -76,15 +76,17 @@ class MetaWorkspace(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, organisation, name, **kwargs):
+    def create(cls, organisation, name, lifecycle, **kwargs):
         """Create meta-workspace"""
         if not cls.validate_new_name(organisation, name):
             return None
 
-        meta_workspace = cls(organisation=organisation, name=name, **kwargs)
+        meta_workspace = cls(organisation=organisation, name=name, lifecycle=lifecycle, **kwargs)
         session = Database.get_session()
         session.add(meta_workspace)
         session.commit()
+
+        meta_workspace.switch_lifecyce(lifecycle)
 
         return meta_workspace
 
@@ -96,31 +98,35 @@ class MetaWorkspace(Base, BaseObject):
                  kwargs['lifecycle'] is None or
                 kwargs['lifecycle'].id != self.lifecycle.id)):
 
-            # Create list of all environments that exist in new lifecycle
-            new_environments = [
-                lifecycle_environment.environment
-                for lifecycle_environment in kwargs['lifecycle'].get_lifecycle_environments()
-            ] if kwargs['lifecycle'] else []
-
-            # Iterate through all workspaces for meta-workspace,
-            # disabling those that are not part of the new lifecycle
-            # and enabling/creating those that are.
-            for workspace in self.workspaces:
-                if workspace.environment in new_environments:
-                    workspace.update_attributes(enabled=True)
-                    new_environments.remove(new_environments)
-                else:
-                    workspace.update_attributes(enabled=False)
-
-            # Create workspaces for each of the missing new environments
-            for new_environment in new_environments:
-                workspace = Workspace.create(
-                    organisation=self.organisation,
-                    meta_workspace=self,
-                    environment=new_environment
-                )
+            self.switch_lifecyce(kwargs['lifecycle'])
 
         return super().update_attributes(session, **kwargs)
+
+    def switch_lifecyce(self, new_lifecycle):
+        """Update lifecycle of meta-workspace, adjusting workspaces."""
+        # Create list of all environments that exist in new lifecycle
+        new_environments = [
+            lifecycle_environment.environment
+            for lifecycle_environment in new_lifecycle.get_lifecycle_environments()
+        ] if new_lifecycle else []
+
+        # Iterate through all workspaces for meta-workspace,
+        # disabling those that are not part of the new lifecycle
+        # and enabling/creating those that are.
+        for workspace in self.workspaces:
+            if workspace.environment in new_environments:
+                workspace.update_attributes(enabled=True)
+                new_environments.remove(new_environments)
+            else:
+                workspace.update_attributes(enabled=False)
+
+        # Create workspaces for each of the missing new environments
+        for new_environment in new_environments:
+            workspace = Workspace.create(
+                organisation=self.organisation,
+                meta_workspace=self,
+                environment=new_environment
+            )
 
     def get_api_details(self):
         """Return details for workspace."""
