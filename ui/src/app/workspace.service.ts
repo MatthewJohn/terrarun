@@ -52,6 +52,14 @@ export class WorkspaceService {
     );
   }
 
+  getDetailsById(workspaceId: string): Observable<any> {
+    return this.http.get<any>(
+      `https://${window.location.hostname}:5000/api/v2/workspaces/${workspaceId}`,
+      { headers: this.accountService.getAuthHeader() }
+    );
+  }
+
+
   getRuns(workspaceId: string): Observable<any> {
     return this.http.get<any>(
         `https://${window.location.hostname}:5000/api/v2/workspaces/${workspaceId}/runs`,

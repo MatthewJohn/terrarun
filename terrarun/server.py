@@ -127,6 +127,10 @@ class Server(object):
         )
 
         self._api.add_resource(
+            ApiTerraformWorkspaces,
+            '/api/v2/workspaces/<string:workspace_id>'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspaceConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
         )
@@ -1188,6 +1192,26 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return {}, 404
+        return {"data": workspace.get_api_details(effective_user=current_user)}
+
+
+class ApiTerraformWorkspaces(AuthenticatedEndpoint):
+    """Workspaces details endpoint."""
+
+    def check_permissions_get(self, workspace_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, workspace_id, current_user):
+        """Return workspace details."""
+        workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
         return {"data": workspace.get_api_details(effective_user=current_user)}

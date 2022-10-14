@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { ProjectRoutingModule } from './project-routing.module';
 import { OverviewComponent } from './overview/overview.component';
+import { NbCardModule } from '@nebular/theme';
 
 
 @NgModule({
@@ -10,6 +11,8 @@ import { OverviewComponent } from './overview/overview.component';
     OverviewComponent
   ],
   imports: [
+    NbCardModule,
+
     CommonModule,
     ProjectRoutingModule
   ]
