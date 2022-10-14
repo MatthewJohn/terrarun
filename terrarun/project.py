@@ -12,28 +12,28 @@ from terrarun.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 
 
-class MetaWorkspace(Base, BaseObject):
+class Project(Base, BaseObject):
 
     ID_PREFIX = 'mws'
     MINIMUM_NAME_LENGTH = 3
     RESERVED_NAMES = []
 
-    __tablename__ = 'meta_workspace'
+    __tablename__ = 'project'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     description = sqlalchemy.Column(sqlalchemy.String)
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
-        "organisation.id", name="fk_meta_workspace_organisation_id_organisation_id"),
+        "organisation.id", name="fk_project_organisation_id_organisation_id"),
         nullable=False)
-    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="meta_workspaces")
+    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="projects")
 
-    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="meta_workspace")
+    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="project")
 
     lifecycle_id = sqlalchemy.Column(
-        sqlalchemy.ForeignKey("lifecycle.id", name="fk_meta_workspace_lifecycle_id_lifecycle_id"),
+        sqlalchemy.ForeignKey("lifecycle.id", name="fk_project_lifecycle_id_lifecycle_id"),
         nullable=False)
-    lifecycle = sqlalchemy.orm.relationship("Lifecycle", back_populates="meta_workspaces")
+    lifecycle = sqlalchemy.orm.relationship("Lifecycle", back_populates="projects")
 
     allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
@@ -57,7 +57,7 @@ class MetaWorkspace(Base, BaseObject):
 
     @classmethod
     def get_by_name(cls, organisation, name):
-        """Return meta-workspace by organisation and name"""
+        """Return project by organisation and name"""
         session = Database.get_session()
         return session.query(
             cls
@@ -68,7 +68,7 @@ class MetaWorkspace(Base, BaseObject):
 
     @classmethod
     def validate_new_name(cls, organisation, name):
-        """Ensure meta-workspace does not already exist and name isn't reserved"""
+        """Ensure project does not already exist and name isn't reserved"""
         # Ensure name doesn't contain invalid characters
         if not re.match(r'^[A-Za-z0-9][A-Za-z0-9-_]+[A-Za-z0-9]$', name):
             return False
@@ -83,18 +83,18 @@ class MetaWorkspace(Base, BaseObject):
 
     @classmethod
     def create(cls, organisation, name, lifecycle, **kwargs):
-        """Create meta-workspace"""
+        """Create project"""
         if not cls.validate_new_name(organisation, name):
             return None
 
-        meta_workspace = cls(organisation=organisation, name=name, lifecycle=lifecycle, **kwargs)
+        project = cls(organisation=organisation, name=name, lifecycle=lifecycle, **kwargs)
         session = Database.get_session()
-        session.add(meta_workspace)
+        session.add(project)
         session.commit()
 
-        meta_workspace.switch_lifecyce(lifecycle)
+        project.switch_lifecyce(lifecycle)
 
-        return meta_workspace
+        return project
 
     def update_attributes(self, session=None, **kwargs):
         """Determine if lifecycle is being updated."""
@@ -109,14 +109,14 @@ class MetaWorkspace(Base, BaseObject):
         return super().update_attributes(session, **kwargs)
 
     def switch_lifecyce(self, new_lifecycle):
-        """Update lifecycle of meta-workspace, adjusting workspaces."""
+        """Update lifecycle of project, adjusting workspaces."""
         # Create list of all environments that exist in new lifecycle
         new_environments = [
             lifecycle_environment.environment
             for lifecycle_environment in new_lifecycle.get_lifecycle_environments()
         ] if new_lifecycle else []
 
-        # Iterate through all workspaces for meta-workspace,
+        # Iterate through all workspaces for project,
         # disabling those that are not part of the new lifecycle
         # and enabling/creating those that are.
         for workspace in self.workspaces:
@@ -130,7 +130,7 @@ class MetaWorkspace(Base, BaseObject):
         for new_environment in new_environments:
             workspace = Workspace.create(
                 organisation=self.organisation,
-                meta_workspace=self,
+                project=self,
                 environment=new_environment
             )
 
@@ -163,7 +163,7 @@ class MetaWorkspace(Base, BaseObject):
             },
             "id": self.api_id,
             "links": {
-                "self": f"/api/v2/meta-workspaces/{self.api_id}"
+                "self": f"/api/v2/projects/{self.api_id}"
             },
             "relationships": {
                 "organization": {
@@ -182,6 +182,6 @@ class MetaWorkspace(Base, BaseObject):
                     ]
                 }
             },
-            "type": "meta-workspaces"
+            "type": "projects"
         }
 

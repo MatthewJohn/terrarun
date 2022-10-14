@@ -25,7 +25,7 @@ class Lifecycle(Base, BaseObject):
         nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="lifecycles", foreign_keys=[organisation_id])
 
-    meta_workspaces = sqlalchemy.orm.relation("MetaWorkspace", back_populates="lifecycle")
+    projects = sqlalchemy.orm.relation("Project", back_populates="lifecycle")
 
     @classmethod
     def validate_new_name(cls, organisation, name):

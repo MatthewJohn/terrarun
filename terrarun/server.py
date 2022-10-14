@@ -18,13 +18,13 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
 
 from terrarun import workspace
-from terrarun import meta_workspace
+from terrarun import project
 from terrarun.apply import Apply
 from terrarun.audit_event import AuditEvent
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.lifecycle import Lifecycle
-from terrarun.meta_workspace import MetaWorkspace
+from terrarun.project import Project
 from terrarun.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
@@ -235,13 +235,13 @@ class Server(object):
             '/api/v2/environments/<string:envirionment_id>'
         )
         self._api.add_resource(
-            ApiTerraformOrganisationMetaWorkspaces,
-            '/api/v2/organizations/<string:organisation_name>/meta-workspaces',
-            '/api/v2/organizations/<string:organisation_name>/meta-workspaces/<string:meta_workspace_name>'
+            ApiTerraformOrganisationProjects,
+            '/api/v2/organizations/<string:organisation_name>/projects',
+            '/api/v2/organizations/<string:organisation_name>/projects/<string:project_name>'
         )
         self._api.add_resource(
-            ApiTerraformMetaWorkspaces,
-            '/api/v2/meta-workspaces/<string:meta_workspace_id>'
+            ApiTerraformProjects,
+            '/api/v2/projects/<string:project_id>'
         )
         self._api.add_resource(
             ApiTerraformOrganisationLifecycles,
@@ -264,8 +264,8 @@ class Server(object):
             '/api/terrarun/v1/organisation/<string:organisation_name>/workspace-name-validate'
         )
         self._api.add_resource(
-            ApiTerrarunMetaWorkspaceCreateNameValidation,
-            '/api/terrarun/v1/organisation/<string:organisation_name>/meta-workspace-name-validate'
+            ApiTerrarunProjectCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/project-name-validate'
         )
         self._api.add_resource(
             ApiTerrarunTaskCreateNameValidation,
@@ -890,36 +890,36 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
         }
 
 
-class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
-    """Interface to list/create organisation meta-workspaces"""
+class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
+    """Interface to list/create organisation projects"""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, meta_workspace_name=None, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, *args, project_name=None, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return False
 
-        if meta_workspace_name:
-            meta_workspace = MetaWorkspace.get_by_name(organisation=organisation, name=meta_workspace_name)
-            if not meta_workspace:
+        if project_name:
+            project = Project.get_by_name(organisation=organisation, name=project_name)
+            if not project:
                 return False
 
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user, meta_workspace_name=None):
-        """Return list of meta-workspaces for organisation"""
+    def _get(self, organisation_name, current_user, project_name=None):
+        """Return list of projects for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
 
-        # If meta-workspace has been defined in URL,
-        # return just the details for this meta-workspace
-        if meta_workspace_name:
-            if meta_workspace := MetaWorkspace.get_by_name(organisation=organisation, name=meta_workspace_name):
+        # If project has been defined in URL,
+        # return just the details for this project
+        if project_name:
+            if project := Project.get_by_name(organisation=organisation, name=project_name):
                 return {
-                    "data": meta_workspace.get_api_details()
+                    "data": project.get_api_details()
                 }
             # Meta-workspace doesn't exist
             else:
@@ -927,12 +927,12 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
 
         return {
             "data": [
-                meta_workspace.get_api_details()
-                for meta_workspace in organisation.meta_workspaces
+                project.get_api_details()
+                for project in organisation.projects
             ]
         }
 
-    def check_permissions_post(self, organisation_name, current_user, *args, meta_workspace_name=None, **kwargs):
+    def check_permissions_post(self, organisation_name, current_user, *args, project_name=None, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -940,18 +940,18 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
 
-    def _post(self, organisation_name, current_user, meta_workspace_name=None):
-        """Create meta-workspace"""
+    def _post(self, organisation_name, current_user, project_name=None):
+        """Create project"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
 
-        if meta_workspace_name:
+        if project_name:
             # Meta-workspace cannot be defined in URL for a POST
             return {}, 400
 
         json_data = flask.request.get_json().get('data', {})
-        if json_data.get('type') != "meta-workspaces":
+        if json_data.get('type') != "projects":
             return {}, 400
 
         attributes = json_data.get('attributes', {})
@@ -961,7 +961,7 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
         if not name or not lifecycle:
             return {}, 400
 
-        meta_workspace = MetaWorkspace.create(
+        project = Project.create(
             organisation=organisation,
             name=name,
             description=attributes.get('description'),
@@ -969,48 +969,48 @@ class ApiTerraformOrganisationMetaWorkspaces(AuthenticatedEndpoint):
         )
 
         # If meta workspace failed to be cr
-        if not meta_workspace:
+        if not project:
             return {}, 400
 
         return {
-            "data": meta_workspace.get_api_details()
+            "data": project.get_api_details()
         }
 
 
-class ApiTerraformMetaWorkspaces(AuthenticatedEndpoint):
-    """Interface to show/update meta-workspaces"""
+class ApiTerraformProjects(AuthenticatedEndpoint):
+    """Interface to show/update projects"""
 
-    def check_permissions_get(self, meta_workspace_id, current_user, *args, **kwargs):
+    def check_permissions_get(self, project_id, current_user, *args, **kwargs):
         """Check permissions"""
-        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
-        if not meta_workspace:
+        project = Project.get_by_api_id(project_id)
+        if not project:
             return False
-        return OrganisationPermissions(organisation=meta_workspace.organisation, current_user=current_user).check_permission(
+        return OrganisationPermissions(organisation=project.organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, meta_workspace_id, current_user):
+    def _get(self, project_id, current_user):
         """Return list of environments for organisation"""
-        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
-        if not meta_workspace:
+        project = Project.get_by_api_id(project_id)
+        if not project:
             return {}, 404
 
         return {
-            "data": meta_workspace.get_api_details()
+            "data": project.get_api_details()
         }
 
-    def check_permissions_patch(self, meta_workspace_id, current_user, *args, **kwargs):
+    def check_permissions_patch(self, project_id, current_user, *args, **kwargs):
         """Check permissions"""
-        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
-        if not meta_workspace:
+        project = Project.get_by_api_id(project_id)
+        if not project:
             return False
-        return OrganisationPermissions(organisation=meta_workspace.organisation, current_user=current_user).check_permission(
+        return OrganisationPermissions(organisation=project.organisation, current_user=current_user).check_permission(
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, meta_workspace_id, current_user):
+    def _post(self, project_id, current_user):
         """Create environment"""
-        meta_workspace = MetaWorkspace.get_by_api_id(meta_workspace_id)
-        if not meta_workspace:
+        project = Project.get_by_api_id(project_id)
+        if not project:
             return {}, 404
 
         json_data = flask.request.get_json().get('data', {})
@@ -1020,13 +1020,13 @@ class ApiTerraformMetaWorkspaces(AuthenticatedEndpoint):
         attributes = json_data.get('attributes', {})
         name = attributes.get('name')
 
-        meta_workspace.update_attributes(
+        project.update_attributes(
             name=name,
             variables=json.dumps(attributes.get('variables', {}))
         )
 
         return {
-            "data": meta_workspace.get_api_details()
+            "data": project.get_api_details()
         }
 
 
@@ -1042,7 +1042,7 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
     def _get(self, organisation_name, current_user):
-        """Return list of meta-workspaces for organisation"""
+        """Return list of projects for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
@@ -1063,7 +1063,7 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
     def _post(self, organisation_name, current_user):
-        """Create meta-workspace"""
+        """Create project"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return {}, 404
@@ -1783,7 +1783,7 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
         }
 
 
-class ApiTerrarunMetaWorkspaceCreateNameValidation(AuthenticatedEndpoint):
+class ApiTerrarunProjectCreateNameValidation(AuthenticatedEndpoint):
     """Endpoint to validate new workspace name"""
 
     def check_permissions_post(self, organisation_name, current_user):
@@ -1806,7 +1806,7 @@ class ApiTerrarunMetaWorkspaceCreateNameValidation(AuthenticatedEndpoint):
 
         return {
             "data": {
-                "valid": MetaWorkspace.validate_new_name(organisation, args.name),
+                "valid": Project.validate_new_name(organisation, args.name),
                 "name": args.name
             }
         }

@@ -4,19 +4,19 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map, Observable, switchMap } from 'rxjs';
 import { EnvironmentService } from 'src/app/environment.service';
 import { LifecycleService } from 'src/app/lifecycle.service';
-import { MetaWorkspaceService } from 'src/app/meta-workspace.service';
+import { ProjectService } from 'src/app/project.service';
 import { OrganisationService } from 'src/app/organisation.service';
 import { OrganisationStateType, StateService } from 'src/app/state.service';
 import { WorkspaceService } from 'src/app/workspace.service';
 
 @Component({
-  selector: 'app-meta-workspace-list',
-  templateUrl: './meta-workspace-list.component.html',
-  styleUrls: ['./meta-workspace-list.component.scss']
+  selector: 'app-project-list',
+  templateUrl: './project-list.component.html',
+  styleUrls: ['./project-list.component.scss']
 })
-export class MetaWorkspaceListComponent implements OnInit {
+export class ProjectListComponent implements OnInit {
 
-  metaWorkspaces$: Observable<any>;
+  projects$: Observable<any>;
   organisationLifecycles$: Observable<any>;
   tableColumns: string[] = ['name', 'description'];
 
@@ -36,12 +36,12 @@ export class MetaWorkspaceListComponent implements OnInit {
 
   constructor(private state: StateService,
               private organisationService: OrganisationService,
-              private metaWorkspaceService: MetaWorkspaceService,
+              private projectService: ProjectService,
               private lifecycleService: LifecycleService,
               private router: Router,
               private route: ActivatedRoute,
               private formBuilder: FormBuilder) {
-    this.metaWorkspaces$ = new Observable();
+    this.projects$ = new Observable();
     this.organisationLifecycles$ = new Observable();
 
     this.state.currentOrganisation.subscribe((organisationData) => {
@@ -50,7 +50,7 @@ export class MetaWorkspaceListComponent implements OnInit {
 
         this.currentOrganisation = organisationData;
 
-        this.metaWorkspaces$ = this.organisationService.getAllMetaWorkspaces(organisationData.name).pipe(
+        this.projects$ = this.organisationService.getAllProjects(organisationData.name).pipe(
           map((data) => {
             return Array.from({length: data.length},
               (_, n) => ({'data': data[n]})
@@ -68,23 +68,23 @@ export class MetaWorkspaceListComponent implements OnInit {
   validateName(): void {
     this.nameValid = this.nameValidStates.loading;
 
-    this.metaWorkspaceService.validateNewName(this.currentOrganisation?.name || '', this.form.value.name).then((validationResult) => {
+    this.projectService.validateNewName(this.currentOrganisation?.name || '', this.form.value.name).then((validationResult) => {
       this.nameValid = validationResult.valid ? this.nameValidStates.valid : this.nameValidStates.invalid;
     });
   }
   onCreate(): void {
-    this.metaWorkspaceService.create(
+    this.projectService.create(
       this.currentOrganisation?.name || '',
       this.form.value.name,
       this.form.value.description,
       this.form.value.lifecycle
-    ).then((metaWorkspace) => {
-      console.log(metaWorkspace);
-      this.router.navigateByUrl(`/${this.currentOrganisation?.name}/projects/${metaWorkspace.data.attributes.name}`);
+    ).then((project) => {
+      console.log(project);
+      this.router.navigateByUrl(`/${this.currentOrganisation?.name}/projects/${project.data.attributes.name}`);
     });
   }
 
-  onMetaWorkspaceClick(target: any) {
+  onProjectClick(target: any) {
     console.log(target.data)
     this.router.navigateByUrl(`/${this.currentOrganisation?.name}/projects/${target.data.attributes.name}`)
   }

@@ -36,10 +36,10 @@ class Workspace(Base, BaseObject):
 
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, nullable=False)
 
-    meta_workspace_id = sqlalchemy.Column(
-        sqlalchemy.ForeignKey("meta_workspace.id", name="workspace_meta_workspace_id_meta_workspace_id"),
+    project_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("project.id", name="workspace_project_id_project_id"),
         nullable=False)
-    meta_workspace = sqlalchemy.orm.relationship("MetaWorkspace", back_populates="workspaces")
+    project = sqlalchemy.orm.relationship("Project", back_populates="workspaces")
 
     environment_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("environment.id", name="fk_workspace_environment_id_environment_id"),
@@ -105,8 +105,8 @@ class Workspace(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, organisation, meta_workspace, environment):
-        ws = cls(organisation=organisation, meta_workspace=meta_workspace, environment=environment)
+    def create(cls, organisation, project, environment):
+        ws = cls(organisation=organisation, project=project, environment=environment)
         session = Database.get_session()
         session.add(ws)
         session.commit()
@@ -162,7 +162,7 @@ class Workspace(Base, BaseObject):
         """Return name"""
         if self._name is not None:
             return self._name
-        return f"{self.meta_workspace.name}-{self.environment.name}"
+        return f"{self.project.name}-{self.environment.name}"
 
     @name.setter
     def name(self, value):
@@ -174,7 +174,7 @@ class Workspace(Base, BaseObject):
         """Return description"""
         if self._description is not None:
             return self._description
-        return self.meta_workspace.description
+        return self.project.description
 
     @description.setter
     def description(self, value):
@@ -186,7 +186,7 @@ class Workspace(Base, BaseObject):
         """Return allow_destroy_plan"""
         if self._allow_destroy_plan is not None:
             return self._allow_destroy_plan
-        return self.meta_workspace.allow_destroy_plan
+        return self.project.allow_destroy_plan
 
     @allow_destroy_plan.setter
     def allow_destroy_plan(self, value):
@@ -198,7 +198,7 @@ class Workspace(Base, BaseObject):
         """Return auto_apply"""
         if self._auto_apply is not None:
             return self._auto_apply
-        return self.meta_workspace.auto_apply
+        return self.project.auto_apply
 
     @auto_apply.setter
     def auto_apply(self, value):
@@ -210,7 +210,7 @@ class Workspace(Base, BaseObject):
         """Return execution_mode"""
         if self._execution_mode is not None:
             return self._execution_mode
-        return self.meta_workspace.execution_mode
+        return self.project.execution_mode
 
     @execution_mode.setter
     def execution_mode(self, value):
@@ -222,7 +222,7 @@ class Workspace(Base, BaseObject):
         """Return file_triggers_enabled"""
         if self._file_triggers_enabled is not None:
             return self._file_triggers_enabled
-        return self.meta_workspace.file_triggers_enabled
+        return self.project.file_triggers_enabled
 
     @file_triggers_enabled.setter
     def file_triggers_enabled(self, value):
@@ -234,7 +234,7 @@ class Workspace(Base, BaseObject):
         """Return file_triggers_enabled"""
         if self._global_remote_state is not None:
             return self._global_remote_state
-        return self.meta_workspace.global_remote_state
+        return self.project.global_remote_state
 
     @global_remote_state.setter
     def global_remote_state(self, value):
@@ -246,7 +246,7 @@ class Workspace(Base, BaseObject):
         """Return operations"""
         if self._operations is not None:
             return self._operations
-        return self.meta_workspace.operations
+        return self.project.operations
 
     @operations.setter
     def operations(self, value):
@@ -258,7 +258,7 @@ class Workspace(Base, BaseObject):
         """Return queue_all_runs"""
         if self._queue_all_runs is not None:
             return self._queue_all_runs
-        return self.meta_workspace.queue_all_runs
+        return self.project.queue_all_runs
 
     @queue_all_runs.setter
     def queue_all_runs(self, value):
@@ -270,7 +270,7 @@ class Workspace(Base, BaseObject):
         """Return speculative_enabled"""
         if self._speculative_enabled is not None:
             return self._speculative_enabled
-        return self.meta_workspace.speculative_enabled
+        return self.project.speculative_enabled
 
     @speculative_enabled.setter
     def speculative_enabled(self, value):
@@ -282,7 +282,7 @@ class Workspace(Base, BaseObject):
         """Return terraform_version"""
         if self._terraform_version is not None:
             return self._terraform_version
-        return self.meta_workspace.terraform_version
+        return self.project.terraform_version
 
     @terraform_version.setter
     def terraform_version(self, value):
@@ -294,7 +294,7 @@ class Workspace(Base, BaseObject):
         """Return trigger_prefixes"""
         if self._trigger_prefixes is not None:
             return self._trigger_prefixes
-        return self.meta_workspace.trigger_prefixes
+        return self.project.trigger_prefixes
 
     @trigger_prefixes.setter
     def trigger_prefixes(self, value):
@@ -306,7 +306,7 @@ class Workspace(Base, BaseObject):
         """Return trigger_patterns"""
         if self._trigger_patterns is not None:
             return self._trigger_patterns
-        return self.meta_workspace.trigger_patterns
+        return self.project.trigger_patterns
 
     @trigger_patterns.setter
     def trigger_patterns(self, value):
@@ -318,7 +318,7 @@ class Workspace(Base, BaseObject):
         """Return vcs_repo"""
         if self._vcs_repo is not None:
             return self._vcs_repo
-        return self.meta_workspace.vcs_repo
+        return self.project.vcs_repo
 
     @vcs_repo.setter
     def vcs_repo(self, value):
@@ -330,7 +330,7 @@ class Workspace(Base, BaseObject):
         """Return vcs_repo_oath_token_id"""
         if self._vcs_repo_oath_token_id is not None:
             return self._vcs_repo_oath_token_id
-        return self.meta_workspace.vcs_repo_oath_token_id
+        return self.project.vcs_repo_oath_token_id
 
     @vcs_repo_oath_token_id.setter
     def vcs_repo_oath_token_id(self, value):
@@ -342,7 +342,7 @@ class Workspace(Base, BaseObject):
         """Return vcs_repo_branch"""
         if self._vcs_repo_branch is not None:
             return self._vcs_repo_branch
-        return self.meta_workspace.vcs_repo_branch
+        return self.project.vcs_repo_branch
 
     @vcs_repo_branch.setter
     def vcs_repo_branch(self, value):
@@ -354,7 +354,7 @@ class Workspace(Base, BaseObject):
         """Return vcs_repo_ingress_submodules"""
         if self._vcs_repo_ingress_submodules is not None:
             return self._vcs_repo_ingress_submodules
-        return self.meta_workspace.vcs_repo_ingress_submodules
+        return self.project.vcs_repo_ingress_submodules
 
     @vcs_repo_ingress_submodules.setter
     def vcs_repo_ingress_submodules(self, value):
@@ -366,7 +366,7 @@ class Workspace(Base, BaseObject):
         """Return vcs_repo_identifier"""
         if self._vcs_repo_identifier is not None:
             return self._vcs_repo_identifier
-        return self.meta_workspace.vcs_repo_identifier
+        return self.project.vcs_repo_identifier
 
     @vcs_repo_identifier.setter
     def vcs_repo_identifier(self, value):
@@ -378,7 +378,7 @@ class Workspace(Base, BaseObject):
         """Return vcs_repo_tags_regex"""
         if self._vcs_repo_tags_regex is not None:
             return self._vcs_repo_tags_regex
-        return self.meta_workspace.vcs_repo_tags_regex
+        return self.project.vcs_repo_tags_regex
 
     @vcs_repo_tags_regex.setter
     def vcs_repo_tags_regex(self, value):
@@ -390,7 +390,7 @@ class Workspace(Base, BaseObject):
         """Return working_directory"""
         if self._working_directory is not None:
             return self._working_directory
-        return self.meta_workspace.working_directory
+        return self.project.working_directory
 
     @working_directory.setter
     def working_directory(self, value):
@@ -402,7 +402,7 @@ class Workspace(Base, BaseObject):
         """Return assessments_enabled"""
         if self._assessments_enabled is not None:
             return self._assessments_enabled
-        return self.meta_workspace.assessments_enabled
+        return self.project.assessments_enabled
 
     @assessments_enabled.setter
     def assessments_enabled(self, value):

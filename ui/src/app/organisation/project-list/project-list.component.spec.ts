@@ -3,22 +3,22 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { RouterTestingModule } from '@angular/router/testing';
 
-import { MetaWorkspaceListComponent } from './meta-workspace-list.component';
+import { ProjectListComponent } from './project-list.component';
 
-describe('MetaWorkspaceListComponent', () => {
-  let component: MetaWorkspaceListComponent;
-  let fixture: ComponentFixture<MetaWorkspaceListComponent>;
+describe('ProjectListComponent', () => {
+  let component: ProjectListComponent;
+  let fixture: ComponentFixture<ProjectListComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ MetaWorkspaceListComponent ],
+      declarations: [ ProjectListComponent ],
       imports: [ HttpClientTestingModule, RouterTestingModule, ReactiveFormsModule ]
     })
     .compileComponents();
   });
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(MetaWorkspaceListComponent);
+    fixture = TestBed.createComponent(ProjectListComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

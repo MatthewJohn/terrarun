@@ -3,12 +3,12 @@
         <nb-card>
             <nb-card-body>
 
-            <table [nbTreeGrid]="metaWorkspaces$ | async" equalColumnsWidth>
+            <table [nbTreeGrid]="projects$ | async" equalColumnsWidth>
 
                 <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
                 <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
-                    <td nbTreeGridCell class="metaWorkspaceRow" (click)="onMetaWorkspaceClick(row)" *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
+                    <td nbTreeGridCell class="projectRow" (click)="onProjectClick(row)" *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
                 </ng-container>
 
             </table>

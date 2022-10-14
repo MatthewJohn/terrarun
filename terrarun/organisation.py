@@ -85,7 +85,7 @@ class Organisation(Base, BaseObject):
     audit_events = sqlalchemy.orm.relation("AuditEvent", back_populates="organisation")
     environments = sqlalchemy.orm.relation("Environment", back_populates="organisation")
     lifecycles = sqlalchemy.orm.relation("Lifecycle", back_populates="organisation", foreign_keys=[Lifecycle.organisation_id])
-    meta_workspaces = sqlalchemy.orm.relation("MetaWorkspace", back_populates="organisation")
+    projects = sqlalchemy.orm.relation("Project", back_populates="organisation")
 
     default_lifecycle_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("lifecycle.id", name="fk_organisation_default_lifecycle_id_lifecycle_id"),

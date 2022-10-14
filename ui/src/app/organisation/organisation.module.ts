@@ -11,7 +11,7 @@ import { OverviewComponent } from './overview/overview.component';
 import { SettingsComponent } from './settings/settings.component';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { TaskListComponent } from './task-list/task-list.component';
-import { MetaWorkspaceListComponent } from './meta-workspace-list/meta-workspace-list.component';
+import { ProjectListComponent } from './project-list/project-list.component';
 
 
 @NgModule({
@@ -20,7 +20,7 @@ import { MetaWorkspaceListComponent } from './meta-workspace-list/meta-workspace
     ListComponent,
     WorkspaceListComponent,
     TaskListComponent,
-    MetaWorkspaceListComponent,
+    ProjectListComponent,
     OverviewComponent,
     SettingsComponent
   ],
