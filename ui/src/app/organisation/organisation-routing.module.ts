@@ -40,7 +40,7 @@ const routes: Routes = [
   },
   {
     path: ':organisationName/projects/:projectName',
-    loadChildren:  () => import('../project/project.module'),
+    loadChildren:  () => import('../project/project.module').then(m => m.ProjectModule),
     canActivate: [LoggedInGuard, OrganisationExistsGuard, ProjectExistsGuard]
   },
   {
