@@ -22,7 +22,19 @@ export class OverviewComponent implements OnInit {
     private workspaceService: WorkspaceService,
     private router: Router
   ) {
-    this.currentProject = stateService.currentProject;
+    this.currentProject = new Observable();
+    this.workspaceList = [];
+    this.workspaces = new Map<string, Observable<any>>();
+  }
+
+  onWorkspaceClick(workspaceId: string): void {
+    this.workspaces.get(workspaceId)?.subscribe((data) => {
+      this.router.navigateByUrl(`/${this.stateService.currentOrganisation.value?.name}/${data.data.attributes.name}`);
+    });
+  }
+
+  ngOnInit(): void {
+    this.currentProject = this.stateService.currentProject;
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
 
@@ -51,14 +63,6 @@ export class OverviewComponent implements OnInit {
         }
       })
     })
-  }
-
-  onWorkspaceClick(workspaceId: string): void {
-    console.log('Redirecting to: ', `/${this.stateService.currentOrganisation.value?.name}/${workspaceId}`);
-    this.router.navigateByUrl(`/${this.stateService.currentOrganisation.value?.name}/${workspaceId}`)
-  }
-
-  ngOnInit(): void {
   }
 
 }

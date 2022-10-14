@@ -28,7 +28,7 @@ class Workspace(Base, BaseObject):
 
     __tablename__ = 'workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    _name = sqlalchemy.Column(sqlalchemy.String, default=None, name="name")
+    name = sqlalchemy.Column(sqlalchemy.String, default=None)
     _description = sqlalchemy.Column(sqlalchemy.String, default=None, name="description")
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
@@ -108,9 +108,14 @@ class Workspace(Base, BaseObject):
     def create(cls, organisation, project, environment):
         ws = cls(organisation=organisation, project=project, environment=environment)
         session = Database.get_session()
+        ws.reset_name()
         session.add(ws)
         session.commit()
         return ws
+
+    def reset_name(self):
+        """Reset name of workspace, based on project name and environment name"""
+        self.name = f"{self.project.name}-{self.environment.name}"
 
     def add_tag(self, tag):
         """Add tag to list of tags"""
@@ -156,18 +161,6 @@ class Workspace(Base, BaseObject):
             terrarun.run.Run.created_at.desc()
         ).first()
         return run
-
-    @property
-    def name(self):
-        """Return name"""
-        if self._name is not None:
-            return self._name
-        return f"{self.project.name}-{self.environment.name}"
-
-    @name.setter
-    def name(self, value):
-        """Set name, default to None, if non-truthful value."""
-        self._name = value if value else None
 
     @property
     def description(self):
