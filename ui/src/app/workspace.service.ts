@@ -45,7 +45,7 @@ export class WorkspaceService {
     });
   }
 
-  getDetailsByName(organisationName: string, workspaceName: string) {
+  getDetailsByName(organisationName: string, workspaceName: string): Observable<any> {
     return this.http.get<any>(
       `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/workspaces/${workspaceName}`,
       { headers: this.accountService.getAuthHeader() }
