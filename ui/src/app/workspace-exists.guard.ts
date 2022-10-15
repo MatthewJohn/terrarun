@@ -22,7 +22,7 @@ export class WorkspaceExistsGuard implements CanActivate {
             resolve(true);
           },
           error: (err) => {
-            this.stateService.currentOrganisation.next({id: null, name: null});
+            this.stateService.currentWorkspace.next({id: null, name: null});
             this.stateService.currentRun.next({id: null});
             resolve(false);
           }
