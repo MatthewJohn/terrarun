@@ -694,10 +694,21 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
+        # Obtain project name from search_tags
+        project_name = request.args.get('search[tags]', None)
+        if project_name:
+            project = Project.get_by_name(organisation=organisation, name=project_name)
+            if project is None:
+                return {}, 404
+            workspaces = project.workspaces
+        # If no search tags are provided, return all workspaces
+        else:
+            workspaces = organisation.workspaces
+
         return {
             "data": [
                 workspace.get_api_details(effective_user=current_user)
-                for workspace in organisation.workspaces
+                for workspace in workspaces
             ]
         }
 
