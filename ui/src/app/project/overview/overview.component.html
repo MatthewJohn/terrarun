@@ -1,0 +1,16 @@
+
+<nb-card>
+    <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
+    <nb-card-body>
+        <table id="projectEnvironmentsTable">
+            <thead>
+                <tr>
+                    <th>Environments</th>
+                </tr>
+            </thead>
+            <tr *ngFor="let workspaceId of workspaceList">
+                <td (click)="onWorkspaceClick(workspaceId)" *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async).data.attributes.environment}}</td>
+            </tr>
+        </table>
+    </nb-card-body>
+</nb-card>

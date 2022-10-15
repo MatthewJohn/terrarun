@@ -98,4 +98,10 @@ export class OrganisationService {
                               { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
 
   }
+
+  getAllProjects(organisationName: string): Observable<any> {
+    return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/projects`,
+                              { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
+
+  }
 }

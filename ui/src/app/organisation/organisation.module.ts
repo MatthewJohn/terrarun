@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { OrganisationRoutingModule } from './organisation-routing.module';
 import { CreateComponent } from './create/create.component';
-import { NbButtonModule, NbCardModule, NbCheckboxModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbToggleModule, NbTreeGridModule } from '@nebular/theme';
+import { NbButtonModule, NbCardModule, NbCheckboxModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbSelectModule, NbToggleModule, NbTreeGridModule } from '@nebular/theme';
 import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ListComponent } from './list/list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
@@ -11,6 +11,7 @@ import { OverviewComponent } from './overview/overview.component';
 import { SettingsComponent } from './settings/settings.component';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { TaskListComponent } from './task-list/task-list.component';
+import { ProjectListComponent } from './project-list/project-list.component';
 
 
 @NgModule({
@@ -19,6 +20,7 @@ import { TaskListComponent } from './task-list/task-list.component';
     ListComponent,
     WorkspaceListComponent,
     TaskListComponent,
+    ProjectListComponent,
     OverviewComponent,
     SettingsComponent
   ],
@@ -34,6 +36,7 @@ import { TaskListComponent } from './task-list/task-list.component';
     NbIconModule,
     NbButtonModule,
     NbTreeGridModule,
+    NbSelectModule,
 
     FormsModule,
     ReactiveFormsModule,

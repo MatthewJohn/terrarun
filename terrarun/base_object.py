@@ -59,8 +59,19 @@ class BaseObject:
         if id is None:
             return None
 
+        return cls.get_by_id(id)
+
+    @classmethod
+    def get_by_id(cls, id):
+        """Return object by ID"""
         session = Database.get_session()
         return session.query(cls).where(cls.id==id).first()
+
+    def __eq__(self, comp):
+        """Check if current object is equal to another, comparing API ID"""
+        if isinstance(comp, BaseObject):
+            return self.api_id == comp.api_id
+        return super(BaseObject, self).__eq__(comp)
 
     def update_attributes(self, session=None, **kwargs):
         """Update attributes of task result"""

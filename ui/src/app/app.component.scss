@@ -3,4 +3,11 @@
     text-decoration: none;
     color: var(--text-hint-color);
     font-size: 3.5rem;
-}  
+}
+.footer-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1040;
+  }
