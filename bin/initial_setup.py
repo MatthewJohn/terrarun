@@ -14,7 +14,7 @@ parser = ArgumentParser()
 parser.add_argument('--organisation', type=str, default="default")
 parser.add_argument('--organisation-email', dest="organisation_email", type=str, required=True)
 parser.add_argument('--lifecycle', type=str, default="default")
-parser.add_argument('--environment', type=str, default="default")
+parser.add_argument('--environment', type=str, nargs="+", default=["dev", "prod"])
 
 args = parser.parse_args()
 
@@ -28,10 +28,11 @@ print('Created lifecycle:', lifecycle.name, lifecycle.api_id)
 org.update_attributes(default_lifecycle=lifecycle)
 print('Updated organisation default lifecycle')
 
-environment = terrarun.Environment.create(organisation=org, name=args.environment)
-print('Created environment:', environment.name, environment.api_id)
+for environment_name in args.environment:
+    environment = terrarun.Environment.create(organisation=org, name=environment_name)
+    print('Created environment:', environment.name, environment.api_id)
 
-lifecycle.associate_environment(environment=environment, order=0)
-print('Added environment to lifecycle')
+    lifecycle.associate_environment(environment=environment, order=0)
+    print('Added environment to lifecycle')
 
 print('Done')
