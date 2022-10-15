@@ -694,13 +694,22 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
-        # Obtain project name from search_tags
-        project_name = request.args.get('search[tags]', None)
-        if project_name:
-            project = Project.get_by_name(organisation=organisation, name=project_name)
-            if project is None:
+        # Obtain project names from search_tags
+        project_search = request.args.get('search[tags]', None)
+        if project_search:
+            workspaces = []
+            # Iterate over projects and, if they exist, add their
+            # environments to the list of environments to return
+            for project_name in project_search.split(','):
+                if project_name:
+                    project = Project.get_by_name(organisation=organisation, name=project_name)
+                    if project is not None:
+                        workspaces += project.workspaces
+
+            # Return 404 if no workspaces were found
+            if not workspaces:
                 return {}, 404
-            workspaces = project.workspaces
+
         # If no search tags are provided, return all workspaces
         else:
             workspaces = organisation.workspaces
