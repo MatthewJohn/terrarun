@@ -118,6 +118,10 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
         self._api.add_resource(
+            ApiTerraformOrganisationWorkspaceRelationshipsProjects,
+            '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>/relationships/projects'
+        )
+        self._api.add_resource(
             ApiTerraformOrganisationTasks,
             '/api/v2/organizations/<string:organisation_name>/tasks'
         )
@@ -1277,6 +1281,31 @@ class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
             if not tag:
                 tag = Tag.create(organisation=workspace.organisation, tag_name=tag_name)
             workspace.add_tag(tag)
+
+
+class ApiTerraformOrganisationWorkspaceRelationshipsProjects(AuthenticatedEndpoint):
+    """Interface to obtain workspace's project"""
+
+    def check_permissions_get(self, organisation_name, workspace_name, current_user):
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return False
+        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, current_user, organisation_name, workspace_name):
+        """Obtain workspace project details"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return False
+
+        return {'data': workspace.project.get_api_details()}
 
 
 class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):

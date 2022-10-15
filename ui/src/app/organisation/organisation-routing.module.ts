@@ -56,7 +56,7 @@ const routes: Routes = [
   {
     path: ':organisationName/:workspaceName',
     loadChildren: () => import(`../workspace/workspace.module`).then(m => m.WorkspaceModule),
-    canActivate: [LoggedInGuard, OrganisationExistsGuard, WorkspaceExistsGuard]
+    canActivate: [LoggedInGuard, OrganisationExistsGuard, ProjectExistsGuard, WorkspaceExistsGuard]
   }
 ];
 

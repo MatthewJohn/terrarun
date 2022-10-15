@@ -14,8 +14,19 @@ export class ProjectExistsGuard implements CanActivate {
     route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): Observable<boolean | UrlTree> | Promise<boolean | UrlTree> | boolean | UrlTree {
       return new Promise<boolean>((resolve, reject) => {
-        this.projectService.getDetailsByName(route.paramMap.get('organisationName') || '',
-                                                   route.paramMap.get('projectName') || '').subscribe({
+        let organisationName = route.paramMap.get('organisationName') || '';
+        let workspaceName = route.paramMap.get('workspaceName');
+
+        let projectObserable: Observable<any>;
+        if (workspaceName) {
+          projectObserable = this.projectService.getDetailsByOrganisationNameAndWorkspaceName(organisationName, workspaceName)
+        } else {
+          projectObserable = this.projectService.getDetailsByName(
+            organisationName,
+            route.paramMap.get('projectName') || ''
+          );
+        }
+        projectObserable.subscribe({
           next: (data) => {
             this.stateService.currentProject.next({id: data.data.id, name: data.data.attributes.name});
             this.stateService.currentRun.next({id: null});
