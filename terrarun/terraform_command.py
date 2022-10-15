@@ -76,12 +76,19 @@ class TerraformCommand(BaseObject):
             sleep(0.5)
         session.close()
 
-    def _run_command(self, command, work_dir):
+    def _run_command(self, command, work_dir, environment_variables=None):
+        """Run system command, pping output into output object"""
+
+        if environment_variables is None:
+            environment_variables = os.environ.copy()
+
         command_proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            cwd=work_dir)
+            cwd=work_dir,
+            env=environment_variables)
+
         cancel_monitor = threading.Thread(
             target=self.__class__._command_cancel_check,
             args=(self.id, command_proc,))
