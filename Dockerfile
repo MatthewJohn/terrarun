@@ -4,8 +4,7 @@ WORKDIR /
 
 RUN apt-get update && apt-get install --assume-yes curl unzip git && apt-get clean all
 
-RUN bash -c 'git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv; \
-    ln -s ~/.tfenv/bin/* /usr/local/bin'
+RUN bash -c 'curl -L https://raw.githubusercontent.com/warrensbox/terraform-switcher/release/install.sh | bash'
 
 
 RUN bash -c 'if [ "$(uname -m)" == "aarch64" ]; \
