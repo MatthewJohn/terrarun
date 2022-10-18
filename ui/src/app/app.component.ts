@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { NbMenuItem, NbSidebarService } from '@nebular/theme';
 import { AccountService } from './account.service';
 import { HomeComponent } from './home/home.component';
-import { AuthenticationStateType, OrganisationStateType, RunStateType, StateService, WorkspaceStateType } from './state.service';
+import { AuthenticationStateType, OrganisationStateType, ProjectStateType, RunStateType, StateService, WorkspaceStateType } from './state.service';
 
 @Component({
   selector: 'app-root',
@@ -14,6 +14,7 @@ export class AppComponent {
   title = 'ui';
   _authenticationState: AuthenticationStateType = {authenticated: false, id: null, username: null};
   _currentOrganisationState: OrganisationStateType = {id: null, name: null};
+  _currentProjectState: ProjectStateType = {id: null, name: null};
   _currentWorkspace: WorkspaceStateType = {id: null, name: null};
   _currentRun: RunStateType = {id: null};
   items: NbMenuItem[] = [];
@@ -31,6 +32,10 @@ export class AppComponent {
       this._currentOrganisationState = data;
       this.updateMenuItems();
     });
+    this.stateService.currentProject.subscribe((data) => {
+      this._currentProjectState = data;
+      this.updateMenuItems();
+    })
     this.stateService.currentWorkspace.subscribe((data) => {
       this._currentWorkspace = data;
       this.updateMenuItems();
@@ -87,8 +92,8 @@ export class AppComponent {
               link: `/${this._currentOrganisationState.id}`
             },
             {
-              title: 'Workspaces',
-              link: `/${this._currentOrganisationState.id}/workspaces`
+              title: 'Projects',
+              link: `/${this._currentOrganisationState.id}/projects`
             },
             {
               title: 'Tasks',
@@ -100,8 +105,14 @@ export class AppComponent {
             }
           ]
         });
-        if (this._currentWorkspace.id) {
+        if (this._currentProjectState.id) {
           this.items.splice(3, 0, {
+            title: `Project: ${this._currentProjectState.name}`,
+            link: `/${this._currentOrganisationState.id}/projects/${this._currentProjectState.name}`
+          });
+        }
+        if (this._currentWorkspace.id) {
+          this.items.splice(4, 0, {
             title: `Workspace: ${this._currentWorkspace.name}`,
             link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}`,
             children: [
@@ -117,7 +128,7 @@ export class AppComponent {
           })
         }
         if (this._currentRun.id) {
-          this.items.splice(4, 0, {
+          this.items.splice(5, 0, {
             title: `Run: ${this._currentRun.id}`,
             link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/runs/${this._currentRun.id}`
           });

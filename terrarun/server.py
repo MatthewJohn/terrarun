@@ -18,10 +18,13 @@ from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
 
 from terrarun import workspace
+from terrarun import project
 from terrarun.apply import Apply
 from terrarun.audit_event import AuditEvent
 from terrarun.configuration import ConfigurationVersion
 from terrarun.database import Database
+from terrarun.lifecycle import Lifecycle
+from terrarun.project import Project
 from terrarun.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
@@ -42,6 +45,7 @@ from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRun
 from terrarun.team_user_membership import TeamUserMembership
 from terrarun.team import Team
 from terrarun.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+from terrarun.environment import Environment
 
 
 class Server(object):
@@ -114,6 +118,10 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
         )
         self._api.add_resource(
+            ApiTerraformOrganisationWorkspaceRelationshipsProjects,
+            '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>/relationships/projects'
+        )
+        self._api.add_resource(
             ApiTerraformOrganisationTasks,
             '/api/v2/organizations/<string:organisation_name>/tasks'
         )
@@ -122,6 +130,10 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/runs/queue'
         )
 
+        self._api.add_resource(
+            ApiTerraformWorkspaces,
+            '/api/v2/workspaces/<string:workspace_id>'
+        )
         self._api.add_resource(
             ApiTerraformWorkspaceConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
@@ -221,7 +233,32 @@ class Server(object):
             '/api/v2/users/<string:user_id>/authentication-tokens'
         )
 
-        # Custom endpoints
+        # Custom Terrarun-specific endpoints
+        self._api.add_resource(
+            ApiTerraformOrganisationEnvironments,
+            '/api/v2/organizations/<string:organisation_name>/environments'
+        )
+        self._api.add_resource(
+            ApiTerraformEnvironments,
+            '/api/v2/environments/<string:envirionment_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationProjects,
+            '/api/v2/organizations/<string:organisation_name>/projects',
+            '/api/v2/organizations/<string:organisation_name>/projects/<string:project_name>'
+        )
+        self._api.add_resource(
+            ApiTerraformProjects,
+            '/api/v2/projects/<string:project_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationLifecycles,
+            '/api/v2/organizations/<string:organisation_name>/lifecycles'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycles,
+            '/api/v2/lifecycles/<string:lifecycle_id>'
+        )
         self._api.add_resource(
             ApiAuthenticate,
             '/api/terrarun/v1/authenticate'
@@ -233,6 +270,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerrarunWorkspaceCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/workspace-name-validate'
+        )
+        self._api.add_resource(
+            ApiTerrarunProjectCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/project-name-validate'
         )
         self._api.add_resource(
             ApiTerrarunTaskCreateNameValidation,
@@ -653,10 +694,30 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
+        # Obtain project names from search_tags
+        project_search = request.args.get('search[tags]', None)
+        if project_search:
+            workspaces = []
+            # Iterate over projects and, if they exist, add their
+            # environments to the list of environments to return
+            for project_name in project_search.split(','):
+                if project_name:
+                    project = Project.get_by_name(organisation=organisation, name=project_name)
+                    if project is not None:
+                        workspaces += project.workspaces
+
+            # Return 404 if no workspaces were found
+            if not workspaces:
+                return {}, 404
+
+        # If no search tags are provided, return all workspaces
+        else:
+            workspaces = organisation.workspaces
+
         return {
             "data": [
                 workspace.get_api_details(effective_user=current_user)
-                for workspace in organisation.workspaces
+                for workspace in workspaces
             ]
         }
 
@@ -749,6 +810,360 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
         }
 
 
+class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
+    """Interface to list/create organisation environments"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of environments for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                environment.get_api_details()
+                for environment in organisation.environments
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, organisation_name, current_user):
+        """Create environment"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "environments":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        if not name:
+            return {}, 400
+
+        environment = Environment.create(organisation=organisation, name=name)
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+
+class ApiTerraformEnvironments(AuthenticatedEndpoint):
+    """Interface to show/update environment"""
+
+    def check_permissions_get(self, environment_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return False
+        return OrganisationPermissions(organisation=environment.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, environment_id, current_user):
+        """Return list of environments for organisation"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return {}, 404
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+    def check_permissions_patch(self, environment_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return False
+        return OrganisationPermissions(organisation=environment.organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, environment_id, current_user):
+        """Create environment"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "environments":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+
+        environment.update_attributes(
+            name=name,
+            variables=json.dumps(attributes.get('variables', {}))
+        )
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+
+class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
+    """Interface to list/create organisation projects"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, project_name=None, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+
+        if project_name:
+            project = Project.get_by_name(organisation=organisation, name=project_name)
+            if not project:
+                return False
+
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user, project_name=None):
+        """Return list of projects for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        # If project has been defined in URL,
+        # return just the details for this project
+        if project_name:
+            if project := Project.get_by_name(organisation=organisation, name=project_name):
+                return {
+                    "data": project.get_api_details()
+                }
+            # Meta-workspace doesn't exist
+            else:
+                return {}, 404
+
+        return {
+            "data": [
+                project.get_api_details()
+                for project in organisation.projects
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, project_name=None, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
+
+    def _post(self, organisation_name, current_user, project_name=None):
+        """Create project"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        if project_name:
+            # Meta-workspace cannot be defined in URL for a POST
+            return {}, 400
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "projects":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        lifecycle_id = attributes.get('lifecycle')
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not name or not lifecycle:
+            return {}, 400
+
+        project = Project.create(
+            organisation=organisation,
+            name=name,
+            description=attributes.get('description'),
+            lifecycle=lifecycle
+        )
+
+        # If meta workspace failed to be cr
+        if not project:
+            return {}, 400
+
+        return {
+            "data": project.get_api_details()
+        }
+
+
+class ApiTerraformProjects(AuthenticatedEndpoint):
+    """Interface to show/update projects"""
+
+    def check_permissions_get(self, project_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return False
+        return OrganisationPermissions(organisation=project.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, project_id, current_user):
+        """Return list of environments for organisation"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return {}, 404
+
+        return {
+            "data": project.get_api_details()
+        }
+
+    def check_permissions_patch(self, project_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return False
+        return OrganisationPermissions(organisation=project.organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, project_id, current_user):
+        """Create environment"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "environments":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+
+        project.update_attributes(
+            name=name,
+            variables=json.dumps(attributes.get('variables', {}))
+        )
+
+        return {
+            "data": project.get_api_details()
+        }
+
+
+class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
+    """Interface to list/create organisation lifecycles"""
+
+    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user):
+        """Return list of projects for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                lifecycle.get_api_details()
+                for lifecycle in organisation.lifecycles
+            ]
+        }
+
+    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, organisation_name, current_user):
+        """Create project"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "lifecycles":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+        if not name:
+            return {}, 400
+
+        environment = Lifecycle.create(organisation=organisation, name=name)
+
+        return {
+            "data": environment.get_api_details()
+        }
+
+
+class ApiTerraformLifecycles(AuthenticatedEndpoint):
+    """Interface to show/update lifecycles"""
+
+    def check_permissions_get(self, lifecycle_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return False
+        return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, lifecycle_id, current_user):
+        """Return list of environments for organisation"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return {}, 404
+
+        return {
+            "data": lifecycle.get_api_details()
+        }
+
+    def check_permissions_patch(self, lifecycle_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return False
+        return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
+            # Most admin permission
+            OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    def _post(self, lifecycle_id, current_user):
+        """Update lifecycle"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "lifecycles":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+        name = attributes.get('name')
+
+        lifecycle.update_attributes(
+            name=name
+        )
+
+        return {
+            "data": lifecycle.get_api_details()
+        }
+
+
 class ApiTerraformTaskDetails(AuthenticatedEndpoint):
     """Interface to view/edit a task"""
 
@@ -801,6 +1216,26 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return {}, 404
+        return {"data": workspace.get_api_details(effective_user=current_user)}
+
+
+class ApiTerraformWorkspaces(AuthenticatedEndpoint):
+    """Workspaces details endpoint."""
+
+    def check_permissions_get(self, workspace_id, current_user, *args, **kwargs):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, workspace_id, current_user):
+        """Return workspace details."""
+        workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
         return {"data": workspace.get_api_details(effective_user=current_user)}
@@ -866,6 +1301,31 @@ class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
             if not tag:
                 tag = Tag.create(organisation=workspace.organisation, tag_name=tag_name)
             workspace.add_tag(tag)
+
+
+class ApiTerraformOrganisationWorkspaceRelationshipsProjects(AuthenticatedEndpoint):
+    """Interface to obtain workspace's project"""
+
+    def check_permissions_get(self, organisation_name, workspace_name, current_user):
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return False
+        return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
+            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+
+    def _get(self, current_user, organisation_name, workspace_name):
+        """Obtain workspace project details"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        if not workspace:
+            return False
+
+        return {'data': workspace.project.get_api_details()}
 
 
 class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
@@ -1392,6 +1852,35 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
                 "valid": Organisation.validate_new_name_id(name_id),
                 "name": args.name,
                 "name_id": name_id
+            }
+        }
+
+
+class ApiTerrarunProjectCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new workspace name"""
+
+    def check_permissions_post(self, organisation_name, current_user):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
+
+    def _post(self, organisation_name, current_user):
+        """Validate new organisation name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": Project.validate_new_name(organisation, args.name),
+                "name": args.name
             }
         }
 

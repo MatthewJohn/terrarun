@@ -15,6 +15,11 @@ export interface OrganisationStateType {
     name: string | null;
 }
 
+export interface ProjectStateType {
+    id: string | null;
+    name: string | null;
+}
+
 export interface WorkspaceStateType {
     id: string | null;
     name: string | null;
@@ -32,6 +37,7 @@ export class StateService {
 
     authenticationState: BehaviorSubject<AuthenticationStateType> = new BehaviorSubject<AuthenticationStateType>({authenticated: null, id: null, username: null});
     currentOrganisation: BehaviorSubject<OrganisationStateType> = new BehaviorSubject<OrganisationStateType>({id: null, name: null});
+    currentProject: BehaviorSubject<ProjectStateType> = new BehaviorSubject<ProjectStateType>({id: null, name: null});
     currentWorkspace: BehaviorSubject<WorkspaceStateType> = new BehaviorSubject<WorkspaceStateType>({id: null, name: null});
     currentRun: BehaviorSubject<RunStateType> = new BehaviorSubject<RunStateType>({id: null});
 
