@@ -9,6 +9,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+import terrarun.database
 from terrarun.config import Config
 from terrarun.lifecycle import Lifecycle
 from terrarun.permissions.organisation import OrganisationPermissions
@@ -35,11 +36,11 @@ class Organisation(Base, BaseObject):
     __tablename__ = 'organisation'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     # User-chosen name of org
-    name = sqlalchemy.Column(sqlalchemy.String)
+    name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     # Name used for URLs and API references
-    name_id = sqlalchemy.Column(sqlalchemy.String, unique=True)
+    name_id = sqlalchemy.Column(terrarun.database.Database.GeneralString, unique=True)
     # Admin email address
-    email = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    email = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
@@ -78,7 +79,7 @@ class Organisation(Base, BaseObject):
     user_limit = sqlalchemy.Column(sqlalchemy.Integer, default=None)
 
     send_passing_statuses_for_untriggered_speculative_plans = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-    owners_team_saml_role_id = sqlalchemy.Column(sqlalchemy.String, default=None)
+    owners_team_saml_role_id = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="organisation")
     tags = sqlalchemy.orm.relation("Tag", back_populates="organisation")

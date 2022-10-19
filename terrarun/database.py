@@ -22,6 +22,13 @@ class Database:
     _SESSIONS = {}
     blob_encoding_format = 'utf-8'
 
+    GENERAL_COLUMN_SIZE = 128
+    LARGE_COLUMN_SIZE = 1024
+    URL_COLUMN_SIZE = 1024
+
+    GeneralString = sqlalchemy.String(length=GENERAL_COLUMN_SIZE)
+    LargeString = sqlalchemy.String(length=LARGE_COLUMN_SIZE)
+
     @classmethod
     def get_engine(cls):
         """Get singleton instance of engine."""

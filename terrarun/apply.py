@@ -8,6 +8,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 import terrarun.config
+import terrarun.database
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
@@ -29,7 +30,7 @@ class Apply(TerraformCommand, Base):
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
-    changes = sqlalchemy.Column(sqlalchemy.String)
+    changes = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     @classmethod
     def create(cls, plan):
