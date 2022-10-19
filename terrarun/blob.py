@@ -16,4 +16,5 @@ class Blob(Base, BaseObject):
 
     __tablename__ = 'blob'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    data = sqlalchemy.Column(sqlalchemy.LargeBinary)
+    # Create blob of 200MB
+    data = sqlalchemy.Column(sqlalchemy.LargeBinary(length=((2**20) * 200)))

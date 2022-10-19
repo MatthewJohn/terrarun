@@ -8,6 +8,7 @@ import sqlalchemy.orm
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.utils import datetime_to_json
+import terrarun.database
 
 
 class Tag(Base, BaseObject):
@@ -17,7 +18,7 @@ class Tag(Base, BaseObject):
     __tablename__ = 'tag'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String)
+    name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)

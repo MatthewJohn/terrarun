@@ -3,6 +3,7 @@
 # Proprietary and confidential
 from terrarun.organisation import Organisation
 from terrarun.workspace import Workspace
+from terrarun.blob import Blob
 from terrarun.configuration import ConfigurationVersion
 from terrarun.run import Run
 from terrarun.state_version import StateVersion

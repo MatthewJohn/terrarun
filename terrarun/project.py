@@ -8,6 +8,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+import terrarun.database
 from terrarun.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 
@@ -20,8 +21,8 @@ class Project(Base, BaseObject):
 
     __tablename__ = 'project'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
-    description = sqlalchemy.Column(sqlalchemy.String)
+    name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    description = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
         "organisation.id", name="fk_project_organisation_id_organisation_id"),
@@ -43,16 +44,16 @@ class Project(Base, BaseObject):
     operations = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="operations")
     queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="queue_all_runs")
     speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="speculative_enabled")
-    terraform_version = sqlalchemy.Column(sqlalchemy.String, default=None, name="terraform_version")
-    trigger_prefixes = sqlalchemy.Column(sqlalchemy.String, default=None, name="trigger_prefixes")
-    trigger_patterns = sqlalchemy.Column(sqlalchemy.String, default=None, name="trigger_patterns")
-    vcs_repo = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo")
+    terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
+    trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
+    trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
+    vcs_repo = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo")
     vcs_repo_oath_token_id = None
-    vcs_repo_branch = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo_branch")
+    vcs_repo_branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_branch")
     vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="vcs_repo_ingress_submodules")
-    vcs_repo_identifier = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo_identifier")
-    vcs_repo_tags_regex = sqlalchemy.Column(sqlalchemy.String, default=None, name="vcs_repo_tags_regex")
-    working_directory = sqlalchemy.Column(sqlalchemy.String, default=None, name="working_directory")
+    vcs_repo_identifier = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_identifier")
+    vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
+    working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
 
     @classmethod

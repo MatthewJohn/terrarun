@@ -7,6 +7,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+import terrarun.database
 import terrarun.lifecycle_environment
 
 
@@ -18,7 +19,7 @@ class Environment(Base, BaseObject):
 
     __tablename__ = 'environment'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String)
+    name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     organisation_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("organisation.id", name="fk_environment_organisation_id_organisation_id"),

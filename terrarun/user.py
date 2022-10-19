@@ -13,6 +13,7 @@ import terrarun.organisation
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.permissions.user import UserPermissions
+import terrarun.database
 
 
 class UserType(Enum):
@@ -42,10 +43,10 @@ class User(Base, BaseObject):
     __tablename__ = 'user'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
-    username = sqlalchemy.Column(sqlalchemy.String, unique=True)
+    username = sqlalchemy.Column(terrarun.database.Database.GeneralString, unique=True)
     salt = sqlalchemy.Column(sqlalchemy.BLOB)
     _password = sqlalchemy.Column("password", sqlalchemy.BLOB)
-    email = sqlalchemy.Column(sqlalchemy.String, unique=True)
+    email = sqlalchemy.Column(terrarun.database.Database.GeneralString, unique=True)
     service_account = sqlalchemy.Column(sqlalchemy.Boolean)
     site_admin = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     user_type = sqlalchemy.Column(sqlalchemy.Enum(UserType, default=UserType.NORMAL))

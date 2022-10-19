@@ -13,6 +13,7 @@ import sqlalchemy.sql
 from terrarun.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
+import terrarun.database
 import terrarun.plan
 import terrarun.apply
 import terrarun.state_version
@@ -85,15 +86,15 @@ class Run(Base, BaseObject):
     status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
     confirmed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean)
-    message = sqlalchemy.Column(sqlalchemy.String)
+    message = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     plan_only = sqlalchemy.Column(sqlalchemy.Boolean)
     refresh = sqlalchemy.Column(sqlalchemy.Boolean)
     refresh_only = sqlalchemy.Column(sqlalchemy.Boolean)
     is_destroy = sqlalchemy.Column(sqlalchemy.Boolean)
-    _replace_addrs = sqlalchemy.Column("replace_addrs", sqlalchemy.String)
-    _target_addrs = sqlalchemy.Column("target_addrs", sqlalchemy.String)
-    _variables = sqlalchemy.Column("variables", sqlalchemy.String)
-    terraform_version = sqlalchemy.Column(sqlalchemy.String)
+    _replace_addrs = sqlalchemy.Column("replace_addrs", terrarun.database.Database.GeneralString)
+    _target_addrs = sqlalchemy.Column("target_addrs", terrarun.database.Database.GeneralString)
+    _variables = sqlalchemy.Column("variables", terrarun.database.Database.GeneralString)
+    terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 

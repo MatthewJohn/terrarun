@@ -8,6 +8,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+import terrarun.database
 
 
 class StateVersion(Base, BaseObject):
@@ -27,7 +28,7 @@ class StateVersion(Base, BaseObject):
     apply = sqlalchemy.orm.relation("Apply", back_populates="state_version")
     plan = sqlalchemy.orm.relation("Plan", back_populates="state_version")
 
-    _state_json = sqlalchemy.Column("state_version", sqlalchemy.String)
+    _state_json = sqlalchemy.Column("state_version", terrarun.database.Database.GeneralString)
 
     @property
     def state_json(self):

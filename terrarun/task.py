@@ -8,6 +8,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
+import terrarun.database
 
 
 class Task(Base, BaseObject):
@@ -20,11 +21,11 @@ class Task(Base, BaseObject):
     RESERVED_NAMES = []
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String, nullable=False)
-    url = sqlalchemy.Column(sqlalchemy.String)
-    description = sqlalchemy.Column(sqlalchemy.String)
+    name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    url = sqlalchemy.Column(terrarun.database.Database.GeneralString)
+    description = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     enabled = sqlalchemy.Column(sqlalchemy.Boolean)
-    hmac_key = sqlalchemy.Column(sqlalchemy.String)
+    hmac_key = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="tasks")

@@ -12,6 +12,7 @@ import terrarun.organisation
 import terrarun.run
 import terrarun.configuration
 from terrarun.database import Base, Database
+import terrarun.database
 import terrarun.user
 import terrarun.utils
 
@@ -36,16 +37,16 @@ class AuditEvent(Base, BaseObject):
 
     user_id = sqlalchemy.Column(sqlalchemy.Integer)
     object_id = sqlalchemy.Column(sqlalchemy.Integer)
-    object_type = sqlalchemy.Column(sqlalchemy.String)
+    object_type = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     # Used if a object value has changed
     old_value = sqlalchemy.Column(sqlalchemy.LargeBinary)
     new_value = sqlalchemy.Column(sqlalchemy.LargeBinary)
 
     event_type = sqlalchemy.Column(sqlalchemy.Enum(AuditEventType))
-    event_description = sqlalchemy.Column(sqlalchemy.String)
+    event_description = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
-    comment = sqlalchemy.Column(sqlalchemy.String)
+    comment = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     @classmethod
     def get_by_object_type_and_object_id(cls, object_type, object_id):

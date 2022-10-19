@@ -15,6 +15,7 @@ import sqlalchemy.orm
 from terrarun.audit_event import AuditEvent, AuditEventType
 
 from terrarun.base_object import BaseObject
+import terrarun.database
 from terrarun.user import TaskExecutionUserAccess, User, UserType
 from terrarun.user_token import UserToken
 from terrarun.utils import datetime_to_json, update_object_status
@@ -48,9 +49,9 @@ class TaskResult(Base, BaseObject):
     status = sqlalchemy.Column(sqlalchemy.Enum(TaskResultStatus))
     message_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     _message = sqlalchemy.orm.relation("Blob", foreign_keys=[message_id])
-    url = sqlalchemy.Column(sqlalchemy.String)
+    url = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
-    callback_id = sqlalchemy.Column(sqlalchemy.String)
+    callback_id = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     task_stage_id = sqlalchemy.Column(sqlalchemy.ForeignKey("task_stage.id"), nullable=False)
     task_stage = sqlalchemy.orm.relationship("TaskStage", back_populates="task_results")
