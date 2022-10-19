@@ -30,3 +30,8 @@ class Config:
     def TASK_CALL_ATTEMPT_INTERVAL(self):
         """Number of seconds to wait between attempts to call a remote task url"""
         return 10
+
+    @property
+    def DATABASE_URL(self):
+        """Database URL. Use mysql+mysqlconnector://user:pass@dbhost/dbname for MySQL. Default: sqlite:///test.db."""
+        return os.environ.get('DATABASE_URL', 'sqlite:///test.db')

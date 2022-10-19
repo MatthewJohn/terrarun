@@ -11,6 +11,8 @@ except ImportError:
 import sqlalchemy
 import sqlalchemy.orm
 
+from terrarun.config import Config
+
 
 class Database:
     """Handle database connection and settng up database schema"""
@@ -24,7 +26,7 @@ class Database:
     def get_engine(cls):
         """Get singleton instance of engine."""
         if cls._ENGINE is None:
-            cls._ENGINE = sqlalchemy.create_engine('sqlite:///test.db')
+            cls._ENGINE = sqlalchemy.create_engine(Config().DATABASE_URL)
         return cls._ENGINE
 
     @classmethod
