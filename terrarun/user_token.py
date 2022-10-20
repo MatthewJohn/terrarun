@@ -13,6 +13,7 @@ import sqlalchemy.orm
 from terrarun.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.config import Config
+import terrarun.database
 
 
 class UserTokenType(Enum):
@@ -34,8 +35,8 @@ class UserToken(Base, BaseObject):
     created_at = sqlalchemy.Column(sqlalchemy.DateTime)
     last_used = sqlalchemy.Column(sqlalchemy.DateTime)
     expiry = sqlalchemy.Column(sqlalchemy.DateTime)
-    token = sqlalchemy.Column(sqlalchemy.String)
-    description = sqlalchemy.Column(sqlalchemy.String, default=None)
+    token = sqlalchemy.Column(terrarun.database.Database.GeneralString)
+    description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
 
     user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=False)
     user = sqlalchemy.orm.relation("User", back_populates="user_tokens")

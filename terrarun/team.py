@@ -8,6 +8,7 @@ import sqlalchemy.orm
 
 from terrarun.base_object import BaseObject
 from terrarun.config import Config
+import terrarun.database
 import terrarun.organisation
 import terrarun.run
 import terrarun.configuration
@@ -27,12 +28,12 @@ class Team(Base, BaseObject):
     __tablename__ = 'team'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    name = sqlalchemy.Column(sqlalchemy.String)
+    name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="teams")
 
-    sso_team_id = sqlalchemy.Column(sqlalchemy.String, default=None)
+    sso_team_id = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
     visibility = sqlalchemy.Column(sqlalchemy.Enum(TeamVisibility))
 
     # Team organisation permissions
