@@ -313,10 +313,10 @@ class Server(object):
                 session.commit()
                 print("Worker, found run: " + run.api_id)
                 run.execute_next_step()
-                sleep(2)
             except Exception as exc:
                 print('Error during worker run: ' + str(exc))
                 print(traceback.format_exc())
+            sleep(2)
 
 
 class AuthenticatedEndpoint(Resource):
