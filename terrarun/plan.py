@@ -84,12 +84,16 @@ Executed remotely on terrarun server
                 environment_variables[f"TF_VAR_{var['Key']}"] = var['Value']
             
         terraform_version = self.run.terraform_version or '1.1.7'
-        environment_variables[f"TFENV_TERRAFORM_VERSION"] = terraform_version
+        environment_variables[f"TF_VERSION"] = terraform_version
+
+        if self._run_command(['tfswitch'], work_dir=work_dir, environment_variables=environment_variables):
+            self.update_status(TerraformCommandState.ERRORED)
+            return
+
         terraform_binary = f'terraform'
         command = [terraform_binary, action, '-input=false', f'-out={self.PLAN_OUTPUT_FILE}']
 
-        init_rc = self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir, environment_variables=environment_variables)
-        if init_rc:
+        if self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir, environment_variables=environment_variables):
             self.update_status(TerraformCommandState.ERRORED)
             return
 
