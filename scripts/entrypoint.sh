@@ -3,6 +3,13 @@
 set -e
 set -x
 
+# Switch to specific terraform version
+if [[ ! -z "${TERRAFORM_VERSION}" ]]
+then
+    tfenv install $TERRAFORM_VERSION
+    tfenv use $TERRAFORM_VERSION
+fi
+
 # Check if database upgrades are to be performed
 if [ "${MIGRATE_DATABASE}" == "True" ]
 then
