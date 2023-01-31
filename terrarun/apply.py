@@ -66,7 +66,12 @@ Executed remotely on terrarun server
 
         environment_variables = os.environ.copy()
         terraform_version = self.run.terraform_version or '1.1.7'
-        environment_variables[f"TFENV_TERRAFORM_VERSION"] = terraform_version
+        environment_variables[f"TF_VERSION"] = terraform_version
+
+        if self._run_command(['tfswitch'], work_dir=work_dir, environment_variables=environment_variables):
+            self.update_status(TerraformCommandState.ERRORED)
+            return
+
         terraform_binary = f'terraform'
         command = [terraform_binary, action, '-input=false', '-auto-approve', self.PLAN_OUTPUT_FILE]
 
