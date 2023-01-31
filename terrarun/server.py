@@ -331,6 +331,16 @@ class AuthenticatedEndpoint(Resource):
             return None
         return user_token.user
 
+    def _error_catching_call(self, method, args, kwargs):
+        """Call method, catching exceptions"""
+        try:
+            return method(*args, **kwargs)
+        except:
+            # Rollback and remove session
+            Database.get_session().rollback()
+            Database.get_session().remove()
+            raise
+
     def _get(self, *args, **kwargs):
         """Handle GET request method to re-implemented by overriding class."""
         raise NotImplementedError
@@ -349,7 +359,8 @@ class AuthenticatedEndpoint(Resource):
         if not self.check_permissions_get(*args, current_user=current_user, **kwargs):
             return {}, 404
 
-        return self._get(*args, current_user=current_user, **kwargs)
+        kwargs.update(current_user=current_user)
+        return self._error_catching_call(self._get, args, kwargs)
 
     def _post(self, *args, **kwargs):
         """Handle POST request method to re-implemented by overriding class."""
@@ -367,7 +378,9 @@ class AuthenticatedEndpoint(Resource):
 
         if not self.check_permissions_post(*args, current_user=current_user, **kwargs):
             return {}, 404
-        return self._post(*args, current_user=current_user, **kwargs)
+
+        kwargs.update(current_user=current_user)
+        return self._error_catching_call(self._post, args, kwargs)
 
     def _patch(self, *args, **kwargs):
         """Handle PATCH request method to re-implemented by overriding class."""
@@ -386,7 +399,8 @@ class AuthenticatedEndpoint(Resource):
         if not self.check_permissions_patch(*args, current_user=current_user, **kwargs):
             return {}, 404
 
-        return self._patch(*args, current_user=current_user, **kwargs)
+        kwargs.update(current_user=current_user)
+        return self._error_catching_call(self._patch, args, kwargs)
 
     def _put(self, *args, **kwargs):
         """Handle PUT request method to re-implemented by overriding class."""
@@ -405,7 +419,8 @@ class AuthenticatedEndpoint(Resource):
         if not self.check_permissions_put(*args, current_user=current_user, **kwargs):
             return {}, 404
 
-        return self._put(*args, current_user=current_user, **kwargs)
+        kwargs.update(current_user=current_user)
+        return self._error_catching_call(self._put, args, kwargs)
 
     def _delete(self, *args, **kwargs):
         """Handle DELETE request method to re-implemented by overriding class."""
@@ -424,7 +439,8 @@ class AuthenticatedEndpoint(Resource):
         if not self.check_permissions_delete(*args, current_user=current_user, **kwargs):
             return {}, 404
 
-        return self._delete(*args, current_user=current_user, **kwargs)
+        kwargs.update(current_user=current_user)
+        return self._error_catching_call(self._delete, args, kwargs)
 
 
 class ApiAuthenticate(Resource):
