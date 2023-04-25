@@ -96,6 +96,11 @@ Executed remotely on terrarun server
         if self.run.is_destroy:
             command.append('-destroy')
 
+        if self.run.target_addrs:
+            for target in self.run.target_addrs:
+                command.append(f'-target')
+                command.append(target)
+
         if self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir, environment_variables=environment_variables):
             self.update_status(TerraformCommandState.ERRORED)
             return
