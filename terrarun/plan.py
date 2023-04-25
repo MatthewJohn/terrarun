@@ -93,6 +93,9 @@ Executed remotely on terrarun server
         terraform_binary = f'terraform'
         command = [terraform_binary, action, '-input=false', f'-out={self.PLAN_OUTPUT_FILE}']
 
+        if self.run.is_destroy:
+            command.append('-destroy')
+
         if self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir, environment_variables=environment_variables):
             self.update_status(TerraformCommandState.ERRORED)
             return
