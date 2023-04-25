@@ -10,28 +10,28 @@ import terrarun.environment
 import terrarun.lifecycle
 
 
-class AgentPoolWorkspacePermission(Base):
-    """Define agent pool workspace permission."""
+class AgentPoolProjectPermission(Base):
+    """Define agent pool project permission."""
 
-    __tablename__ = "agent_pool_workspace_permission"
-
-    agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=False, primary_key=True)
-    agent_pool = sqlalchemy.orm.relation("AgentPool", foreign_keys=[agent_pool_id])
-
-    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False, primary_key=True)
-    workspace = sqlalchemy.orm.relation("Workspace", foreign_keys=[workspace_id])
-
-
-class AgentPoolWorkspaceAssociation(Base):
-    """Define agent pool workspace associations."""
-
-    __tablename__ = "agent_pool_workspace_association"
+    __tablename__ = "agent_pool_project_permission"
 
     agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=False, primary_key=True)
     agent_pool = sqlalchemy.orm.relation("AgentPool", foreign_keys=[agent_pool_id])
 
-    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False, primary_key=True)
-    workspace = sqlalchemy.orm.relation("Workspace", foreign_keys=[workspace_id])
+    project_id = sqlalchemy.Column(sqlalchemy.ForeignKey("project.id"), nullable=False, primary_key=True)
+    project = sqlalchemy.orm.relation("Project", foreign_keys=[project_id])
+
+
+class AgentPoolProjectAssociation(Base):
+    """Define agent pool project associations."""
+
+    __tablename__ = "agent_pool_project_association"
+
+    agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=False, primary_key=True)
+    agent_pool = sqlalchemy.orm.relation("AgentPool", foreign_keys=[agent_pool_id])
+
+    project_id = sqlalchemy.Column(sqlalchemy.ForeignKey("project.id"), nullable=False, primary_key=True)
+    project = sqlalchemy.orm.relation("Project", foreign_keys=[project_id])
 
 
 class AgentPoolEnvironmentAssociation(Base):
