@@ -82,12 +82,16 @@ class TerraformCommand(BaseObject):
         if environment_variables is None:
             environment_variables = os.environ.copy()
 
-        command_proc = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            cwd=work_dir,
-            env=environment_variables)
+        try:
+            command_proc = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=work_dir,
+                env=environment_variables)
+        except:
+            self.append_output(b'An error occured whilst starting the run')
+            return 255
 
         cancel_monitor = threading.Thread(
             target=self.__class__._command_cancel_check,
