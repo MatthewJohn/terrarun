@@ -3,6 +3,12 @@
 set -e
 set -x
 
+# Switch to specific terraform version
+if [[ ! -z "${TERRAFORM_VERSION}" ]]
+then
+    tfswitch $TERRAFORM_VERSION
+fi
+
 # Check if database upgrades are to be performed
 if [ "${MIGRATE_DATABASE}" == "True" ]
 then
