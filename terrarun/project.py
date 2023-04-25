@@ -56,6 +56,8 @@ class Project(Base, BaseObject):
     working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
 
+    state_passthrough_s3_key_override = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="state_passthrough_s3_key_override")
+
     @classmethod
     def get_by_name(cls, organisation, name):
         """Return project by organisation and name"""
@@ -96,6 +98,13 @@ class Project(Base, BaseObject):
         project.switch_lifecyce(lifecycle)
 
         return project
+
+    @property
+    def state_passthrough_s3_key(self):
+        """Provide state passthrough s3 key"""
+        if self.state_passthrough_s3_key_override:
+            return self.state_passthrough_s3_key_override
+        return f"terrarun/{self.organisation.name_id}/{self.name}/terraform.tfstate"
 
     def update_attributes(self, session=None, **kwargs):
         """Determine if lifecycle is being updated."""

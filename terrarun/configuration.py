@@ -119,14 +119,30 @@ class ConfigurationVersion(Base, BaseObject):
             tar_file.extractall(extract_dir)
 
             # Create override file for reconfiguring backend
-            with open(os.path.join(extract_dir, 'override.tf'), 'w') as override_fh:
-                override_fh.write("""
+            if self.workspace.environment.state_passthrough_s3_enabled:
+                override_config = f"""
+terraform {{
+    backend "s3" {{
+        region = "{self.workspace.environment.state_passthrough_s3_region}"
+        bucket = "{self.workspace.environment.state_passthrough_s3_bucket}"
+        key    = "{self.workspace.project.state_passthrough_s3_key}"#
+        {
+            'profile = "{self.workspace.environment.state_passthrough_s3_profile}"'
+            if self.workspace.environment.state_passthrough_s3_profile else ""
+        }
+    }}
+}}
+""".strip()
+            else:
+                override_config = """
 terraform {
   backend "local" {
     path = "terraform.tfstate"
   }
 }
-""".strip())
+"""
+            with open(os.path.join(extract_dir, 'override.tf'), 'w') as override_fh:
+                override_fh.write(override_config)
         finally:
             os.unlink(tar_gz_file)
         return extract_dir

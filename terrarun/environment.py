@@ -26,6 +26,10 @@ class Environment(Base, BaseObject):
         nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="environments")
 
+    state_passthrough_s3_bucket = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
+    state_passthrough_s3_profile = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
+    state_passthrough_s3_region = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
+
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="environment")
 
     @classmethod
@@ -56,6 +60,11 @@ class Environment(Base, BaseObject):
         session.commit()
 
         return lifecycle
+
+    @property
+    def state_passthrough_s3_enabled(self):
+        """Whether s3 state passthrough is enabled"""
+        return bool(self.state_passthrough_s3_bucket and self.state_passthrough_s3_region)
 
     def get_lifecycle_environments(self):
         """Return list of lifecycle environment objects"""
