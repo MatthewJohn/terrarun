@@ -96,7 +96,6 @@ class RunStatusPlanned extends RunStatusBaseClass {
     _nameString = "Planned";
     _labelColour = "success";
     _icon = "checkmark-square-outline";
-    public override _availableActions = [RunAction.CONFIRM_AND_APPLY];
 }
 class RunStatusPlannedAndFinished extends RunStatusBaseClass {
     _nameString = "Planned and finished";
@@ -140,6 +139,7 @@ class RunStatusPostPlanCompleted extends RunStatusBaseClass {
     _nameString = "Post-plan completed";
     _labelColour = "success";
     _icon = "radio-button-on-outline";
+    public override _availableActions = [RunAction.CONFIRM_AND_APPLY];
 }
 class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _nameString = "Post-plan running";
