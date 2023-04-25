@@ -1,18 +1,19 @@
 <nb-layout>
     <nb-layout-column>
         <nb-card>
+            <nb-card-header>
+                Select Organisation
+            </nb-card-header>
             <nb-card-body>
+                <table [nbTreeGrid]="organisations" equalColumnsWidth>
 
-            <table [nbTreeGrid]="organisations" equalColumnsWidth>
+                    <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
-                <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <td nbTreeGridCell class="organisationRow" (click)="onOrganisationClick(row)" *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
+                    </ng-container>
 
-                <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
-                    <td nbTreeGridCell class="organisationRow" (click)="onOrganisationClick(row)" *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
-                </ng-container>
-
-            </table>
-
+                </table>
             </nb-card-body>
         </nb-card>
     </nb-layout-column>

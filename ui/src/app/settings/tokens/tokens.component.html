@@ -1,26 +1,28 @@
 
-<h2>Terraform tokens</h2>
-
-<table>
-    <thead>
-        <th>Description</th>
-        <th>Created</th>
-        <th>Last used</th>
-    </thead>
-    <tbody>
-        <tr *ngFor="let token of tokens">
-            <td>{{ token.attributes.description }}</td>
-            <td>{{ token.attributes['created-at'] }}</td>
-            <td>{{ token.attributes['last-used-at'] }}</td>
-        </tr>
-    </tbody>
-</table>
+<nb-card>
+    <nb-card-header>Terraform Tokens</nb-card-header>
+    <nb-card-body>
+        <table>
+            <thead>
+                <th>Description</th>
+                <th>Created</th>
+                <th>Last used</th>
+            </thead>
+            <tbody>
+                <tr *ngFor="let token of tokens">
+                    <td>{{ token.attributes.description }}</td>
+                    <td>{{ token.attributes['created-at'] }}</td>
+                    <td>{{ token.attributes['last-used-at'] }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </nb-card-body>
+</nb-card>
 
 
 <nb-card>
+    <nb-card-header>Create Token</nb-card-header>
     <nb-card-body class="example-items-rows">
-
-        <h3>Create token</h3>
 
         <form [formGroup]="createTokenForm" (ngSubmit)="onCreateTokenFormSubmit()">
         

@@ -2,15 +2,17 @@
 <nb-card>
     <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
     <nb-card-body>
-        <table id="projectEnvironmentsTable">
+        <table id="projectEnvironmentsTable" equalColumnsWidth>
             <thead>
                 <tr>
                     <th>Environments</th>
                 </tr>
             </thead>
-            <tr *ngFor="let workspaceId of workspaceList">
-                <td (click)="onWorkspaceClick(workspaceId)" *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async).data.attributes.environment}}</td>
-            </tr>
+            <tbody>
+                <tr *ngFor="let workspaceId of workspaceList" class="environmentRow">
+                    <td (click)="onWorkspaceClick(workspaceId)" *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async).data.attributes.environment}}</td>
+                </tr>
+            </tbody>
         </table>
     </nb-card-body>
 </nb-card>

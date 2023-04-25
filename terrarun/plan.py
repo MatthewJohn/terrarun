@@ -91,7 +91,15 @@ Executed remotely on terrarun server
             return
 
         terraform_binary = f'terraform'
-        command = [terraform_binary, action, '-input=false', f'-out={self.PLAN_OUTPUT_FILE}']
+        command = [terraform_binary, action, '-input=false', '-out', self.PLAN_OUTPUT_FILE]
+
+        if self.run.is_destroy:
+            command.append('-destroy')
+
+        if self.run.target_addrs:
+            for target in self.run.target_addrs:
+                command.append(f'-target')
+                command.append(target)
 
         if self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir, environment_variables=environment_variables):
             self.update_status(TerraformCommandState.ERRORED)
@@ -114,7 +122,18 @@ Executed remotely on terrarun server
 
         plan_rc = self._run_command(command, work_dir=work_dir, environment_variables=environment_variables)
 
-        with open(os.path.join(work_dir, self.PLAN_OUTPUT_FILE), 'rb') as plan_out_file_fh:
+        if plan_rc:
+            self.update_status(TerraformCommandState.ERRORED)
+            return
+
+        plan_out_file_path = os.path.join(work_dir, self.PLAN_OUTPUT_FILE)
+
+        if not os.path.isfile(plan_out_file_path):
+            print("Cannot find plan out file")
+            self.update_status(TerraformCommandState.ERRORED)
+            return
+
+        with open(plan_out_file_path, 'rb') as plan_out_file_fh:
             self.plan_output_binary = plan_out_file_fh.read()
 
         plan_out_raw = subprocess.check_output(
@@ -123,10 +142,7 @@ Executed remotely on terrarun server
         )
         self.plan_output = json.loads(plan_out_raw)
 
-        if plan_rc:
-            self.update_status(TerraformCommandState.ERRORED)
-        else:
-            self.update_status(TerraformCommandState.FINISHED)
+        self.update_status(TerraformCommandState.FINISHED)
 
     @property
     def plan_output(self):
