@@ -27,3 +27,11 @@ from terrarun.project import Project
 from terrarun.lifecycle import Lifecycle
 from terrarun.lifecycle_environment import LifecycleEnvironment
 from terrarun.environment import Environment
+from terrarun.agent import Agent
+from terrarun.agent_pool import AgentPool
+from terrarun.agent_pool_association import (
+    AgentPoolEnvironmentAssociation,
+    AgentPoolProjectAssociation,
+    AgentPoolProjectPermission
+)
+from terrarun.agent_token import AgentToken

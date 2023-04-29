@@ -26,6 +26,8 @@ class AgentPool(Base, BaseObject):
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=True)
     organisation = sqlalchemy.orm.relationship("Organisation")
 
+    agents = sqlalchemy.orm.relation("Agent", back_populates="agent_pool")
+
     allow_all_workspaces = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
 

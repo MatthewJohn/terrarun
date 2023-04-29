@@ -19,6 +19,9 @@ from ansi2html import Ansi2HTMLConverter
 
 from terrarun import workspace
 from terrarun import project
+from terrarun.agent import Agent
+from terrarun.agent_pool import AgentPool
+from terrarun.agent_token import AgentToken
 from terrarun.apply import Apply
 from terrarun.audit_event import AuditEvent
 from terrarun.configuration import ConfigurationVersion
@@ -279,6 +282,14 @@ class Server(object):
             ApiTerrarunTaskCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/task-name-validate'
         )
+        self._api.add_resource(
+            ApiAgentRegister,
+            '/api/agent/register'
+        )
+        self._api.add_resource(
+            ApiAgentStatus,
+            '/api/agent/status'
+        )
 
     def run(self, debug=None):
         """Run flask server."""
@@ -325,6 +336,7 @@ class AuthenticatedEndpoint(Resource):
     def _get_current_user(self):
         """Obtain current user based on API token key in request"""
         authorization_header = request.headers.get('Authorization', '')
+        # @TODO don't use regex
         auth_token = re.sub(r'^Bearer ', '', authorization_header)
         user_token = UserToken.get_by_token(auth_token)
         if not user_token:
@@ -2195,3 +2207,42 @@ class ApiTerraformTaskStage(AuthenticatedEndpoint):
         return {
             "data": task_stage.get_api_details()
         }
+
+
+class ApiAgentRegister(Resource):
+    """Interface to register agent"""
+
+    def post(self):
+        # Get agent token
+        print(request.json)
+        print(request.headers)
+        if not (auth_token_match := re.match(r'^Bearer (.*)$', request.headers.get('Authorization', ''))):
+            return {}, 403
+        
+        request_agent_token = auth_token_match.group(1)
+
+        agent_token = AgentToken.get_by_token(request_agent_token)
+        if not agent_token:
+            return {}, 403
+        
+        Agent.register_agent(
+            agent_token=agent_token,
+            name=request.headers.get('Host')
+        )
+
+        return 200, {}
+
+
+class ApiAgentStatus(Resource):
+    """Interface to update agent status"""
+
+    def put(self):
+        print(request.json)
+
+
+class ApiAgentJobs(Resource):
+    """Interface to update agent status"""
+
+    def get(self):
+        print(request.json)
+
