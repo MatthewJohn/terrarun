@@ -3,9 +3,17 @@
 # Proprietary and confidential
 
 import datetime
+import string
+import secrets
 
 from terrarun.database import Database
 import terrarun.models.audit_event
+
+
+def generate_random_secret_string(length=64):
+    """Generate random secret string"""
+    chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(chars) for i in range(length))
 
 
 def datetime_to_json(datetime_obj):

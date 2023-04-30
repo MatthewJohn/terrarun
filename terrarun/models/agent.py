@@ -13,6 +13,7 @@ import terrarun.config
 import terrarun.database
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
+from terrarun.utils import generate_random_secret_string
 
 
 class AgentStatus(Enum):
@@ -43,13 +44,20 @@ class Agent(Base, BaseObject):
     agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=True)
     agent_pool = sqlalchemy.orm.relationship("AgentPool", back_populates="agents")
 
+    token = sqlalchemy.Column(terrarun.database.Database.GeneralString)
+
     @classmethod
     def register_agent(cls, agent_token, name):
         """Register agent"""
         session = Database.get_session()
 
         # Create agent instance
-        agent = cls(name=name, status=AgentStatus.IDLE, agent_pool=agent_token.agent_pool)
+        agent = cls(
+            name=name,
+            status=AgentStatus.IDLE,
+            agent_pool=agent_token.agent_pool,
+            token=generate_random_secret_string()
+        )
         session.add(agent)
 
         # Update last used date of agent token

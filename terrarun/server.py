@@ -2215,8 +2215,6 @@ class ApiAgentRegister(Resource):
 
     def post(self):
         # Get agent token
-        print(request.json)
-        print(request.headers)
         if not (auth_token_match := re.match(r'^Bearer (.*)$', request.headers.get('Authorization', ''))):
             return {}, 403
         
@@ -2231,19 +2229,10 @@ class ApiAgentRegister(Resource):
             name=request.headers.get('Host')
         )
 
-        return 200, {
-            "id": "agent-A726QeosTCpCumAs",
-            "type": "agents",
-            "attributes": {
-                "name": "my-cool-agent",
-                "status": "idle",
-                "ip-address": "123.123.123.123",
-                "last-ping-at": "2020-10-09T18:52:25.246Z"
-            },
-            "links": {
-                "self": "/api/v2/agents/agent-A726QeosTCpCumAs"
-            }
-        }
+        return {
+            "id": agent.id,
+            "token": agent.token
+        }, 201
 
 
 class ApiAgentStatus(Resource):

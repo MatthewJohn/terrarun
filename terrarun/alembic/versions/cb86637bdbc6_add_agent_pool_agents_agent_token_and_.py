@@ -30,6 +30,7 @@ def upgrade() -> None:
     op.create_table('agent',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=128), nullable=True),
+    sa.Column('token', sa.String(length=128), nullable=True),
     sa.Column('created_at', sa.DateTime(), nullable=True),
     sa.Column('status', sa.Enum('IDLE', 'EXITED', 'ERRORED', 'UNKNOWN', 'BUSY', name='agentstatus'), nullable=True),
     sa.Column('last_ping_at', sa.DateTime(), nullable=True),
