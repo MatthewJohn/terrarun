@@ -11,6 +11,7 @@ import terrarun.config
 import terrarun.database
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
+from terrarun.utils import generate_random_secret_string
 
 
 class AgentToken(Base, BaseObject):
@@ -37,6 +38,19 @@ class AgentToken(Base, BaseObject):
         """Obtain agent token object by token value"""
         session = Database.get_session()
         return session.query(cls).filter(cls.token==token).first()
+
+    @classmethod
+    def create(cls, agent_pool, created_by):
+        """Create agent token"""
+        session = Database.get_session()
+        agent_token = cls(
+            created_by=created_by,
+            agent_pool=agent_pool,
+            token=generate_random_secret_string()
+        )
+        session.add(agent_token)
+        session.commit()
+        return agent_token
 
     def get_api_details(self):
         """Return details for agent token."""

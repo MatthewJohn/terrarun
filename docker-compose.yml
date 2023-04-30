@@ -75,7 +75,7 @@ services:
       - ./.env
     volumes:
       - ./:/app
-    entrypoint: ["python", "./agent.py", "--address", "$BASE_URL", "--token", "test-agent-token"]
+    entrypoint: ["python", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
 
     # Only for local development
     volumes:

@@ -329,6 +329,7 @@ class Server(object):
             except Exception as exc:
                 print('Error during worker run: ' + str(exc))
                 print(traceback.format_exc())
+                sleep(3)
 
 
 class AuthenticatedEndpoint(Resource):

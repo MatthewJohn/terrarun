@@ -9,7 +9,7 @@ import sqlalchemy.orm
 
 import terrarun.config
 import terrarun.database
-from terrarun.database import Base
+from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
 
 
@@ -30,6 +30,24 @@ class AgentPool(Base, BaseObject):
 
     allow_all_workspaces = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
+    @classmethod
+    def create(cls, name, organisation, allow_all_workspaces):
+        """Create agent pool"""
+        session = Database.get_session()
+        agent_pool = cls(
+            name=name,
+            organisation=organisation,
+            allow_all_workspaces=allow_all_workspaces
+        )
+        session.add(agent_pool)
+        session.commit()
+        return agent_pool
+
+    @classmethod
+    def get_by_name_and_organisation(cls, name, organisation):
+        """Obtain agent pool by organisation and name"""
+        session = Database.get_session()
+        return session.query(cls).filter(cls.name==name, cls.organisation==organisation).first()
 
     def get_api_details(self):
         """Return details for agent pool."""

@@ -73,13 +73,14 @@ class User(Base, BaseObject):
         return bcrypt.gensalt()
 
     @classmethod
-    def create_user(cls, username, email, password):
+    def create_user(cls, username, email, password, site_admin=False):
         """Create user."""
         session = Database.get_session()
         user = cls(
             username=username,
             email=email,
             service_account=False,
+            site_admin=site_admin,
             user_type=UserType.NORMAL)
         user.password = password
         session.add(user)

@@ -70,8 +70,7 @@ docker-compose up
 docker-compose logs -f
 
 # Perform initial setup
-docker-compose exec api python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com
-docker-compose exec api python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin
+docker-compose exec api python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com --admin-username=admin --admin-email=admin@localhost --admin-password=password --global-agent-pool=default-pool
 ```
 
 ### Save and reuse your local config
