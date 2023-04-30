@@ -3,6 +3,7 @@
 # Proprietary and confidential
 
 import json
+import requests
 import queue
 import re
 import threading
@@ -17,38 +18,38 @@ from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
 
-from terrarun import workspace
-from terrarun import project
-from terrarun.agent import Agent
-from terrarun.agent_pool import AgentPool
-from terrarun.agent_token import AgentToken
-from terrarun.apply import Apply
-from terrarun.audit_event import AuditEvent
-from terrarun.configuration import ConfigurationVersion
+from terrarun.models import workspace
+from terrarun.models import project
+from terrarun.models.agent import Agent
+from terrarun.models.agent_pool import AgentPool
+from terrarun.models.agent_token import AgentToken
+from terrarun.models.apply import Apply
+from terrarun.models.audit_event import AuditEvent
+from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
-from terrarun.lifecycle import Lifecycle
-from terrarun.project import Project
-from terrarun.organisation import Organisation
+from terrarun.models.lifecycle import Lifecycle
+from terrarun.models.project import Project
+from terrarun.models.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
 from terrarun.permissions.workspace import WorkspacePermissions
-from terrarun.plan import Plan
-from terrarun.run import Run
-from terrarun.run_queue import RunQueue
-from terrarun.state_version import StateVersion
-from terrarun.tag import Tag
-from terrarun.task import Task
-from terrarun.task_result import TaskResult, TaskResultStatus
-from terrarun.task_stage import TaskStage
+from terrarun.models.plan import Plan
+from terrarun.models.run import Run
+from terrarun.models.run_queue import RunQueue
+from terrarun.models.state_version import StateVersion
+from terrarun.models.tag import Tag
+from terrarun.models.task import Task
+from terrarun.models.task_result import TaskResult, TaskResultStatus
+from terrarun.models.task_stage import TaskStage
 from terrarun.terraform_command import TerraformCommandState
-from terrarun.user_token import UserToken, UserTokenType
-from terrarun.workspace import Workspace
-from terrarun.user import User
-from terrarun.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
-from terrarun.team_user_membership import TeamUserMembership
-from terrarun.team import Team
-from terrarun.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
-from terrarun.environment import Environment
+from terrarun.models.user_token import UserToken, UserTokenType
+from terrarun.models.workspace import Workspace
+from terrarun.models.user import User
+from terrarun.models.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
+from terrarun.models.team_user_membership import TeamUserMembership
+from terrarun.models.team import Team
+from terrarun.models.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+from terrarun.models.environment import Environment
 
 
 class Server(object):
@@ -2225,12 +2226,24 @@ class ApiAgentRegister(Resource):
         if not agent_token:
             return {}, 403
         
-        Agent.register_agent(
+        agent = Agent.register_agent(
             agent_token=agent_token,
             name=request.headers.get('Host')
         )
 
-        return 200, {}
+        return 200, {
+            "id": "agent-A726QeosTCpCumAs",
+            "type": "agents",
+            "attributes": {
+                "name": "my-cool-agent",
+                "status": "idle",
+                "ip-address": "123.123.123.123",
+                "last-ping-at": "2020-10-09T18:52:25.246Z"
+            },
+            "links": {
+                "self": "/api/v2/agents/agent-A726QeosTCpCumAs"
+            }
+        }
 
 
 class ApiAgentStatus(Resource):

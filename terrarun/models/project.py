@@ -6,16 +6,16 @@ import re
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
-from terrarun.workspace import Workspace
+from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 
 
 class Project(Base, BaseObject):
 
-    ID_PREFIX = 'mws'
+    ID_PREFIX = 'prj'
     MINIMUM_NAME_LENGTH = 3
     RESERVED_NAMES = []
 

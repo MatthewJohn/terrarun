@@ -7,17 +7,17 @@ import re
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
-import terrarun.organisation
+import terrarun.models.organisation
 from terrarun.permissions.workspace import WorkspacePermissions
-import terrarun.run
-import terrarun.configuration
+import terrarun.models.run
+import terrarun.models.configuration
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
-import terrarun.workspace_task
-import terrarun.user
+import terrarun.models.workspace_task
+import terrarun.models.user
 from terrarun.database import Base, Database
-from terrarun.workspace_tag import WorkspaceTag
+from terrarun.models.workspace_tag import WorkspaceTag
 import terrarun.database
 
 
@@ -153,13 +153,13 @@ class Workspace(Base, BaseObject):
         """Return latest state version"""
         session = Database.get_session()
         run = session.query(
-            terrarun.run.Run
+            terrarun.models.run.Run
         ).join(
-            terrarun.configuration.ConfigurationVersion
+            terrarun.models.configuration.ConfigurationVersion
         ).filter(
-            terrarun.configuration.ConfigurationVersion.workspace == self
+            terrarun.models.configuration.ConfigurationVersion.workspace == self
         ).order_by(
-            terrarun.run.Run.created_at.desc()
+            terrarun.models.run.Run.created_at.desc()
         ).first()
         return run
 
@@ -405,11 +405,11 @@ class Workspace(Base, BaseObject):
 
     def associate_task(
             self,
-            task: terrarun.workspace_task.WorkspaceTaskEnforcementLevel,
-            enforcement_level: terrarun.workspace_task.WorkspaceTaskEnforcementLevel,
-            stage: terrarun.workspace_task.WorkspaceTaskStage):
+            task: terrarun.models.workspace_task.WorkspaceTaskEnforcementLevel,
+            enforcement_level: terrarun.models.workspace_task.WorkspaceTaskEnforcementLevel,
+            stage: terrarun.models.workspace_task.WorkspaceTaskStage):
         """Associate a task with the workspace"""
-        workspace_task = terrarun.workspace_task.WorkspaceTask(
+        workspace_task = terrarun.models.workspace_task.WorkspaceTask(
             workspace=self,
             task=task,
             enforcement_level=enforcement_level,
@@ -420,7 +420,7 @@ class Workspace(Base, BaseObject):
         session.commit()
         return workspace_task
 
-    def get_api_details(self, effective_user: terrarun.user.User):
+    def get_api_details(self, effective_user: terrarun.models.user.User):
         """Return details for workspace."""
         workspace_permissions = WorkspacePermissions(current_user=effective_user, workspace=self)
         return {

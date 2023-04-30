@@ -7,11 +7,11 @@ import sqlalchemy
 import sqlalchemy.orm
 import datetime
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
-import terrarun.run
-from terrarun.task_result import TaskResult, TaskResultStatus
-from terrarun.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+import terrarun.models.run
+from terrarun.models.task_result import TaskResult, TaskResultStatus
+from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 import terrarun.utils
 import terrarun.terraform_command
 
@@ -97,7 +97,7 @@ class TaskStage(Base, BaseObject):
             # check is mandatory, move to complete
             if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
                 terrarun.utils.update_object_status(self, TaskStageStatus.CANCELED)
-                self.run.update_status(terrarun.run.RunStatus.CANCELED)
+                self.run.update_status(terrarun.models.run.RunStatus.CANCELED)
                 if self.stage is WorkspaceTaskStage.PRE_PLAN:
                     # Since plan already exists, mark as failed
                     self.run.plan.append_output(b'Plan was not executed due to cancellation of mandatory pre-plan task(s)')
@@ -158,7 +158,7 @@ class TaskStage(Base, BaseObject):
         if self.stage is WorkspaceTaskStage.PRE_PLAN:
             self.run.plan.append_output(b'Plan was not executed due to failure of mandatory pre-plan task(s)')
             self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.CANCELED)
-        self.run.update_status(terrarun.run.RunStatus.ERRORED)
+        self.run.update_status(terrarun.models.run.RunStatus.ERRORED)
 
     def get_relationship(self):
         """Return relationship data for tag."""

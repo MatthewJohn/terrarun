@@ -12,16 +12,16 @@ from ansi2html import Ansi2HTMLConverter
 import requests
 import sqlalchemy
 import sqlalchemy.orm
-from terrarun.audit_event import AuditEvent, AuditEventType
+from terrarun.models.audit_event import AuditEvent, AuditEventType
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 import terrarun.database
-from terrarun.user import TaskExecutionUserAccess, User, UserType
-from terrarun.user_token import UserToken
+from terrarun.models.user import TaskExecutionUserAccess, User, UserType
+from terrarun.models.user_token import UserToken
 from terrarun.utils import datetime_to_json, update_object_status
-from terrarun.blob import Blob
+from terrarun.models.blob import Blob
 from terrarun.database import Base, Database
-from terrarun.workspace_task import WorkspaceTaskStage
+from terrarun.models.workspace_task import WorkspaceTaskStage
 import terrarun.config
 import terrarun.utils
 

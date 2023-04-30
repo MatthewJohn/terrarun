@@ -6,8 +6,8 @@ import sqlalchemy
 import sqlalchemy.orm
 
 from terrarun.database import Base
-import terrarun.environment
-import terrarun.lifecycle
+import terrarun.models.environment
+import terrarun.models.lifecycle
 
 
 class LifecycleEnvironment(Base):
@@ -22,9 +22,9 @@ class LifecycleEnvironment(Base):
     @property
     def environment(self):
         """Return environment"""
-        return terrarun.environment.Environment.get_by_id(self.environment_id)
+        return terrarun.models.environment.Environment.get_by_id(self.environment_id)
 
     @property
     def lifecycle(self):
         """Return lifecycle"""
-        return terrarun.lifecycle.Lifecycle.get_by_id(self.lifecycle_id)
+        return terrarun.models.lifecycle.Lifecycle.get_by_id(self.lifecycle_id)

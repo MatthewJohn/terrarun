@@ -12,8 +12,8 @@ import sqlalchemy.orm
 
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
-from terrarun.blob import Blob
-import terrarun.audit_event
+from terrarun.models.blob import Blob
+import terrarun.models.audit_event
 import terrarun.utils
 import terrarun.config
 

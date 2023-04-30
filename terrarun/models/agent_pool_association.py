@@ -6,8 +6,8 @@ import sqlalchemy
 import sqlalchemy.orm
 
 from terrarun.database import Base
-import terrarun.environment
-import terrarun.lifecycle
+import terrarun.models.environment
+import terrarun.models.lifecycle
 
 
 class AgentPoolProjectPermission(Base):

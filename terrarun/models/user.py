@@ -9,8 +9,8 @@ import sqlalchemy.orm
 
 import bcrypt
 
-import terrarun.organisation
-from terrarun.base_object import BaseObject
+import terrarun.models.organisation
+from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.permissions.user import UserPermissions
 import terrarun.database
@@ -130,7 +130,7 @@ class User(Base, BaseObject):
         # Return user as being a member of all organisations,
         # if they're a site admin
         if self.site_admin:
-            return session.query(terrarun.organisation.Organisation).all()
+            return session.query(terrarun.models.organisation.Organisation).all()
 
         organisations = []
         org_ids = []

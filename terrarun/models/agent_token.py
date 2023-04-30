@@ -10,7 +10,7 @@ import sqlalchemy.orm
 import terrarun.config
 import terrarun.database
 from terrarun.database import Base, Database
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 
 
 class AgentToken(Base, BaseObject):

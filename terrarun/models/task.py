@@ -6,7 +6,7 @@ import re
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
 

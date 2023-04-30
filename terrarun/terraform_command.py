@@ -11,11 +11,11 @@ from time import sleep
 
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
-from terrarun.blob import Blob
+from terrarun.models.base_object import BaseObject
+from terrarun.models.blob import Blob
 from terrarun.database import Database
-import terrarun.run
-from terrarun.state_version import StateVersion
+import terrarun.models.run
+from terrarun.models.state_version import StateVersion
 
 
 class TerraformCommandState(Enum):
@@ -70,7 +70,7 @@ class TerraformCommand(BaseObject):
         obj = session.query(cls).filter(cls.id==obj_id).first()
         while command_proc.poll() is None:
             session.refresh(obj)
-            if obj.run.status == terrarun.run.RunStatus.CANCELED:
+            if obj.run.status == terrarun.models.run.RunStatus.CANCELED:
                 command_proc.kill()
                 break
             sleep(0.5)
@@ -83,6 +83,7 @@ class TerraformCommand(BaseObject):
             environment_variables = os.environ.copy()
 
         try:
+            print(f'Running command: {command}')
             command_proc = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,

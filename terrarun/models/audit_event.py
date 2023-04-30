@@ -6,14 +6,14 @@ from enum import Enum
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
-import terrarun.organisation
-import terrarun.run
-import terrarun.configuration
+import terrarun.models.organisation
+import terrarun.models.run
+import terrarun.models.configuration
 from terrarun.database import Base, Database
 import terrarun.database
-import terrarun.user
+import terrarun.models.user
 import terrarun.utils
 
 
@@ -71,7 +71,7 @@ class AuditEvent(Base, BaseObject):
             },
             "relationships": {
                 "user": {
-                    "data": { "id": terrarun.user.User.api_id_from_db_id(self.user_id), "type": "users" } if self.user_id else {}
+                    "data": { "id": terrarun.models.user.User.api_id_from_db_id(self.user_id), "type": "users" } if self.user_id else {}
                 }
             },
             "type": "audit-events"

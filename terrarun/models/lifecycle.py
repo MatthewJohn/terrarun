@@ -5,11 +5,11 @@
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
-import terrarun.lifecycle_environment
-from terrarun.environment import Environment
+import terrarun.models.lifecycle_environment
+from terrarun.models.environment import Environment
 
 
 class Lifecycle(Base, BaseObject):
@@ -69,15 +69,15 @@ class Lifecycle(Base, BaseObject):
         """Return list of lifecycle environment objects"""
         session = Database.get_session()
         return session.query(
-            terrarun.lifecycle_environment.LifecycleEnvironment
+            terrarun.models.lifecycle_environment.LifecycleEnvironment
         ).filter(
-            terrarun.lifecycle_environment.LifecycleEnvironment.lifecycle_id==self.id
+            terrarun.models.lifecycle_environment.LifecycleEnvironment.lifecycle_id==self.id
         )
 
     def associate_environment(self, environment, order):
         """Associate environment with lifecycle"""
         session = Database.get_session()
-        lifecycle_environment = terrarun.lifecycle_environment.LifecycleEnvironment(
+        lifecycle_environment = terrarun.models.lifecycle_environment.LifecycleEnvironment(
             lifecycle_id=self.id,
             environment_id=environment.id,
             order=order

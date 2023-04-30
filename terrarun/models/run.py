@@ -10,21 +10,21 @@ import datetime
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
-from terrarun.audit_event import AuditEvent, AuditEventType
+from terrarun.models.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
 import terrarun.database
-import terrarun.plan
-import terrarun.apply
-import terrarun.state_version
-from terrarun.run_queue import RunQueue
-from terrarun.task_result import TaskResultStatus
-from terrarun.task_stage import TaskStage, TaskStageStatus
+import terrarun.models.plan
+import terrarun.models.apply
+import terrarun.models.state_version
+from terrarun.models.run_queue import RunQueue
+from terrarun.models.task_result import TaskResultStatus
+from terrarun.models.task_stage import TaskStage, TaskStageStatus
 import terrarun.terraform_command
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 import terrarun.utils
 import terrarun.config
-from terrarun.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 
 
 class RunStatus(Enum):
@@ -200,7 +200,7 @@ class Run(Base, BaseObject):
 
             # Create plan, as the terraform client expects this
             # to immediately exist
-            terrarun.plan.Plan.create(run=self)
+            terrarun.models.plan.Plan.create(run=self)
             self.update_status(RunStatus.PRE_PLAN_RUNNING)
 
             # Handle pre-run tasks.
@@ -250,7 +250,7 @@ class Run(Base, BaseObject):
                 return
             else:
                 self.update_status(RunStatus.PLANNED)
-                terrarun.apply.Apply.create(plan=self.plan)
+                terrarun.models.apply.Apply.create(plan=self.plan)
                 self.add_to_queue_table()
 
         elif self.status is RunStatus.PLANNED:
@@ -341,7 +341,7 @@ class Run(Base, BaseObject):
         with open(os.path.join(work_dir, 'terraform.tfstate'), 'r') as state_file_fh:
             state_content = state_file_fh.readlines()
         state_json = json.loads('\n'.join(state_content))
-        state_version = terrarun.state_version.StateVersion.create_from_state_json(run=self, state_json=state_json)
+        state_version = terrarun.models.state_version.StateVersion.create_from_state_json(run=self, state_json=state_json)
 
         return state_version
 

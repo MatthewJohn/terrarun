@@ -6,12 +6,12 @@ from enum import Enum
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
 import terrarun.database
-import terrarun.organisation
-import terrarun.run
-import terrarun.configuration
+import terrarun.models.organisation
+import terrarun.models.run
+import terrarun.models.configuration
 from terrarun.database import Base, Database
 
 

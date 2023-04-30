@@ -7,18 +7,18 @@ import re
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
+from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
 from terrarun.config import Config
-from terrarun.lifecycle import Lifecycle
+from terrarun.models.lifecycle import Lifecycle
 from terrarun.permissions.organisation import OrganisationPermissions
-import terrarun.run
-import terrarun.run_queue
-import terrarun.configuration
-from terrarun.team import Team
+import terrarun.models.run
+import terrarun.models.run_queue
+import terrarun.models.configuration
+from terrarun.models.team import Team
 from terrarun.utils import datetime_to_json
-import terrarun.workspace
+import terrarun.models.workspace
 
 
 class CollaboratorAuthPolicyType(Enum):
@@ -171,15 +171,15 @@ class Organisation(Base, BaseObject):
         """Return runs queued to be executed"""
         session = Database.get_session()
         run_queues = session.query(
-            terrarun.run_queue.RunQueue
+            terrarun.models.run_queue.RunQueue
         ).join(
-            terrarun.run.Run
+            terrarun.models.run.Run
         ).join(
-            terrarun.configuration.ConfigurationVersion
+            terrarun.models.configuration.ConfigurationVersion
         ).join(
-            terrarun.workspace.Workspace
+            terrarun.models.workspace.Workspace
         ).filter(
-            terrarun.workspace.Workspace.organisation == self
+            terrarun.models.workspace.Workspace.organisation == self
         )
         return [
             run_queue.run for run_queue in run_queues
