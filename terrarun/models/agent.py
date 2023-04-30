@@ -66,3 +66,17 @@ class Agent(Base, BaseObject):
 
         session.commit()
         return agent
+
+    @classmethod
+    def get_by_id_and_token(cls, id, token):
+        """Obtain agent object by ID and token value"""
+        session = Database.get_session()
+        return session.query(cls).filter(cls.id==id, cls.token==token).first()
+
+    def update_status(self, new_status):
+        """Update status of agent"""
+        session = Database.get_session()
+        self.status = new_status
+        self.last_ping_at = datetime.now()
+        session.add(self)
+        session.commit()

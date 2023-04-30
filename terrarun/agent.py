@@ -6,6 +6,8 @@ from time import sleep
 
 import requests
 
+from terrarun.models.agent import AgentStatus
+
 
 class AgentConfig:
 
@@ -90,7 +92,7 @@ class Agent:
             raise Exception('Invalid agent token provided')
         elif res.status_code != 201:
             raise Exception(f'Invalid response from registration endpoint: {res.status_code}')
-        
+
         self.__runtime_config = AgentRuntimeConfig.create_from_registration_response(res.json())
         print(f'Agent registered with ID: {self.__runtime_config.id}')
 
@@ -106,7 +108,26 @@ class Agent:
 
     def _push_agent_status(self):
         """Push agent status"""
-        print('Pushing agent status')
+        status = (
+            AgentStatus.EXITED if not self.__running  else (
+                AgentStatus.BUSY if self.__current_job else AgentStatus.IDLE
+            )
+        )
+        print(f"Pushing agent status: {status.value}")
+        res = requests.put(
+            f"{self.__agent_config.address}/api/agent/status",
+            json={
+                "id": self.__runtime_config.id,
+                "status": status.value
+            },
+            timeout=self.REQUEST_TIMEOUT,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.__runtime_config.agent_token}"
+            }
+        )
+        if res.status_code != 201:
+            print(f'Error: Failed to push metrics: {res.status_code}')
 
     def push_agent_status_loop(self):
         """Push agent status"""

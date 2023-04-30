@@ -20,7 +20,7 @@ from ansi2html import Ansi2HTMLConverter
 
 from terrarun.models import workspace
 from terrarun.models import project
-from terrarun.models.agent import Agent
+from terrarun.models.agent import Agent, AgentStatus
 from terrarun.models.agent_pool import AgentPool
 from terrarun.models.agent_token import AgentToken
 from terrarun.models.apply import Apply
@@ -2239,7 +2239,30 @@ class ApiAgentStatus(Resource):
     """Interface to update agent status"""
 
     def put(self):
-        print(request.json)
+        """Update agent status"""
+        # Get agent token
+        if not (auth_token_match := re.match(r'^Bearer (.*)$', request.headers.get('Authorization', ''))):
+            return {}, 403
+
+        request_agent_token = auth_token_match.group(1)
+
+        if not (agent_id := request.json.get("id", "")):
+            return {}, 403
+
+        agent = Agent.get_by_id_and_token(id=agent_id, token=request_agent_token)
+        if not agent:
+            return {}, 403
+
+        try:
+            agent_status = AgentStatus(request.json.get("status", ""))
+        except ValueError:
+            return {}, 400
+
+        agent.update_status(
+            agent_status
+        )
+
+        return {}, 201
 
 
 class ApiAgentJobs(Resource):
