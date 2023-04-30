@@ -14,7 +14,7 @@ export class AccountService {
   login(username: string, password: string): Promise<void> {
     return new Promise((resolve, reject) => {
       this.http.post<any>(
-        `https://${window.location.hostname}:5000/api/terrarun/v1/authenticate`,
+        `/api/terrarun/v1/authenticate`,
         { 'username': username, 'password': password },
         { observe: 'response' }
       ).subscribe({
@@ -64,7 +64,7 @@ export class AccountService {
   getAccountDetails(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.http.get<any>(
-        `https://${window.location.hostname}:5000/api/v2/account/details`,
+        `/api/v2/account/details`,
         { headers: this.getAuthHeader() }
       )
       .subscribe({
