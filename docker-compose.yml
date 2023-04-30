@@ -1,0 +1,102 @@
+version: '3.9'
+
+services:
+
+  traefik:
+    image: traefik:v2.8
+    restart: always
+    command: --providers.docker=true --providers.file.filename=/etc/traefik/dynamic_conf/conf.yml --api.insecure=true --entrypoints.web.address=:80 --entrypoints.websecure.address=:443
+    hostname: $DOMAIN
+    ports:
+      # Open traefik http [80] and https [443] ports.
+      - '80:80'
+      - '443:443'
+      - '8080:8080'
+    networks:
+      - web
+      - default
+    volumes:
+      - ./ssl:/ssl:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/dynamic_conf/conf.yml:ro
+
+  ui:
+    restart: unless-stopped
+    build:
+      context: ./ui
+      dockerfile: Dockerfile.dev
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.terrarun-ui.rule=Host(`$DOMAIN`)"
+      - "traefik.http.routers.terrarun-ui.entrypoints=websecure"
+      - "traefik.http.routers.terrarun-ui.tls=true"
+      - "traefik.http.services.terrarun-ui.loadbalancer.server.port=4200"
+      - "traefik.http.routers.terrarun-ui.service=terrarun-ui"
+    # Only for local development
+    volumes:
+      - ./ui/src:/app/src
+
+  api:
+    restart: unless-stopped
+    build: .
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.terrarun-api.rule=Host(`$DOMAIN`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.terrarun-api.entrypoints=websecure"
+      - "traefik.http.routers.terrarun-api.tls=true"
+      - "traefik.http.services.terrarun-api.loadbalancer.server.port=5000"
+      - "traefik.http.routers.terrarun-api.service=terrarun-api"
+
+    depends_on:
+      - db
+    links:
+      - db
+    env_file:
+      - ./.env
+
+    # Only for local development
+    #entrypoint: ["python", "terrarun.py", "--ssl-cert-private-key", "./ssl/private.pem", "--ssl-cert-public-key", "./ssl/public.pem"]
+    entrypoint: ["python", "terrarun.py"]
+    volumes:
+      - ./:/app
+
+  agent:
+    restart: unless-stopped
+    build: .
+    networks:
+      - web
+    depends_on:
+      - traefik
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app
+    entrypoint: ["python", "./agent.py", "--address", "$BASE_URL", "--token", "test-agent-token"]
+
+    # Only for local development
+    volumes:
+      - ./:/app
+
+  db:
+    image: mariadb
+    restart: always
+    networks:
+      - web
+    env_file:
+      - ./.env
+    volumes:
+     - mysqldata:/var/lib/mysql
+
+volumes:
+  mysqldata:
+
+networks:
+  web: 
+    name: terrun-web
+  default:
+    name: terrarun-default
+    driver: bridge

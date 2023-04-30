@@ -36,41 +36,43 @@ Under no circumstances should this project be used _ANYWHERE_ outside of develop
 
 ## Installation
 
-    git clone ssh://git@gitlab.dockstudios.co.uk:2222/pub/terrarun.git
-    cd terrarun
-    
-    # Setup python virtualenv and install dependencies
-    virtualenv -p python3 venv
-    . venv/bin/activate
-    pip install -r requirements.txt
-    
-    # Upgrade database
-    alembic upgrade head
-    
-    # Create admin user
-    python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin                   
-    
-    # Setup UI packages
-    pushd ui
-    npm install  # Verify this
-    popd
+```
+git clone ssh://git@gitlab.dockstudios.co.uk:2222/pub/terrarun.git
+cd terrarun
+
+# Setup python virtualenv and install dependencies
+virtualenv -p python3 venv
+. venv/bin/activate
+pip install -r requirements.txt
+
+# Upgrade database and add initial organisation/environments
+python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com
+
+# Create admin user
+python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin                   
+
+# Setup UI packages
+pushd ui
+npm install  # Verify this
+popd
+```
 
 ## Running inside Docker
-    
-    # Build Image
-    docker build -t terrarun:<YOUR_TAG> .
 
-    # Run container
-    docker run -d -p 5000:5000 -e TERRAFORM_VERSION="1.1.7" -e MIGRATE_DATABASE="True" -e BASE_URL=https://localhost:5000 -v ~/.aws:/root/.aws  terrarun:<YOUR_TAG>
+```
+cp .env-example .env
+# Update BASE_URL in .env
+# Add SSL certs as public.pem and private.pem to ./ssl directory
 
-    # Create admin user
-    python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin
+docker-compose up
 
-    # Run UI
-    nvm use (optional) or just install node in version in .nvmrc
-    cd ui
-    npm install
-    npm run start
+# Wait for DB to startup
+docker-compose logs -f
+
+# Perform initial setup
+docker-compose exec api python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com
+docker-compose exec api python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin
+```
 
 ### Save and reuse your local config
 
