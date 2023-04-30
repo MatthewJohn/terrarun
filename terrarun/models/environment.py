@@ -29,6 +29,12 @@ class Environment(Base, BaseObject):
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="environment")
 
     @classmethod
+    def get_by_name_and_organisation(cls, name, organisation):
+        """Obtain environment by organisation and name"""
+        session = Database.get_session()
+        return session.query(cls).filter(cls.name==name, cls.organisation==organisation).first()
+
+    @classmethod
     def validate_new_name_id(cls, organisation, name):
         """Ensure lifecycle does not already exist and name isn't reserved"""
         session = Database.get_session()

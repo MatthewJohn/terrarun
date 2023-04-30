@@ -29,6 +29,12 @@ class Lifecycle(Base, BaseObject):
     projects = sqlalchemy.orm.relation("Project", back_populates="lifecycle")
 
     @classmethod
+    def get_by_name_and_organisation(cls, name, organisation):
+        """Obtain environment by organisation and name"""
+        session = Database.get_session()
+        return session.query(cls).filter(cls.name==name, cls.organisation==organisation).first()
+
+    @classmethod
     def validate_new_name(cls, organisation, name):
         """Ensure lifecycle does not already exist and name isn't reserved"""
         session = Database.get_session()
