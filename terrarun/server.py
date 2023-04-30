@@ -283,6 +283,13 @@ class Server(object):
             ApiTerrarunTaskCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/task-name-validate'
         )
+
+        self._api.add_resource(
+            ApiOrganisationAgentPoolList,
+            '/api/v2/organizations/<string:organisation_name>/agent-pools'
+        )
+
+        # Agent APIs
         self._api.add_resource(
             ApiAgentRegister,
             '/api/agent/register'
@@ -2208,6 +2215,48 @@ class ApiTerraformTaskStage(AuthenticatedEndpoint):
 
         return {
             "data": task_stage.get_api_details()
+        }
+
+
+class ApiOrganisationAgentPoolList(AuthenticatedEndpoint):
+    """Interface to interact with organisation agent pools"""
+
+    def check_permissions_get(self, organisation_name, current_user):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=organisation
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
+        )
+    
+    def _get(self, organisation_name, current_user):
+        """Get list of agent pools for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        agent_pools = AgentPool.get_by_organisation(organisation=organisation, include_global=True)
+        return {
+            "data": [
+                agent_pool.get_api_details()
+                for agent_pool in agent_pools
+            ],
+            "links": {
+            },
+            "meta": {
+                "pagination": {
+                    "current-page": 1,
+                    "prev-page": None,
+                    "next-page": None,
+                    "total-pages": 1,
+                    "total-count": len(agent_pools)
+                },
+                "status-counts": {
+                    "total": len(agent_pools),
+                    "matching": len(agent_pools)
+                }
+            }
         }
 
 

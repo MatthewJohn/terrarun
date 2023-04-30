@@ -11,6 +11,7 @@ import terrarun.config
 import terrarun.database
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
+import terrarun.utils
 
 
 class AgentPool(Base, BaseObject):
@@ -44,6 +45,17 @@ class AgentPool(Base, BaseObject):
         return agent_pool
 
     @classmethod
+    def get_by_organisation(cls, organisation, include_global):
+        """Obtain all agent pools"""
+        session = Database.get_session()
+        query = session.query(cls)
+        if include_global:
+            query = query.filter(sqlalchemy.or_(cls.organisation==organisation, cls.organisation_id==None))
+        else:
+            query = query.filter(cls.organisation==organisation)
+        return query.all()
+
+    @classmethod
     def get_by_name_and_organisation(cls, name, organisation):
         """Obtain agent pool by organisation and name"""
         session = Database.get_session()
@@ -56,8 +68,9 @@ class AgentPool(Base, BaseObject):
             "type": "agent-pools",
             "attributes": {
                 "name": self.name,
-                "created-at": self.created_at,
-                "organization-scoped": self.organisation is not None
+                "created-at": terrarun.utils.datetime_to_json(self.created_at),
+                "organization-scoped": self.organisation is not None,
+                "agent-count": len(self.agents)
             },
             "relationships": {
                 "agents": {
