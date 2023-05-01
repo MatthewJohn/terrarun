@@ -697,6 +697,11 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return False
+
+        # Allow job access, if the organisation matches
+        if current_job and current_job.run.configuration_version.workspace.organisation == organisation:
+            return True
+
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
@@ -1236,6 +1241,10 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
         if not workspace:
             return False
+
+        if current_job and current_job.run.configuration_version.workspace == workspace:
+            return True
+
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
             WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
@@ -1278,6 +1287,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return False
+
         # As per documentation:
         # You need read runs permission to list and view configuration versions for a workspace, and you need queue plans permission to create new configuration versions.
         return WorkspacePermissions(current_user=current_user,
@@ -1713,6 +1723,9 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
         if not workspace:
             return False
 
+        if current_job and current_job.run.configuration_version.workspace == workspace:
+            return True
+
         return WorkspacePermissions(
             current_user=current_user,
             workspace=workspace
@@ -1739,6 +1752,9 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
             return False
+
+        if current_job and current_job.run.configuration_version.workspace == workspace:
+            return True
 
         return WorkspacePermissions(
             current_user=current_user,
