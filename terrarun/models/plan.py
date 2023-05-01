@@ -44,6 +44,12 @@ class Plan(TerraformCommand, Base):
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
+    ## Attributes provided by terraform agent
+    _has_changes = sqlalchemy.Column(sqlalchemy.Boolean, default=None, nullable=True, name="has_changes")
+    _resource_additions = sqlalchemy.Column(sqlalchemy.Integer, default=None, nullable=True, name="resource_additions")
+    _resource_changes = sqlalchemy.Column(sqlalchemy.Integer, default=None, nullable=True, name="resource_changes")
+    _resource_destructions = sqlalchemy.Column(sqlalchemy.Integer, default=None, nullable=True, name="resource_destructions")
+
     @classmethod
     def create(cls, run):
         """Create plan and return instance."""
@@ -227,33 +233,80 @@ Executed remotely on terrarun server
     @property
     def has_changes(self):
         """Return is plan has changes"""
+        # If set on row, return value
+        if self._has_changes is not None:
+            return self._has_changes
+
+        # Deprecated functionality based on agent not provided
+        # details
         if not self.plan_output:
             return False
         return bool(self.resource_additions or self.resource_destructions or self.resource_changes)
 
+    @has_changes.setter
+    def has_changes(self, new_value):
+        """Update has_changes DB value"""
+        self._has_changes = new_value
+
     @property
     def resource_additions(self):
+        """Return number of resources to be added"""
+        # If set on row, return value
+        if self._resource_additions is not None:
+            return self._resource_additions
+
+        # Deprecated functionality based on agent not provided
+        # details
         count = 0
         for resource in self.plan_output.get('resource_changes', {}):
             if 'create' in resource.get('change', {}).get('actions', []):
                 count += 1
         return count
 
+    @resource_additions.setter
+    def resource_additions(self, new_value):
+        """Update resource_additions DB value"""
+        self._resource_additions = new_value
+
     @property
     def resource_destructions(self):
+        """Return number of resources to be destroyed"""
+        # If set on row, return value
+        if self._resource_additions is not None:
+            return self._resource_additions
+
+        # Deprecated functionality based on agent not provided
+        # details
         count = 0
         for resource in self.plan_output.get('resource_changes', {}):
             if 'delete' in resource.get('change', {}).get('actions', []):
                 count += 1
         return count
 
+    @resource_destructions.setter
+    def resource_destructions(self, new_value):
+        """Update resource_destructions DB value"""
+        self._resource_destructions = new_value
+
     @property
     def resource_changes(self):
+        """Return number of resources to be changed"""
+        # If set on row, return value
+        if self._resource_changes is not None:
+            return self._resource_changes
+
+        # Deprecated functionality based on agent not provided
+        # details
         count = 0
         for resource in self.plan_output.get('resource_changes', {}):
             if 'update' in resource.get('change', {}).get('actions', []):
                 count += 1
         return count
+
+    @resource_changes.setter
+    def resource_changes(self, new_value):
+        """Update resource_changes DB value"""
+        self._resource_changes = new_value
 
     def get_api_details(self):
         """Return API details for plan"""

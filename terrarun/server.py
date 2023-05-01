@@ -2335,6 +2335,25 @@ class ApiAgentStatus(Resource, AgentEndpoint):
         except ValueError:
             return {}, 400
 
+        if job_status := request.json.get("job"):
+            # Get plan
+            if job_status.get("type") == "plan":
+                job_data = job_status.get("data")
+
+                # Get plan ID from job status and update plan
+                run = Run.get_by_api_id(job_data.get("run_id"))
+                if not run:
+                    return {}, 404
+
+                # @TODO Handle error message
+                run.plan.update_attributes(
+                    status=TerraformCommandState(job_status.get("status")),
+                    has_changes=job_data.get("has_changes"),
+                    resource_additions=job_data.get("resource_additions"),
+                    resource_changes=job_data.get("resource_changes"),
+                    resource_destructions=job_data.get("resource_destructions"),
+                )
+
         agent.update_status(
             agent_status
         )
