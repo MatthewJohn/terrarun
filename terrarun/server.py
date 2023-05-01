@@ -2344,6 +2344,8 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 "data": {
                     "run_id": job.run.api_id,
                     "operation": job.job_type.value,
+                    "organization_name": job.run.configuration_version.workspace.organisation.name_id,
+                    "workspace_name": job.run.configuration_version.workspace.name,
                     "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
                     "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
                     "terraform_log_url": "https://local-dev.dock.studio/api/agent/log",
