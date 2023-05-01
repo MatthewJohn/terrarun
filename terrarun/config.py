@@ -10,6 +10,7 @@ class Config:
 
     AWS_ENDPOINT = os.environ.get('AWS_ENDPOINT')
     AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME')
+    AGENT_IMAGE_FILENAME = os.environ.get('AGENT_IMAGE_FILENAME')
 
     @property
     def SESSION_EXPIRY_MINS(self):

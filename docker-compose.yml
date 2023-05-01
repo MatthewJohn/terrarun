@@ -143,6 +143,25 @@ services:
       exit 0;
       "
 
+  create_agent_image:
+    image: ubuntu:focal
+    volumes:
+     - ./agent_images:/agent_images
+    env_file:
+     - .env
+    entrypoint: >
+      /bin/bash -c "
+      if [ ! -f \"/agent_images/${AGENT_FILENAME}\" ]
+      then
+        apt-get update && apt-get install --assume-yes debootstrap && apt-get clean all
+        pushd /tmp
+          debootstrap ${AGENT_DIST_NAME} ${AGENT_DIST_NAME}
+          tar -zcvf /agent_images/${AGENT_FILENAME} -C ${AGENT_DIST_NAME} .
+        popd
+      fi
+      "
+
+
 volumes:
   mysqldata:
 

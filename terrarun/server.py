@@ -9,6 +9,7 @@ import re
 import threading
 from time import sleep
 import traceback
+import os
 
 from flask import Flask, make_response, request
 from sqlalchemy import desc
@@ -17,8 +18,9 @@ import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
-from terrarun.job_processor import JobProcessor
 
+from terrarun.job_processor import JobProcessor
+import terrarun.config
 from terrarun.models import workspace
 from terrarun.models import project
 from terrarun.models.agent import Agent, AgentStatus
@@ -303,6 +305,14 @@ class Server(object):
         self._api.add_resource(
             ApiAgentJobs,
             '/api/agent/jobs'
+        )
+        self._api.add_resource(
+            ApiAgentPlanLog,
+            "/api/agent/log/plan/<string:plan_id>"
+        )
+        self._api.add_resource(
+            ApiAgentBaseImage,
+            "/api/agent/filesystem"
         )
 
     def run(self, debug=None):
@@ -2348,10 +2358,41 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "workspace_name": job.run.configuration_version.workspace.name,
                     "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
                     "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
-                    "terraform_log_url": "https://local-dev.dock.studio/api/agent/log",
-                    "configuration_version_url": job.run.configuration_version.get_download_url()
+                    "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/plan/{job.run.plan.api_id}",
+                    "configuration_version_url": job.run.configuration_version.get_download_url(),
+                    "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
+                    "token": "bladgadgadba",
+                    "timeout": "600s"
                 }
             }, 200
 
         # Return no jobs
         return {}, 204
+
+class ApiAgentPlanLog(Resource):
+    """Interface to upload terraform logs"""
+
+    def put(self, plan_id):
+        """Handle log upload"""
+        plan = Plan.get_by_api_id(plan_id)
+        if not plan:
+            return {}, 404
+        plan.append_output(request.data)
+
+    def patch(self, plan_id):
+        """Handle log upload"""
+        plan = Plan.get_by_api_id(plan_id)
+        if not plan:
+            return {}, 404
+        plan.append_output(request.data)
+
+
+class ApiAgentBaseImage(Resource):
+    """Interface to download base filesystem for agent"""
+    def get(self):
+        """Return filesystem for agent"""
+        print(request.data)
+        print(request.headers)
+        return flask.send_from_directory(
+            path=terrarun.config.Config.AGENT_IMAGE_FILENAME,
+            directory=os.path.join('..', 'agent_images'))
