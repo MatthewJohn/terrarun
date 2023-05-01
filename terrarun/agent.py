@@ -32,25 +32,16 @@ class AgentRuntimeConfig:
     @classmethod
     def create_from_registration_response(cls, registration_response):
         """Create runtime config from registration response"""
-        if not (agent_token := registration_response.get("token")):
-            raise Exception('Agent token not provided in registration response')
         if not (id := registration_response.get("id")):
             raise Exception('Agent id not provided in registration response')
         
         return cls(
-            agent_token=agent_token,
             id=id
         )
 
-    def __init__(self, agent_token, id):
+    def __init__(self, id):
         """Store details about agent"""
-        self.__agent_token = agent_token
         self.__id = id
-
-    @property
-    def agent_token(self):
-        """Return agent token"""
-        return self.__agent_token
 
     @property
     def id(self):
@@ -90,7 +81,7 @@ class Agent:
         )
         if res.status_code == 403:
             raise Exception('Invalid agent token provided')
-        elif res.status_code != 201:
+        elif res.status_code != 200:
             raise Exception(f'Invalid response from registration endpoint: {res.status_code}')
 
         self.__runtime_config = AgentRuntimeConfig.create_from_registration_response(res.json())
@@ -117,16 +108,16 @@ class Agent:
         res = requests.put(
             f"{self.__agent_config.address}/api/agent/status",
             json={
-                "id": self.__runtime_config.id,
                 "status": status.value
             },
             timeout=self.REQUEST_TIMEOUT,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.__runtime_config.agent_token}"
+                "Authorization": f"Bearer {self.__agent_config.token}",
+                "Tfc-Agent-Id": self.__runtime_config.id
             }
         )
-        if res.status_code != 201:
+        if res.status_code != 200:
             print(f'Error: Failed to push metrics: {res.status_code}')
 
     def push_agent_status_loop(self):

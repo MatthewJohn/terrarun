@@ -73,6 +73,14 @@ class Agent(Base, BaseObject):
         session = Database.get_session()
         return session.query(cls).filter(cls.id==id, cls.token==token).first()
 
+    @classmethod
+    def get_by_agent_pool_and_api_id(cls, agent_pool, api_id):
+        """Get agent by API ID and agent pool"""
+        session = Database.get_session()
+        return session.query(cls).filter(
+            cls.agent_pool==agent_pool, cls.id==cls.db_id_from_api_id(api_id)
+        ).first()
+
     def update_status(self, new_status):
         """Update status of agent"""
         session = Database.get_session()

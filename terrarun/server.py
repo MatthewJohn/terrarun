@@ -2277,9 +2277,9 @@ class ApiAgentRegister(Resource):
         )
 
         return {
-            "id": agent.id,
-            "token": agent.token
-        }, 201
+            "id": agent.api_id,
+            "pool_id": agent_token.agent_pool.api_id
+        }, 200
 
 
 class ApiAgentStatus(Resource):
@@ -2293,10 +2293,14 @@ class ApiAgentStatus(Resource):
 
         request_agent_token = auth_token_match.group(1)
 
-        if not (agent_id := request.json.get("id", "")):
+        agent_token = AgentToken.get_by_token(request_agent_token)
+        if not agent_token:
             return {}, 403
 
-        agent = Agent.get_by_id_and_token(id=agent_id, token=request_agent_token)
+        if not (agent_id := request.headers.get("Tfc-Agent-Id", "")):
+            return {}, 403
+
+        agent = Agent.get_by_agent_pool_and_api_id(api_id=agent_id, agent_pool=agent_token.agent_pool)
         if not agent:
             return {}, 403
 
@@ -2309,7 +2313,9 @@ class ApiAgentStatus(Resource):
             agent_status
         )
 
-        return {}, 201
+        res = make_response({}, 200)
+        res.headers['Tfc-Agent-Message-Index'] = request.headers.get('Tfc-Agent-Message-Index', 0)
+        return res
 
 
 class ApiAgentJobs(Resource):
