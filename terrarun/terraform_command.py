@@ -46,7 +46,7 @@ class TerraformCommand(BaseObject):
         with open(os.path.join(work_dir, self.STATE_FILE), 'w') as state_fh:
             state_fh.write(json.dumps(state_version.state_json))
 
-    def append_output(self, data):
+    def append_output(self, data, no_append=False):
         """Append to output"""
         session = Database.get_session()
         session.refresh(self)
@@ -57,7 +57,10 @@ class TerraformCommand(BaseObject):
         else:
             log = self.log
             session.refresh(log)
-        log.data += data
+        if no_append:
+            log.data = data
+        else:
+            log.data += data
         session.add(log)
         session.commit()
 

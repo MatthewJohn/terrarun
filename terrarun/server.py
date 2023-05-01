@@ -2413,7 +2413,7 @@ class ApiAgentPlanLog(Resource):
         plan = Plan.get_by_api_id(plan_id)
         if not plan:
             return {}, 404
-        plan.append_output(request.data)
+        plan.append_output(request.data, no_append=True)
 
     def patch(self, plan_id):
         """Handle log upload"""
