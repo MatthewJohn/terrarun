@@ -9,6 +9,7 @@ import sqlalchemy.orm
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
+from terrarun.models.blob import Blob
 
 
 class StateVersion(Base, BaseObject):
@@ -28,23 +29,44 @@ class StateVersion(Base, BaseObject):
     apply = sqlalchemy.orm.relation("Apply", back_populates="state_version")
     plan = sqlalchemy.orm.relation("Plan", back_populates="state_version")
 
-    _state_json = sqlalchemy.Column("state_version", terrarun.database.Database.GeneralString)
+    state_json_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    _state_json = sqlalchemy.orm.relation("Blob", foreign_keys=[state_json_id])
 
     @property
     def state_json(self):
-        return json.loads(self._state_json)
+        """Return plan output value"""
+        if self._state_json and self._state_json.data:
+            return json.loads(self._state_json.data.decode('utf-8'))
+        return {}
 
     @state_json.setter
     def state_json(self, value):
-        self._state_json = json.dumps(value)
+        """Set plan output"""
+        session = Database.get_session()
+
+        if self._state_json:
+            state_json_blob = self._state_json
+            session.refresh(state_json_blob)
+        else:
+            state_json_blob = Blob()
+
+        state_json_blob.data = bytes(json.dumps(value), 'utf-8')
+
+        session.add(state_json_blob)
+        # @TODO this does not work when creating object
+        #session.refresh(self)
+        self._state_json = state_json_blob
+        session.add(self)
+        session.commit()
 
     @classmethod
-    def create_from_state_json(cls, run, state_json):
+    def create_from_state_json(cls, run, state_json, session=None):
         """Create StateVersion from state_json."""
-        sv = cls(run=run, workspace=run.configuration_version.workspace, state_json=state_json)
+        sv = cls(run=run, workspace=run.configuration_version.workspace)
         session = Database.get_session()
         session.add(sv)
         session.commit()
+        sv.state_json=state_json
 
         return sv
 
