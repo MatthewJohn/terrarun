@@ -102,7 +102,7 @@ class JobProcessor:
         elif plan_status is TerraformCommandState.ERRORED:
             run.update_status(RunStatus.ERRORED)
             return
-        elif run.plan_only or run.configuration_version.speculative or not run.plan.has_changes:
+        elif run.plan_only or run.configuration_version.speculative or not run.plan.has_changes or run.refresh_only:
             run.update_status(RunStatus.PLANNED_AND_FINISHED)
             return
 
