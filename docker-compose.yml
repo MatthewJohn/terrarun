@@ -153,10 +153,12 @@ services:
       /bin/bash -c "
       if [ ! -f \"/agent_images/${AGENT_FILENAME}\" ]
       then
-        apt-get update && apt-get install --assume-yes debootstrap && apt-get clean all
+        apt-get update && apt-get install --assume-yes debootstrap gzip && apt-get clean all
         pushd /tmp
           debootstrap ${AGENT_DIST_NAME} ${AGENT_DIST_NAME}
-          tar -zcvf /agent_images/${AGENT_FILENAME} -C ${AGENT_DIST_NAME} .
+          pushd ${AGENT_DIST_NAME}
+            gzip -r /agent_images/${AGENT_FILENAME} *
+          popd
         popd
       fi
       "

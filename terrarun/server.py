@@ -2401,6 +2401,35 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     }
                 }, 200
 
+            elif job.job_type is JobQueueType.APPLY:
+                # Update run to show plan as in progress
+                job.run.update_status(RunStatus.APPLYING)
+
+                terraform_version = job.run.terraform_version or '1.1.7'
+
+                # Generate user token for run
+                token = UserToken.create_agent_job_token(job=job)
+                return {
+                    # @TODO Should this be apply for plans during an apply run?
+                    "type": job.job_type.value,
+                    "data": {
+                        "run_id": job.run.api_id,
+                        # @TODO Should this be apply for plans during an apply run?
+                        "operation": job.job_type.value,
+                        "organization_name": job.run.configuration_version.workspace.organisation.name_id,
+                        "workspace_name": job.run.configuration_version.workspace.name,
+                        "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
+                        "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
+                        "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/plan/{job.run.plan.api_id}",
+                        "configuration_version_url": job.run.configuration_version.get_download_url(),
+                        "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
+                        "token": token.token,
+                        "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
+                        "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
+                        "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
+                    }
+                }, 200
+
         # Return no jobs
         return {}, 204
 

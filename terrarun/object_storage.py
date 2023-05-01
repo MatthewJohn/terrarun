@@ -70,10 +70,18 @@ class ObjectStorage:
         content.seek(0)
         return content.read()
 
-    def create_presigned_download_url(self, path):
+    def create_presigned_download_url(self, path, expiry=300):
         """Create pre-signed URL for object downoad"""
         return self._s3_client.generate_presigned_url(
             'get_object',
             Params={'Bucket': self.bucket_name, 'Key': path},
-            ExpiresIn=300
+            ExpiresIn=expiry
+        )
+
+    def create_presigned_upload_url(self, path, expiry=300):
+        """Create pre-signed URL for object upload"""
+        return self._s3_client.generate_presigned_url(
+            'put_object',
+            Params={'Bucket': self.bucket_name, 'Key': path},
+            ExpiresIn=expiry
         )
