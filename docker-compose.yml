@@ -108,6 +108,8 @@ services:
       - web
     env_file:
       - ./.env
+    labels:
+      - "traefik.enable=false"
     volumes:
      - mysqldata:/var/lib/mysql
 
