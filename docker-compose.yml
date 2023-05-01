@@ -45,7 +45,7 @@ services:
       - web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.terrarun-api.rule=Host(`$DOMAIN`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.terrarun-api.rule=Host(`$DOMAIN`) && (PathPrefix(`/.well-known`) || PathPrefix(`/api`))"
       - "traefik.http.routers.terrarun-api.entrypoints=websecure"
       - "traefik.http.routers.terrarun-api.tls=true"
       - "traefik.http.services.terrarun-api.loadbalancer.server.port=5000"
