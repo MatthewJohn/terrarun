@@ -155,7 +155,7 @@ class Run(Base, BaseObject):
             workspace_tasks=run.pre_apply_workspace_tasks)
 
         # Queue to be processed
-        run.add_to_queue_table(JobQueueAgentType.WORKER)
+        run.queue_worker_job()
         return run
 
     def cancel(self, user):
