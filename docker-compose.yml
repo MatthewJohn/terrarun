@@ -60,7 +60,7 @@ services:
 
     # Only for local development
     #entrypoint: ["python", "terrarun.py", "--ssl-cert-private-key", "./ssl/private.pem", "--ssl-cert-public-key", "./ssl/public.pem"]
-    entrypoint: ["python", "terrarun.py"]
+    entrypoint: ["python", "-u", "terrarun.py"]
     volumes:
       - ./:/app
 
