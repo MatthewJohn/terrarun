@@ -189,151 +189,186 @@ class Run(Base, BaseObject):
             if workspace_task.stage == WorkspaceTaskStage.PRE_APPLY and workspace_task.active
         ]
 
+    def handling_pending(self):
+        """Create plan and setup pre-plan tasks"""
+        # Create plan, as the terraform client expects this
+        # to immediately exist
+        terrarun.models.plan.Plan.create(run=self)
+        self.update_status(RunStatus.PRE_PLAN_RUNNING)
+
+        # Handle pre-run tasks.
+        if self.pre_plan_workspace_tasks:
+            task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN][0]
+
+            # Iterate over task results and execute
+            for task_result in task_stage.task_results:
+                task_result.execute()
+
+        # Queue plan
+        self.add_to_queue_table()
+
+    def handle_pre_plan_running(self):
+        """Hanlde pre-plan running, waiting for task stages to complete"""
+        task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN]
+
+        should_continue = True
+        completed = True
+        if len(task_stages) == 0:
+            # No task stages - no tasks available
+            pass
+        elif len(task_stages) == 1:
+            task_stage = task_stages[0]
+            should_continue, completed = task_stage.check_status()
+
+        if should_continue:
+            if completed:
+                self.update_status(RunStatus.PRE_PLAN_COMPLETED)
+            self.add_to_queue_table()
+
+    def execute_plan(self):
+        """Execute plan"""
+        session = Database.get_session()
+        self.update_status(RunStatus.PLANNING)
+        plan = self.plan
+        self.plan.execute()
+        session.refresh(self)
+        if self.status == RunStatus.CANCELED:
+            return
+        elif plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            self.update_status(RunStatus.ERRORED)
+            return
+        elif self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
+            self.update_status(RunStatus.PLANNED_AND_FINISHED)
+            return
+        else:
+            self.update_status(RunStatus.PLANNED)
+            terrarun.models.apply.Apply.create(plan=self.plan)
+            self.add_to_queue_table()
+
+    def handle_planned(self):
+        """Handle planned state"""
+        # If successfully planned, move to pre-plan tasks
+        self.update_status(RunStatus.POST_PLAN_RUNNING)
+        if self.post_plan_workspace_tasks:
+            task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
+
+            # Iterate over task results and execute
+            for task_result in task_stage.task_results:
+                task_result.execute()
+
+        self.add_to_queue_table()
+
+    def handle_post_plan_running(self):
+        """Handle post-plan running, checking for status of tasks"""
+        task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN]
+
+        completed = True
+        should_continue = True
+        if len(task_stages) == 0:
+            # No task stages - no tasks available
+            pass
+        elif len(task_stages) == 1:
+            task_stage = task_stages[0]
+            should_continue, completed = task_stage.check_status()
+
+        if should_continue:
+            if completed:
+                self.update_status(RunStatus.POST_PLAN_COMPLETED)
+            self.add_to_queue_table()
+
+    def handle_post_plan_completed(self):
+        """Handle post plan completed, waiting for run to be confirmed"""
+        # Check if plan was confirmed before entering the state
+        if self.confirmed:
+            self.update_status(RunStatus.CONFIRMED)
+
+    def handle_confirmed(self):
+        """Handle confirmed state"""
+        # Handle pre-apply tasks.
+        if self.pre_apply_workspace_tasks:
+            task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_APPLY][0]
+
+            # Iterate over task results and execute
+            for task_result in task_stage.task_results:
+                task_result.execute()
+
+
+        self.update_status(RunStatus.PRE_APPLY_RUNNING)
+        self.add_to_queue_table()
+
+    def handle_pre_apply_running(self):
+        """Handle pre-apply running, waiting for task stages to execute"""
+        task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_APPLY]
+
+        completed = True
+        should_continue = True
+        if len(task_stages) == 0:
+            # No task stages - no tasks available
+            pass
+        elif len(task_stages) == 1:
+            task_stage = task_stages[0]
+            should_continue, completed = task_stage.check_status()
+
+        if should_continue:
+            if completed:
+                self.update_status(RunStatus.PRE_APPLY_COMPLETED)
+                self.update_status(RunStatus.APPLY_QUEUED)
+            self.add_to_queue_table()
+
+    def handle_apply_queued(self):
+        """Handle apply_queued state"""
+        session = Database.get_session()
+        self.update_status(RunStatus.APPLYING)
+        self.plan.apply.execute()
+        session.refresh(self)
+        if self.status == RunStatus.CANCELED:
+            return
+        elif self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
+            self.update_status(RunStatus.ERRORED)
+            return
+        else:
+            self.update_status(RunStatus.APPLIED)
+
     def execute_next_step(self):
         """Execute terraform command"""
-        session = Database.get_session()
-        config = terrarun.config.Config()
         # Handle plan job
         print("Run Status: " + str(self.status))
 
         if self.status is RunStatus.PENDING:
-
-            # Create plan, as the terraform client expects this
-            # to immediately exist
-            terrarun.models.plan.Plan.create(run=self)
-            self.update_status(RunStatus.PRE_PLAN_RUNNING)
-
-            # Handle pre-run tasks.
-            if self.pre_plan_workspace_tasks:
-                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN][0]
-
-                # Iterate over task results and execute
-                for task_result in task_stage.task_results:
-                    task_result.execute()
-
-            # Queue plan
-            self.add_to_queue_table()
+            self.handling_pending()
 
         # Check status of pre-plan tasks
         elif self.status is RunStatus.PRE_PLAN_RUNNING:
-            task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_PLAN]
-
-            should_continue = True
-            completed = True
-            if len(task_stages) == 0:
-                # No task stages - no tasks available
-                pass
-            elif len(task_stages) == 1:
-                task_stage = task_stages[0]
-                should_continue, completed = task_stage.check_status()
-
-            if should_continue:
-                if completed:
-                    self.update_status(RunStatus.PRE_PLAN_COMPLETED)
-                self.add_to_queue_table()
+            self.handle_pre_plan_running()
 
         elif self.status is RunStatus.PRE_PLAN_COMPLETED:
             self.queue_plan()
 
         elif self.status is RunStatus.PLAN_QUEUED:
-            self.update_status(RunStatus.PLANNING)
-            plan = self.plan
-            self.plan.execute()
-            session.refresh(self)
-            if self.status == RunStatus.CANCELED:
-                return
-            elif plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-                self.update_status(RunStatus.ERRORED)
-                return
-            elif self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
-                self.update_status(RunStatus.PLANNED_AND_FINISHED)
-                return
-            else:
-                self.update_status(RunStatus.PLANNED)
-                terrarun.models.apply.Apply.create(plan=self.plan)
-                self.add_to_queue_table()
+            self.execute_plan()
 
         elif self.status is RunStatus.PLANNED:
-            # If successfully planned, move to pre-plan tasks
-            self.update_status(RunStatus.POST_PLAN_RUNNING)
-            if self.post_plan_workspace_tasks:
-                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
-
-                # Iterate over task results and execute
-                for task_result in task_stage.task_results:
-                    task_result.execute()
-
-            self.add_to_queue_table()
+            self.handle_planned()
 
         # Check status of post-plan tasks
         elif self.status is RunStatus.POST_PLAN_RUNNING:
-            task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN]
-
-            completed = True
-            should_continue = True
-            if len(task_stages) == 0:
-                # No task stages - no tasks available
-                pass
-            elif len(task_stages) == 1:
-                task_stage = task_stages[0]
-                should_continue, completed = task_stage.check_status()
-
-            if should_continue:
-                if completed:
-                    self.update_status(RunStatus.POST_PLAN_COMPLETED)
-                self.add_to_queue_table()
+            self.handle_post_plan_running()
 
 
         elif self.status is RunStatus.POST_PLAN_COMPLETED:
-            # Check if plan was confirmed before entering the state
-            if self.confirmed:
-                self.update_status(RunStatus.CONFIRMED)
+            self.handle_post_plan_completed()
 
         # Handle confirmed, starting pre-apply tasks
         elif self.status is RunStatus.CONFIRMED:
-            # Handle pre-apply tasks.
-            if self.pre_apply_workspace_tasks:
-                task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_APPLY][0]
-
-                # Iterate over task results and execute
-                for task_result in task_stage.task_results:
-                    task_result.execute()
-
-
-            self.update_status(RunStatus.PRE_APPLY_RUNNING)
-            self.add_to_queue_table()
+            self.handle_confirmed()
 
         # Check status of pre-apply tasks
         elif self.status is RunStatus.PRE_APPLY_RUNNING:
-            task_stages = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.PRE_APPLY]
-
-            completed = True
-            should_continue = True
-            if len(task_stages) == 0:
-                # No task stages - no tasks available
-                pass
-            elif len(task_stages) == 1:
-                task_stage = task_stages[0]
-                should_continue, completed = task_stage.check_status()
-
-            if should_continue:
-                if completed:
-                    self.update_status(RunStatus.PRE_APPLY_COMPLETED)
-                    self.update_status(RunStatus.APPLY_QUEUED)
-                self.add_to_queue_table()
+            self.handle_pre_apply_running()
 
         # Handle apply job
         elif self.status is RunStatus.APPLY_QUEUED:
-            self.update_status(RunStatus.APPLYING)
-            self.plan.apply.execute()
-            session.refresh(self)
-            if self.status == RunStatus.CANCELED:
-                return
-            elif self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-                self.update_status(RunStatus.ERRORED)
-                return
-            else:
-                self.update_status(RunStatus.APPLIED)
+            self.handle_apply_queued()
 
     def generate_state_version(self, work_dir):
         """Generate state version from state file."""
