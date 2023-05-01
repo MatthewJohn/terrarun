@@ -112,3 +112,31 @@ class JobProcessor:
 
             # Queue worker job for next stages
             run.queue_worker_job()
+
+    @classmethod
+    def handle_apply_status_update(cls, job_status):
+        """Handle status update for apply"""
+        job_data = job_status.get("data")
+
+        # Get plan ID from job status and update plan
+        run = Run.get_by_api_id(job_data.get("run_id"))
+        if not run:
+            return {}, 404
+
+        # @TODO Handle error message
+        apply_status = TerraformCommandState(job_status.get("status"))
+        # Update plan attributes
+        run.plan.apply.update_attributes(
+            status=apply_status
+        )
+
+        # Update run status
+        ## Do not update run status if is has been cancelled
+        if run.status == RunStatus.CANCELED:
+            return
+
+        elif apply_status is TerraformCommandState.ERRORED:
+            run.update_status(RunStatus.ERRORED)
+            return
+        else:
+            run.update_status(RunStatus.APPLIED)

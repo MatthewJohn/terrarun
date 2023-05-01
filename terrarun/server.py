@@ -321,7 +321,11 @@ class Server(object):
             "/api/agent/log/plan/<string:plan_id>"
         )
         self._api.add_resource(
-            ApiAgentBaseImage,
+            ApiAgentApplyLog,
+            "/api/agent/log/apply/<string:apply_id>"
+        )
+        self._api.add_resource(
+            ApiAgentFilesystem,
             "/api/agent/filesystem"
         )
 
@@ -2341,6 +2345,11 @@ class ApiAgentStatus(Resource, AgentEndpoint):
             # Get plan
             if job_status.get("type") == "plan":
                 JobProcessor.handle_plan_status_update(job_status)
+            elif job_status.get("type") == "apply":
+                JobProcessor.handle_apply_status_update(job_status)
+            else:
+                print(f"Unknown job type: {job_status.get('type')}")
+                return {}, 500
 
         agent.update_status(
             agent_status
@@ -2425,17 +2434,43 @@ class ApiAgentPlanLog(Resource):
 
     def put(self, plan_id):
         """Handle log upload"""
+        # @TODO Add authentication
         plan = Plan.get_by_api_id(plan_id)
         if not plan:
             return {}, 404
         plan.append_output(request.data, no_append=True)
+        return {}, 200
 
     def patch(self, plan_id):
         """Handle log upload"""
+        # @TODO Add authentication
         plan = Plan.get_by_api_id(plan_id)
         if not plan:
             return {}, 404
         plan.append_output(request.data)
+        return {}, 200
+
+
+class ApiAgentApplyLog(Resource):
+    """Interface to upload terraform logs"""
+
+    def put(self, apply_id):
+        """Handle log upload"""
+        # @TODO Add authentication
+        apply = Apply.get_by_api_id(apply_id)
+        if not apply:
+            return {}, 404
+        apply.append_output(request.data, no_append=True)
+        return {}, 200
+
+    def patch(self, apply_id):
+        """Handle log upload"""
+        # @TODO Add authentication
+        apply = Apply.get_by_api_id(apply)
+        if not apply:
+            return {}, 404
+        apply.append_output(request.data)
+        return {}, 200
 
 
 class ApiAgentFilesystem(Resource):
