@@ -281,6 +281,8 @@ class Run(Base, BaseObject):
         # Check if plan was confirmed before entering the state
         if self.confirmed:
             self.update_status(RunStatus.CONFIRMED)
+        
+        self.queue_worker_job()
 
     def handle_confirmed(self):
         """Handle confirmed state"""
