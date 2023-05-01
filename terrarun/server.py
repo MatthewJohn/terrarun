@@ -2399,7 +2399,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
             token = UserToken.create_agent_job_token(job=job)
 
             presign = Presign()
-            filesystem_key = presign.encrypt(job.run.api_id)
+            run_key = presign.encrypt(job.run.api_id)
 
             # Either the plan or apply api ID
             job_sub_task_id = job.run.plan.api_id if job.job_type is JobQueueType.PLAN else job.run.plan.apply.api_id
@@ -2415,9 +2415,9 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "workspace_name": job.run.configuration_version.workspace.name,
                     "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
                     "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
-                    "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/{job.job_type.value}/{job_sub_task_id}",
+                    "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/{job.job_type.value}/{job_sub_task_id}?key={run_key}",
                     "configuration_version_url": job.run.configuration_version.get_download_url(),
-                    "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem?key={filesystem_key}",
+                    "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem?key={run_key}",
                     "token": token.token,
                     "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
                     "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
@@ -2434,19 +2434,35 @@ class ApiAgentPlanLog(Resource):
 
     def put(self, plan_id):
         """Handle log upload"""
-        # @TODO Add authentication
+        decrypted_run_id = Presign().decrypt(request.args.get('key', ''))
+        if not decrypted_run_id:
+            return {}, 404
+
         plan = Plan.get_by_api_id(plan_id)
         if not plan:
             return {}, 404
+
+        # Check encrypted run ID in URL
+        if plan.run.api_id != decrypted_run_id:
+            return {}, 404
+
         plan.append_output(request.data, no_append=True)
         return {}, 200
 
     def patch(self, plan_id):
         """Handle log upload"""
-        # @TODO Add authentication
+        decrypted_run_id = Presign().decrypt(request.args.get('key', ''))
+        if not decrypted_run_id:
+            return {}, 404
+
         plan = Plan.get_by_api_id(plan_id)
         if not plan:
             return {}, 404
+
+        # Check encrypted run ID in URL
+        if plan.run.api_id != decrypted_run_id:
+            return {}, 404
+
         plan.append_output(request.data)
         return {}, 200
 
@@ -2456,19 +2472,35 @@ class ApiAgentApplyLog(Resource):
 
     def put(self, apply_id):
         """Handle log upload"""
-        # @TODO Add authentication
+        decrypted_run_id = Presign().decrypt(request.args.get('key', ''))
+        if not decrypted_run_id:
+            return {}, 404
+
         apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
+
+        # Check encrypted run ID in URL
+        if apply.plan.run.api_id != decrypted_run_id:
+            return {}, 404
+
         apply.append_output(request.data, no_append=True)
         return {}, 200
 
     def patch(self, apply_id):
         """Handle log upload"""
-        # @TODO Add authentication
+        decrypted_run_id = Presign().decrypt(request.args.get('key', ''))
+        if not decrypted_run_id:
+            return {}, 404
+
         apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
+
+        # Check encrypted run ID in URL
+        if apply.plan.run.api_id != decrypted_run_id:
+            return {}, 404
+
         apply.append_output(request.data)
         return {}, 200
 
