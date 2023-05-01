@@ -5,7 +5,7 @@ services:
   traefik:
     image: traefik:v2.8
     restart: always
-    command: --providers.docker=true --providers.file.filename=/etc/traefik/dynamic_conf/conf.yml --api.insecure=true --entrypoints.web.address=:80 --entrypoints.websecure.address=:443
+    command: --providers.docker=true --providers.file.filename=/etc/traefik/dynamic_conf/conf.yml --api.insecure=true --entrypoints.web.address=:80 --entrypoints.websecure.address=:443 --accesslog=true
     hostname: $DOMAIN
     ports:
       # Open traefik http [80] and https [443] ports.
