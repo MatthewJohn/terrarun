@@ -1839,7 +1839,7 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
         if not state_version_id:
             return False
 
-        if current_job and current_job.run.configuration_version.workspace == workspace:
+        if current_job and current_job.run.configuration_version.workspace == state_version.workspace:
             return True
 
         return WorkspacePermissions(
