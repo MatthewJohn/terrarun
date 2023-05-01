@@ -35,7 +35,7 @@ from terrarun.permissions.user import UserPermissions
 from terrarun.permissions.workspace import WorkspacePermissions
 from terrarun.models.plan import Plan
 from terrarun.models.run import Run
-from terrarun.models.run_queue import RunQueue
+from terrarun.models.run_queue import RunQueue, RunQueueType
 from terrarun.models.state_version import StateVersion
 from terrarun.models.tag import Tag
 from terrarun.models.task import Task
@@ -322,19 +322,16 @@ class Server(object):
         while self.queue_run:
             try:
                 session = Database.get_session()
-                rq = session.query(RunQueue).first()
-                if not rq:
+                run = RunQueue.get_job_by_type(RunQueueType.AGENT)
+                if not run:
                     sleep(3)
                     continue
 
-                run = rq.run
-                session.delete(rq)
-                session.commit()
-                print("Worker, found run: " + run.api_id)
+                print("Agent, found run: " + run.api_id)
                 run.execute_next_step()
                 sleep(2)
             except Exception as exc:
-                print('Error during worker run: ' + str(exc))
+                print('Error during agent run: ' + str(exc))
                 print(traceback.format_exc())
                 sleep(3)
 

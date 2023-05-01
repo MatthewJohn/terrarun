@@ -35,43 +35,43 @@ class Worker:
     def _check_for_jobs(self):
         """Check for jobs to run"""
         print('Checking for jobs...')
-        run_queue_job = RunQueue.get_job_by_type(RunQueueType.WORKER)
-        if not run_queue_job:
-            print('No jobs available')
+        run = RunQueue.get_job_by_type(RunQueueType.WORKER)
+        if not run:
+            print('No run in queue')
             return None
 
-        print(f'Handling run: {run_queue_job.run.api_id}: {run_queue_job.run.status}')
+        print(f'Handling run: {run.api_id}: {run.status}')
 
-        if run_queue_job.run.status is RunStatus.PENDING:
-            run_queue_job.run.handling_pending()
+        if run.status is RunStatus.PENDING:
+            run.handling_pending()
 
         # Check status of pre-plan tasks
-        elif run_queue_job.run.status is RunStatus.PRE_PLAN_RUNNING:
-            run_queue_job.run.handle_pre_plan_running()
+        elif run.status is RunStatus.PRE_PLAN_RUNNING:
+            run.handle_pre_plan_running()
 
-        elif run_queue_job.run.status is RunStatus.PRE_PLAN_COMPLETED:
-            run_queue_job.run.queue_plan()
+        elif run.status is RunStatus.PRE_PLAN_COMPLETED:
+            run.queue_plan()
 
-        elif run_queue_job.run.status is RunStatus.PLANNED:
-            run_queue_job.run.handle_planned()
+        elif run.status is RunStatus.PLANNED:
+            run.handle_planned()
 
         # Check status of post-plan tasks
-        elif run_queue_job.run.status is RunStatus.POST_PLAN_RUNNING:
-            run_queue_job.run.handle_post_plan_running()
+        elif run.status is RunStatus.POST_PLAN_RUNNING:
+            run.handle_post_plan_running()
 
-        elif run_queue_job.run.status is RunStatus.POST_PLAN_COMPLETED:
-            run_queue_job.run.handle_post_plan_completed()
+        elif run.status is RunStatus.POST_PLAN_COMPLETED:
+            run.handle_post_plan_completed()
 
         # Handle confirmed, starting pre-apply tasks
-        elif run_queue_job.run.status is RunStatus.CONFIRMED:
-            run_queue_job.run.handle_confirmed()
+        elif run.status is RunStatus.CONFIRMED:
+            run.handle_confirmed()
 
         # Check status of pre-apply tasks
-        elif run_queue_job.run.status is RunStatus.PRE_APPLY_RUNNING:
-            run_queue_job.run.handle_pre_apply_running()
+        elif run.status is RunStatus.PRE_APPLY_RUNNING:
+            run.handle_pre_apply_running()
         
         else:
-            print(f'Unknown job status for worker: {run_queue_job.run.status}')
+            print(f'Unknown job status for worker: {run.status}')
 
     def stop(self):
         """Mark as stopped, stopping any further jobs from executing"""
