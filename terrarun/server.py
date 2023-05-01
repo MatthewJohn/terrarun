@@ -2345,7 +2345,9 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "run_id": job.run.api_id,
                     "operation": job.job_type.value,
                     "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
-                    "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version)
+                    "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
+                    "terraform_log_url": "https://local-dev.dock.studio/api/agent/log",
+                    "configuration_version_url": job.run.configuration_version.get_download_url()
                 }
             }, 200
 

@@ -14,6 +14,7 @@ import sqlalchemy.orm
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.models.blob import Blob
+from terrarun.object_storage import ObjectStorage
 
 
 class ConfigurationVersionStatus(Enum):
@@ -67,6 +68,11 @@ class ConfigurationVersion(Base, BaseObject):
         """Return whether only a plan."""
         return False
 
+    @property
+    def storage_key(self):
+        """Return object storage key"""
+        return f"configuration-version/{self.api_id}.tgz"
+
     def __init__(self, *args, **kwargs):
         """Store member variables."""
         super(ConfigurationVersion, self).__init__(*args, **kwargs)
@@ -89,6 +95,9 @@ class ConfigurationVersion(Base, BaseObject):
         if self.configuration_blob:
             raise Exception('Configuration version already uploaded')
 
+        # Upload configuration version to s3
+        self.update_to_object_storage(data=data)
+
         # Create blob for configuration version
         session = Database.get_session()
         blob = Blob(data=data)
@@ -99,6 +108,16 @@ class ConfigurationVersion(Base, BaseObject):
         session.commit()
 
         self.update_status(ConfigurationVersionStatus.UPLOADED)
+
+    def update_to_object_storage(self, data):
+        """Upload to object storage"""
+        object_storage = ObjectStorage()
+        object_storage.upload_file(path=self.storage_key, content=data)
+
+    def get_download_url(self):
+        """Get pre-signed download URL for conifiguration archive"""
+        object_storage = ObjectStorage()
+        return object_storage.create_presigned_download_url(path=self.storage_key)
 
     def extract_configuration(self):
         if not self.configuration_blob:
