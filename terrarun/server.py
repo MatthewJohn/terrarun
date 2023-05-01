@@ -2390,15 +2390,11 @@ class ApiAgentJobs(Resource, AgentEndpoint):
             # Generate user token for run
             token = UserToken.create_agent_job_token(job=job)
             return {
+                # @TODO Should this be apply for plans during an apply run?
                 "type": job.job_type.value,
-
-                # Attempts at job ID
-                "job_id": job.api_id,
-                "id": job.api_id,
-                "job": job.api_id,
-
                 "data": {
                     "run_id": job.run.api_id,
+                    # @TODO Should this be apply for plans during an apply run?
                     "operation": job.job_type.value,
                     "organization_name": job.run.configuration_version.workspace.organisation.name_id,
                     "workspace_name": job.run.configuration_version.workspace.name,
