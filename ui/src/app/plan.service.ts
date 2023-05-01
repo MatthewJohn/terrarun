@@ -13,7 +13,7 @@ export class PlanService {
 
   getDetailsById(planId: string): Observable<any> {
     return this.http.get<any>(
-      `https://${window.location.hostname}:5000/api/v2/plans/${planId}`,
+      `/api/v2/plans/${planId}`,
       { headers: this.accountService.getAuthHeader() }
     );
   }

@@ -11,11 +11,12 @@ from time import sleep
 
 import sqlalchemy.orm
 
-from terrarun.base_object import BaseObject
-from terrarun.blob import Blob
+from terrarun.models.base_object import BaseObject
+from terrarun.models.blob import Blob
 from terrarun.database import Database
-import terrarun.run
-from terrarun.state_version import StateVersion
+import terrarun.models.run
+from terrarun.models.state_version import StateVersion
+import terrarun.models.audit_event
 
 
 class TerraformCommandState(Enum):
@@ -45,7 +46,7 @@ class TerraformCommand(BaseObject):
         with open(os.path.join(work_dir, self.STATE_FILE), 'w') as state_fh:
             state_fh.write(json.dumps(state_version.state_json))
 
-    def append_output(self, data):
+    def append_output(self, data, no_append=False):
         """Append to output"""
         session = Database.get_session()
         session.refresh(self)
@@ -56,7 +57,10 @@ class TerraformCommand(BaseObject):
         else:
             log = self.log
             session.refresh(log)
-        log.data += data
+        if no_append:
+            log.data = data
+        else:
+            log.data += data
         session.add(log)
         session.commit()
 
@@ -70,7 +74,7 @@ class TerraformCommand(BaseObject):
         obj = session.query(cls).filter(cls.id==obj_id).first()
         while command_proc.poll() is None:
             session.refresh(obj)
-            if obj.run.status == terrarun.run.RunStatus.CANCELED:
+            if obj.run.status == terrarun.models.run.RunStatus.CANCELED:
                 command_proc.kill()
                 break
             sleep(0.5)
@@ -83,6 +87,7 @@ class TerraformCommand(BaseObject):
             environment_variables = os.environ.copy()
 
         try:
+            print(f'Running command: {command}')
             command_proc = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,
@@ -132,13 +137,13 @@ class TerraformCommand(BaseObject):
             session.refresh(self)
             should_commit = True
 
-        audit_event = terrarun.audit_event.AuditEvent(
+        audit_event = terrarun.models.audit_event.AuditEvent(
             organisation=self.run.configuration_version.workspace.organisation,
             object_id=self.id,
             object_type=self.ID_PREFIX,
             old_value=Database.encode_value(self.status.value) if self.status else None,
             new_value=Database.encode_value(new_status.value),
-            event_type=terrarun.audit_event.AuditEventType.STATUS_CHANGE)
+            event_type=terrarun.models.audit_event.AuditEventType.STATUS_CHANGE)
 
         self.status = new_status
         session.add(self)
@@ -158,8 +163,8 @@ class TerraformCommand(BaseObject):
             return '{}-at'.format(name.replace('_', '-'))
         return {
             convert_event_name(event.new_value): terrarun.utils.datetime_to_json(event.timestamp)
-            for event in session.query(terrarun.audit_event.AuditEvent).where(
-                terrarun.audit_event.AuditEvent.object_id==self.id,
-                terrarun.audit_event.AuditEvent.object_type==self.ID_PREFIX,
-                terrarun.audit_event.AuditEvent.event_type==terrarun.audit_event.AuditEventType.STATUS_CHANGE)
+            for event in session.query(terrarun.models.audit_event.AuditEvent).where(
+                terrarun.models.audit_event.AuditEvent.object_id==self.id,
+                terrarun.models.audit_event.AuditEvent.object_type==self.ID_PREFIX,
+                terrarun.models.audit_event.AuditEvent.event_type==terrarun.models.audit_event.AuditEventType.STATUS_CHANGE)
         }

@@ -1,0 +1,19 @@
+FROM node:lts
+
+# Set working directory
+WORKDIR /app
+
+# 
+COPY package.json /app/package.json
+COPY package-lock.json /app/package-lock.json
+
+# Same as npm install
+RUN npm install @angular/cli -g
+RUN npm install
+
+COPY . /app
+
+ENV PORT=3000
+EXPOSE 3000
+
+CMD [ "ng", "serve", "--host", "0.0.0.0", "--disable-host-check" ]

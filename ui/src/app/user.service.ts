@@ -16,7 +16,7 @@ export class UserService {
 
   getUserDetailsById(userId: string): Observable<any> {
     return this.http.get<any>(
-      `https://${window.location.hostname}:5000/api/v2/users/${userId}`,
+      `/api/v2/users/${userId}`,
       { headers: this.accountService.getAuthHeader() }
     );
   }
@@ -26,7 +26,7 @@ export class UserService {
       return this.cachedUserDetailsById[userId];
     }
     var result = await lastValueFrom(this.http.get<any>(
-      `https://${window.location.hostname}:5000/api/v2/users/${userId}`,
+      `/api/v2/users/${userId}`,
       { headers: this.accountService.getAuthHeader() }
     ));
     this.cachedUserDetailsById[userId];
@@ -36,7 +36,7 @@ export class UserService {
   getUserTokens(userId: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.get<any>(
-        `https://${window.location.hostname}:5000/api/v2/users/${userId}/authentication-tokens`,
+        `/api/v2/users/${userId}/authentication-tokens`,
         { headers: this.accountService.getAuthHeader() }
       )
       .subscribe({
@@ -49,7 +49,7 @@ export class UserService {
   createUserToken(userId: string, description: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.post<any>(
-        `https://${window.location.hostname}:5000/api/v2/users/${userId}/authentication-tokens`,
+        `/api/v2/users/${userId}/authentication-tokens`,
         { data: {type: 'authentication-tokens', attributes: {'description': description}}},
         { headers: this.accountService.getAuthHeader() }
       )

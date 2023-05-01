@@ -13,7 +13,7 @@ export class ApplyService {
 
   getDetailsById(applyId: string): Observable<any> {
     return this.http.get<any>(
-      `https://${window.location.hostname}:5000/api/v2/applies/${applyId}`,
+      `/api/v2/applies/${applyId}`,
       { headers: this.accountService.getAuthHeader() }
     );
   }

@@ -13,7 +13,7 @@ export class OrganisationService {
   validateNewOrganisationName(name: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.post<any>(
-        `https://${window.location.hostname}:5000/api/terrarun/v1/organisation/create/name-validation`,
+        `/api/terrarun/v1/organisation/create/name-validation`,
         { 'name': name },
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
@@ -30,7 +30,7 @@ export class OrganisationService {
   create(name: string, email: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.post<any>(
-        `https://${window.location.hostname}:5000/api/v2/organizations`,
+        `/api/v2/organizations`,
         { data: { type: 'organizations', attributes: {'name': name, 'email': email }}},
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
@@ -47,7 +47,7 @@ export class OrganisationService {
   update(organisationName: string, name: string, email: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
-        `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}`,
+        `/api/v2/organizations/${organisationName}`,
         { data: { type: 'organizations', attributes: {'name': name, 'email': email }}},
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
@@ -64,7 +64,7 @@ export class OrganisationService {
   getAll(): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.get<any>(
-        `https://${window.location.hostname}:5000/api/v2/organizations`,
+        `/api/v2/organizations`,
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data) => {
@@ -80,7 +80,7 @@ export class OrganisationService {
   getOrganisationDetails(organisationName: string): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.get<any>(
-        `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}`,
+        `/api/v2/organizations/${organisationName}`,
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data) => {
@@ -94,13 +94,13 @@ export class OrganisationService {
   }
 
   getAllWorkspaces(organisationName: string): Observable<any> {
-    return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/workspaces`,
+    return this.http.get<any>(`/api/v2/organizations/${organisationName}/workspaces`,
                               { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
 
   }
 
   getAllProjects(organisationName: string): Observable<any> {
-    return this.http.get<any>(`https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/projects`,
+    return this.http.get<any>(`/api/v2/organizations/${organisationName}/projects`,
                               { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
 
   }

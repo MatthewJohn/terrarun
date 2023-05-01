@@ -13,7 +13,7 @@ export class TaskResultService {
 
   getTaskResultDetailsById(taskResultId: string): Observable<any> {
     return this.http.get<any>(
-        `https://${window.location.hostname}:5000/api/v2/task-results/${taskResultId}`,
+        `/api/v2/task-results/${taskResultId}`,
         { headers: this.accountService.getAuthHeader() }
       );
   }

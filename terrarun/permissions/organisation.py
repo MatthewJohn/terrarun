@@ -44,6 +44,9 @@ class OrganisationPermissions:
     def check_permission(self, permission):
         """Check if user has single permission."""
         # If user is site admin, allow permission
+        if not self._current_user:
+            return False
+
         if self._current_user.site_admin:
             return True
         # If user is an organisation owner,

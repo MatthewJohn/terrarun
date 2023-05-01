@@ -13,7 +13,7 @@ export class LifecycleService {
 
   getOrganisationLifecycles(organisationName: string): Observable<any> {
     return this.http.get<any>(
-      `https://${window.location.hostname}:5000/api/v2/organizations/${organisationName}/lifecycles`,
+      `/api/v2/organizations/${organisationName}/lifecycles`,
       { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));
   }
 }
