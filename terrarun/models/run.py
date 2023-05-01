@@ -355,6 +355,9 @@ class Run(Base, BaseObject):
 
     def update_status(self, new_status, current_user=None, session=None):
         """Update state of run."""
+        if self.status is RunStatus.CANCELED:
+            print(f"Ignoring run status update to {str(new_status)} as status is CANCELLED")
+
         print(f"Updating job status to from {str(self.status)} to {str(new_status)}")
         should_commit = False
         if session is None:
