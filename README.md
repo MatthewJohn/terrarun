@@ -36,62 +36,77 @@ Under no circumstances should this project be used _ANYWHERE_ outside of develop
 
 ## Installation
 
-    git clone ssh://git@gitlab.dockstudios.co.uk:2222/pub/terrarun.git
-    cd terrarun
-    
-    # Setup python virtualenv and install dependencies
-    virtualenv -p python3 venv
-    . venv/bin/activate
-    pip install -r requirements.txt
-    
-    # Upgrade database
-    alembic upgrade head
-    
-    # Create admin user
-    python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin                   
-    
-    # Setup UI packages
-    pushd ui
-    npm install  # Verify this
-    popd
+```
+git clone ssh://git@gitlab.dockstudios.co.uk:2222/pub/terrarun.git
+cd terrarun
+
+# Setup python virtualenv and install dependencies
+virtualenv -p python3 venv
+. venv/bin/activate
+pip install -r requirements.txt
+
+# Upgrade database and add initial organisation/environments
+python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com --admin-username=admin --admin-email=admin@localhost --admin-password=password --global-agent-pool=default-pool
+
+# Create additional users, if necessary
+python ./bin/create_user.py --username seconduser --password=password2 --email=user2@localhost <--site-admin>
+
+# Setup UI packages
+pushd ui
+  npm install  # Verify this
+popd
+```
 
 ## Running inside Docker
-    
-    # Build Image
-    docker build -t terrarun:<YOUR_TAG> .
 
-    # Run container
-    docker run -d -p 5000:5000 -e TERRAFORM_VERSION="1.1.7" -e MIGRATE_DATABASE="True" -e BASE_URL=https://localhost:5000 -v ~/.aws:/root/.aws  terrarun:<YOUR_TAG>
+```
+cp .env-example .env
+# Update BASE_URL in .env
+# Add SSL certs as public.pem and private.pem to ./ssl directory
 
-    # Create admin user
-    python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin
+docker-compose up
 
-    # Run UI
-    nvm use (optional) or just install node in version in .nvmrc
-    cd ui
-    npm install
-    npm run start
+# Wait for DB to startup
+docker-compose logs -f
+
+# Perform initial setup
+docker-compose exec api python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com --admin-username=admin --admin-email=admin@localhost --admin-password=password --global-agent-pool=default-pool
+```
 
 ### Save and reuse your local config
 
-    # Copy database file into your repository
-    docker cp <CONTAINER_ID>:/app/test.db .
+```
+# Copy database file into your repository
+docker cp <CONTAINER_ID>:/app/test.db .
 
-    # Attach local file as a volume into a docker container by adding this to your docker run execution
-    -v $PWD/test.db:/app/test.db
+# Attach local file as a volume into a docker container by adding this to your docker run execution
+-v $PWD/test.db:/app/test.db
+```
 
 
 ## Usage
 
-    # Running without SSL certs (not recommended)
-    python ./terrarun.py &
-    cd ui
-    ng serve -o
+```
+# Running without SSL certs (not recommended)
+python ./terrarun.py &
+cd ui
+ng serve -o
 
-    # With SSL Certs (required for running with terraform)
-    python ./terrarun.py --ssl-cert-private-key ./private.pem --ssl-cert-public-key ./public.pem
-    cd ui
-    ng serve -o --public-host=<hostname> --ssl --ssl-cert ../public.pem --ssl-key ../private.pem
+# With SSL Certs (required for running with terraform)
+python ./terrarun.py --ssl-cert-private-key ./private.pem --ssl-cert-public-key ./public.pem
+cd ui
+ng serve -o --public-host=<hostname> --ssl --ssl-cert ../public.pem --ssl-key ../private.pem
+```
+
+## Agent setup
+
+The custom agent is WIP, but there is more support for the Official Hashicorp agent, currently tested with v1.8.0 (https://releases.hashicorp.com/tfc-agent/)
+
+Run with:
+
+```
+./tfc-agent -address https://my-terrarun.example.com -token=<Token from initial_setup.py>
+```
 
 ## Dev SSL certs
 

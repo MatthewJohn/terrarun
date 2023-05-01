@@ -1,0 +1,154 @@
+version: '3.9'
+
+services:
+
+  traefik:
+    image: traefik:v2.8
+    restart: always
+    command: --providers.docker=true --providers.file.filename=/etc/traefik/dynamic_conf/conf.yml --api.insecure=true --entrypoints.web.address=:80 --entrypoints.websecure.address=:443 --accesslog=true
+    hostname: $DOMAIN
+    ports:
+      # Open traefik http [80] and https [443] ports.
+      - '80:80'
+      - '443:443'
+      - '8080:8080'
+    networks:
+      - web
+      - default
+    volumes:
+      - ./ssl:/ssl:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/dynamic_conf/conf.yml:ro
+
+  ui:
+    restart: unless-stopped
+    build:
+      context: ./ui
+      dockerfile: Dockerfile.dev
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.terrarun-ui.rule=Host(`$DOMAIN`)"
+      - "traefik.http.routers.terrarun-ui.entrypoints=websecure"
+      - "traefik.http.routers.terrarun-ui.tls=true"
+      - "traefik.http.services.terrarun-ui.loadbalancer.server.port=4200"
+      - "traefik.http.routers.terrarun-ui.service=terrarun-ui"
+    # Only for local development
+    volumes:
+      - ./ui/src:/app/src
+
+  api:
+    restart: unless-stopped
+    build: .
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.terrarun-api.rule=Host(`$DOMAIN`) && (PathPrefix(`/.well-known`) || PathPrefix(`/api`))"
+      - "traefik.http.routers.terrarun-api.entrypoints=websecure"
+      - "traefik.http.routers.terrarun-api.tls=true"
+      - "traefik.http.services.terrarun-api.loadbalancer.server.port=5000"
+      - "traefik.http.routers.terrarun-api.service=terrarun-api"
+
+    depends_on:
+      - db
+    links:
+      - db
+    env_file:
+      - ./.env
+
+    # Only for local development
+    #entrypoint: ["python", "terrarun.py", "--ssl-cert-private-key", "./ssl/private.pem", "--ssl-cert-public-key", "./ssl/public.pem"]
+    entrypoint: ["python", "-u", "terrarun.py"]
+    volumes:
+      - ./:/app
+
+  worker:
+    restart: unless-stopped
+    build: .
+    networks:
+      - web
+    labels:
+      - "traefik.enable=false"
+
+    depends_on:
+      - db
+    links:
+      - db
+    env_file:
+      - ./.env
+
+    # Only for local development
+    entrypoint: ["python", "-u", "worker.py"]
+    volumes:
+      - ./:/app
+
+  agent:
+    restart: unless-stopped
+    build: .
+    networks:
+      - web
+    depends_on:
+      - traefik
+    env_file:
+      - ./.env
+    volumes:
+      - ./:/app
+    entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
+
+    # Only for local development
+    volumes:
+      - ./:/app
+
+  db:
+    image: mariadb
+    restart: always
+    networks:
+      - web
+    env_file:
+      - ./.env
+    labels:
+      - "traefik.enable=false"
+    volumes:
+     - mysqldata:/var/lib/mysql
+
+  minio:
+    image: minio/minio
+    ports:
+     - 9000:9000
+     - 9001:9001
+    networks:
+      - web
+      - default
+    env_file:
+     - .env
+    environment:
+      MINIO_ACCESS_KEY: $AWS_ACCESS_KEY_ID
+      MINIO_SECRET_KEY: $AWS_SECRET_ACCESS_KEY
+    command: server /data --console-address ":9001"
+
+  createbucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    networks:
+      - web
+    env_file:
+     - .env
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add jmonminio $AWS_ENDPOINT $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY;
+      /usr/bin/mc mb jmonminio/$AWS_BUCKET_NAME;
+      exit 0;
+      "
+
+volumes:
+  mysqldata:
+
+networks:
+  web: 
+    name: terrun-web
+  default:
+    name: terrarun-default
+    driver: bridge

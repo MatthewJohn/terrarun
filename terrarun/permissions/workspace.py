@@ -4,7 +4,7 @@
 
 from enum import Enum
 
-import terrarun.team_workspace_access
+import terrarun.models.team_workspace_access
 
 
 class WorkspacePermissions:
@@ -38,21 +38,24 @@ class WorkspacePermissions:
         """Check if team has a given permission."""
         if permission is self.Permissions.CAN_CREATE_STATE_VERSIONS:
             if (team_workspace_access.access_type in [
-                    terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE,
-                    terrarun.team_workspace_access.TeamWorkspaceAccessType.ADMIN] or
-                    (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                     team_workspace_access.permission_state_versions in [terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE])):
+                    terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE,
+                    terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN] or
+                    (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                     team_workspace_access.permission_state_versions in [terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE])):
                 return True
         elif permission is self.Permissions.CAN_DESTROY:
             if (team_workspace_access.access_type in [
-                    terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE,
-                    terrarun.team_workspace_access.TeamWorkspaceAccessType.ADMIN] or
-                    (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                     team_workspace_access.permission_runs in [terrarun.team_workspace_access.TeamWorkspaceRunsPermission.APPLY])):
+                    terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE,
+                    terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN] or
+                    (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                     team_workspace_access.permission_runs in [terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY])):
                 return True
 
     def check_permission(self, permission):
         """Check if user has single permission."""
+        if not self._current_user:
+            return False
+
         # If user is site admin, allow permission
         if self._current_user.site_admin:
             return True
@@ -80,23 +83,23 @@ class WorkspacePermissions:
         allowed_types = []
         # The documentation states the permissions in order:
         # read, plan, write, admin, custom, which implies the order of inheritance
-        if required_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.ADMIN:
-            allowed_types = [terrarun.team_workspace_access.TeamWorkspaceAccessType.ADMIN]
+        if required_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN:
+            allowed_types = [terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN]
 
-        elif required_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE:
-            allowed_types = [terrarun.team_workspace_access.TeamWorkspaceAccessType.ADMIN,
-                             terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE]
+        elif required_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE:
+            allowed_types = [terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN,
+                             terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE]
 
-        elif required_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.PLAN:
-            allowed_types = [terrarun.team_workspace_access.TeamWorkspaceAccessType.ADMIN,
-                             terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE,
-                             terrarun.team_workspace_access.TeamWorkspaceAccessType.PLAN]
+        elif required_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.PLAN:
+            allowed_types = [terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN,
+                             terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE,
+                             terrarun.models.team_workspace_access.TeamWorkspaceAccessType.PLAN]
 
-        elif required_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.READ:
-            allowed_types = [terrarun.team_workspace_access.TeamWorkspaceAccessType.ADMIN,
-                             terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE,
-                             terrarun.team_workspace_access.TeamWorkspaceAccessType.PLAN,
-                             terrarun.team_workspace_access.TeamWorkspaceAccessType.READ]
+        elif required_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.READ:
+            allowed_types = [terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN,
+                             terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE,
+                             terrarun.models.team_workspace_access.TeamWorkspaceAccessType.PLAN,
+                             terrarun.models.team_workspace_access.TeamWorkspaceAccessType.READ]
         else:
             raise Exception('Invalid required_type for global workspace access')
 
@@ -116,76 +119,76 @@ class WorkspacePermissions:
 
         # Check runs permissions
         if runs is not None:
-            if runs is terrarun.team_workspace_access.TeamWorkspaceRunsPermission.APPLY:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                        team_workspace_access.permission_runs in [terrarun.team_workspace_access.TeamWorkspaceRunsPermission.APPLY]))
+            if runs is terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                        team_workspace_access.permission_runs in [terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY]))
 
-            elif runs is terrarun.team_workspace_access.TeamWorkspaceRunsPermission.PLAN:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.PLAN) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_runs in [terrarun.team_workspace_access.TeamWorkspaceRunsPermission.PLAN,
-                                                                   terrarun.team_workspace_access.TeamWorkspaceRunsPermission.APPLY]))
+            elif runs is terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.PLAN:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.PLAN) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_runs in [terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.PLAN,
+                                                                   terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY]))
 
-            elif runs is terrarun.team_workspace_access.TeamWorkspaceRunsPermission.READ:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.READ) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_runs in [terrarun.team_workspace_access.TeamWorkspaceRunsPermission.READ,
-                                                                   terrarun.team_workspace_access.TeamWorkspaceRunsPermission.PLAN,
-                                                                   terrarun.team_workspace_access.TeamWorkspaceRunsPermission.APPLY]))
+            elif runs is terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.READ:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.READ) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_runs in [terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.READ,
+                                                                   terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.PLAN,
+                                                                   terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY]))
 
         # Check variables permissions
         elif variables is not None:
-            if variables is terrarun.team_workspace_access.TeamWorkspaceVariablesPermission.WRITE:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_variables in [terrarun.team_workspace_access.TeamWorkspaceVariablesPermission.WRITE]))
+            if variables is terrarun.models.team_workspace_access.TeamWorkspaceVariablesPermission.WRITE:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_variables in [terrarun.models.team_workspace_access.TeamWorkspaceVariablesPermission.WRITE]))
 
-            elif variables is terrarun.team_workspace_access.TeamWorkspaceVariablesPermission.READ:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.READ) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_variables in [terrarun.team_workspace_access.TeamWorkspaceVariablesPermission.READ,
-                                                                        terrarun.team_workspace_access.TeamWorkspaceVariablesPermission.WRITE]))
+            elif variables is terrarun.models.team_workspace_access.TeamWorkspaceVariablesPermission.READ:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.READ) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_variables in [terrarun.models.team_workspace_access.TeamWorkspaceVariablesPermission.READ,
+                                                                        terrarun.models.team_workspace_access.TeamWorkspaceVariablesPermission.WRITE]))
 
         # Check state_versions permissions
         elif state_versions is not None:
-            if state_versions is terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.WRITE) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_state_versions in [terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE]))
+            if state_versions is terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.WRITE) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_state_versions in [terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE]))
 
-            elif state_versions is terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.READ) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_state_versions in [terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ,
-                                                                             terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE]))
+            elif state_versions is terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.READ) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_state_versions in [terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ,
+                                                                             terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE]))
 
-            elif state_versions is terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ_OUTPUTS:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.READ) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_state_versions in [terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ_OUTPUTS,
-                                                                             terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ,
-                                                                             terrarun.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE]))
+            elif state_versions is terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ_OUTPUTS:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.READ) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_state_versions in [terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ_OUTPUTS,
+                                                                             terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.READ,
+                                                                             terrarun.models.team_workspace_access.TeamWorkspaceStateVersionsPermissions.WRITE]))
 
         # Check sentinel mocks permissions
         elif sentinel_mocks is not None:
-            if sentinel_mocks is terrarun.team_workspace_access.TeamWorkspaceSentinelMocksPermission.READ:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.READ) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
-                         team_workspace_access.permission_sentinel_mocks in [terrarun.team_workspace_access.TeamWorkspaceSentinelMocksPermission.READ]))
+            if sentinel_mocks is terrarun.models.team_workspace_access.TeamWorkspaceSentinelMocksPermission.READ:
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.READ) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                         team_workspace_access.permission_sentinel_mocks in [terrarun.models.team_workspace_access.TeamWorkspaceSentinelMocksPermission.READ]))
 
         # Check workspace locking
         elif workspace_locking is not None:
             if workspace_locking is True:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.PLAN) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.PLAN) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
                          team_workspace_access.permission_workspace_locking))
 
         # Check run tasks permission
         elif run_tasks is not None:
             if run_tasks is True:
-                return (self._team_has_access_type(team_workspace_access, terrarun.team_workspace_access.TeamWorkspaceAccessType.PLAN) or
-                        (team_workspace_access.access_type is terrarun.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
+                return (self._team_has_access_type(team_workspace_access, terrarun.models.team_workspace_access.TeamWorkspaceAccessType.PLAN) or
+                        (team_workspace_access.access_type is terrarun.models.team_workspace_access.TeamWorkspaceAccessType.CUSTOM and
                          team_workspace_access.permission_run_tasks))
 
         # Catch-all if no permissions requested
@@ -196,6 +199,9 @@ class WorkspacePermissions:
                           state_versions=None, sentinel_mocks=None,
                           workspace_locking=None, run_tasks=None):
         """Check permission for particular access type."""
+        if not self._current_user:
+            return False
+
         # Check only one permission type is being assessed
         found_access_type = False
         for perm in [runs, variables, state_versions, sentinel_mocks, workspace_locking, run_tasks]:

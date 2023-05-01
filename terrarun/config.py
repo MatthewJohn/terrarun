@@ -8,6 +8,14 @@ import os
 
 class Config:
 
+    AWS_ENDPOINT = os.environ.get('AWS_ENDPOINT')
+    AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME')
+    AGENT_IMAGE_FILENAME = os.environ.get('AGENT_IMAGE_FILENAME')
+    AGENT_PRESIGN_ENCRYPTION_KEY = os.environ.get('AGENT_PRESIGN_ENCRYPTION_KEY')
+
+    MODULE_LOG_LEVELS = os.environ.get("MODULE_LOG_LEVELS", "TerraformBinary:debug")
+    LOG_LEVEL_DEFAULT = os.environ.get("LOG_LEVEL_DEFAULT", "info")
+
     @property
     def SESSION_EXPIRY_MINS(self):
         return 120
@@ -35,3 +43,8 @@ class Config:
     def DATABASE_URL(self):
         """Database URL. Use mysql+mysqlconnector://user:pass@dbhost/dbname for MySQL. Default: sqlite:///test.db."""
         return os.environ.get('DATABASE_URL', 'sqlite:///test.db')
+
+    @property
+    def AGENT_JOB_TIMEOUT(self):
+        """Agent expiration in seconds"""
+        return int(os.environ.get('AGENT_JOB_TIMEOUT', '300'))

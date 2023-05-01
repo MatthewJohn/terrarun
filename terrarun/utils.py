@@ -3,9 +3,17 @@
 # Proprietary and confidential
 
 import datetime
+import string
+import secrets
 
 from terrarun.database import Database
-import terrarun.audit_event
+import terrarun.models.audit_event
+
+
+def generate_random_secret_string(length=64):
+    """Generate random secret string"""
+    chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(chars) for i in range(length))
 
 
 def datetime_to_json(datetime_obj):
@@ -24,14 +32,14 @@ def update_object_status(obj, new_status, current_user=None, session=None):
         session.refresh(obj)
         should_commit = True
 
-    audit_event = terrarun.audit_event.AuditEvent(
+    audit_event = terrarun.models.audit_event.AuditEvent(
         organisation=obj.organisation,
         user_id=current_user.id if current_user else None,
         object_id=obj.id,
         object_type=obj.ID_PREFIX,
         old_value=Database.encode_value(obj.status.value) if obj.status else None,
         new_value=Database.encode_value(new_status.value),
-        event_type=terrarun.audit_event.AuditEventType.STATUS_CHANGE)
+        event_type=terrarun.models.audit_event.AuditEventType.STATUS_CHANGE)
 
     obj.update_attributes(status=new_status, session=session)
 
