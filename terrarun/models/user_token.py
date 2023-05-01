@@ -38,8 +38,10 @@ class UserToken(Base, BaseObject):
     token = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
 
-    user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=False)
+    user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=True)
     user = sqlalchemy.orm.relation("User", back_populates="user_tokens")
+
+    job_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run_queue.id"), nullable=True)
 
     @classmethod
     def generate_token(cls):
@@ -48,6 +50,20 @@ class UserToken(Base, BaseObject):
             ''.join([secrets.choice(UserToken.TOKEN_CHARACTERS) for i in range(14)]),
             ''.join([secrets.choice(UserToken.TOKEN_CHARACTERS) for i in range(67)])
         )
+
+    @classmethod
+    def create_agent_job_token(cls, job):
+        """Create token for agent job"""
+        expiry = datetime.datetime.now() + datetime.timedelta(seconds=Config().AGENT_JOB_TIMEOUT)
+        token = cls(
+            job=job,
+            expiry=expiry,
+            token=cls.generate_token()
+        )
+        session = Database.get_session()
+        session.add(token)
+        session.commit()
+        return token
 
     @classmethod
     def create(cls, user, type, description=None):

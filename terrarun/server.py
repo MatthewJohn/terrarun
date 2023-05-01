@@ -2343,6 +2343,9 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
         if job:
             terraform_version = job.run.terraform_version or '1.1.7'
+
+            # Generate user token for run
+            token = UserToken.create_agent_job_token(job=job)
             return {
                 "type": job.job_type.value,
 
@@ -2361,8 +2364,8 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/plan/{job.run.plan.api_id}",
                     "configuration_version_url": job.run.configuration_version.get_download_url(),
                     "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
-                    "token": "bladgadgadba",
-                    "timeout": "600s"
+                    "token": token.token,
+                    "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT)
                 }
             }, 200
 

@@ -42,3 +42,8 @@ class Config:
     def DATABASE_URL(self):
         """Database URL. Use mysql+mysqlconnector://user:pass@dbhost/dbname for MySQL. Default: sqlite:///test.db."""
         return os.environ.get('DATABASE_URL', 'sqlite:///test.db')
+
+    @property
+    def AGENT_JOB_TIMEOUT(self):
+        """Agent expiration in seconds"""
+        return int(os.environ.get('AGENT_JOB_TIMEOUT', '300'))

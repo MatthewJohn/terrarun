@@ -40,3 +40,5 @@ class RunQueue(Base, BaseObject):
 
     agent_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id"), nullable=True)
     agent = sqlalchemy.orm.relation("Agent")
+
+    user_token = sqlalchemy.orm.relationship("UserToken", uselist=False, backref="job")
