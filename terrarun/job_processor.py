@@ -4,11 +4,13 @@ import sqlalchemy
 from terrarun.database import Database
 from terrarun import RunQueue
 from terrarun.models.agent_pool_association import AgentPoolProjectAssociation, AgentPoolProjectPermission
+from terrarun.models.apply import Apply
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.models.project import Project
-from terrarun.models.run import Run
+from terrarun.models.run import Run, RunStatus
 from terrarun.models.run_queue import JobQueueAgentType
 from terrarun.models.workspace import Workspace
+from terrarun.terraform_command import TerraformCommandState
 
 
 class JobProcessor:
@@ -69,3 +71,44 @@ class JobProcessor:
             session.commit()
 
         return job
+
+    @classmethod
+    def handle_plan_status_update(self, job_status):
+        """Handle status update for plan"""
+
+        job_data = job_status.get("data")
+
+        # Get plan ID from job status and update plan
+        run = Run.get_by_api_id(job_data.get("run_id"))
+        if not run:
+            return {}, 404
+
+        # @TODO Handle error message
+        plan_status = TerraformCommandState(job_status.get("status"))
+        # Update plan attributes
+        run.plan.update_attributes(
+            status=plan_status,
+            has_changes=job_data.get("has_changes"),
+            resource_additions=job_data.get("resource_additions"),
+            resource_changes=job_data.get("resource_changes"),
+            resource_destructions=job_data.get("resource_destructions"),
+        )
+
+        # Update run status
+        ## Do not update run status if is has been cancelled
+        if run.status == RunStatus.CANCELED:
+            return
+
+        elif plan_status is TerraformCommandState.ERRORED:
+            run.update_status(RunStatus.ERRORED)
+            return
+        elif run.plan_only or run.configuration_version.speculative or not run.plan.has_changes:
+            run.update_status(RunStatus.PLANNED_AND_FINISHED)
+            return
+
+        else:
+            run.update_status(RunStatus.PLANNED)
+            Apply.create(plan=run.plan)
+
+            # Queue worker job for next stages
+            run.queue_worker_job()
