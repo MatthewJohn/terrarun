@@ -400,7 +400,7 @@ class AuthenticatedEndpoint(Resource):
     def post(self, *args, **kwargs):
         """Handle POST request"""
         current_user, job = self._get_current_user()
-        if not current_user:
+        if not current_user and not job:
             return {}, 403
 
         if not self.check_permissions_post(*args, current_job=job, current_user=current_user, **kwargs):
@@ -420,7 +420,7 @@ class AuthenticatedEndpoint(Resource):
     def patch(self, *args, **kwargs):
         """Handle PATCH request"""
         current_user, job = self._get_current_user()
-        if not current_user:
+        if not current_user and not job:
             return {}, 403
 
         if not self.check_permissions_patch(*args, current_job=job, current_user=current_user, **kwargs):
@@ -440,7 +440,7 @@ class AuthenticatedEndpoint(Resource):
     def put(self, *args, **kwargs):
         """Handle PUT request"""
         current_user, job = self._get_current_user()
-        if not current_user:
+        if not current_user and not job:
             return {}, 403
 
         if not self.check_permissions_put(*args, current_job=job, current_user=current_user, **kwargs):
@@ -460,7 +460,7 @@ class AuthenticatedEndpoint(Resource):
     def delete(self, *args, **kwargs):
         """Handle PUT request"""
         current_user, job = self._get_current_user()
-        if not current_user:
+        if not current_user and not job:
             return {}, 403
 
         if not self.check_permissions_delete(*args, current_job=job, current_user=current_user, **kwargs):
