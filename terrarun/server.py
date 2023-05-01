@@ -217,6 +217,10 @@ class Server(object):
             '/api/v2/plans/<string:plan_id>/log'
         )
         self._api.add_resource(
+            ApiTerraformPlanJsonOutput,
+            '/api/v2/plans/<string:plan_id>/json-output'
+        )
+        self._api.add_resource(
             ApiTerraformStateVersionDownload,
             '/api/v2/state-versions/<string:state_version_id>/download'
         )
@@ -2381,7 +2385,8 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "configuration_version_url": job.run.configuration_version.get_download_url(),
                     "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
                     "token": token.token,
-                    "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT)
+                    "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
+                    "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output"
                 }
             }, 200
 
@@ -2410,8 +2415,24 @@ class ApiAgentBaseImage(Resource):
     """Interface to download base filesystem for agent"""
     def get(self):
         """Return filesystem for agent"""
-        print(request.data)
-        print(request.headers)
         return flask.send_from_directory(
             path=terrarun.config.Config.AGENT_IMAGE_FILENAME,
             directory=os.path.join('..', 'agent_images'))
+
+class ApiTerraformPlanJsonOutput(Resource):
+    """Interface to push/get JSON plan output"""
+
+    def put(self):
+        print("PUT")
+        print(request.headers)
+        print(request.data)
+
+    def get(self):
+        print("get")
+        print(request.headers)
+        print(request.data)
+
+    def put(self):
+        print("POST")
+        print(request.headers)
+        print(request.data)
