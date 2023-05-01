@@ -355,7 +355,7 @@ class AuthenticatedEndpoint(Resource):
         auth_token = re.sub(r'^Bearer ', '', authorization_header)
         user_token = UserToken.get_by_token(auth_token)
         if not user_token:
-            return None
+            return None, None
         return user_token.user, user_token.job
 
     def _error_catching_call(self, method, args, kwargs):
