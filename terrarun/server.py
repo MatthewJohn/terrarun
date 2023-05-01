@@ -2476,13 +2476,23 @@ class ApiAgentJobs(Resource, AgentEndpoint):
             # Either the plan or apply api ID
             job_sub_task_id = job.run.plan.api_id if job.job_type is JobQueueType.PLAN else job.run.plan.apply.api_id
 
+            operation = None
+            if job.job_type is JobQueueType.APPLY:
+                operation = "apply"
+            elif job.job_type is JobQueueType.PLAN:
+                operation = "plan"
+                if job.run.is_destroy:
+                    operation = "destroy"
+                elif job.run.refresh_only:
+                    operation = "refresh"
+
             return {
                 # @TODO Should this be apply for plans during an apply run?
                 "type": job.job_type.value,
                 "data": {
                     "run_id": job.run.api_id,
                     # @TODO Should this be apply for plans during an apply run?
-                    "operation": job.job_type.value,
+                    "operation": operation,
                     "organization_name": job.run.configuration_version.workspace.organisation.name_id,
                     "workspace_name": job.run.configuration_version.workspace.name,
                     "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
