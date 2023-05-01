@@ -6,7 +6,7 @@ import traceback
 from terrarun.database import Database
 from terrarun.models.run import RunStatus
 
-from terrarun.models.run_queue import RunQueue, RunQueueType
+from terrarun.models.run_queue import RunQueue, JobQueueAgentType
 
 
 class Worker:
@@ -35,7 +35,7 @@ class Worker:
     def _check_for_jobs(self):
         """Check for jobs to run"""
         print('Checking for jobs...')
-        run = RunQueue.get_job_by_type(RunQueueType.WORKER)
+        run = RunQueue.get_job_by_type(JobQueueAgentType.WORKER)
         if not run:
             print('No run in queue')
             return None

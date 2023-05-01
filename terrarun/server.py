@@ -35,7 +35,7 @@ from terrarun.permissions.user import UserPermissions
 from terrarun.permissions.workspace import WorkspacePermissions
 from terrarun.models.plan import Plan
 from terrarun.models.run import Run
-from terrarun.models.run_queue import RunQueue, RunQueueType
+from terrarun.models.run_queue import JobQueueType, RunQueue, JobQueueAgentType
 from terrarun.models.state_version import StateVersion
 from terrarun.models.tag import Tag
 from terrarun.models.task import Task
@@ -298,6 +298,10 @@ class Server(object):
             ApiAgentStatus,
             '/api/agent/status'
         )
+        self._api.add_resource(
+            ApiAgentJobs,
+            '/api/agent/jobs'
+        )
 
     def run(self, debug=None):
         """Run flask server."""
@@ -312,28 +316,7 @@ class Server(object):
 
         self._app.secret_key = "abcefg"
 
-        self.queue_run = True
-        self.worker_thread = threading.Thread(target=self.worker, daemon=True).start()
         self._app.run(**kwargs)
-        self.queue_run = False
-
-    def worker(self):
-        """Run worker queue"""
-        while self.queue_run:
-            try:
-                session = Database.get_session()
-                run = RunQueue.get_job_by_type(RunQueueType.AGENT)
-                if not run:
-                    sleep(3)
-                    continue
-
-                print("Agent, found run: " + run.api_id)
-                run.execute_next_step()
-                sleep(2)
-            except Exception as exc:
-                print('Error during agent run: ' + str(exc))
-                print(traceback.format_exc())
-                sleep(3)
 
 
 class AuthenticatedEndpoint(Resource):
@@ -2257,19 +2240,39 @@ class ApiOrganisationAgentPoolList(AuthenticatedEndpoint):
         }
 
 
-class ApiAgentRegister(Resource):
-    """Interface to register agent"""
+class AgentEndpoint:
 
-    def post(self):
+    def _get_agent_token(self):
+        """Obtain agent token from authorization bearer header"""
         # Get agent token
         if not (auth_token_match := re.match(r'^Bearer (.*)$', request.headers.get('Authorization', ''))):
-            return {}, 403
+            return None
         
         request_agent_token = auth_token_match.group(1)
 
-        agent_token = AgentToken.get_by_token(request_agent_token)
+        return AgentToken.get_by_token(request_agent_token) 
+
+    def _get_agent(self):
+        """Obtain agent object from request"""
+        # Get agent token
+        agent_token = self._get_agent_token()
         if not agent_token:
-            return {}, 403
+            return None
+
+        if not (agent_id := request.headers.get("Tfc-Agent-Id", "")):
+            return None
+
+        agent = Agent.get_by_agent_pool_and_api_id(api_id=agent_id, agent_pool=agent_token.agent_pool)
+        return agent
+
+
+class ApiAgentRegister(Resource, AgentEndpoint):
+    """Interface to register agent"""
+
+    def post(self):
+        agent_token = self._get_agent_token()
+        if not agent_token:
+            return 403, {}
         
         agent = Agent.register_agent(
             agent_token=agent_token,
@@ -2282,25 +2285,12 @@ class ApiAgentRegister(Resource):
         }, 200
 
 
-class ApiAgentStatus(Resource):
+class ApiAgentStatus(Resource, AgentEndpoint):
     """Interface to update agent status"""
 
     def put(self):
         """Update agent status"""
-        # Get agent token
-        if not (auth_token_match := re.match(r'^Bearer (.*)$', request.headers.get('Authorization', ''))):
-            return {}, 403
-
-        request_agent_token = auth_token_match.group(1)
-
-        agent_token = AgentToken.get_by_token(request_agent_token)
-        if not agent_token:
-            return {}, 403
-
-        if not (agent_id := request.headers.get("Tfc-Agent-Id", "")):
-            return {}, 403
-
-        agent = Agent.get_by_agent_pool_and_api_id(api_id=agent_id, agent_pool=agent_token.agent_pool)
+        agent = self._get_agent()
         if not agent:
             return {}, 403
 
@@ -2318,9 +2308,28 @@ class ApiAgentStatus(Resource):
         return res
 
 
-class ApiAgentJobs(Resource):
+class ApiAgentJobs(Resource, AgentEndpoint):
     """Interface to update agent status"""
 
     def get(self):
-        print(request.json)
+        """Get list of jobs to be run"""
+        print(request.headers)
+        print(request.data)
 
+        accepted_job_types_raw = request.headers.get('Tfc-Agent-Accept', '').split(',')
+        accepted_job_types = [
+            JobQueueType(accepted_job_type_raw)
+            for accepted_job_type_raw in accepted_job_types_raw
+        ]
+
+
+        agent = self._get_agent()
+        if not agent:
+            return {}, 403
+
+        jobs = RunQueue.get_job_by_agent_and_job_type()
+
+        return {
+        #    "id": "abcdefg",
+        #    "type": "blah"
+        }, 204

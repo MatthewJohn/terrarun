@@ -56,6 +56,9 @@ class Project(Base, BaseObject):
     working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
 
+    agent_pool_permissions = sqlalchemy.orm.relation("AgentPoolProjectPermission", back_populates="project")
+    agent_pool_associations = sqlalchemy.orm.relation("AgentPoolProjectAssociation", back_populates="project")
+
     @classmethod
     def get_by_name(cls, organisation, name):
         """Return project by organisation and name"""
