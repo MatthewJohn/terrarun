@@ -46,14 +46,14 @@ virtualenv -p python3 venv
 pip install -r requirements.txt
 
 # Upgrade database and add initial organisation/environments
-python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com
+python ./bin/initial_setup.py --migrate-database --organisation-email=test@localhost.com --admin-username=admin --admin-email=admin@localhost --admin-password=password --global-agent-pool=default-pool
 
-# Create admin user
-python ./bin/create_user.py --username admin --password=password --email=admin@localhost --site-admin                   
+# Create additional users, if necessary
+python ./bin/create_user.py --username seconduser --password=password2 --email=user2@localhost <--site-admin>
 
 # Setup UI packages
 pushd ui
-npm install  # Verify this
+  npm install  # Verify this
 popd
 ```
 
@@ -75,24 +75,38 @@ docker-compose exec api python ./bin/initial_setup.py --migrate-database --organ
 
 ### Save and reuse your local config
 
-    # Copy database file into your repository
-    docker cp <CONTAINER_ID>:/app/test.db .
+```
+# Copy database file into your repository
+docker cp <CONTAINER_ID>:/app/test.db .
 
-    # Attach local file as a volume into a docker container by adding this to your docker run execution
-    -v $PWD/test.db:/app/test.db
+# Attach local file as a volume into a docker container by adding this to your docker run execution
+-v $PWD/test.db:/app/test.db
+```
 
 
 ## Usage
 
-    # Running without SSL certs (not recommended)
-    python ./terrarun.py &
-    cd ui
-    ng serve -o
+```
+# Running without SSL certs (not recommended)
+python ./terrarun.py &
+cd ui
+ng serve -o
 
-    # With SSL Certs (required for running with terraform)
-    python ./terrarun.py --ssl-cert-private-key ./private.pem --ssl-cert-public-key ./public.pem
-    cd ui
-    ng serve -o --public-host=<hostname> --ssl --ssl-cert ../public.pem --ssl-key ../private.pem
+# With SSL Certs (required for running with terraform)
+python ./terrarun.py --ssl-cert-private-key ./private.pem --ssl-cert-public-key ./public.pem
+cd ui
+ng serve -o --public-host=<hostname> --ssl --ssl-cert ../public.pem --ssl-key ../private.pem
+```
+
+## Agent setup
+
+The custom agent is WIP, but there is more support for the Official Hashicorp agent, currently tested with v1.8.0 (https://releases.hashicorp.com/tfc-agent/)
+
+Run with:
+
+```
+./tfc-agent -address https://my-terrarun.example.com -token=<Token from initial_setup.py>
+```
 
 ## Dev SSL certs
 
