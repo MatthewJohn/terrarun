@@ -33,7 +33,7 @@ class JobProcessor:
         query = session.query(RunQueue).join(Run).join(ConfigurationVersion).join(Workspace).join(Project).outerjoin(AgentPoolProjectAssociation)
 
         # Filter jobs that are being handled by an agent
-        #query = query.filter(RunQueue.agent==None)
+        query = query.filter(RunQueue.agent==None)
 
         # If agent pool is tied to an organisation, limit to just the organisation
         if agent.agent_pool.organisation:
@@ -58,4 +58,14 @@ class JobProcessor:
 
         # @TODO Filter by job type
 
-        return query.first()
+        # Set to with_for_updates to lock row, avoiding any other requests taking the plan
+        query = query.with_for_update()
+
+        job = query.first()
+        # Add agent to row, if one has been returned
+        if job:
+            job.agent = agent
+            session.add(job)
+            session.commit()
+
+        return job

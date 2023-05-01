@@ -2387,8 +2387,6 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
         if job:
             if job.job_type is JobQueueType.PLAN:
-                # Update job, locking to agent
-                job.update_attributes(agent=agent)
                 # Update run to show plan as in progress
                 job.run.update_status(RunStatus.PLANNING)
 
