@@ -17,7 +17,7 @@ import terrarun.database
 import terrarun.models.plan
 import terrarun.models.apply
 import terrarun.models.state_version
-from terrarun.models.run_queue import RunQueue, JobQueueAgentType
+from terrarun.models.run_queue import JobQueueType, RunQueue, JobQueueAgentType
 from terrarun.models.task_result import TaskResultStatus
 from terrarun.models.task_stage import TaskStage, TaskStageStatus
 import terrarun.terraform_command
@@ -205,7 +205,7 @@ class Run(Base, BaseObject):
                 task_result.execute()
 
         # Queue plan
-        self.add_to_queue_table(JobQueueAgentType.WORKER)
+        self.queue_worker_job()
 
     def handle_pre_plan_running(self):
         """Hanlde pre-plan running, waiting for task stages to complete"""
@@ -223,7 +223,7 @@ class Run(Base, BaseObject):
         if should_continue:
             if completed:
                 self.update_status(RunStatus.PRE_PLAN_COMPLETED)
-            self.add_to_queue_table(JobQueueAgentType.WORKER)
+            self.queue_worker_job()
 
     def execute_plan(self):
         """Execute plan"""
@@ -243,7 +243,7 @@ class Run(Base, BaseObject):
         else:
             self.update_status(RunStatus.PLANNED)
             terrarun.models.apply.Apply.create(plan=self.plan)
-            self.add_to_queue_table(JobQueueAgentType.WORKER)
+            self.queue_worker_job()
 
     def handle_planned(self):
         """Handle planned state"""
@@ -256,7 +256,7 @@ class Run(Base, BaseObject):
             for task_result in task_stage.task_results:
                 task_result.execute()
 
-        self.add_to_queue_table(JobQueueAgentType.WORKER)
+        self.queue_worker_job()
 
     def handle_post_plan_running(self):
         """Handle post-plan running, checking for status of tasks"""
@@ -274,7 +274,7 @@ class Run(Base, BaseObject):
         if should_continue:
             if completed:
                 self.update_status(RunStatus.POST_PLAN_COMPLETED)
-            self.add_to_queue_table(JobQueueAgentType.WORKER)
+            self.queue_worker_job()
 
     def handle_post_plan_completed(self):
         """Handle post plan completed, waiting for run to be confirmed"""
@@ -294,7 +294,7 @@ class Run(Base, BaseObject):
 
 
         self.update_status(RunStatus.PRE_APPLY_RUNNING)
-        self.add_to_queue_table(JobQueueAgentType.WORKER)
+        self.queue_worker_job()
 
     def handle_pre_apply_running(self):
         """Handle pre-apply running, waiting for task stages to execute"""
@@ -313,7 +313,7 @@ class Run(Base, BaseObject):
             if completed:
                 self.update_status(RunStatus.PRE_APPLY_COMPLETED)
                 self.update_status(RunStatus.APPLY_QUEUED)
-            self.add_to_queue_table(JobQueueAgentType.AGENT)
+            self.queue_worker_job()
 
     def handle_apply_queued(self):
         """Handle apply_queued state"""
@@ -382,7 +382,7 @@ class Run(Base, BaseObject):
         self.update_status(RunStatus.PLAN_QUEUED)
 
         # Requeue to be applied
-        self.add_to_queue_table(JobQueueAgentType.AGENT)
+        self.queue_agent_job(job_type=JobQueueType.PLAN)
 
     def confirm(self, comment, user):
         """Queue apply job"""
@@ -396,14 +396,22 @@ class Run(Base, BaseObject):
             self.update_status(RunStatus.CONFIRMED, current_user=user)
 
             # Requeue to be applied
-            self.add_to_queue_table()
+            self.queue_agent_job(job_type=JobQueueType.APPLY)
 
         # @TODO Do something with comment
 
-    def add_to_queue_table(self, job_type):
+    def queue_agent_job(self, job_type):
         """Queue a run to be executed."""
+        self._queue_job(agent_type=JobQueueAgentType.AGENT, job_type=job_type)
+
+    def queue_worker_job(self):
+        """Queue a run to be executed."""
+        self._queue_job(agent_type=JobQueueAgentType.WORKER, job_type=None)
+
+    def _queue_job(self, agent_type, job_type):
+        """Queue a run to be executed"""
         session = Database.get_session()
-        run_queue = RunQueue(run_id=self.id, agent_type=job_type)
+        run_queue = RunQueue(run_id=self.id, agent_type=agent_type, job_type=job_type)
         session.add(run_queue)
         session.commit()
 

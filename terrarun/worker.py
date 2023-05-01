@@ -4,6 +4,7 @@ import signal
 from time import sleep
 import traceback
 from terrarun.database import Database
+from terrarun.job_processor import JobProcessor
 from terrarun.models.run import RunStatus
 
 from terrarun.models.run_queue import RunQueue, JobQueueAgentType
@@ -35,7 +36,7 @@ class Worker:
     def _check_for_jobs(self):
         """Check for jobs to run"""
         print('Checking for jobs...')
-        run = RunQueue.get_job_by_type(JobQueueAgentType.WORKER)
+        run = JobProcessor.get_worker_job()
         if not run:
             print('No run in queue')
             return None

@@ -1,0 +1,61 @@
+
+import sqlalchemy
+
+from terrarun.database import Database
+from terrarun import RunQueue
+from terrarun.models.agent_pool_association import AgentPoolProjectAssociation, AgentPoolProjectPermission
+from terrarun.models.configuration import ConfigurationVersion
+from terrarun.models.project import Project
+from terrarun.models.run import Run
+from terrarun.models.run_queue import JobQueueAgentType
+from terrarun.models.workspace import Workspace
+
+
+class JobProcessor:
+
+    @staticmethod
+    def get_worker_job():
+        """Get first run by type"""
+        session = Database.get_session()
+        run = None
+        run_queue = session.query(RunQueue).filter(RunQueue.agent_type==JobQueueAgentType.WORKER).first()
+        if run_queue:
+            run = run_queue.run
+            session.delete(run_queue)
+            session.commit()
+        return run
+
+    @staticmethod
+    def get_job_by_agent_and_job_types(agent, job_types):
+        """Obtain list of jobs from queue that are applicable to an agent"""
+
+        session = Database.get_session()
+        query = session.query(RunQueue).join(Run).join(ConfigurationVersion).join(Workspace).join(Project).outerjoin(AgentPoolProjectAssociation)
+
+        # Filter jobs that are being handled by an agent
+        #query = query.filter(RunQueue.agent==None)
+
+        # If agent pool is tied to an organisation, limit to just the organisation
+        if agent.agent_pool.organisation:
+            query = query.filter(RunQueue.run.configuration_version.workspace.organisation==agent.agent_pool.organisation)
+
+        # Filter by allowed projects/workspaces, if not all workspaces are allowed
+        if not agent.agent_pool.allow_all_workspaces:
+            allowed_projects = session.query(
+                AgentPoolProjectPermission
+            ).filter(
+                AgentPoolProjectPermission.agent_pool==agent.agent_pool
+            )
+            query = query.filter(Workspace.project.in_(allowed_projects))
+
+        # Filter any projects that have workers associated with them or this agent pool is associated with it
+        query = query.filter(sqlalchemy.or_(
+            ~Project.agent_pool_associations.any(),
+            AgentPoolProjectAssociation.agent_pool==agent.agent_pool
+        ))
+
+        # @TODO Filter by environment if there are any within the organisation for the agent pool
+
+        # @TODO Filter by job type
+
+        return query.first()

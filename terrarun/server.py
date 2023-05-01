@@ -17,6 +17,7 @@ import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
+from terrarun.job_processor import JobProcessor
 
 from terrarun.models import workspace
 from terrarun.models import project
@@ -2272,7 +2273,7 @@ class ApiAgentRegister(Resource, AgentEndpoint):
     def post(self):
         agent_token = self._get_agent_token()
         if not agent_token:
-            return 403, {}
+            return {}, 403
         
         agent = Agent.register_agent(
             agent_token=agent_token,
@@ -2327,9 +2328,22 @@ class ApiAgentJobs(Resource, AgentEndpoint):
         if not agent:
             return {}, 403
 
-        jobs = RunQueue.get_job_by_agent_and_job_type()
+        job = JobProcessor.get_job_by_agent_and_job_types(agent=agent, job_types=accepted_job_types)
 
-        return {
-        #    "id": "abcdefg",
-        #    "type": "blah"
-        }, 204
+        if job:
+            return {
+                "type": job.job_type.value,
+
+                # Attempts at job ID
+                "job_id": job.api_id,
+                "id": job.api_id,
+                "job": job.api_id,
+
+                "data": {
+                    "run_id": job.run.api_id,
+                    "operation": job.job_type.value
+                }
+            }, 200
+
+        # Return no jobs
+        return {}, 204
