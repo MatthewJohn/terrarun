@@ -54,6 +54,8 @@ from terrarun.models.team_user_membership import TeamUserMembership
 from terrarun.models.team import Team
 from terrarun.models.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 from terrarun.models.environment import Environment
+from terrarun.agent_filesystem import AgentFilesystem
+from terrarun.presign import Presign
 
 
 class Server(object):
@@ -2375,60 +2377,44 @@ class ApiAgentJobs(Resource, AgentEndpoint):
             if job.job_type is JobQueueType.PLAN:
                 # Update run to show plan as in progress
                 job.run.update_status(RunStatus.PLANNING)
-
-                terraform_version = job.run.terraform_version or '1.1.7'
-
-                # Generate user token for run
-                token = UserToken.create_agent_job_token(job=job)
-                return {
-                    # @TODO Should this be apply for plans during an apply run?
-                    "type": job.job_type.value,
-                    "data": {
-                        "run_id": job.run.api_id,
-                        # @TODO Should this be apply for plans during an apply run?
-                        "operation": job.job_type.value,
-                        "organization_name": job.run.configuration_version.workspace.organisation.name_id,
-                        "workspace_name": job.run.configuration_version.workspace.name,
-                        "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
-                        "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
-                        "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/plan/{job.run.plan.api_id}",
-                        "configuration_version_url": job.run.configuration_version.get_download_url(),
-                        "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
-                        "token": token.token,
-                        "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
-                        "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
-                        "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
-                    }
-                }, 200
-
             elif job.job_type is JobQueueType.APPLY:
                 # Update run to show plan as in progress
                 job.run.update_status(RunStatus.APPLYING)
+            else:
+                print(f'Job does not have a valid job_type: {job.job_type}')
+                return {}, 204
 
-                terraform_version = job.run.terraform_version or '1.1.7'
+            terraform_version = job.run.terraform_version or '1.1.7'
 
-                # Generate user token for run
-                token = UserToken.create_agent_job_token(job=job)
-                return {
+            # Generate user token for run
+            token = UserToken.create_agent_job_token(job=job)
+
+            presign = Presign()
+            filesystem_key = presign.encrypt(job.run.api_id)
+
+            # Either the plan or apply api ID
+            job_sub_task_id = job.run.plan.api_id if job.job_type is JobQueueType.PLAN else job.run.plan.apply.api_id
+
+            return {
+                # @TODO Should this be apply for plans during an apply run?
+                "type": job.job_type.value,
+                "data": {
+                    "run_id": job.run.api_id,
                     # @TODO Should this be apply for plans during an apply run?
-                    "type": job.job_type.value,
-                    "data": {
-                        "run_id": job.run.api_id,
-                        # @TODO Should this be apply for plans during an apply run?
-                        "operation": job.job_type.value,
-                        "organization_name": job.run.configuration_version.workspace.organisation.name_id,
-                        "workspace_name": job.run.configuration_version.workspace.name,
-                        "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
-                        "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
-                        "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/plan/{job.run.plan.api_id}",
-                        "configuration_version_url": job.run.configuration_version.get_download_url(),
-                        "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
-                        "token": token.token,
-                        "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
-                        "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
-                        "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
-                    }
-                }, 200
+                    "operation": job.job_type.value,
+                    "organization_name": job.run.configuration_version.workspace.organisation.name_id,
+                    "workspace_name": job.run.configuration_version.workspace.name,
+                    "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
+                    "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
+                    "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/{job.job_type.value}/{job_sub_task_id}",
+                    "configuration_version_url": job.run.configuration_version.get_download_url(),
+                    "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem?key={filesystem_key}",
+                    "token": token.token,
+                    "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
+                    "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
+                    "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
+                }
+            }, 200
 
         # Return no jobs
         return {}, 204
@@ -2454,16 +2440,37 @@ class ApiAgentPlanLog(Resource):
 
 class ApiAgentFilesystem(Resource):
     """Interface to download base filesystem for agent"""
+
     def get(self):
         """Return filesystem for agent"""
-        # @TODO Add authentication
-        return flask.send_from_directory(
-            path=terrarun.config.Config.AGENT_IMAGE_FILENAME,
-            directory=os.path.join('..', 'agent_images'))
+        # Obtain run ID from presigned URL
+        run_id = Presign().decrypt(request.args.get('key', ''))
+        if not run_id:
+            return {}, 404
+
+        # Obtain run and error on non-existent run        
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        agent_filesystem = AgentFilesystem(run=run)
+        return make_response(agent_filesystem.get_content())
 
     def put(self):
         """Handle upload of new filesystem image"""
         # @TODO Populate this and perform authentication
+        # Obtain run ID from presigned URL
+        run_id = Presign().decrypt(request.args.get('key', ''))
+        if not run_id:
+            return {}, 404
+
+        # Obtain run and error on non-existent run        
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        agent_filesystem = AgentFilesystem(run=run)
+        agent_filesystem.upload_content(request.data)
         return {}, 200
 
 
