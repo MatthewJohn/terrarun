@@ -2492,6 +2492,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem?key={run_key}",
                     "token": token.token,
                     "destroy": job.run.is_destroy,
+                    "target_addrs": job.run.target_addrs,
                     "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
                     "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
                     "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
