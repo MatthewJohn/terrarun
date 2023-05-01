@@ -32,4 +32,10 @@ class RunQueue(Base, BaseObject):
     def get_job_by_type(cls, type_):
         """Get first run by type"""
         session = Database.get_session()
-        return session.query(cls).filter(cls.job_type==type_).first()
+        run = None
+        run_queue = session.query(cls).filter(cls.job_type==type_).first()
+        if run_queue:
+            run = run_queue.run
+            session.delete(run_queue)
+            session.commit()
+        return run
