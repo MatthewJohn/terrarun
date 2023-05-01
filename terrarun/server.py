@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+import base64
 import json
 import requests
 import queue
@@ -151,6 +152,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceLatestStateVersion,
             '/api/v2/workspaces/<string:workspace_id>/current-state-version'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceStates,
+            '/api/v2/workspaces/<string:workspace_id>/state-versions'
         )
         self._api.add_resource(
             ApiTerraformWorkspaceRelationshipsTags,
@@ -1762,6 +1767,68 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
             return {}, 404
         
         return {'data': state.get_api_details()}
+
+
+class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
+    """Interface to list/create state versions"""
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions to view run"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        if current_job and current_job.run.configuration_version.workspace == workspace:
+            return True
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.WRITE)
+
+    def _post(self, current_user, current_job, workspace_id):
+        """Return latest state for workspace."""
+        print('got here')
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+        print('got here2')
+        print(request.data)
+        print(request.headers)
+
+        data = request.json.get("data", {})
+        # @TODO Handle this more nicely
+        assert data.get("type") == "state-versions"
+
+        state_base64 = data.get("attributes", {}).get("state", None)
+        if not state_base64:
+            return {}, 400
+        print(base64.b64decode(state_base64).decode('utf-8'))
+
+        run_id = data.get("relationships", {}).get("run", {}).get("data", {}).get("id", None)
+        run = None
+        if run_id:
+            run = Run.get_by_api_id(run_id)
+        # Attempt to get current run based on job authentication
+        if not run_id and current_job:
+            run = current_job.run
+
+        # @TODO Support without a run
+        if not run:
+            return {}, 400
+
+        state_version = StateVersion.create_from_state_json(
+            run=run,
+            state_json=json.loads(base64.b64decode(state_base64).decode('utf-8'))
+        )
+        if not state_version:
+            return {}, 400
+
+        # Update run with state version
+        run.plan.apply.update_attributes(state_version=state_version)
+
+        return {'data': state_version.get_api_details()}
+
 
 
 class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
