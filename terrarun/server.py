@@ -387,6 +387,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 404
 
         kwargs.update(current_user=current_user)
+        kwargs.update(current_job=job)
         return self._error_catching_call(self._get, args, kwargs)
 
     def _post(self, *args, **kwargs):
@@ -407,6 +408,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 404
 
         kwargs.update(current_user=current_user)
+        kwargs.update(current_job=job)
         return self._error_catching_call(self._post, args, kwargs)
 
     def _patch(self, *args, **kwargs):
@@ -427,6 +429,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 404
 
         kwargs.update(current_user=current_user)
+        kwargs.update(current_job=job)
         return self._error_catching_call(self._patch, args, kwargs)
 
     def _put(self, *args, **kwargs):
@@ -447,6 +450,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 404
 
         kwargs.update(current_user=current_user)
+        kwargs.update(current_job=job)
         return self._error_catching_call(self._put, args, kwargs)
 
     def _delete(self, *args, **kwargs):
@@ -467,6 +471,7 @@ class AuthenticatedEndpoint(Resource):
             return {}, 404
 
         kwargs.update(current_user=current_user)
+        kwargs.update(current_job=job)
         return self._error_catching_call(self._delete, args, kwargs)
 
 
@@ -500,7 +505,7 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
         return UserPermissions(current_user=current_user, user=target_user).check_permission(
             UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
 
-    def _get(self, user_id, current_user):
+    def _get(self, user_id, current_user, current_job):
         """Return tokens for user"""
         user = User.get_by_api_id(user_id)
         if not user_id:
@@ -521,7 +526,7 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
         return UserPermissions(current_user=current_user, user=target_user).check_permission(
             UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
 
-    def _post(self, current_user, user_id):
+    def _post(self, current_user, current_job, user_id):
         """Create token"""
         user = User.get_by_api_id(user_id)
         if not user_id:
@@ -551,7 +556,7 @@ class ApiTerraformUserDetails(AuthenticatedEndpoint):
         # @TODO check if users are part of a common organisation
         return True
 
-    def _get(self, user_id, current_user):
+    def _get(self, user_id, current_user, current_job):
         """Obtain user details"""
         user = User.get_by_api_id(user_id)
         return {"data": user.get_api_details(effective_user=current_user)}
@@ -593,7 +598,7 @@ class ApiTerraformAccountDetails(AuthenticatedEndpoint):
         # All users can view their own account details
         return True
 
-    def _get(self, current_user):
+    def _get(self, current_user, current_job):
         """Get current account details"""
         return {'data': current_user.get_account_details(current_user)}
 
@@ -617,7 +622,7 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
         # do not do any permission checking
         return True
 
-    def _get(self, current_user):
+    def _get(self, current_user, current_job):
         """Obtain list of organisations"""
         return {
             'data': [
@@ -631,7 +636,7 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
         return UserPermissions(current_user=current_user, user=current_user).check_permission(
             UserPermissions.Permissions.CAN_CREATE_ORGANISATIONS)
 
-    def _post(self, current_user):
+    def _post(self, current_user, current_job):
         """Create new organisation"""
         json_data = flask.request.get_json().get('data', {})
         if json_data.get('type', None) != "organizations":
@@ -664,7 +669,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, current_user, organisation_name):
+    def _get(self, current_user, current_job, organisation_name):
         """Get organisation details"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -680,7 +685,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_UPDATE)
 
-    def _patch(self, current_user, organisation_name):
+    def _patch(self, current_user, current_job, organisation_name):
         """Get organisation details"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -719,7 +724,7 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, current_user, organisation_name):
+    def _get(self, current_user, current_job, organisation_name):
         """Return entitlement-set for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         return organisation.get_entitlement_set_api()
@@ -736,7 +741,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user):
+    def _get(self, organisation_name, current_user, current_job):
         """Return list of workspaces for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -778,7 +783,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, current_job):
         """Return list of workspaces for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -811,7 +816,7 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user):
+    def _get(self, organisation_name, current_user, current_job):
         """Return list of tasks for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -833,7 +838,7 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, current_job):
         """Create organisation task"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -870,7 +875,7 @@ class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user):
+    def _get(self, organisation_name, current_user, current_job):
         """Return list of environments for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -891,7 +896,7 @@ class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, current_job):
         """Create environment"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -924,7 +929,7 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=environment.organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, environment_id, current_user):
+    def _get(self, environment_id, current_user, current_job):
         """Return list of environments for organisation"""
         environment = Environment.get_by_api_id(environment_id)
         if not environment:
@@ -943,7 +948,7 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, environment_id, current_user):
+    def _post(self, environment_id, current_user, current_job):
         """Create environment"""
         environment = Environment.get_by_api_id(environment_id)
         if not environment:
@@ -984,7 +989,7 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user, project_name=None):
+    def _get(self, organisation_name, current_user, current_job, project_name=None):
         """Return list of projects for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1016,7 +1021,7 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
 
-    def _post(self, organisation_name, current_user, project_name=None):
+    def _post(self, organisation_name, current_user, current_job, project_name=None):
         """Create project"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1064,7 +1069,7 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=project.organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, project_id, current_user):
+    def _get(self, project_id, current_user, current_job):
         """Return list of environments for organisation"""
         project = Project.get_by_api_id(project_id)
         if not project:
@@ -1083,7 +1088,7 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, project_id, current_user):
+    def _post(self, project_id, current_user, current_job):
         """Create environment"""
         project = Project.get_by_api_id(project_id)
         if not project:
@@ -1117,7 +1122,7 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user):
+    def _get(self, organisation_name, current_user, current_job):
         """Return list of projects for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1138,7 +1143,7 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, current_job):
         """Create project"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1171,7 +1176,7 @@ class ApiTerraformLifecycles(AuthenticatedEndpoint):
         return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, lifecycle_id, current_user):
+    def _get(self, lifecycle_id, current_user, current_job):
         """Return list of environments for organisation"""
         lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
         if not lifecycle:
@@ -1190,7 +1195,7 @@ class ApiTerraformLifecycles(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, lifecycle_id, current_user):
+    def _post(self, lifecycle_id, current_user, current_job):
         """Update lifecycle"""
         lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
         if not lifecycle:
@@ -1225,7 +1230,7 @@ class ApiTerraformTaskDetails(AuthenticatedEndpoint):
                 current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
 
-    def _patch(self, task_id, current_user):
+    def _patch(self, task_id, current_user, current_job):
         """Update task details"""
         task = Task.get_by_api_id(task_id)
 
@@ -1262,7 +1267,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
             WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def _get(self, organisation_name, workspace_name, current_user):
+    def _get(self, organisation_name, workspace_name, current_user, current_job):
         """Return workspace details."""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1285,7 +1290,7 @@ class ApiTerraformWorkspaces(AuthenticatedEndpoint):
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
             WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def _get(self, workspace_id, current_user):
+    def _get(self, workspace_id, current_user, current_job):
         """Return workspace details."""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1308,7 +1313,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
                                     workspace=workspace).check_access_type(
                                         runs=TeamWorkspaceRunsPermission.PLAN)
 
-    def _post(self, workspace_id, current_user):
+    def _post(self, workspace_id, current_user, current_job):
         """Create configuration version"""
         data = flask.request.get_json().get('data', {})
         attributes = data.get('attributes', {})
@@ -1336,7 +1341,7 @@ class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
             current_user=current_user, workspace=workspace).check_permission(
             WorkspacePermissions.Permissions.CAN_MANAGE_TAGS)
 
-    def _post(self, current_user, workspace_id):
+    def _post(self, current_user, current_job, workspace_id):
         """Handle updating workspace tags"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1369,7 +1374,7 @@ class ApiTerraformOrganisationWorkspaceRelationshipsProjects(AuthenticatedEndpoi
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
             WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def _get(self, current_user, organisation_name, workspace_name):
+    def _get(self, current_user, current_job, organisation_name, workspace_name):
         """Obtain workspace project details"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1393,7 +1398,7 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
                                     workspace=cv.workspace).check_access_type(
                                         runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, configuration_version_id, current_user):
+    def _get(self, configuration_version_id, current_user, current_job):
         """Get configuration version details."""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -1413,7 +1418,7 @@ class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
                                     workspace=cv.workspace).check_access_type(
                                         runs=TeamWorkspaceRunsPermission.PLAN)
 
-    def _put(self, configuration_version_id, current_user):
+    def _put(self, configuration_version_id, current_user, current_job):
         """Handle upload of configuration version data."""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -1438,7 +1443,7 @@ class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
             current_user.has_task_execution_run_access(run=run)
         )
 
-    def _get(self, current_user, run_id):
+    def _get(self, current_user, current_job, run_id):
         """Download configuration versinon"""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -1466,7 +1471,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             workspace=run.configuration_version.workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, current_user, run_id=None):
+    def _get(self, current_user, current_job, run_id=None):
         """Return run information"""
         if not run_id:
             return {}, 404
@@ -1495,7 +1500,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             workspace=workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.PLAN)
 
-    def _post(self, current_user, run_id=None):
+    def _post(self, current_user, current_job, run_id=None):
         """Create a run."""
 
         if run_id:
@@ -1561,7 +1566,7 @@ class ApiTerraformRunAuditEvents(AuthenticatedEndpoint):
             workspace=run.configuration_version.workspace.organisation
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, run_id, current_user):
+    def _get(self, run_id, current_user, current_job):
         """Return all audit events for run."""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -1592,7 +1597,7 @@ class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
                 workspace=run.configuration_version.workspace
             ).check_access_type(runs=TeamWorkspaceRunsPermission.APPLY)
 
-    def _post(self, run_id, current_user):
+    def _post(self, run_id, current_user, current_job):
         """Cancel run"""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -1615,7 +1620,7 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
             workspace=workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, workspace_id, current_user):
+    def _get(self, workspace_id, current_user, current_job):
         """Return all runs for a workspace."""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1639,7 +1644,7 @@ class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
             organisation=organisation
         ).check_permission(OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
 
-    def _get(self, organisation_name, current_user):
+    def _get(self, organisation_name, current_user, current_job):
         """Get list of runs queued"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1665,7 +1670,7 @@ class ApiTerraformPlans(AuthenticatedEndpoint):
             workspace=plan.run.configuration_version.workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, current_user, plan_id=None):
+    def _get(self, current_user, current_job, plan_id=None):
         """Return information for plan(s)"""
         if plan_id:
             plan = Plan.get_by_api_id(plan_id)
@@ -1745,7 +1750,7 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
             workspace=workspace
         ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
 
-    def _get(self, current_user, workspace_id):
+    def _get(self, current_user, current_job, workspace_id):
         """Return latest state for workspace."""
 
         workspace = Workspace.get_by_api_id(workspace_id)
@@ -1775,7 +1780,7 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
             workspace=state_version.workspace
         ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
 
-    def _get(self, current_user, state_version_id):
+    def _get(self, current_user, current_job, state_version_id):
         """Return state version json"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
@@ -1797,7 +1802,7 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
             workspace=run.configuration_version.workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.APPLY)
 
-    def _post(self, current_user, run_id):
+    def _post(self, current_user, current_job, run_id):
         """Initialise run apply."""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -1823,7 +1828,7 @@ class ApiTerraformApplies(AuthenticatedEndpoint):
             workspace=apply.plan.run.configuration_version.workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, current_user, apply_id=None):
+    def _get(self, current_user, current_job, apply_id=None):
         """Get apply details."""
         if not apply_id:
             raise Exception('IT WAS CALLED')
@@ -1899,7 +1904,7 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
         return UserPermissions(current_user=current_user, user=current_user).check_permission(
             UserPermissions.Permissions.CAN_CREATE_ORGANISATIONS)
 
-    def _post(self, current_user):
+    def _post(self, current_user, current_job):
         """Validate new organisation name"""
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='json')
@@ -1926,7 +1931,7 @@ class ApiTerrarunProjectCreateNameValidation(AuthenticatedEndpoint):
         return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
             OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, current_job):
         """Validate new organisation name"""
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='json')
@@ -1955,7 +1960,7 @@ class ApiTerrarunWorkspaceCreateNameValidation(AuthenticatedEndpoint):
         return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
             OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, current_job):
         """Validate new organisation name"""
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='json')
@@ -1984,7 +1989,7 @@ class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
         return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
             OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
 
-    def _post(self, organisation_name, current_user):
+    def _post(self, organisation_name, current_user, current_job):
         """Validate new organisation name"""
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='json')
@@ -2014,7 +2019,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
             current_user=current_user, workspace=workspace
         ).check_permission(WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def _get(self, workspace_id, current_user):
+    def _get(self, workspace_id, current_user, current_job):
         """Return list of workspace tasks"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2055,7 +2060,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
             current_user=current_user, workspace=workspace
         ).check_permission(WorkspacePermissions.Permissions.CAN_MANAGE_RUN_TASKS)
 
-    def _post(self, workspace_id, current_user):
+    def _post(self, workspace_id, current_user, current_job):
         """Associate a task with a workspace"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2096,7 +2101,7 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
             current_user=current_user, workspace=workspace
         ).check_permission(WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def _get(self, workspace_id, workspace_task_id, current_user):
+    def _get(self, workspace_id, workspace_task_id, current_user, current_job):
         """Return list of workspace tasks"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2121,7 +2126,7 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
             current_user=current_user, workspace=workspace
         ).check_permission(WorkspacePermissions.Permissions.CAN_MANAGE_RUN_TASKS)
 
-    def _delete(self, workspace_id, workspace_task_id, current_user):
+    def _delete(self, workspace_id, workspace_task_id, current_user, current_job):
         """Associate a task with a workspace"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2149,7 +2154,7 @@ class ApiTerraformTaskResults(AuthenticatedEndpoint):
             workspace=task_result.task_stage.run.configuration_version.workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, task_result_id, current_user):
+    def _get(self, task_result_id, current_user, current_job):
         """Get task result details"""
         task_result = TaskResult.get_by_api_id(task_result_id)
         if not task_result:
@@ -2168,7 +2173,7 @@ class ApiTerraformTaskResults(AuthenticatedEndpoint):
 
         return current_user.has_task_execution_run_access(run=run)
 
-    def _patch(self, task_result_id, current_user):
+    def _patch(self, task_result_id, current_user, current_job):
         """Update details from callback from task executor"""
         task_result = TaskResult.get_by_callback_id(task_result_id)
         if not task_result:
@@ -2201,7 +2206,7 @@ class ApiTerraformRunTaskStages(AuthenticatedEndpoint):
             workspace=run.configuration_version.workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, run_id, current_user):
+    def _get(self, run_id, current_user, current_job):
         """Return list of run task stages"""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -2229,7 +2234,7 @@ class ApiTerraformTaskStage(AuthenticatedEndpoint):
             workspace=task_stage.run.configuration_version.workspace
         ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
 
-    def _get(self, task_stage_id, current_user):
+    def _get(self, task_stage_id, current_user, current_job):
         """Return list of run task stages"""
         task_stage = TaskStage.get_by_api_id(task_stage_id)
         if not task_stage:
@@ -2255,7 +2260,7 @@ class ApiOrganisationAgentPoolList(AuthenticatedEndpoint):
             OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
         )
     
-    def _get(self, organisation_name, current_user):
+    def _get(self, organisation_name, current_user, current_job):
         """Get list of agent pools for organisation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         agent_pools = AgentPool.get_by_organisation(organisation=organisation, include_global=True)
