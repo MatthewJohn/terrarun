@@ -39,6 +39,8 @@ class Plan(TerraformCommand, Base):
     _plan_output = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_id])
     plan_output_binary_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     _plan_output_binary = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_binary_id])
+    providers_schemas_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    _providers_schemas = sqlalchemy.orm.relation("Blob", foreign_keys=[providers_schemas_id])
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
@@ -167,6 +169,32 @@ Executed remotely on terrarun server
         session.add(plan_output_blob)
         session.refresh(self)
         self._plan_output = plan_output_blob
+        session.add(self)
+        session.commit()
+
+    @property
+    def providers_schemas(self):
+        """Return plan output value"""
+        if self._providers_schemas and self._providers_schemas.data:
+            return json.loads(self._providers_schemas.data.decode('utf-8'))
+        return {}
+
+    @providers_schemas.setter
+    def providers_schemas(self, value):
+        """Set plan output"""
+        session = Database.get_session()
+
+        if self._providers_schemas:
+            providers_schemas_blob = self._providers_schemas
+            session.refresh(providers_schemas_blob)
+        else:
+            providers_schemas_blob = Blob()
+
+        providers_schemas_blob.data = bytes(json.dumps(value), 'utf-8')
+
+        session.add(providers_schemas_blob)
+        session.refresh(self)
+        self._providers_schemas = providers_schemas_blob
         session.add(self)
         session.commit()
 

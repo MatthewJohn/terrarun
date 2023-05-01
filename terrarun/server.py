@@ -221,6 +221,10 @@ class Server(object):
             '/api/v2/plans/<string:plan_id>/json-output'
         )
         self._api.add_resource(
+            ApiTerraformPlanJsonProvidersSchemas,
+            '/api/v2/plans/<string:plan_id>/json-providers-schemas',
+        )
+        self._api.add_resource(
             ApiTerraformStateVersionDownload,
             '/api/v2/state-versions/<string:state_version_id>/download'
         )
@@ -2386,12 +2390,14 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
                     "token": token.token,
                     "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
-                    "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output"
+                    "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
+                    "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
                 }
             }, 200
 
         # Return no jobs
         return {}, 204
+
 
 class ApiAgentPlanLog(Resource):
     """Interface to upload terraform logs"""
@@ -2419,20 +2425,29 @@ class ApiAgentBaseImage(Resource):
             path=terrarun.config.Config.AGENT_IMAGE_FILENAME,
             directory=os.path.join('..', 'agent_images'))
 
+
 class ApiTerraformPlanJsonOutput(Resource):
     """Interface to push/get JSON plan output"""
 
-    def put(self):
-        print("PUT")
-        print(request.headers)
-        print(request.data)
+    def put(self, plan_id):
+        """Handle upload of plan json output"""
+        # @TODO Add authentication to this
+        plan_json_blob = request.data.decode('utf-8')
+        plan_json = json.loads(plan_json_blob)
+        plan = Plan.get_by_api_id(plan_id)
+        if not plan:
+            return {}, 404
+        plan.plan_output = plan_json
 
-    def get(self):
-        print("get")
-        print(request.headers)
-        print(request.data)
 
-    def put(self):
-        print("POST")
-        print(request.headers)
-        print(request.data)
+class ApiTerraformPlanJsonProvidersSchemas(Resource):
+    """Interface to push/get JSON plan providers schema"""
+
+    def put(self, plan_id):
+        # @TODO Add authentication to this
+        providers_schemas_json_blob = request.data.decode('utf-8')
+        providers_schemas_json = json.loads(providers_schemas_json_blob)
+        plan = Plan.get_by_api_id(plan_id)
+        if not plan:
+            return {}, 404
+        plan.providers_schemas = providers_schemas_json
