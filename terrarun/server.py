@@ -342,7 +342,7 @@ class AuthenticatedEndpoint(Resource):
         user_token = UserToken.get_by_token(auth_token)
         if not user_token:
             return None
-        return user_token.user
+        return user_token.user, user_token.job
 
     def _error_catching_call(self, method, args, kwargs):
         """Call method, catching exceptions"""
@@ -364,12 +364,12 @@ class AuthenticatedEndpoint(Resource):
 
     def get(self, *args, **kwargs):
         """Handle GET request"""
-        current_user = self._get_current_user()
-        if not current_user:
+        current_user, job = self._get_current_user()
+        if not current_user and not job:
             print('No user')
             return {}, 403
 
-        if not self.check_permissions_get(*args, current_user=current_user, **kwargs):
+        if not self.check_permissions_get(*args, current_job=job, current_user=current_user, **kwargs):
             return {}, 404
 
         kwargs.update(current_user=current_user)
@@ -385,11 +385,11 @@ class AuthenticatedEndpoint(Resource):
 
     def post(self, *args, **kwargs):
         """Handle POST request"""
-        current_user = self._get_current_user()
+        current_user, job = self._get_current_user()
         if not current_user:
             return {}, 403
 
-        if not self.check_permissions_post(*args, current_user=current_user, **kwargs):
+        if not self.check_permissions_post(*args, current_job=job, current_user=current_user, **kwargs):
             return {}, 404
 
         kwargs.update(current_user=current_user)
@@ -405,11 +405,11 @@ class AuthenticatedEndpoint(Resource):
 
     def patch(self, *args, **kwargs):
         """Handle PATCH request"""
-        current_user = self._get_current_user()
+        current_user, job = self._get_current_user()
         if not current_user:
             return {}, 403
 
-        if not self.check_permissions_patch(*args, current_user=current_user, **kwargs):
+        if not self.check_permissions_patch(*args, current_job=job, current_user=current_user, **kwargs):
             return {}, 404
 
         kwargs.update(current_user=current_user)
@@ -425,11 +425,11 @@ class AuthenticatedEndpoint(Resource):
 
     def put(self, *args, **kwargs):
         """Handle PUT request"""
-        current_user = self._get_current_user()
+        current_user, job = self._get_current_user()
         if not current_user:
             return {}, 403
 
-        if not self.check_permissions_put(*args, current_user=current_user, **kwargs):
+        if not self.check_permissions_put(*args, current_job=job, current_user=current_user, **kwargs):
             return {}, 404
 
         kwargs.update(current_user=current_user)
@@ -445,11 +445,11 @@ class AuthenticatedEndpoint(Resource):
 
     def delete(self, *args, **kwargs):
         """Handle PUT request"""
-        current_user = self._get_current_user()
+        current_user, job = self._get_current_user()
         if not current_user:
             return {}, 403
 
-        if not self.check_permissions_delete(*args, current_user=current_user, **kwargs):
+        if not self.check_permissions_delete(*args, current_job=job, current_user=current_user, **kwargs):
             return {}, 404
 
         kwargs.update(current_user=current_user)
@@ -477,7 +477,7 @@ class ApiAuthenticate(Resource):
 class ApiTerraformUserTokens(AuthenticatedEndpoint):
     """Get user tokens for user"""
 
-    def check_permissions_get(self, user_id, current_user, *args, **kwargs):
+    def check_permissions_get(self, user_id, current_user, current_job, *args, **kwargs):
         """Check if user has permission to modify user tokens"""
         target_user = User.get_by_api_id(user_id)
         # @TODO Do not return 403 when user does not exist
@@ -498,7 +498,7 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, current_user, user_id, *args, **kwargs):
+    def check_permissions_post(self, current_user, current_job, user_id, *args, **kwargs):
         """Check if user has permission to modify user tokens"""
         target_user = User.get_by_api_id(user_id)
         # @TODO Do not return 403 when user does not exist
@@ -529,7 +529,7 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
 class ApiTerraformUserDetails(AuthenticatedEndpoint):
     """Interface to obtain user details"""
 
-    def check_permissions_get(self, user_id, current_user):
+    def check_permissions_get(self, user_id, current_user, current_job):
         """Check permissions"""
         user = User.get_by_api_id(user_id)
         if not user:
@@ -574,7 +574,7 @@ class ApiTerraformPing(Resource):
 class ApiTerraformAccountDetails(AuthenticatedEndpoint):
     """Interface to obtain current account"""
 
-    def check_permissions_get(self, current_user):
+    def check_permissions_get(self, current_user, current_job):
         """Check permissions to access account details."""
         # All users can view their own account details
         return True
@@ -612,7 +612,7 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, current_user):
+    def check_permissions_post(self, current_user, current_job):
         """Check permissions"""
         return UserPermissions(current_user=current_user, user=current_user).check_permission(
             UserPermissions.Permissions.CAN_CREATE_ORGANISATIONS)
@@ -643,7 +643,7 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
 class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
     """Organisation details endpoint"""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, current_job, *args, **kwargs):
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return False
@@ -658,7 +658,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
 
         return {"data": organisation.get_api_details(effective_user=current_user)}
 
-    def check_permissions_patch(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_patch(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions for updating organsation"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -692,7 +692,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
 class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
     """Organisation entitlement endpoint."""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -709,7 +709,7 @@ class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):
 class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
     """Interface to list/create organisation workspaces"""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -750,7 +750,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_post(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -784,7 +784,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
 class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
     """Interface to interact with organisation tasks."""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -805,7 +805,7 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_post(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -842,7 +842,7 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
 class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
     """Interface to list/create organisation environments"""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -864,7 +864,7 @@ class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_post(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -897,7 +897,7 @@ class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
 class ApiTerraformEnvironments(AuthenticatedEndpoint):
     """Interface to show/update environment"""
 
-    def check_permissions_get(self, environment_id, current_user, *args, **kwargs):
+    def check_permissions_get(self, environment_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         environment = Environment.get_by_api_id(environment_id)
         if not environment:
@@ -915,7 +915,7 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
             "data": environment.get_api_details()
         }
 
-    def check_permissions_patch(self, environment_id, current_user, *args, **kwargs):
+    def check_permissions_patch(self, environment_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         environment = Environment.get_by_api_id(environment_id)
         if not environment:
@@ -950,7 +950,7 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
 class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
     """Interface to list/create organisation projects"""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, project_name=None, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, current_job, *args, project_name=None, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -989,7 +989,7 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, organisation_name, current_user, *args, project_name=None, **kwargs):
+    def check_permissions_post(self, organisation_name, current_user, current_job, *args, project_name=None, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1037,7 +1037,7 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
 class ApiTerraformProjects(AuthenticatedEndpoint):
     """Interface to show/update projects"""
 
-    def check_permissions_get(self, project_id, current_user, *args, **kwargs):
+    def check_permissions_get(self, project_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         project = Project.get_by_api_id(project_id)
         if not project:
@@ -1055,7 +1055,7 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
             "data": project.get_api_details()
         }
 
-    def check_permissions_patch(self, project_id, current_user, *args, **kwargs):
+    def check_permissions_patch(self, project_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         project = Project.get_by_api_id(project_id)
         if not project:
@@ -1090,7 +1090,7 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
 class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
     """Interface to list/create organisation lifecycles"""
 
-    def check_permissions_get(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1111,7 +1111,7 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
             ]
         }
 
-    def check_permissions_post(self, organisation_name, current_user, *args, **kwargs):
+    def check_permissions_post(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1144,7 +1144,7 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
 class ApiTerraformLifecycles(AuthenticatedEndpoint):
     """Interface to show/update lifecycles"""
 
-    def check_permissions_get(self, lifecycle_id, current_user, *args, **kwargs):
+    def check_permissions_get(self, lifecycle_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
         if not lifecycle:
@@ -1162,7 +1162,7 @@ class ApiTerraformLifecycles(AuthenticatedEndpoint):
             "data": lifecycle.get_api_details()
         }
 
-    def check_permissions_patch(self, lifecycle_id, current_user, *args, **kwargs):
+    def check_permissions_patch(self, lifecycle_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
         if not lifecycle:
@@ -1196,7 +1196,7 @@ class ApiTerraformLifecycles(AuthenticatedEndpoint):
 class ApiTerraformTaskDetails(AuthenticatedEndpoint):
     """Interface to view/edit a task"""
 
-    def check_permissions_patch(self, task_id, current_user):
+    def check_permissions_patch(self, task_id, current_user, current_job):
         """Check permissions"""
         task = Task.get_by_api_id(task_id)
         if not task:
@@ -1228,7 +1228,7 @@ class ApiTerraformTaskDetails(AuthenticatedEndpoint):
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
-    def check_permissions_get(self, organisation_name, workspace_name, current_user, *args, **kwargs):
+    def check_permissions_get(self, organisation_name, workspace_name, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1253,7 +1253,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
 class ApiTerraformWorkspaces(AuthenticatedEndpoint):
     """Workspaces details endpoint."""
 
-    def check_permissions_get(self, workspace_id, current_user, *args, **kwargs):
+    def check_permissions_get(self, workspace_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1273,7 +1273,7 @@ class ApiTerraformWorkspaces(AuthenticatedEndpoint):
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
-    def check_permissions_post(self, workspace_id, current_user, *args, **kwargs):
+    def check_permissions_post(self, workspace_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1304,7 +1304,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
 class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
     """Interface to manage workspace tags"""
 
-    def check_permissions_post(self, workspace_id, current_user):
+    def check_permissions_post(self, workspace_id, current_user, current_job):
         workspace = Workspace.get_by_api_id(workspace_id)
         if workspace is None:
             return False
@@ -1335,7 +1335,7 @@ class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
 class ApiTerraformOrganisationWorkspaceRelationshipsProjects(AuthenticatedEndpoint):
     """Interface to obtain workspace's project"""
 
-    def check_permissions_get(self, organisation_name, workspace_name, current_user):
+    def check_permissions_get(self, organisation_name, workspace_name, current_user, current_job):
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
             return False
@@ -1360,7 +1360,7 @@ class ApiTerraformOrganisationWorkspaceRelationshipsProjects(AuthenticatedEndpoi
 class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
-    def check_permissions_get(self, current_user, configuration_version_id):
+    def check_permissions_get(self, current_user, current_job, configuration_version_id):
         """Check permissions"""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -1380,7 +1380,7 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
 class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
     """Configuration version upload endpoint"""
 
-    def check_permissions_put(self, current_user, configuration_version_id):
+    def check_permissions_put(self, current_user, current_job, configuration_version_id):
         """Check permissions"""
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
@@ -1401,7 +1401,7 @@ class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
 class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
     """Interface to download configuration version"""
 
-    def check_permissions_get(self, current_user, run_id):
+    def check_permissions_get(self, current_user, current_job, run_id):
         """Check permissions"""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -1429,7 +1429,7 @@ class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
 class ApiTerraformRun(AuthenticatedEndpoint):
     """Run interface."""
 
-    def check_permissions_get(self, current_user, run_id=None,):
+    def check_permissions_get(self, current_user, current_job, run_id=None,):
         """Check permissions to view run"""
         if not run_id:
             return False
@@ -1452,7 +1452,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         # print({"data": run.get_api_details()})
         return {"data": run.get_api_details()}
 
-    def check_permissions_post(self, current_user, run_id=None,):
+    def check_permissions_post(self, current_user, current_job, run_id=None,):
         """Check permissions to view run"""
         if run_id:
             return False
@@ -1526,7 +1526,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
 class ApiTerraformRunAuditEvents(AuthenticatedEndpoint):
     """Interface to obtain audit events for run"""
 
-    def check_permissions_get(self, current_user, run_id):
+    def check_permissions_get(self, current_user, current_job, run_id):
         """Check permissions"""
         run = Run.get_by_api_id(run_id)
         if not workspace:
@@ -1554,7 +1554,7 @@ class ApiTerraformRunAuditEvents(AuthenticatedEndpoint):
 class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
     """Interface to cancel runs"""
 
-    def check_permissions_post(self, run_id, current_user):
+    def check_permissions_post(self, run_id, current_user, current_job):
         run = Run.get_by_api_id(run_id)
         if not run:
             return False
@@ -1580,7 +1580,7 @@ class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
 class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
     """Interface to obtain workspace runs,"""
 
-    def check_permissions_get(self, current_user, workspace_id):
+    def check_permissions_get(self, current_user, current_job, workspace_id):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1603,7 +1603,7 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
 class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
     """Interface to obtain run queue for organisation"""
 
-    def check_permissions_get(self, current_user, organisation_name):
+    def check_permissions_get(self, current_user, current_job, organisation_name):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1627,7 +1627,7 @@ class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
 class ApiTerraformPlans(AuthenticatedEndpoint):
     """Interface for plans."""
 
-    def check_permissions_get(self, current_user, plan_id=None):
+    def check_permissions_get(self, current_user, current_job, plan_id=None):
         """Check permissions to view run"""
         if not plan_id:
             return False
@@ -1707,7 +1707,7 @@ class ApiTerraformPlanLog(Resource):
 
 class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
 
-    def check_permissions_get(self, current_user, workspace_id):
+    def check_permissions_get(self, current_user, current_job, workspace_id):
         """Check permissions to view run"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -1734,7 +1734,7 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
 
 class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
 
-    def check_permissions_get(self, current_user, state_version_id):
+    def check_permissions_get(self, current_user, current_job, state_version_id):
         """Check permissions to view run"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version_id:
@@ -1756,7 +1756,7 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
 class ApiTerraformApplyRun(AuthenticatedEndpoint):
     """Interface to confirm run"""
 
-    def check_permissions_post(self, current_user, run_id):
+    def check_permissions_post(self, current_user, current_job, run_id):
         """Check permissions to view run"""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -1779,7 +1779,7 @@ class ApiTerraformApplyRun(AuthenticatedEndpoint):
 class ApiTerraformApplies(AuthenticatedEndpoint):
     """Interface for applies"""
 
-    def check_permissions_get(self, current_user, apply_id=None):
+    def check_permissions_get(self, current_user, current_job, apply_id=None):
         """Check permissions to view run"""
         if not apply_id:
             raise Exception('IT WAS CALLED')
@@ -1864,7 +1864,7 @@ class ApiTerraformApplyLog(Resource):
 class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
     """Endpoint to validate new organisation name"""
 
-    def check_permissions_post(self, current_user):
+    def check_permissions_post(self, current_user, current_job):
         """Check permissions"""
         return UserPermissions(current_user=current_user, user=current_user).check_permission(
             UserPermissions.Permissions.CAN_CREATE_ORGANISATIONS)
@@ -1888,7 +1888,7 @@ class ApiTerrarunOrganisationCreateNameValidation(AuthenticatedEndpoint):
 class ApiTerrarunProjectCreateNameValidation(AuthenticatedEndpoint):
     """Endpoint to validate new workspace name"""
 
-    def check_permissions_post(self, organisation_name, current_user):
+    def check_permissions_post(self, organisation_name, current_user, current_job):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1917,7 +1917,7 @@ class ApiTerrarunProjectCreateNameValidation(AuthenticatedEndpoint):
 class ApiTerrarunWorkspaceCreateNameValidation(AuthenticatedEndpoint):
     """Endpoint to validate new workspace name"""
 
-    def check_permissions_post(self, organisation_name, current_user):
+    def check_permissions_post(self, organisation_name, current_user, current_job):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1946,7 +1946,7 @@ class ApiTerrarunWorkspaceCreateNameValidation(AuthenticatedEndpoint):
 class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
     """Endpoint to validate new workspace name"""
 
-    def check_permissions_post(self, organisation_name, current_user):
+    def check_permissions_post(self, organisation_name, current_user, current_job):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
@@ -1975,7 +1975,7 @@ class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
 class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
     """Interface to manage workspace tasks"""
 
-    def check_permissions_get(self, workspace_id, current_user):
+    def check_permissions_get(self, workspace_id, current_user, current_job):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2016,7 +2016,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
             }
         }
 
-    def check_permissions_post(self, workspace_id, current_user):
+    def check_permissions_post(self, workspace_id, current_user, current_job):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2057,7 +2057,7 @@ class ApiTerraformWorkspaceTasks(AuthenticatedEndpoint):
 class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
     """Interface to manage workspace task"""
 
-    def check_permissions_get(self, workspace_id, workspace_task_id, current_user):
+    def check_permissions_get(self, workspace_id, workspace_task_id, current_user, current_job):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2082,7 +2082,7 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
             "data": workspace_task.get_api_details()
         }
 
-    def check_permissions_delete(self, workspace_id, workspace_task_id, current_user):
+    def check_permissions_delete(self, workspace_id, workspace_task_id, current_user, current_job):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
@@ -2109,7 +2109,7 @@ class ApiTerraformWorkspaceTask(AuthenticatedEndpoint):
 class ApiTerraformTaskResults(AuthenticatedEndpoint):
     """Interface to handle details/callbacks for task results"""
 
-    def check_permissions_get(self, task_result_id, current_user):
+    def check_permissions_get(self, task_result_id, current_user, current_job):
         task_result = TaskResult.get_by_api_id(task_result_id)
         if not task_result:
             return False
@@ -2127,7 +2127,7 @@ class ApiTerraformTaskResults(AuthenticatedEndpoint):
 
         return {'data': task_result.get_api_details()}
 
-    def check_permissions_patch(self, task_result_id, current_user):
+    def check_permissions_patch(self, task_result_id, current_user, current_job):
         task_result = TaskResult.get_by_callback_id(task_result_id)
         if not task_result:
             return False
@@ -2161,7 +2161,7 @@ class ApiTerraformTaskResults(AuthenticatedEndpoint):
 class ApiTerraformRunTaskStages(AuthenticatedEndpoint):
     """Interface to view run task stages"""
 
-    def check_permissions_get(self, run_id, current_user):
+    def check_permissions_get(self, run_id, current_user, current_job):
         """Check permissions"""
         run = Run.get_by_api_id(run_id)
         if not run:
@@ -2189,7 +2189,7 @@ class ApiTerraformRunTaskStages(AuthenticatedEndpoint):
 class ApiTerraformTaskStage(AuthenticatedEndpoint):
     """Interface to view task stage"""
 
-    def check_permissions_get(self, task_stage_id, current_user):
+    def check_permissions_get(self, task_stage_id, current_user, current_job):
         """Check permissions"""
         task_stage = TaskStage.get_by_api_id(task_stage_id)
         if not task_stage:
@@ -2213,7 +2213,7 @@ class ApiTerraformTaskStage(AuthenticatedEndpoint):
 class ApiOrganisationAgentPoolList(AuthenticatedEndpoint):
     """Interface to interact with organisation agent pools"""
 
-    def check_permissions_get(self, organisation_name, current_user):
+    def check_permissions_get(self, organisation_name, current_user, current_job):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:

@@ -53,6 +53,9 @@ class WorkspacePermissions:
 
     def check_permission(self, permission):
         """Check if user has single permission."""
+        if not self._current_user:
+            return False
+
         # If user is site admin, allow permission
         if self._current_user.site_admin:
             return True
@@ -196,6 +199,9 @@ class WorkspacePermissions:
                           state_versions=None, sentinel_mocks=None,
                           workspace_locking=None, run_tasks=None):
         """Check permission for particular access type."""
+        if not self._current_user:
+            return False
+
         # Check only one permission type is being assessed
         found_access_type = False
         for perm in [runs, variables, state_versions, sentinel_mocks, workspace_locking, run_tasks]:
