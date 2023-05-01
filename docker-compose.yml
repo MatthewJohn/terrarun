@@ -64,6 +64,26 @@ services:
     volumes:
       - ./:/app
 
+  worker:
+    restart: unless-stopped
+    build: .
+    networks:
+      - web
+    labels:
+      - "traefik.enable=false"
+
+    depends_on:
+      - db
+    links:
+      - db
+    env_file:
+      - ./.env
+
+    # Only for local development
+    entrypoint: ["python", "-u", "worker.py"]
+    volumes:
+      - ./:/app
+
   agent:
     restart: unless-stopped
     build: .

@@ -17,7 +17,7 @@ import terrarun.database
 import terrarun.models.plan
 import terrarun.models.apply
 import terrarun.models.state_version
-from terrarun.models.run_queue import RunQueue
+from terrarun.models.run_queue import RunQueue, RunQueueType
 from terrarun.models.task_result import TaskResultStatus
 from terrarun.models.task_stage import TaskStage, TaskStageStatus
 import terrarun.terraform_command
@@ -155,7 +155,7 @@ class Run(Base, BaseObject):
             workspace_tasks=run.pre_apply_workspace_tasks)
 
         # Queue to be processed
-        run.add_to_queue_table()
+        run.add_to_queue_table(RunQueueType.WORKER)
         return run
 
     def cancel(self, user):
@@ -205,7 +205,7 @@ class Run(Base, BaseObject):
                 task_result.execute()
 
         # Queue plan
-        self.add_to_queue_table()
+        self.add_to_queue_table(RunQueueType.WORKER)
 
     def handle_pre_plan_running(self):
         """Hanlde pre-plan running, waiting for task stages to complete"""
@@ -223,7 +223,7 @@ class Run(Base, BaseObject):
         if should_continue:
             if completed:
                 self.update_status(RunStatus.PRE_PLAN_COMPLETED)
-            self.add_to_queue_table()
+            self.add_to_queue_table(RunQueueType.WORKER)
 
     def execute_plan(self):
         """Execute plan"""
@@ -243,7 +243,7 @@ class Run(Base, BaseObject):
         else:
             self.update_status(RunStatus.PLANNED)
             terrarun.models.apply.Apply.create(plan=self.plan)
-            self.add_to_queue_table()
+            self.add_to_queue_table(RunQueueType.WORKER)
 
     def handle_planned(self):
         """Handle planned state"""
@@ -256,7 +256,7 @@ class Run(Base, BaseObject):
             for task_result in task_stage.task_results:
                 task_result.execute()
 
-        self.add_to_queue_table()
+        self.add_to_queue_table(RunQueueType.WORKER)
 
     def handle_post_plan_running(self):
         """Handle post-plan running, checking for status of tasks"""
@@ -274,7 +274,7 @@ class Run(Base, BaseObject):
         if should_continue:
             if completed:
                 self.update_status(RunStatus.POST_PLAN_COMPLETED)
-            self.add_to_queue_table()
+            self.add_to_queue_table(RunQueueType.WORKER)
 
     def handle_post_plan_completed(self):
         """Handle post plan completed, waiting for run to be confirmed"""
@@ -294,7 +294,7 @@ class Run(Base, BaseObject):
 
 
         self.update_status(RunStatus.PRE_APPLY_RUNNING)
-        self.add_to_queue_table()
+        self.add_to_queue_table(RunQueueType.WORKER)
 
     def handle_pre_apply_running(self):
         """Handle pre-apply running, waiting for task stages to execute"""
@@ -313,7 +313,7 @@ class Run(Base, BaseObject):
             if completed:
                 self.update_status(RunStatus.PRE_APPLY_COMPLETED)
                 self.update_status(RunStatus.APPLY_QUEUED)
-            self.add_to_queue_table()
+            self.add_to_queue_table(RunQueueType.AGENT)
 
     def handle_apply_queued(self):
         """Handle apply_queued state"""
@@ -334,37 +334,8 @@ class Run(Base, BaseObject):
         # Handle plan job
         print("Run Status: " + str(self.status))
 
-        if self.status is RunStatus.PENDING:
-            self.handling_pending()
-
-        # Check status of pre-plan tasks
-        elif self.status is RunStatus.PRE_PLAN_RUNNING:
-            self.handle_pre_plan_running()
-
-        elif self.status is RunStatus.PRE_PLAN_COMPLETED:
-            self.queue_plan()
-
-        elif self.status is RunStatus.PLAN_QUEUED:
+        if self.status is RunStatus.PLAN_QUEUED:
             self.execute_plan()
-
-        elif self.status is RunStatus.PLANNED:
-            self.handle_planned()
-
-        # Check status of post-plan tasks
-        elif self.status is RunStatus.POST_PLAN_RUNNING:
-            self.handle_post_plan_running()
-
-
-        elif self.status is RunStatus.POST_PLAN_COMPLETED:
-            self.handle_post_plan_completed()
-
-        # Handle confirmed, starting pre-apply tasks
-        elif self.status is RunStatus.CONFIRMED:
-            self.handle_confirmed()
-
-        # Check status of pre-apply tasks
-        elif self.status is RunStatus.PRE_APPLY_RUNNING:
-            self.handle_pre_apply_running()
 
         # Handle apply job
         elif self.status is RunStatus.APPLY_QUEUED:
@@ -411,7 +382,7 @@ class Run(Base, BaseObject):
         self.update_status(RunStatus.PLAN_QUEUED)
 
         # Requeue to be applied
-        self.add_to_queue_table()
+        self.add_to_queue_table(RunQueueType.AGENT)
 
     def confirm(self, comment, user):
         """Queue apply job"""
@@ -429,10 +400,10 @@ class Run(Base, BaseObject):
 
         # @TODO Do something with comment
 
-    def add_to_queue_table(self):
+    def add_to_queue_table(self, job_type):
         """Queue a run to be executed."""
         session = Database.get_session()
-        run_queue = RunQueue(run_id=self.id)
+        run_queue = RunQueue(run_id=self.id, job_type=job_type)
         session.add(run_queue)
         session.commit()
 
