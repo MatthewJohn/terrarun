@@ -2359,6 +2359,7 @@ class ApiAgentStatus(Resource, AgentEndpoint):
         )
 
         res = make_response({}, 200)
+        # @TODO Confirm what this is.. does it ever get passed as a non-zero number?
         res.headers['Tfc-Agent-Message-Index'] = request.headers.get('Tfc-Agent-Message-Index', 0)
         return res
 
@@ -2432,13 +2433,19 @@ class ApiAgentPlanLog(Resource):
         plan.append_output(request.data)
 
 
-class ApiAgentBaseImage(Resource):
+class ApiAgentFilesystem(Resource):
     """Interface to download base filesystem for agent"""
     def get(self):
         """Return filesystem for agent"""
+        # @TODO Add authentication
         return flask.send_from_directory(
             path=terrarun.config.Config.AGENT_IMAGE_FILENAME,
             directory=os.path.join('..', 'agent_images'))
+
+    def put(self):
+        """Handle upload of new filesystem image"""
+        # @TODO Populate this and perform authentication
+        return {}, 200
 
 
 class ApiTerraformPlanJsonOutput(Resource):
