@@ -2466,7 +2466,7 @@ class ApiAgentApplyLog(Resource):
     def patch(self, apply_id):
         """Handle log upload"""
         # @TODO Add authentication
-        apply = Apply.get_by_api_id(apply)
+        apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
         apply.append_output(request.data)
