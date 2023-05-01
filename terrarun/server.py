@@ -42,6 +42,7 @@ from terrarun.models.tag import Tag
 from terrarun.models.task import Task
 from terrarun.models.task_result import TaskResult, TaskResultStatus
 from terrarun.models.task_stage import TaskStage
+from terrarun.terraform_binary import TerraformBinary
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.models.user_token import UserToken, UserTokenType
 from terrarun.models.workspace import Workspace
@@ -2331,6 +2332,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
         job = JobProcessor.get_job_by_agent_and_job_types(agent=agent, job_types=accepted_job_types)
 
         if job:
+            terraform_version = job.run.terraform_version or '1.1.7'
             return {
                 "type": job.job_type.value,
 
@@ -2341,7 +2343,9 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
                 "data": {
                     "run_id": job.run.api_id,
-                    "operation": job.job_type.value
+                    "operation": job.job_type.value,
+                    "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
+                    "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version)
                 }
             }, 200
 

@@ -8,6 +8,9 @@ import os
 
 class Config:
 
+    AWS_ENDPOINT = os.environ.get('AWS_ENDPOINT')
+    AWS_BUCKET_NAME = os.environ.get('AWS_BUCKET_NAME')
+
     @property
     def SESSION_EXPIRY_MINS(self):
         return 120

@@ -113,6 +113,36 @@ services:
     volumes:
      - mysqldata:/var/lib/mysql
 
+  minio:
+    image: minio/minio
+    ports:
+     - 9000:9000
+     - 9001:9001
+    networks:
+      - web
+      - default
+    env_file:
+     - .env
+    environment:
+      MINIO_ACCESS_KEY: $AWS_ACCESS_KEY_ID
+      MINIO_SECRET_KEY: $AWS_SECRET_ACCESS_KEY
+    command: server /data --console-address ":9001"
+
+  createbucket:
+    image: minio/mc
+    depends_on:
+      - minio
+    networks:
+      - web
+    env_file:
+     - .env
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add jmonminio $AWS_ENDPOINT $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY;
+      /usr/bin/mc mb jmonminio/$AWS_BUCKET_NAME;
+      exit 0;
+      "
+
 volumes:
   mysqldata:
 
