@@ -37,7 +37,7 @@ from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
 from terrarun.permissions.workspace import WorkspacePermissions
 from terrarun.models.plan import Plan
-from terrarun.models.run import Run
+from terrarun.models.run import Run, RunStatus
 from terrarun.models.run_queue import JobQueueType, RunQueue, JobQueueAgentType
 from terrarun.models.state_version import StateVersion
 from terrarun.models.tag import Tag
@@ -2386,30 +2386,36 @@ class ApiAgentJobs(Resource, AgentEndpoint):
         job = JobProcessor.get_job_by_agent_and_job_types(agent=agent, job_types=accepted_job_types)
 
         if job:
-            terraform_version = job.run.terraform_version or '1.1.7'
+            if job.job_type is JobQueueType.PLAN:
+                # Update job, locking to agent
+                job.update_attributes(agent=agent)
+                # Update run to show plan as in progress
+                job.run.update_status(RunStatus.PLANNING)
 
-            # Generate user token for run
-            token = UserToken.create_agent_job_token(job=job)
-            return {
-                # @TODO Should this be apply for plans during an apply run?
-                "type": job.job_type.value,
-                "data": {
-                    "run_id": job.run.api_id,
+                terraform_version = job.run.terraform_version or '1.1.7'
+
+                # Generate user token for run
+                token = UserToken.create_agent_job_token(job=job)
+                return {
                     # @TODO Should this be apply for plans during an apply run?
-                    "operation": job.job_type.value,
-                    "organization_name": job.run.configuration_version.workspace.organisation.name_id,
-                    "workspace_name": job.run.configuration_version.workspace.name,
-                    "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
-                    "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
-                    "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/plan/{job.run.plan.api_id}",
-                    "configuration_version_url": job.run.configuration_version.get_download_url(),
-                    "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
-                    "token": token.token,
-                    "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
-                    "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
-                    "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
-                }
-            }, 200
+                    "type": job.job_type.value,
+                    "data": {
+                        "run_id": job.run.api_id,
+                        # @TODO Should this be apply for plans during an apply run?
+                        "operation": job.job_type.value,
+                        "organization_name": job.run.configuration_version.workspace.organisation.name_id,
+                        "workspace_name": job.run.configuration_version.workspace.name,
+                        "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
+                        "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
+                        "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/plan/{job.run.plan.api_id}",
+                        "configuration_version_url": job.run.configuration_version.get_download_url(),
+                        "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem",
+                        "token": token.token,
+                        "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
+                        "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
+                        "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
+                    }
+                }, 200
 
         # Return no jobs
         return {}, 204
