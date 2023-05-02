@@ -279,8 +279,9 @@ class Run(Base, BaseObject):
     def handle_post_plan_completed(self):
         """Handle post plan completed, waiting for run to be confirmed"""
         # Check if plan was confirmed before entering the state
-        if self.auto_apply:
-            self.confirm(comment="Auto-apply", user=None)
+        if self.auto_apply or self.confirmed:
+            self.update_status(RunStatus.CONFIRMED)
+            self.queue_worker_job()
 
     def handle_confirmed(self):
         """Handle confirmed state"""
@@ -313,7 +314,9 @@ class Run(Base, BaseObject):
             if completed:
                 self.update_status(RunStatus.PRE_APPLY_COMPLETED)
                 self.update_status(RunStatus.APPLY_QUEUED)
-            self.queue_worker_job()
+                self.queue_agent_job(job_type=JobQueueType.APPLY)
+            else:
+                self.queue_worker_job()
 
     def handle_apply_queued(self):
         """Handle apply_queued state"""
@@ -391,14 +394,10 @@ class Run(Base, BaseObject):
         """Queue apply job"""
         # Mark job as confirmed
         self.update_attributes(confirmed=True)
-        # If job is current in state ready to apply and no post-plan tasks running
-        # queue for apply.
-        # Otherwise, the task will be automatically moved to CONFIRMED
-        # once the post-plan tasks complete
+        # If the job has already eached POST_PLAN_COMPLETED,
+        # meaning that there is no longer queued, trigger
+        # a worker job
         if self.status is RunStatus.POST_PLAN_COMPLETED:
-            self.update_status(RunStatus.CONFIRMED, current_user=user)
-
-            # Queue worker job to start pre-apply
             self.queue_worker_job()
 
         # @TODO Do something with comment
