@@ -279,10 +279,8 @@ class Run(Base, BaseObject):
     def handle_post_plan_completed(self):
         """Handle post plan completed, waiting for run to be confirmed"""
         # Check if plan was confirmed before entering the state
-        if self.confirmed:
-            self.update_status(RunStatus.CONFIRMED)
-        
-        self.queue_worker_job()
+        if self.auto_apply:
+            self.confirm(comment="Auto-apply", user=None)
 
     def handle_confirmed(self):
         """Handle confirmed state"""
@@ -400,8 +398,8 @@ class Run(Base, BaseObject):
         if self.status is RunStatus.POST_PLAN_COMPLETED:
             self.update_status(RunStatus.CONFIRMED, current_user=user)
 
-            # Requeue to be applied
-            self.queue_agent_job(job_type=JobQueueType.APPLY)
+            # Queue worker job to start pre-apply
+            self.queue_worker_job()
 
         # @TODO Do something with comment
 
