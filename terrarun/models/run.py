@@ -279,10 +279,9 @@ class Run(Base, BaseObject):
     def handle_post_plan_completed(self):
         """Handle post plan completed, waiting for run to be confirmed"""
         # Check if plan was confirmed before entering the state
-        if self.confirmed:
+        if self.auto_apply or self.confirmed:
             self.update_status(RunStatus.CONFIRMED)
-        
-        self.queue_worker_job()
+            self.queue_worker_job()
 
     def handle_confirmed(self):
         """Handle confirmed state"""
@@ -315,7 +314,9 @@ class Run(Base, BaseObject):
             if completed:
                 self.update_status(RunStatus.PRE_APPLY_COMPLETED)
                 self.update_status(RunStatus.APPLY_QUEUED)
-            self.queue_worker_job()
+                self.queue_agent_job(job_type=JobQueueType.APPLY)
+            else:
+                self.queue_worker_job()
 
     def handle_apply_queued(self):
         """Handle apply_queued state"""
@@ -355,6 +356,9 @@ class Run(Base, BaseObject):
 
     def update_status(self, new_status, current_user=None, session=None):
         """Update state of run."""
+        if self.status is RunStatus.CANCELED:
+            print(f"Ignoring run status update to {str(new_status)} as status is CANCELLED")
+
         print(f"Updating job status to from {str(self.status)} to {str(new_status)}")
         should_commit = False
         if session is None:
@@ -390,15 +394,11 @@ class Run(Base, BaseObject):
         """Queue apply job"""
         # Mark job as confirmed
         self.update_attributes(confirmed=True)
-        # If job is current in state ready to apply and no post-plan tasks running
-        # queue for apply.
-        # Otherwise, the task will be automatically moved to CONFIRMED
-        # once the post-plan tasks complete
+        # If the job has already eached POST_PLAN_COMPLETED,
+        # meaning that there is no longer queued, trigger
+        # a worker job
         if self.status is RunStatus.POST_PLAN_COMPLETED:
-            self.update_status(RunStatus.CONFIRMED, current_user=user)
-
-            # Requeue to be applied
-            self.queue_agent_job(job_type=JobQueueType.APPLY)
+            self.queue_worker_job()
 
         # @TODO Do something with comment
 
