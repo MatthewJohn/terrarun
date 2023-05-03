@@ -5,7 +5,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 import terrarun.database
-from terrarun.database import Base
+from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
 import terrarun.utils
 
@@ -21,7 +21,7 @@ class OauthToken(Base, BaseObject):
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
-    service_provider_user = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    service_provider_user = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
     oauth_client_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
         "oauth_client.id", name="fk_oauth_token_oauth_cient_id_oauth_client_id"),
@@ -30,6 +30,28 @@ class OauthToken(Base, BaseObject):
     oauth_client = sqlalchemy.orm.relationship("OauthClient", back_populates="oauth_tokens")
     ssh_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     token = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
+
+    @classmethod
+    def create(cls, oauth_client, token, session):
+        """Create Oauth Token"""
+        should_commit = False
+        if not session:
+            session = Database.get_session()
+            should_commit = True
+
+        oauth_token = cls(token=token, oauth_client=oauth_client)
+        session = Database.get_session()
+        session.add(oauth_token)
+        if should_commit:
+            session.commit()
+        return oauth_token
+
+    def get_relationship(self):
+        """Return relationship data for oauth token."""
+        return {
+            "id": self.api_id,
+            "type": "oauth-tokens"
+        }
 
     def get_api_details(self):
         """Return API details"""

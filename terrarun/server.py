@@ -32,6 +32,7 @@ from terrarun.models.audit_event import AuditEvent
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.models.lifecycle import Lifecycle
+from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
@@ -139,6 +140,15 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformOrganisationQueue,
             '/api/v2/organizations/<string:organisation_name>/runs/queue'
+        )
+        self._api.add_resource(
+            ApiTerraformOrganisationOauthClients,
+            '/api/v2/organizations/<string:organisation_name>/oauth-clients'
+        )
+
+        self._api.add_resource(
+            ApiTerraformOauthClient,
+            '/api/v2/oauth-clients/<string:oauth_client_id>'
         )
 
         self._api.add_resource(
@@ -1656,6 +1666,137 @@ class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
             return {}, 404
 
         return {"data": [run.get_api_details() for run in organisation.get_run_queue()]}
+
+
+class ApiTerraformOrganisationOauthClients(AuthenticatedEndpoint):
+    """Interface to view/create oauth clients"""
+
+    def check_permissions_get(self, current_user, current_job, organisation_name):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        # @TODO Check this permission
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, current_user, current_job):
+        """Get list of runs queued"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": [
+                oauth_client.get_api_details()
+                for oauth_client in organisation.auth_clients
+            ]
+        }
+
+    def check_permissions_post(self, current_user, current_job, organisation_name):
+        """Check permissions for creating oauth client"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_UPDATE_OAUTH)
+
+    def _post(self, organisation_name, current_user, current_job):
+        """Create oauth client"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+
+        data = request.json.get("data", {})
+        if data.get("type") != "oauth-clients":
+            return {}, 400
+
+        attributes = data.get("attributes", {})
+
+        oauth_client = OauthClient.create(
+            organisation=organisation,
+            name=attributes.get("name"),
+            service_provider=OauthServiceProvider(attributes.get("service-provider")),
+            key=attributes.get("key"),
+            http_url=attributes.get("http-url"),
+            api_url=attributes.get("api-url"),
+            oauth_token_string=attributes.get("oauth-token-string"),
+            private_key=attributes.get("private-key"),
+            secret=attributes.get("secret"),
+            rsa_public_key=attributes.get("rsa-public-key")
+        )
+
+        if not oauth_client:
+            return {}, 400
+
+        return {
+            "data": oauth_client.get_api_details()
+        }
+
+
+class ApiTerraformOauthClient(AuthenticatedEndpoint):
+    """Interface to view/create oauth clients"""
+
+    def check_permissions_get(self, current_user, current_job, oauth_client_id):
+        """Check permissions"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+        if not oauth_client:
+            return {}, 404
+
+        # @TODO Check this permission
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=oauth_client.organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, oauth_client_id, current_user, current_job):
+        """Get list of runs queued"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+        if not oauth_client:
+            return {}, 404
+
+        return {
+            "data": oauth_client.get_api_details()
+        }
+
+    def check_permissions_patch(self, current_user, current_job, oauth_client_id):
+        """Check permissions for modifying oauth client"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+        if not oauth_client:
+            return {}, 404
+
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=oauth_client.organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_UPDATE_OAUTH)
+
+    def _patch(self, oauth_client_id, current_user, current_job):
+        """Update oauth client"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+
+        data = request.json.get("data", {})
+        if data.get("type") != "oauth-clients":
+            return {}, 400
+
+        attributes = data.get("attributes", {})
+
+        oauth_client.update_attributes(
+            name=attributes.get("name"),
+            key=attributes.get("key"),
+            secret=attributes.get("secret"),
+            rsa_public_key=attributes.get("rsa-public-key")
+        )
+
+        if not oauth_client:
+            return {}, 400
+
+        return {
+            "data": oauth_client.get_api_details()
+        }
 
 
 class ApiTerraformPlans(AuthenticatedEndpoint):
