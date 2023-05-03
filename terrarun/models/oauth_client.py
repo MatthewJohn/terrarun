@@ -67,9 +67,8 @@ class OauthClient(Base, BaseObject):
     key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     http_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     api_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
-    oauth_token_string = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     private_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
-    secret = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    secret = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     rsa_public_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     service_provider = sqlalchemy.Column(sqlalchemy.Enum(OauthServiceProvider), nullable=False)
     callback_id = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False, unique=True)
@@ -79,6 +78,8 @@ class OauthClient(Base, BaseObject):
         nullable=False
     )
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="oauth_clients")
+
+    oauth_tokens = sqlalchemy.orm.relation("OauthToken", back_populates="oauth_client")
 
     @property
     def service_provider_instance(self):
