@@ -267,9 +267,9 @@ class Organisation(Base, BaseObject):
                     }
                 },
                 "subscription": {
-                "links": {
-                    "related": f"/api/v2/organizations/{self.name}/subscription"
-                }
+                    "links": {
+                        "related": f"/api/v2/organizations/{self.name}/subscription"
+                    }
                 }
             },
             "links": {
