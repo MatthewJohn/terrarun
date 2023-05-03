@@ -35,3 +35,5 @@ from terrarun.models.agent_pool_association import (
     AgentPoolProjectPermission
 )
 from terrarun.models.agent_token import AgentToken
+from terrarun.models.oauth_client import OauthClient
+from terrarun.models.oauth_token import OauthToken
