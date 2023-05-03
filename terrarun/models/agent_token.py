@@ -11,7 +11,7 @@ import terrarun.config
 import terrarun.database
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
-from terrarun.utils import generate_random_secret_string
+from terrarun.utils import generate_random_secret_string, datetime_to_json
 
 
 class AgentToken(Base, BaseObject):
@@ -59,7 +59,7 @@ class AgentToken(Base, BaseObject):
                 "id": "at-2rG2oYU9JEvfaqji",
                 "type": "authentication-tokens",
                 "attributes": {
-                    "created-at": self.created_at,
+                    "created-at": datetime_to_json(self.created_at),
                     "last-used-at": self.last_used_at,
                     "description": self.description,
                     "token": self.token
