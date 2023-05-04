@@ -9,6 +9,7 @@ from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
 from terrarun.models.oauth_token import OauthToken
 import terrarun.utils
+import terrarun.config
 
 
 class OauthServiceProvider(Enum):
@@ -141,7 +142,7 @@ class OauthClient(Base, BaseObject):
             "type": "oauth-clients",
             "attributes": {
                 "created-at": terrarun.utils.datetime_to_json(self.created_at),
-                "callback-url": f"https://app.terraform.io/auth/{self.callback_id}/callback",
+                "callback-url": f"{terrarun.config.Config().BASE_URL}/auth/{self.callback_id}/callback",
                 "connect-path": f"/auth/{self.callback_id}?organization_id={self.organisation.api_id}",
                 "service-provider": self.service_provider.value,
                 "service-provider-display-name": self.service_provider_instance.display_name,
