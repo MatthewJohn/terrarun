@@ -16,3 +16,32 @@
         </table>
     </nb-card-body>
 </nb-card>
+
+
+<nb-card>
+    <nb-card-header>VCS Assignment</nb-card-header>
+    <nb-card-body>
+        <!-- Check if connected to VCS repo -->
+        <div *ngIf="projectDetails && projectDetails.data.attributes['vcs-repo-identifier']; else vcsNotAttached">
+            Connected to: {{projectDetails["vcs-repo-identifier"]}}
+        </div>
+        <!-- If not, display connection to VCS -->
+        <ng-template #vcsNotAttached>
+            <!-- If there are oauth clients available, display connection options -->
+            <div *ngIf="organisationOauthClients; else noOauthClients">
+
+                <div>Connect VCS Repo</div>
+                <br />
+                <div *ngFor="let oauthClient of organisationOauthClients">
+                    <button (click)="onOauthClientSelect(oauthClient)" nbButton>{{oauthClient.attributes.name}}</button>
+                </div>
+            </div>
+
+            <ng-template #noOauthClients>
+                There are no VCS providers registered, goto <a href="/{{(currentOrganisation | async).name}}/vcs-providers">VCS Providers</a>
+            </ng-template>
+        </ng-template>
+
+    </nb-card-body>
+</nb-card>
+
