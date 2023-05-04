@@ -1692,7 +1692,7 @@ class ApiTerraformOrganisationOauthClients(AuthenticatedEndpoint):
         return {
             "data": [
                 oauth_client.get_api_details()
-                for oauth_client in organisation.auth_clients
+                for oauth_client in organisation.oauth_clients
             ]
         }
 
