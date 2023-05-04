@@ -252,6 +252,11 @@ class Organisation(Base, BaseObject):
                         "related": f"/api/v2/organizations/{self.name}/oauth-tokens"
                     }
                 },
+                "oauth-clients": {
+                    "links": {
+                        "related": f"/api/v2/organizations/{self.name}/oauth-clients"
+                    }
+                },
                 "authentication-token": {
                     "links": {
                         "related": f"/api/v2/organizations/{self.name}/authentication-token"
