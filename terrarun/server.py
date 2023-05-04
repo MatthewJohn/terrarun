@@ -1798,6 +1798,26 @@ class ApiTerraformOauthClient(AuthenticatedEndpoint):
             "data": oauth_client.get_api_details()
         }
 
+    def check_permissions_delete(self, current_user, current_job, oauth_client_id):
+        """Check permissions for modifying oauth client"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+        if not oauth_client:
+            return {}, 404
+
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=oauth_client.organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_UPDATE_OAUTH)
+
+    def _delete(self, oauth_client_id, current_user, current_job):
+        """Delete oauth client"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+
+        oauth_client.delete()
+
+        if not oauth_client:
+            return {}, 400
+
 
 class ApiTerraformPlans(AuthenticatedEndpoint):
     """Interface for plans."""

@@ -46,6 +46,12 @@ class OauthToken(Base, BaseObject):
             session.commit()
         return oauth_token
 
+    def delete(self):
+        """Delete object"""
+        session = Database.get_session()
+        session.delete(self)
+        session.commit()
+
     def get_relationship(self):
         """Return relationship data for oauth token."""
         return {

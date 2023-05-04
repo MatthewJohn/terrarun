@@ -119,6 +119,16 @@ class OauthClient(Base, BaseObject):
         session.commit()
         return oauth_client
 
+    def delete(self):
+        """Mark object as deleted"""
+        session = Database.get_session()
+        # Delete any oauth tokens
+        for oauth_token in self.oauth_tokens:
+            oauth_token.delete()
+
+        session.delete(self)
+        session.commit()
+
     @property
     def service_provider_instance(self):
         """Return instance of service provider"""
