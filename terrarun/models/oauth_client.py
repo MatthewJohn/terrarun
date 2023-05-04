@@ -106,7 +106,7 @@ class OauthClient(Base, BaseObject):
             private_key=private_key,
             secret=secret,
             rsa_public_key=rsa_public_key,
-            callback_id=uuid.uuid4().hex
+            callback_id=str(uuid.uuid4())
         )
         session = Database.get_session()
         session.add(oauth_client)
