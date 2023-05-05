@@ -92,11 +92,16 @@
           <ng-template #labelThree>Authorisation</ng-template>
           <h4>Authorisation</h4>
 
-          <nb-card *ngIf="showAuthorisationLoading" [nbSpinner]="true" nbSpinnerStatus="primary">
+          <nb-card *ngIf="!authorizeUrl" [nbSpinner]="true" nbSpinnerStatus="primary"; else #authorizeUrlButton>
             <nb-card-body>
               Please wait whilst authorisation is initialised.
             </nb-card-body>
           </nb-card>
+          <ng-template #authorizeUrl>
+            <button (href)="authorizeUrl">
+              Authorize with Github
+            </button>
+          </ng-template>
 
           <button nbButton nbStepperPrevious>Prev</button>
           <button nbButton nbStepperNext>Next</button>

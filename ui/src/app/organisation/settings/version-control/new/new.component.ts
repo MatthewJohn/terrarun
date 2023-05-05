@@ -32,8 +32,8 @@ export class NewComponent implements OnInit {
   // Store state about selected organisation
   currentOrganisation: OrganisationStateType | null = null;
 
-  // Whether authorisation spinner should be shown
-  showAuthorisationLoading: boolean;
+  // Url to send user to
+  authorizeUrl: string;
 
   constructor(
     private stateService: StateService,
@@ -61,8 +61,8 @@ export class NewComponent implements OnInit {
       clientSecret: ''
     });
     this.oauthClientData = undefined;
-    this.showAuthorisationLoading = false;
     this.callbackUrl = '';
+    this.authorizeUrl = '';
   }
 
   ngOnInit(): void {
@@ -133,14 +133,17 @@ export class NewComponent implements OnInit {
   }
 
   initiateAuthorisation() {
-    this.showAuthorisationLoading = true;
     console.log("Starting authorisation process");
     if (! this.oauthClientData?.id) {
       this.showError("ID of new oauth client not found. Please reload the page and try again");
       return;
     }
 
-    this.oauthClientService.authorise(this.oauthClientData.id);
+    this.oauthClientService.authorise(this.oauthClientData.id).then((location) => {
+      this.authorizeUrl = location;
+    }).catch((err) => {
+      this.showError(err);
+    });
   }
 
   onSetSecrets() {
