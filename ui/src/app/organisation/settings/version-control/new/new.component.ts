@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { NbDialogService, NbStepChangeEvent } from '@nebular/theme';
 import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
+import { DataObject } from 'src/app/interfaces/data-object';
+import { OauthClient } from 'src/app/interfaces/oauth-client';
 import { OauthClientService } from 'src/app/services/oauth-client.service';
 import { OrganisationStateType, StateService } from 'src/app/state.service';
 
@@ -24,10 +26,14 @@ export class NewComponent implements OnInit {
   changeEvent: NbStepChangeEvent|null;
 
   // Store data for created oauth Client
-  oauthClientData: any;
+  oauthClientData: DataObject<OauthClient> | undefined;
+  callbackUrl: string;
 
   // Store state about selected organisation
   currentOrganisation: OrganisationStateType | null = null;
+
+  // Whether authorisation spinner should be shown
+  showAuthorisationLoading: boolean;
 
   constructor(
     private stateService: StateService,
@@ -54,7 +60,9 @@ export class NewComponent implements OnInit {
       clientId: '',
       clientSecret: ''
     });
-    this.oauthClientData = null;
+    this.oauthClientData = undefined;
+    this.showAuthorisationLoading = false;
+    this.callbackUrl = '';
   }
 
   ngOnInit(): void {
@@ -112,6 +120,7 @@ export class NewComponent implements OnInit {
         console.log('Created oauth client');
         console.log(oauthClientData);
         this.oauthClientData = oauthClientData;
+        this.callbackUrl = this.oauthClientData.attributes['callback-url'];
       }).catch(() => {
         this.showError("Failed to register application. Please reload the page and try again.")
       });
@@ -121,7 +130,14 @@ export class NewComponent implements OnInit {
   }
 
   initiateAuthorisation() {
-    console.log("Starting authorisation process")
+    this.showAuthorisationLoading = true;
+    console.log("Starting authorisation process");
+    if (! this.oauthClientData?.id) {
+      this.showError("ID of new oauth client not found. Please reload the page and try again");
+      return;
+    }
+
+    this.oauthClientService.authorise(this.oauthClientData.id);
   }
 
   onSetSecrets() {

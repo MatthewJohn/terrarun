@@ -58,7 +58,7 @@
               <li>Set 'Application Name' to a recognisable name (e.g. 'Terrarun')</li>
               <li>Set 'Homepage URL' to the base URL of your Terrarun installation</li>
               <li>Set 'Application description' to a value of your chosing</li>
-              <li>Set 'Authorization callback URL' to: <code>{{ oauthClientData?.attributes['callback-url'] }}</code></li>
+              <li>Set 'Authorization callback URL' to: <code>{{ callbackUrl }}</code></li>
             </ol>
             Once created, provide the 'Client ID' below from the resulting page.
             <br />
@@ -91,6 +91,12 @@
         <nb-step [label]="labelThree">
           <ng-template #labelThree>Authorisation</ng-template>
           <h4>Authorisation</h4>
+
+          <nb-card *ngIf="showAuthorisationLoading" [nbSpinner]="true" nbSpinnerStatus="primary">
+            <nb-card-body>
+              Please wait whilst authorisation is initialised.
+            </nb-card-body>
+          </nb-card>
 
           <button nbButton nbStepperPrevious>Prev</button>
           <button nbButton nbStepperNext>Next</button>
