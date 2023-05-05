@@ -1782,13 +1782,21 @@ class ApiTerraformOauthClient(AuthenticatedEndpoint):
         if data.get("type") != "oauth-clients":
             return {}, 400
 
-        attributes = data.get("attributes", {})
+        request_attributes = data.get("attributes", {})
+
+        # Create dictionary of allowed attributes,
+        # using mapping of request attribtues to model attributes,
+        # adding only if they are present in the request
+        update_attributes = {
+            target_attribute: request_attributes.get(req_attribute)
+            for req_attribute, target_attribute in {
+                "name": "name", "key": "key", "secret": "secret", "ras-public-key": "rsa_public_key"
+            }.items()
+            if req_attribute in request_attributes
+        }
 
         oauth_client.update_attributes(
-            name=attributes.get("name"),
-            key=attributes.get("key"),
-            secret=attributes.get("secret"),
-            rsa_public_key=attributes.get("rsa-public-key")
+            **update_attributes
         )
 
         if not oauth_client:
