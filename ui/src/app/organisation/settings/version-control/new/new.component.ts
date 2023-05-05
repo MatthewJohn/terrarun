@@ -109,24 +109,27 @@ export class NewComponent implements OnInit {
   }
 
   onSetBasicDetails() {
-    if (this.currentOrganisation?.name) {
-      this.oauthClientService.create(
-        this.currentOrganisation.name,
-        this.basicDetailsForm.get('name')?.value,
-        this.basicDetailsForm.get('serviceProvider')?.value,
-        this.basicDetailsForm.get('httpUrl')?.value,
-        this.basicDetailsForm.get('apiUrl')?.value
-      ).then((oauthClientData) => {
-        console.log('Created oauth client');
-        console.log(oauthClientData);
-        this.oauthClientData = oauthClientData;
-        this.callbackUrl = this.oauthClientData.attributes['callback-url'];
-      }).catch(() => {
-        this.showError("Failed to register application. Please reload the page and try again.")
-      });
-    } else {
+    // Check if organisation name is available
+    if (! this.currentOrganisation?.name) {
       this.showError("An internal error occured whilst obtaining organisation. Please reload the page and try again");
+      return;
     }
+
+    this.oauthClientService.create(
+      this.currentOrganisation.name,
+      this.basicDetailsForm.get('name')?.value,
+      this.basicDetailsForm.get('serviceProvider')?.value,
+      this.basicDetailsForm.get('httpUrl')?.value,
+      this.basicDetailsForm.get('apiUrl')?.value
+    ).then((oauthClientData) => {
+
+      // Once oauth service has been created, populate
+      // the member variable to details about the oauth service
+      this.oauthClientData = oauthClientData;
+      this.callbackUrl = this.oauthClientData.attributes['callback-url'];
+    }).catch(() => {
+      this.showError("Failed to register application. Please reload the page and try again.")
+    });
   }
 
   initiateAuthorisation() {
