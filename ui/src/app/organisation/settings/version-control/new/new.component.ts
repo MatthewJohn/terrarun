@@ -136,8 +136,8 @@ export class NewComponent implements OnInit {
 
     this.oauthClientService.update(
       this.oauthClientData.id,
-      {"client-id": this.secretsForm.get('clientId')?.value,
-       "secret": this.secretsForm.get('secret')?.value}
+      {"key": this.secretsForm.get('clientId')?.value,
+       "secret": this.secretsForm.get('clientSecret')?.value}
     ).then((oauthClientData) => {
       this.oauthClientData = oauthClientData;
       this.initiateAuthorisation();
