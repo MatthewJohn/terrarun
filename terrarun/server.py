@@ -31,6 +31,7 @@ from terrarun.models.apply import Apply
 from terrarun.models.audit_event import AuditEvent
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
+from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.lifecycle import Lifecycle
 from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.project import Project
@@ -264,6 +265,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformUserTokens,
             '/api/v2/users/<string:user_id>/authentication-tokens'
+        )
+        self._api.add_resource(
+            ApiUserGithubAppOauthTokens,
+            '/api/v2/users/<string:user_id>/github-app-oauth-tokens'
         )
 
         # Custom Terrarun-specific endpoints
@@ -581,6 +586,31 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
         )
         return {
             "data": user_token.get_creation_api_details()
+        }
+
+
+class ApiUserGithubAppOauthTokens(AuthenticatedEndpoint):
+    """Get github app oauth tokens for user"""
+
+    def check_permissions_get(self, user_id, current_user, current_job, *args, **kwargs):
+        """Check if user has permission to modify user tokens"""
+        target_user = User.get_by_api_id(user_id)
+        # @TODO Do not return 403 when user does not exist
+        if not target_user:
+            return False
+        return UserPermissions(current_user=current_user, user=target_user).check_permission(
+            UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
+
+    def _get(self, user_id, current_user, current_job):
+        """Return tokens for user"""
+        user = User.get_by_api_id(user_id)
+        if not user_id:
+            return {}, 404
+        return {
+            "data": [
+                github_app_oauth_token.get_api_details()
+                for github_app_oauth_token in GithubAppOauthToken.get_by_user(user)
+            ]
         }
 
 
@@ -2876,4 +2906,4 @@ class OauthAuthoriseCallback(AuthenticatedEndpoint):
         if not oauth_token:
             return {}, 400
 
-        return {}, 200
+        return {"staus": "ok", "message": "Please close this window"}, 200

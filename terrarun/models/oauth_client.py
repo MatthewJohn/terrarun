@@ -7,10 +7,12 @@ import urllib.parse
 import sqlalchemy
 import sqlalchemy.orm
 from flask import redirect, make_response
+import requests
 
 import terrarun.database
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
+from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.oauth_token import OauthToken
 import terrarun.utils
 import terrarun.config
@@ -65,6 +67,7 @@ class OauthServiceGitlabEnterpriseEdition(BaseOauthServiceProvider):
         """Return display name"""
         return "Gitlab Enterprise Edition"
 
+
 class OauthServiceGithub(BaseOauthServiceProvider):
     """Oauth service for Github hosted"""
 
@@ -72,6 +75,22 @@ class OauthServiceGithub(BaseOauthServiceProvider):
     def display_name(self):
         """Return display name"""
         return "Github"
+
+    def _user_current_username(self, token):
+        """Get username for authenticated user"""
+        res = requests.get(
+            f"{self._oauth_client.api_url}/user",
+            headers={
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json"
+            }
+        )
+
+        if res.status_code != 200:
+            return None
+
+        return res.json().get("login", None)
 
     def get_authorise_response_object(self):
         """Obtain redirect location and cookie to be set"""
@@ -93,6 +112,28 @@ class OauthServiceGithub(BaseOauthServiceProvider):
 
         return response_obj, session
 
+    def _generate_access_token(self, code):
+        """Generate a github access token using temporary code"""
+        res = requests.post(
+            f"{self._oauth_client.http_url}/login/oauth/access_token",
+            headers={
+                "Accept": "application/json"
+            },
+            params={
+                "client_id": self._oauth_client.key,
+                "client_secret": self._oauth_client.secret,
+                "code": code,
+                "redirect_uri": self._oauth_client.callback_url
+            }
+        )
+
+        # Check staus code of access token request
+        if res.status_code != 200:
+            return None
+
+        # @TODO Check token_type and scope
+        return res.json().get("access_token")
+
     def handle_authorise_callback(self, current_user, request, request_session):
         """Handle authorise callback"""
         request_args = request.args
@@ -103,14 +144,22 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         if not state or not cookie_state or state != cookie_state:
             return None
 
-        code = request_args.get("code")
-        if not code:
+        if not (code := request_args.get("code")):
             return None
 
-        return OauthToken.create(
+        # Generate access token
+        access_token = self._generate_access_token(code)
+        if not access_token:
+            return None
+
+        if not (github_username := self._user_current_username(token=access_token)):
+            return None
+
+        return GithubAppOauthToken.create(
             oauth_client=self._oauth_client,
             user=current_user,
-            token=code
+            token=access_token,
+            github_username=github_username
         )
 
 
@@ -213,6 +262,13 @@ class OauthClient(Base, BaseObject):
     def connect_path(self):
         """Return connect path"""
         return f"/auth/{self.callback_id}?organization_id={self.organisation.api_id}"
+
+    def get_relationship(self):
+        """Return relationship data for oauth client."""
+        return {
+            "id": self.api_id,
+            "type": "oauth-clients"
+        }
 
     def get_api_details(self):
         """Return API details for oauth client"""

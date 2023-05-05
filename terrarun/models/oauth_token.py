@@ -31,27 +31,18 @@ class OauthToken(Base, BaseObject):
     ssh_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     token = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
-    user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"))
-    user = sqlalchemy.orm.relationship("User")
-
     @classmethod
-    def create(cls, oauth_client, user, token, session=None):
+    def create(cls, oauth_client, service_provider_user, token, session=None):
         """Create Oauth Token"""
         should_commit = False
         if not session:
             session = Database.get_session()
             should_commit = True
 
-        # Delete any pre-existing tokens for oauth client and user
-        session.query(cls).filter(
-            cls.oauth_client==oauth_client,
-            cls.user==user
-        ).delete()
-
         oauth_token = cls(
             token=token,
             oauth_client=oauth_client,
-            user=user
+            service_provider_user=service_provider_user
         )
 
         session = Database.get_session()
