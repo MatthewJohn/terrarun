@@ -1,4 +1,6 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { OrganisationStateType, StateService } from 'src/app/state.service';
 
 @Component({
   selector: 'app-overview',
@@ -7,9 +9,25 @@ import { Component, OnInit } from '@angular/core';
 })
 export class OverviewComponent implements OnInit {
 
-  constructor() { }
+
+  currentOrganisation: OrganisationStateType | null = null;
+
+  constructor(
+    private state: StateService,
+    private router: Router,
+    private route: ActivatedRoute) {
+
+      this.state.currentOrganisation.subscribe((organisationData) => {
+        this.currentOrganisation = organisationData;
+      });
+  }
 
   ngOnInit(): void {
   }
 
+  handleNewVcsClick() {
+    if ((this.currentOrganisation)) {
+      this.router.navigateByUrl(`/${this.currentOrganisation.id}/settings/version-control/new`)
+    }
+  }
 }

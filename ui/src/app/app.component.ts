@@ -101,7 +101,17 @@ export class AppComponent {
             },
             {
               title: 'Settings',
-              link: `/${this._currentOrganisationState.id}/settings`
+              link: `/${this._currentOrganisationState.id}/settings`,
+              children: [
+                {
+                  title: 'General',
+                  link: `/${this._currentOrganisationState.id}/settings/general`
+                },
+                {
+                  title: 'Version Control',
+                  link: `/${this._currentOrganisationState.id}/settings/version-control`
+                }
+              ]
             }
           ]
         });

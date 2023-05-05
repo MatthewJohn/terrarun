@@ -12,7 +12,7 @@ const routes: Routes = [
     component: GeneralComponent
   },
   {
-    path: 'vcs',
+    path: 'version-control',
     loadChildren: () => import(`./version-control/version-control.module`).then(m => m.VersionControlModule)
   }
 ];

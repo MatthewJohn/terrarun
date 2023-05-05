@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder } from '@angular/forms';
 
 @Component({
   selector: 'app-new',
@@ -7,9 +8,21 @@ import { Component, OnInit } from '@angular/core';
 })
 export class NewComponent implements OnInit {
 
-  constructor() { }
+  createVcsIntegrationForm = this.formBuilder.group({
+    name: '',
+    provider: ''
+  });
+
+  constructor(
+    private formBuilder: FormBuilder,
+  ) {
+  }
 
   ngOnInit(): void {
+  }
+
+  onSetBasicDetails() {
+    console.log("Called onSetBasicDetails")
   }
 
 }

@@ -1,1 +1,37 @@
-<p>new works!</p>
+<nb-card>
+    <nb-card-header>
+        Github Integration (Oauth)
+    </nb-card-header>
+    <nb-card-body>
+      <form [formGroup]="createVcsIntegrationForm">
+        <nb-stepper orientation="horizontal">
+          <nb-step [label]="labelOne">
+            <ng-template #labelOne>Basic Details</ng-template>
+            <h4>Basic Details</h4>
+            <p>
+              <nb-form-field>
+                <label for="name">
+                  Friendly Name
+                </label>
+                <input nbInput id="name" type="text" formControlName="name">
+              </nb-form-field>
+              <br />
+              <nb-form-field>
+                <label for="provider">
+                  Provider
+                </label>
+                <nb-select formControlName="provider">
+                  <nb-option value="github">Github (Oauth)</nb-option>
+                </nb-select>
+
+              </nb-form-field>
+
+            </p>
+            <button nbButton disabled nbStepperNext>Prev</button>
+            <button nbButton nbStepperNext (click)="onSetBasicDetails">Next</button>
+          </nb-step>
+        </nb-stepper>
+      </form>
+    </nb-card-body>
+  </nb-card>
+  
