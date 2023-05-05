@@ -16,15 +16,33 @@
                 <input nbInput id="name" type="text" formControlName="name">
               </nb-form-field>
               <br />
+
               <nb-form-field>
-                <label for="provider">
+                <label for="serviceProvider">
                   Provider
                 </label>
-                <nb-select formControlName="provider">
+                <nb-select (selectedChange)="onServiceProviderChange()" formControlName="serviceProvider">
                   <nb-option value="github">Github (Oauth)</nb-option>
                 </nb-select>
-
               </nb-form-field>
+
+              <nb-form-field>
+                <label for="httpUrl">
+                  HTTP URL
+                </label>
+                <input nbInput id="httpUrl" type="text" formControlName="httpUrl">
+                For self-hosted Github instances, set this to the base URL of the installation.
+              </nb-form-field>
+              <br />
+
+              <nb-form-field>
+                <label for="apiUrl">
+                  HTTP URL
+                </label>
+                <input nbInput id="apiUrl" type="text" formControlName="apiUrl">
+                For self-hosted Github instances, set this to the API endpoint. E.g. <code>https://gh.example.com/api/v3</code>.
+              </nb-form-field>
+
             </form>
           <!-- </p> -->
           <button nbButton disabled nbStepperPrevious>Prev</button>

@@ -26,7 +26,9 @@ export class NewComponent implements OnInit {
     this.changeEvent = null;
     this.basicDetailsForm = this.formBuilder.group({
       name: '',
-      provider: 'github'
+      serviceProvider: '',
+      httpUrl: '',
+      apiUrl: ''
     });
     this.basicDetailsForm.setValidators(this.getBasicDetailsFormValidators());
 
@@ -38,6 +40,16 @@ export class NewComponent implements OnInit {
   }
 
   ngOnInit(): void {
+  }
+
+  onServiceProviderChange() {
+    // Update default HTTP URL and API after change of service provider
+    if (this.basicDetailsForm.get('serviceProvider')?.value == 'github') {
+      let formValues = this.basicDetailsForm.value;
+      formValues.httpUrl = 'https://github.com';
+      formValues.apiUrl = 'https://api.github.com'
+      this.basicDetailsForm.setValue(formValues);
+    }
   }
 
   handleStepChange(e: NbStepChangeEvent): void {
