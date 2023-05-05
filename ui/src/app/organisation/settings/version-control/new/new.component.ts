@@ -76,8 +76,11 @@ export class NewComponent implements OnInit {
     if (this.changeEvent.index > this.changeEvent.previouslySelectedIndex) {
       // Check the step progress
       if (this.changeEvent.index == 1) {
-        // Move to step 2
+        // Handle submission of basic details
         this.onSetBasicDetails();
+      } else if (this.changeEvent.index == 2) {
+        // Handle submission of secrets
+        this.onSetSecrets();
       }
     }
   }
@@ -98,7 +101,6 @@ export class NewComponent implements OnInit {
   }
 
   onSetBasicDetails() {
-    console.log("Called onSetBasicDetails");
     if (this.currentOrganisation?.name) {
       this.oauthClientService.create(
         this.currentOrganisation.name,
@@ -113,6 +115,34 @@ export class NewComponent implements OnInit {
       }).catch(() => {
         this.showError("Failed to register application. Please reload the page and try again.")
       });
+    } else {
+      this.showError("An internal error occured whilst obtaining organisation. Please reload the page and try again");
     }
+  }
+
+  initiateAuthorisation() {
+    console.log("Starting authorisation process")
+  }
+
+  onSetSecrets() {
+    if ( ! this.currentOrganisation?.name) {
+      this.showError("An internal error occured whilst obtaining organisation. Please reload the page and try again");
+      return;
+    }
+    if (! this.oauthClientData?.id) {
+      this.showError("ID of new oauth client not found. Please reload the page and try again");
+      return;
+    }
+
+    this.oauthClientService.update(
+      this.oauthClientData.id,
+      {"client-id": this.secretsForm.get('clientId')?.value,
+       "secret": this.secretsForm.get('secret')?.value}
+    ).then((oauthClientData) => {
+      this.oauthClientData = oauthClientData;
+      this.initiateAuthorisation();
+    }).catch(() => {
+      this.showError("Failed to register secrets. Please reload and try again.")
+    });
   }
 }
