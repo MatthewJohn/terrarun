@@ -6,6 +6,7 @@ import { OverviewComponent } from './overview/overview.component';
 import { NewComponent } from './new/new.component';
 import { NbButtonModule, NbCardModule, NbDialogModule, NbFormFieldModule, NbInputModule, NbSelectModule, NbStepperModule } from '@nebular/theme';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ComponentsModule } from 'src/app/components/components.module';
 
 
 @NgModule({
@@ -27,6 +28,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     NbFormFieldModule,
     NbSelectModule,
     NbDialogModule.forRoot({}),
+    ComponentsModule
   ]
 })
 export class VersionControlModule { }

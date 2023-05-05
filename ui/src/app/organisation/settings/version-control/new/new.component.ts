@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { NbDialogService, NbStepChangeEvent } from '@nebular/theme';
+import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { OauthClientService } from 'src/app/services/oauth-client.service';
 import { OrganisationStateType, StateService } from 'src/app/state.service';
 
@@ -91,8 +92,8 @@ export class NewComponent implements OnInit {
   }
 
   showError(error: string) {
-    this.dialogService.open(NewComponent, {
-      context: error,
+    this.dialogService.open(ErrorDialogueComponent, {
+      context: {data: error}
     });
   }
 
