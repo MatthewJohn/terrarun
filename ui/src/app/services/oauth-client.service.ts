@@ -83,7 +83,13 @@ export class OauthClientService {
   authorise(oauthClientId: string) {
     // Obtain authorisation endpoint
     this.getDetails(oauthClientId).then((oauthClientData: DataObject<OauthClient>) => {
-      this.http.get<any>(oauthClientData.attributes['connect-path'])
+      console.log("here");
+      this.http.get<any>(oauthClientData.attributes['connect-path']).subscribe((resp: Response) => {
+        let location = resp.headers.get('location');
+        if (location) {
+          window.open(location);
+        }
+      })
     }).catch(() => {
       throw new Error("Unable to obtain oauth client details");
     })

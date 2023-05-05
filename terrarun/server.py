@@ -318,6 +318,12 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/agent-pools'
         )
 
+        # VCS Oauth authorize
+        self._api.add_resource(
+            OauthAuthorise,
+            '/auth/<string:callback_uuid>'
+        )
+
         # Agent APIs
         self._api.add_resource(
             ApiAgentRegister,
@@ -350,12 +356,18 @@ class Server(object):
             'host': self.host,
             'port': self.port,
             'debug': True,
-            'threaded': True
+            'threaded': True,
         }
         if self.ssl_public_key and self.ssl_private_key:
             kwargs['ssl_context'] = (self.ssl_public_key, self.ssl_private_key)
 
         self._app.secret_key = "abcefg"
+        # Set cookie values
+        self._app.config.update({
+            'SESSION_COOKIE_SECURE': True,
+            'SESSION_COOKIE_HTTPONLY': True,
+            'SESSION_COOKIE_SAMESITE': 'Lax',
+        })
 
         self._app.run(**kwargs)
 
@@ -2810,3 +2822,16 @@ class ApiTerraformPlanJsonProvidersSchemas(Resource):
         if not plan:
             return {}, 404
         plan.providers_schemas = providers_schemas_json
+
+
+class OauthAuthorise(Resource):
+    """Provide redirect to oauth authorisation flow"""
+
+    def get(self, callback_uuid):
+        """Provide redirect to oauth endpoint"""
+        oauth_client = OauthClient.get_by_callback_uuid(callback_uuid)
+        if not oauth_client:
+            return {}, 404
+
+        return oauth_client.service_provider_instance.get_authorise_response_object()
+

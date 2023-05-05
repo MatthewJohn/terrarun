@@ -1,8 +1,12 @@
 
 from enum import Enum
+import secrets
 import uuid
+import urllib.parse
+
 import sqlalchemy
 import sqlalchemy.orm
+from flask import redirect, make_response
 
 import terrarun.database
 from terrarun.database import Base, Database
@@ -34,6 +38,15 @@ class BaseOauthServiceProvider:
         """Return display name"""
         raise NotImplementedError
 
+    @property
+    def state_cookie_key(self):
+        """Return cookie key for state"""
+        return f"{self._oauth_client.api_id}_authorize_state"
+
+    @staticmethod
+    def _generate_state_value():
+        """Return random state value"""
+        return secrets.token_urlsafe(15)
 
 class OauthServiceGitlabEnterpriseEdition(BaseOauthServiceProvider):
     """Oauth service for Gitlab Enterprise Edition"""
@@ -50,6 +63,24 @@ class OauthServiceGithub(BaseOauthServiceProvider):
     def display_name(self):
         """Return display name"""
         return "Github"
+
+    def get_authorise_response_object(self):
+        """Obtain redirect location and cookie to be set"""
+        state = self._generate_state_value()
+        query_params = {
+            'client_id': self._oauth_client.key,
+            'response_type': 'code',
+            'scope': 'user,repo,admin:repo_hook',
+            'state': state,
+            'redirect_uri': self._oauth_client.callback_url
+        }
+
+        url = f"{self._oauth_client.http_url}/login/oauth/authorize?{urllib.parse.urlencode(query_params)}"
+
+        response_obj = make_response(redirect(url, code=302))
+        response_obj.set_cookie(self.state_cookie_key, state)
+
+        return response_obj
 
 
 class ServiceProviderFactory:
@@ -94,6 +125,12 @@ class OauthClient(Base, BaseObject):
     oauth_tokens = sqlalchemy.orm.relation("OauthToken", back_populates="oauth_client")
 
     @classmethod
+    def get_by_callback_uuid(cls, callback_uuid):
+        """Return oauth client by callback uuid"""
+        session = Database.get_session()
+        return session.query(cls).where(cls.callback_id==callback_uuid).first()
+
+    @classmethod
     def create(cls, organisation, name, service_provider, key, http_url, api_url, oauth_token_string, private_key, secret, rsa_public_key):
         """Create oauth client"""
         oauth_client = cls(
@@ -135,6 +172,16 @@ class OauthClient(Base, BaseObject):
         """Return instance of service provider"""
         return ServiceProviderFactory.get_by_service_provider_name(self.service_provider)(self)
 
+    @property
+    def callback_url(self):
+        """Return callback URL for oauth client"""
+        return f"{terrarun.config.Config().BASE_URL}/auth/{self.callback_id}/callback"
+
+    @property
+    def connect_path(self):
+        """Return connect path"""
+        return f"/auth/{self.callback_id}?organization_id={self.organisation.api_id}"
+
     def get_api_details(self):
         """Return API details for oauth client"""
         return {
@@ -142,8 +189,8 @@ class OauthClient(Base, BaseObject):
             "type": "oauth-clients",
             "attributes": {
                 "created-at": terrarun.utils.datetime_to_json(self.created_at),
-                "callback-url": f"{terrarun.config.Config().BASE_URL}/auth/{self.callback_id}/callback",
-                "connect-path": f"/auth/{self.callback_id}?organization_id={self.organisation.api_id}",
+                "callback-url": self.callback_url,
+                "connect-path": self.connect_path,
                 "service-provider": self.service_provider.value,
                 "service-provider-display-name": self.service_provider_instance.display_name,
                 "name": self.name,
