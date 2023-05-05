@@ -1,0 +1,41 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { AccountService } from '../account.service';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class OauthClientService {
+
+  constructor(private http: HttpClient,
+              private accountService: AccountService) { }
+
+
+  create(organisationName: string, name: string, serviceProvider: string, httpUrl: string, apiUrl: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.post<any>(
+        `/api/v2/organizations/${organisationName}/oauth-clients`,
+        {
+            data: {
+                type: 'oauth-clients',
+                attributes: {
+                    'name': name,
+                    'service-provider': serviceProvider,
+                    'http-url': httpUrl,
+                    'api-url': apiUrl
+                }
+            }
+        },
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data) => {
+          resolve(data.data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
+}

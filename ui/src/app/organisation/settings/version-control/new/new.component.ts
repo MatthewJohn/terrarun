@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
-import { NbStepChangeEvent } from '@nebular/theme';
+import { NbDialogService, NbStepChangeEvent } from '@nebular/theme';
+import { OauthClientService } from 'src/app/services/oauth-client.service';
+import { OrganisationStateType, StateService } from 'src/app/state.service';
 
 interface ValidatorFn {
   (control: AbstractControl): ValidationErrors | null
@@ -13,16 +15,31 @@ interface ValidatorFn {
 })
 export class NewComponent implements OnInit {
 
+  // Data for input forms for each step
   basicDetailsForm: FormGroup;
   secretsForm: FormGroup;
 
+  // Change event when switching steps
   changeEvent: NbStepChangeEvent|null;
 
-  oauthClientDetails: any;
+  // Store data for created oauth Client
+  oauthClientData: any;
+
+  // Store state about selected organisation
+  currentOrganisation: OrganisationStateType | null = null;
 
   constructor(
+    private stateService: StateService,
     private formBuilder: FormBuilder,
+    private oauthClientService: OauthClientService,
+    private dialogService: NbDialogService
   ) {
+    // Subscribe to current organisation to obtain the current organisation
+    this.stateService.currentOrganisation.subscribe((organisationData) => {
+      this.currentOrganisation = organisationData;
+    });
+
+    // Set default data for form inputs and other member variables
     this.changeEvent = null;
     this.basicDetailsForm = this.formBuilder.group({
       name: '',
@@ -36,7 +53,7 @@ export class NewComponent implements OnInit {
       clientId: '',
       clientSecret: ''
     });
-    this.oauthClientDetails = null;
+    this.oauthClientData = null;
   }
 
   ngOnInit(): void {
@@ -71,10 +88,30 @@ export class NewComponent implements OnInit {
       else return {something: 'someError'};
     };
     return myFun;
-   }
-
-  onSetBasicDetails() {
-    console.log("Called onSetBasicDetails")
   }
 
+  showError(error: string) {
+    this.dialogService.open(NewComponent, {
+      context: error,
+    });
+  }
+
+  onSetBasicDetails() {
+    console.log("Called onSetBasicDetails");
+    if (this.currentOrganisation?.name) {
+      this.oauthClientService.create(
+        this.currentOrganisation.name,
+        this.basicDetailsForm.get('name')?.value,
+        this.basicDetailsForm.get('serviceProvider')?.value,
+        this.basicDetailsForm.get('httpUrl')?.value,
+        this.basicDetailsForm.get('apiUrl')?.value
+      ).then((oauthClientData) => {
+        console.log('Created oauth client');
+        console.log(oauthClientData);
+        this.oauthClientData = oauthClientData;
+      }).catch(() => {
+        this.showError("Failed to register application. Please reload the page and try again.")
+      });
+    }
+  }
 }

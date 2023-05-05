@@ -76,7 +76,7 @@ class OauthClient(Base, BaseObject):
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
-    key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     http_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     api_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     private_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
@@ -150,7 +150,8 @@ class OauthClient(Base, BaseObject):
                 "http-url": self.http_url,
                 "api-url": self.api_url,
                 "key": self.key,
-                "secret": self.secret,
+                # Never return the secret
+                "secret": None,
                 "rsa-public-key": self.rsa_public_key
             },
             "relationships": {
