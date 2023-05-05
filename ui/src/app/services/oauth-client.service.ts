@@ -79,22 +79,4 @@ export class OauthClientService {
       });
     });
   }
-
-  authorise(oauthClientId: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      // Obtain authorisation endpoint
-      this.getDetails(oauthClientId).then((oauthClientData: DataObject<OauthClient>) => {
-        console.log("here");
-        this.http.get<any>(oauthClientData.attributes['connect-path']).subscribe((resp: Response) => {
-          let location = resp.headers.get('location');
-          if (location) {
-            return resolve(location);
-          }
-          return reject("Unable to obtain authorization url");
-        })
-      }).catch(() => {
-        return reject("Unable to obtain oauth client details");
-      })
-    });
-  }
 }

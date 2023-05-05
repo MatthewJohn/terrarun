@@ -48,6 +48,15 @@ class BaseOauthServiceProvider:
         """Return random state value"""
         return secrets.token_urlsafe(15)
 
+    def get_authorise_response_object(self):
+        """Obtain redirect location and cookie to be set"""
+        raise NotImplementedError
+
+    def handle_authorise_callback(self, current_user, request, request_session):
+        """Handle authorise callback"""
+        raise NotImplementedError
+
+
 class OauthServiceGitlabEnterpriseEdition(BaseOauthServiceProvider):
     """Oauth service for Gitlab Enterprise Edition"""
 
@@ -78,9 +87,31 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         url = f"{self._oauth_client.http_url}/login/oauth/authorize?{urllib.parse.urlencode(query_params)}"
 
         response_obj = make_response(redirect(url, code=302))
-        response_obj.set_cookie(self.state_cookie_key, state)
+        session = {
+            self.state_cookie_key: state
+        }
 
-        return response_obj
+        return response_obj, session
+
+    def handle_authorise_callback(self, current_user, request, request_session):
+        """Handle authorise callback"""
+        request_args = request.args
+
+        # Ensure state in request matches cookie
+        state = request_args.get("state")
+        cookie_state = request_session.get(self.state_cookie_key)
+        if not state or not cookie_state or state != cookie_state:
+            return None
+
+        code = request_args.get("code")
+        if not code:
+            return None
+
+        return OauthToken.create(
+            oauth_client=self._oauth_client,
+            user=current_user,
+            token=code
+        )
 
 
 class ServiceProviderFactory:
@@ -148,12 +179,13 @@ class OauthClient(Base, BaseObject):
         session = Database.get_session()
         session.add(oauth_client)
 
-        if oauth_token_string:
-            OauthToken.create(
-                oauth_client=oauth_client,
-                token=oauth_token_string,
-                session=session
-            )
+        # @TODO How should user for oauth token be handled?
+        # if oauth_token_string:
+        #     OauthToken.create(
+        #         oauth_client=oauth_client,
+        #         token=oauth_token_string,
+        #         session=session
+        #     )
         session.commit()
         return oauth_client
 

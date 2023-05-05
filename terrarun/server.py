@@ -12,7 +12,7 @@ from time import sleep
 import traceback
 import os
 
-from flask import Flask, make_response, request
+from flask import Flask, make_response, request, session
 from sqlalchemy import desc
 from sqlalchemy.orm import scoped_session
 import flask
@@ -323,6 +323,10 @@ class Server(object):
             OauthAuthorise,
             '/auth/<string:callback_uuid>'
         )
+        self._api.add_resource(
+            OauthAuthoriseCallback,
+            '/auth/<string:callback_uuid>/callback'
+        )
 
         # Agent APIs
         self._api.add_resource(
@@ -378,6 +382,9 @@ class AuthenticatedEndpoint(Resource):
     def _get_current_user(self):
         """Obtain current user based on API token key in request"""
         authorization_header = request.headers.get('Authorization', '')
+        if not authorization_header:
+            authorization_header = session.get('Authorization', '')
+
         # @TODO don't use regex
         auth_token = re.sub(r'^Bearer ', '', authorization_header)
         user_token = UserToken.get_by_token(auth_token)
@@ -517,6 +524,11 @@ class ApiAuthenticate(Resource):
             return {}, 403
 
         token = UserToken.create(user=user, type=UserTokenType.UI)
+
+        # Set Authorization session token
+        session['Authorization'] = token.token
+        session.modified = True
+
         return {"data": token.get_creation_api_details()}
 
 
@@ -2833,5 +2845,35 @@ class OauthAuthorise(Resource):
         if not oauth_client:
             return {}, 404
 
-        return oauth_client.service_provider_instance.get_authorise_response_object()
+        response_object, session_changes = oauth_client.service_provider_instance.get_authorise_response_object()
+        session.update(**session_changes)
+        session.modified = True
+        return response_object
 
+
+class OauthAuthoriseCallback(AuthenticatedEndpoint):
+    """Provide interface to handle oauth callbacks"""
+
+    def check_permissions_get(self, current_user, current_job, callback_uuid):
+        oauth_client = OauthClient.get_by_callback_uuid(callback_uuid)
+        if not oauth_client:
+            return False
+
+        return OrganisationPermissions(organisation=oauth_client.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, callback_uuid, current_user, current_job):
+        """Handle oauth callback"""
+        oauth_client = OauthClient.get_by_callback_uuid(callback_uuid)
+        if not oauth_client:
+            return {}, 404
+
+        oauth_token = oauth_client.service_provider_instance.handle_authorise_callback(
+            current_user=current_user,
+            request=request,
+            request_session=session
+        )
+        if not oauth_token:
+            return {}, 400
+
+        return {}, 200

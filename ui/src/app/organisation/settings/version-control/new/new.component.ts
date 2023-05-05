@@ -33,7 +33,8 @@ export class NewComponent implements OnInit {
   currentOrganisation: OrganisationStateType | null = null;
 
   // Url to send user to
-  authorizeUrl: string;
+  authoriseUrlLoading: boolean;
+  authoriseUrl: string;
 
   constructor(
     private stateService: StateService,
@@ -62,7 +63,8 @@ export class NewComponent implements OnInit {
     });
     this.oauthClientData = undefined;
     this.callbackUrl = '';
-    this.authorizeUrl = '';
+    this.authoriseUrlLoading = true;
+    this.authoriseUrl = '';
   }
 
   ngOnInit(): void {
@@ -139,11 +141,8 @@ export class NewComponent implements OnInit {
       return;
     }
 
-    this.oauthClientService.authorise(this.oauthClientData.id).then((location) => {
-      this.authorizeUrl = location;
-    }).catch((err) => {
-      this.showError(err);
-    });
+    this.authoriseUrl = this.oauthClientData.attributes['connect-path'];
+    this.authoriseUrlLoading = false;
   }
 
   onSetSecrets() {
