@@ -2,13 +2,13 @@
     <nb-card-header>
         Github Integration (Oauth)
     </nb-card-header>
-    <nb-card-body>
-      <form [formGroup]="createVcsIntegrationForm">
-        <nb-stepper orientation="horizontal">
-          <nb-step [label]="labelOne">
-            <ng-template #labelOne>Basic Details</ng-template>
-            <h4>Basic Details</h4>
-            <p>
+    <nb-card-body style="padding: 50px">
+      <nb-stepper orientation="horizontal" (stepChange)="handleStepChange($event)">
+        <nb-step [label]="labelOne" [stepControl]="basicDetailsForm">
+          <ng-template #labelOne>Basic Details</ng-template>
+          <h4>Basic Details</h4>
+          <!-- <p> -->
+            <form [formGroup]="basicDetailsForm">
               <nb-form-field>
                 <label for="name">
                   Friendly Name
@@ -25,13 +25,52 @@
                 </nb-select>
 
               </nb-form-field>
+            </form>
+          <!-- </p> -->
+          <button nbButton disabled nbStepperPrevious>Prev</button>
+          <button nbButton nbStepperNext>Next</button>
+        </nb-step>
 
-            </p>
-            <button nbButton disabled nbStepperNext>Prev</button>
-            <button nbButton nbStepperNext (click)="onSetBasicDetails">Next</button>
-          </nb-step>
-        </nb-stepper>
-      </form>
+        <nb-step [label]="labelTwo" [stepControl]="secretsForm">
+          <ng-template #labelTwo>Setup Application</ng-template>
+          <h4>Setup Application</h4>
+          <!-- <p> -->
+            Configure a new application in Github from <a href="https://github.com/settings/applications/new">https://github.com/settings/applications/new</a>
+            <ol>
+              <li>Set 'Application Name' to a recognisable name (e.g. 'Terrarun')</li>
+              <li>Set 'Homepage URL' to 'https://localhost'</li>
+              <li>Set 'Application description' to a value of your chosing</li>
+              <li>Set 'Authorization callback URL' to: <code>{{ oauthClientDetails?.callbackUrl }}</code></li>
+            </ol>
+            Once created, provide the 'Client ID' below from the resulting page.
+            <br />
+            Under 'Client Secrets', click 'Generate a new client secret'. Enter the provided secret below.
+          <!-- </p> -->
+          <!-- <p> -->
+            <br />
+            <br />
+            <form [formGroup]="secretsForm">
+              <nb-form-field>
+                <label for="clientId">
+                  Client ID
+                </label>
+                <input nbInput id="clientId" type="text" formControlName="clientId">
+              </nb-form-field>
+              <br />
+              <nb-form-field>
+                <label for="clientSecret">
+                  Client Secret
+                </label>
+                <input nbInput id="clientSecret" type="text" formControlName="clientSecret">
+
+              </nb-form-field>
+            </form>
+          <!-- </p> -->
+          <button nbButton nbStepperPrevious>Prev</button>
+          <button nbButton nbStepperNext>Next</button>
+        </nb-step>
+
+      </nb-stepper>
     </nb-card-body>
   </nb-card>
   

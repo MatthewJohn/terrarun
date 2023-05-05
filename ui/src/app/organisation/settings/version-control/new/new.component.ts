@@ -1,5 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import { NbStepChangeEvent } from '@nebular/theme';
+
+interface ValidatorFn {
+  (control: AbstractControl): ValidationErrors | null
+}
 
 @Component({
   selector: 'app-new',
@@ -8,18 +13,53 @@ import { FormBuilder } from '@angular/forms';
 })
 export class NewComponent implements OnInit {
 
-  createVcsIntegrationForm = this.formBuilder.group({
-    name: '',
-    provider: ''
-  });
+  basicDetailsForm: FormGroup;
+  secretsForm: FormGroup;
+
+  changeEvent: NbStepChangeEvent|null;
+
+  oauthClientDetails: any;
 
   constructor(
     private formBuilder: FormBuilder,
   ) {
+    this.changeEvent = null;
+    this.basicDetailsForm = this.formBuilder.group({
+      name: '',
+      provider: 'github'
+    });
+    this.basicDetailsForm.setValidators(this.getBasicDetailsFormValidators());
+
+    this.secretsForm = this.formBuilder.group({
+      clientId: '',
+      clientSecret: ''
+    });
+    this.oauthClientDetails = null;
   }
 
   ngOnInit(): void {
   }
+
+  handleStepChange(e: NbStepChangeEvent): void {
+    this.changeEvent = e;
+    // If going forwards in steps
+    if (this.changeEvent.index > this.changeEvent.previouslySelectedIndex) {
+      // Check the step progress
+      if (this.changeEvent.index == 1) {
+        // Move to step 2
+        this.onSetBasicDetails();
+      }
+    }
+  }
+
+  getBasicDetailsFormValidators() : ValidatorFn {
+    let myFun = (c: AbstractControl): ValidationErrors | null => {
+      console.log(c.get('name'));
+      if (c.valid) return null;
+      else return {something: 'someError'};
+    };
+    return myFun;
+   }
 
   onSetBasicDetails() {
     console.log("Called onSetBasicDetails")
