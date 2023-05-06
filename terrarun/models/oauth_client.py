@@ -155,11 +155,10 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         if not (github_username := self._user_current_username(token=access_token)):
             return None
 
-        return GithubAppOauthToken.create(
+        return OauthToken.create(
             oauth_client=self._oauth_client,
-            user=current_user,
             token=access_token,
-            github_username=github_username
+            service_provider_user=github_username
         )
 
 
