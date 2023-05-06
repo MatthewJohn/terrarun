@@ -65,9 +65,15 @@ class AuthorisedRepo(Base, BaseObject):
 
     @classmethod
     def get_by_provider_id(cls, oauth_token, provider_id):
-        """Get authorised app by external Id and oauth client"""
+        """Get authorised repo by external Id and oauth token"""
         session = Database.get_session()
         return session.query(cls).filter(cls.oauth_token==oauth_token, cls.provider_id==provider_id).first()
+
+    @classmethod
+    def get_by_external_id(cls, oauth_token, external_id):
+        """Get authorised repo by external_id and oauth token"""
+        session = Database.get_session()
+        return session.query(cls).filter(cls.oauth_token==oauth_token, cls.external_id==external_id).first()
 
     def get_api_details(self):
         """Return API details"""

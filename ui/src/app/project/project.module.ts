@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NbButtonModule } from '@nebular/theme';
+import { NbButtonModule, NbListModule } from '@nebular/theme';
 
 
 import { ProjectRoutingModule } from './project-routing.module';
@@ -15,6 +15,7 @@ import { NbCardModule } from '@nebular/theme';
   imports: [
     NbCardModule,
     NbButtonModule,
+    NbListModule,
 
     CommonModule,
     ProjectRoutingModule

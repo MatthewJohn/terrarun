@@ -1,8 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
+import { OauthClient } from 'src/app/interfaces/oauth-client';
+import { ResponseObject, ResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { OrganisationService } from 'src/app/organisation.service';
 import { ProjectService } from 'src/app/project.service';
+import { OauthTokenService } from 'src/app/services/oauth-token.service';
 import { OrganisationStateType, ProjectStateType, StateService } from 'src/app/state.service';
 import { WorkspaceService } from 'src/app/workspace.service';
 
@@ -20,12 +24,15 @@ export class OverviewComponent implements OnInit {
   organisationOauthClients: any[];
   organisationDetails: any;
   projectDetails: any;
+  selectedOauthClient: any | null;
+  authorisedRepos: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships>[];
 
   constructor(
     private stateService: StateService,
     private projectService: ProjectService,
     private workspaceService: WorkspaceService,
     private organisationService: OrganisationService,
+    private oauthTokenService: OauthTokenService,
     private router: Router
   ) {
     this.currentProject = new Observable();
@@ -34,6 +41,8 @@ export class OverviewComponent implements OnInit {
     this.projectDetails = null;
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
+    this.selectedOauthClient = null;
+    this.authorisedRepos = [];
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -42,8 +51,28 @@ export class OverviewComponent implements OnInit {
     });
   }
 
-  onOauthClientSelect(oauthClientDetails: any) {
-    
+  onOauthClientSelect(oauthClient: any) {
+    this.selectedOauthClient = oauthClient;
+    if (oauthClient?.relationships['oauth-tokens'].data && oauthClient.relationships['oauth-tokens'].data[0].id) {
+      this.oauthTokenService.getAuthorisedRepos(oauthClient.relationships['oauth-tokens'].data[0].id).then((data) => {
+        this.authorisedRepos = data;
+      });
+    } else {
+      // Otherwise, clear list of repos
+      this.authorisedRepos = [];
+    }
+  }
+
+  onSelectRepository(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships>) {
+    this.projectService.update(
+      this.projectDetails.data.id,
+      {
+        "vcs-repo": {
+          "identifier": authorisedRepo.attributes.name,
+          "oauth-token-id": authorisedRepo.relationships['oauth-token'].data.id
+        }
+      }
+    )
   }
 
   ngOnInit(): void {
@@ -56,7 +85,7 @@ export class OverviewComponent implements OnInit {
 
       if (currentOrganisation.name) {
         this.organisationService.getOrganisationOauthClients(currentOrganisation.name).then((data) => {
-          this.organisationOauthClients = data;
+          this.organisationOauthClients = data.filter((val: any) => val.relationships["oauth-tokens"].data.length);
         })
       }
 

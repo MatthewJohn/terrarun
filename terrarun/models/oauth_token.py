@@ -53,12 +53,6 @@ class OauthToken(Base, BaseObject):
             session.commit()
         return oauth_token
 
-    @classmethod
-    def get_by_oauth_client_and_user(cls, oauth_client, user):
-        """Return oauth tokens by oauth client and user"""
-        session = Database.get_session()
-        session.query(cls).filter(cls.oauth_client==oauth_client, cls.user==user).first()
-
     def delete(self):
         """Delete object"""
         session = Database.get_session()

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { NbDialogService, NbStepChangeEvent } from '@nebular/theme';
 import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
-import { DataObject } from 'src/app/interfaces/data-object';
+import { ResponseObject } from 'src/app/interfaces/response';
 import { OauthClient } from 'src/app/interfaces/oauth-client';
 import { OauthClientService } from 'src/app/services/oauth-client.service';
 import { OrganisationStateType, StateService } from 'src/app/state.service';
@@ -26,7 +26,7 @@ export class NewComponent implements OnInit {
   changeEvent: NbStepChangeEvent|null;
 
   // Store data for created oauth Client
-  oauthClientData: DataObject<OauthClient> | undefined;
+  oauthClientData: ResponseObject<OauthClient> | undefined;
   callbackUrl: string;
 
   // Store state about selected organisation

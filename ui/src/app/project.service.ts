@@ -58,4 +58,21 @@ export class ProjectService {
       { headers: this.accountService.getAuthHeader() }
     );
   }
+
+  update(projectId: string, attributes: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.patch<any>(
+        `/api/v2/projects/${projectId}`,
+        { data: { type: 'projects', 'attributes': attributes } },
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data: any) => {
+          resolve(data.data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
 }

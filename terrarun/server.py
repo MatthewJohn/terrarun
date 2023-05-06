@@ -29,6 +29,7 @@ from terrarun.models.agent_pool import AgentPool
 from terrarun.models.agent_token import AgentToken
 from terrarun.models.apply import Apply
 from terrarun.models.audit_event import AuditEvent
+from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
@@ -1162,22 +1163,51 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, project_id, current_user, current_job):
-        """Create environment"""
+    def _patch(self, project_id, current_user, current_job):
+        """Update attributes of project"""
         project = Project.get_by_api_id(project_id)
         if not project:
             return {}, 404
 
         json_data = flask.request.get_json().get('data', {})
-        if json_data.get('type') != "environments":
+        if json_data.get('type') != "projects":
             return {}, 400
 
         attributes = json_data.get('attributes', {})
-        name = attributes.get('name')
+
+        update_kwargs = {}
+        if 'name' in attributes:
+            update_kwargs['name'] = attributes.get('name')
+
+        if 'variables' in attributes:
+            update_kwargs['variables'] = json.dumps(attributes.get('variables'))
+
+        if 'vcs-repo' in attributes:
+            if 'oauth-token-id' in attributes['vcs-repo'] and 'identifier' in attributes['vcs-repo']:
+                new_oauth_token_id = attributes['vcs-repo']['oauth-token-id']
+                new_vcs_identifier = attributes['vcs-repo']['identifier']
+                # If both settings have been cleared, unset repo
+                if not new_oauth_token_id and not new_vcs_identifier:
+                    update_kwargs['authorised_repo'] = None
+                
+                else:
+                    # Otherwise, attempt to get oauth token and authorised repo
+                    oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
+                    if not oauth_token:
+                        return {}, 400
+
+                    if oauth_token.oauth_client.organisation != project.organisation:
+                        return {}, 400
+
+                    authorised_repo = AuthorisedRepo.get_by_external_id(
+                        oauth_token=oauth_token, external_id=new_vcs_identifier)
+                    if not authorised_repo:
+                        return {}, 400
+                    
+                    update_kwargs['authorised_repo'] = authorised_repo
 
         project.update_attributes(
-            name=name,
-            variables=json.dumps(attributes.get('variables', {}))
+            **update_kwargs
         )
 
         return {
