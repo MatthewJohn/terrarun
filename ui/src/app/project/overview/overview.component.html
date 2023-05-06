@@ -23,9 +23,15 @@
     <nb-card-body>
 
         <!-- Check if connected to VCS repo -->
-        <ng-container *ngIf="projectDetails && projectDetails.data.attributes['vcs-repo-identifier']; then vcsAttached else vcsNotAttached"></ng-container>
+        <ng-container *ngIf="projectDetails && projectDetails.data.attributes['vcs-repo-identifier'] && !selectAnotherRepo; then vcsAttached else vcsNotAttached"></ng-container>
         <ng-template #vcsAttached>
             Connected to: {{projectDetails.data.attributes["vcs-repo-identifier"]}}
+            <br />
+            <br />
+            <button nbButton (click)="onSelectAnotherRepo()">Change Repository</button>
+            <br />
+            <br />
+            <button nbButton (click)="onSelectRepository(null)">Remove Repository</button>
         </ng-template>
 
         <ng-template #vcsNotAttached>

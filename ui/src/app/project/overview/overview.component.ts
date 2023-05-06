@@ -25,6 +25,11 @@ export class OverviewComponent implements OnInit {
   organisationDetails: any;
   projectDetails: any;
   selectedOauthClient: any | null;
+
+  // Whether the user has started to attach to a new repo
+  selectAnotherRepo: boolean;
+
+  // List of authorised reposities from selected oauth token
   authorisedRepos: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships>[];
 
   constructor(
@@ -43,6 +48,7 @@ export class OverviewComponent implements OnInit {
     this.workspaces = new Map<string, Observable<any>>();
     this.selectedOauthClient = null;
     this.authorisedRepos = [];
+    this.selectAnotherRepo = false;
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -63,16 +69,28 @@ export class OverviewComponent implements OnInit {
     }
   }
 
-  onSelectRepository(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships>) {
+  onSelectAnotherRepo() {
+    this.selectAnotherRepo = true;
+  }
+
+  onSelectRepository(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
     this.projectService.update(
       this.projectDetails.data.id,
       {
         "vcs-repo": {
-          "identifier": authorisedRepo.attributes.name,
-          "oauth-token-id": authorisedRepo.relationships['oauth-token'].data.id
+          "identifier": authorisedRepo ? authorisedRepo.attributes.name : null,
+          "oauth-token-id": authorisedRepo ? authorisedRepo.relationships['oauth-token'].data.id : null
         }
       }
-    )
+    ).then((projectDetails) => {
+      // Update project details from response
+      this.projectDetails.data = projectDetails;
+
+      // Reset data for selecting VCS provider etc.
+      this.selectAnotherRepo = false;
+      this.selectedOauthClient = null;
+      this.authorisedRepos = [];
+    })
   }
 
   ngOnInit(): void {
