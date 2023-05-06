@@ -39,6 +39,7 @@ class AuthorisedRepo(Base, BaseObject):
     oauth_token = sqlalchemy.orm.relationship("OauthToken", back_populates="authorised_repos")
 
     projects = sqlalchemy.orm.relation("Project", back_populates="authorised_repo")
+    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="_authorised_repo")
 
     @classmethod
     def create(cls, oauth_token, provider_id, external_id, display_identifier, name, http_url, session=None):
