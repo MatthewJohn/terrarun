@@ -172,18 +172,20 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             repo_external_id = repo.get("full_name")
             repo_display_identifier = repo.get("full_name")
             repo_name = repo.get("full_name")
+            repo_http_url = repo.get("html_url")
 
             if not (authorised_repo := AuthorisedRepo.get_by_provider_id(
                     provider_id=repo_provider_id, oauth_token=oauth_token)):
                 # Create new authorised repo
-                authorised_repo = AuthorisedRepo(
+                authorised_repo = AuthorisedRepo.create(
                     provider_id=repo_provider_id,
                     external_id=repo_external_id,
                     display_identifier=repo_display_identifier,
                     name=repo_name,
-                    oauth_token=oauth_token
+                    oauth_token=oauth_token,
+                    http_url=repo_http_url,
+                    session=session
                 )
-                session.add(authorised_repo)
 
             else:
                 # Check for repo name modifications
@@ -197,6 +199,10 @@ class OauthServiceGithub(BaseOauthServiceProvider):
 
                 if authorised_repo.name != repo_name:
                     authorised_repo.name = repo_name
+                    session.add(authorised_repo)
+
+                if authorised_repo.http_url != repo_http_url:
+                    authorised_repo.http_url = repo_http_url
                     session.add(authorised_repo)
 
         session.commit()

@@ -1,6 +1,7 @@
 
 
 from enum import Enum
+import uuid
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -28,11 +29,38 @@ class AuthorisedRepo(Base, BaseObject):
     display_identifier = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
+    http_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
+    webhook_id = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+
     oauth_token_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
         "oauth_token.id", name="fk_authorised_repo_oauth_token_id_oauth_token_id"),
         nullable=False
     )
     oauth_token = sqlalchemy.orm.relationship("OauthToken", back_populates="authorised_repos")
+
+    projects = sqlalchemy.orm.relation("Project", back_populates="authorised_repo")
+
+    @classmethod
+    def create(cls, oauth_token, provider_id, external_id, display_identifier, name, http_url, session=None):
+        """Create authorised repo"""
+        should_commit = False
+        if session is None:
+            session = Database.get_session()
+            should_commit = True
+
+        authorised_repo = AuthorisedRepo(
+            provider_id=provider_id,
+            external_id=external_id,
+            display_identifier=display_identifier,
+            name=name,
+            oauth_token=oauth_token,
+            http_url=http_url,
+            webhook_id=uuid.uuid4().hex()
+        )
+        session.add(authorised_repo)
+        if should_commit:
+            session.commit()
+        return authorised_repo
 
     @classmethod
     def get_by_provider_id(cls, oauth_token, provider_id):

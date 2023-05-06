@@ -11,6 +11,7 @@ from terrarun.database import Base, Database
 import terrarun.database
 from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
+import terrarun.config
 
 
 class Project(Base, BaseObject):
@@ -47,11 +48,14 @@ class Project(Base, BaseObject):
     terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
     trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
-    vcs_repo = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo")
-    vcs_repo_oath_token_id = None
+
+    authorised_repo_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("authorised_repo.id", name="fk_project_authorised_repo_id_authorised_repo_id"),
+        nullable=True
+    )
+    authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="projects")
     vcs_repo_branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_branch")
     vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="vcs_repo_ingress_submodules")
-    vcs_repo_identifier = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_identifier")
     vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
     working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
@@ -161,8 +165,18 @@ class Project(Base, BaseObject):
                 "terraform-version": self.terraform_version,
                 "trigger-prefixes": [],
                 "updated-at": "2021-08-16T18:54:06.874Z",
-                "vcs-repo": self.vcs_repo,
-                "vcs-repo-identifier": self.vcs_repo_identifier,
+                "vcs-repo": {
+                    "branch": self.vcs_repo_branch,
+                    "ingress-submodules": self.vcs_repo_ingress_submodules,
+                    "tags-regex": self.vcs_repo_tags_regex,
+                    "identifier": self.authorised_repo.external_id,
+                    "display-identifier": self.authorised_repo.display_identifier,
+                    "oauth-token-id": self.authorised_repo.oauth_token.api_id,
+                    "webhook-url": f"{terrarun.config.Config().BASE_URL}/webhooks/vcs/{self.authorised_repo.webhook_id}",
+                    "repository-http-url": self.authorised_repo.http_url,
+                    "service-provider": self.authorised_repo.oauth_token.oauth_client.service_provider.value
+                } if self.authorised_repo else None,
+                "vcs-repo-identifier": self.authorised_repo.display_identifier if self.authorised_repo else None,
                 "working-directory": self.working_directory
             },
             "id": self.api_id,
