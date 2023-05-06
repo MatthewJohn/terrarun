@@ -34,6 +34,7 @@ from terrarun.database import Database
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.lifecycle import Lifecycle
 from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
+from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
@@ -269,6 +270,10 @@ class Server(object):
         self._api.add_resource(
             ApiUserGithubAppOauthTokens,
             '/api/v2/users/<string:user_id>/github-app-oauth-tokens'
+        )
+        self._api.add_resource(
+            ApiOauthTokenAuthorisedRepos,
+            '/api/v2/oauth-tokens/<string:oauth_token_id>/authorized-repos'
         )
 
         # Custom Terrarun-specific endpoints
@@ -2890,7 +2895,7 @@ class OauthAuthoriseCallback(AuthenticatedEndpoint):
             return False
 
         return OrganisationPermissions(organisation=oauth_client.organisation, current_user=current_user).check_permission(
-            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+            OrganisationPermissions.Permissions.CAN_UPDATE_OAUTH)
 
     def _get(self, callback_uuid, current_user, current_job):
         """Handle oauth callback"""
@@ -2907,3 +2912,25 @@ class OauthAuthoriseCallback(AuthenticatedEndpoint):
             return {}, 400
 
         return {"staus": "ok", "message": "Please close this window"}, 200
+
+
+class ApiOauthTokenAuthorisedRepos(AuthenticatedEndpoint):
+    """Interface to obtain repositories using oauth token"""
+
+    def check_permissions_get(self, current_user, current_job, oauth_token_id):
+        oauth_token = OauthToken.get_by_api_id(oauth_token_id)
+        if not oauth_token:
+            return False
+
+        return OrganisationPermissions(organisation=oauth_token.oauth_client.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, current_user, current_job, oauth_token_id):
+        """Obtain list of repositories provided by oauth client"""
+        oauth_token = OauthToken.get_by_api_id(oauth_token_id)
+        if not oauth_token:
+            return False
+
+        return {
+            "data": oauth_token.oauth_client.get_repositories_api_details(oauth_token)
+        }

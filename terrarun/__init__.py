@@ -38,3 +38,4 @@ from terrarun.models.agent_token import AgentToken
 from terrarun.models.oauth_client import OauthClient
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
+from terrarun.models.authorised_repo import AuthorisedRepo

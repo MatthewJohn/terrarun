@@ -11,6 +11,7 @@ import requests
 
 import terrarun.database
 from terrarun.database import Base, Database
+from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.base_object import BaseObject
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.oauth_token import OauthToken
@@ -56,6 +57,10 @@ class BaseOauthServiceProvider:
 
     def handle_authorise_callback(self, current_user, request, request_session):
         """Handle authorise callback"""
+        raise NotImplementedError
+
+    def update_repos(self, oauth_client):
+        """Update stored authorised repos"""
         raise NotImplementedError
 
 
@@ -111,6 +116,91 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         }
 
         return response_obj, session
+
+    def _make_github_api_request(self, oauth_token, method, endpoint, params):
+        """Make Github request"""
+        url = f"{self._oauth_client.api_url}{endpoint}"
+        headers = {
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {oauth_token.token}"
+        }
+        # print(f'Making github request to: {url}')
+        # print(f'params: {params}')
+        # print(f'headers: {headers}')
+        res = method(
+            url,
+            headers=headers,
+            params=params
+        )
+        return res
+
+    def update_repos(self, oauth_token):
+        """Update stored repos"""
+
+        github_repos = []
+        current_page = 1
+        while True:
+            github_repos_res = self._make_github_api_request(
+                oauth_token=oauth_token,
+                method=requests.get,
+                #endpoint=f"/orgs/{oauth_token.service_provider_user}/repos",
+                endpoint=f"/user/repos",
+                params={
+                    # "type": "all",
+                    "per_page": 100,
+                    "page": current_page
+                }
+            )
+            if github_repos_res.status_code != 200:
+                print(f'Got bad response from github org repos: {github_repos_res.status_code}')
+                return None
+            
+            # Add results to all repos list
+            github_repos += github_repos_res.json()
+
+            # If fewer than 100 repos were found,
+            # treat as last page
+            if len(github_repos_res.json()) < 100:
+                break
+
+            current_page += 1
+
+        session = Database.get_session()
+        for repo in github_repos:
+            repo_provider_id = repo.get("id")
+            repo_external_id = repo.get("full_name")
+            repo_display_identifier = repo.get("full_name")
+            repo_name = repo.get("full_name")
+
+            if not (authorised_repo := AuthorisedRepo.get_by_provider_id(
+                    provider_id=repo_provider_id, oauth_token=oauth_token)):
+                # Create new authorised repo
+                authorised_repo = AuthorisedRepo(
+                    provider_id=repo_provider_id,
+                    external_id=repo_external_id,
+                    display_identifier=repo_display_identifier,
+                    name=repo_name,
+                    oauth_token=oauth_token
+                )
+                session.add(authorised_repo)
+
+            else:
+                # Check for repo name modifications
+                if authorised_repo.external_id != repo_external_id:
+                    authorised_repo.external_id = repo_external_id
+                    session.add(authorised_repo)
+
+                if authorised_repo.display_identifier != repo_display_identifier:
+                    authorised_repo.display_identifier = repo_display_identifier
+                    session.add(authorised_repo)
+
+                if authorised_repo.name != repo_name:
+                    authorised_repo.name = repo_name
+                    session.add(authorised_repo)
+
+        session.commit()
+                
 
     def _generate_access_token(self, code):
         """Generate a github access token using temporary code"""
@@ -246,6 +336,14 @@ class OauthClient(Base, BaseObject):
 
         session.delete(self)
         session.commit()
+
+    def get_repositories_api_details(self, oauth_token):
+        """Get API details for oauth client repositories"""
+        self.service_provider_instance.update_repos(oauth_token)
+        return [
+            repo.get_api_details()
+            for repo in oauth_token.authorised_repos
+        ]
 
     @property
     def service_provider_instance(self):

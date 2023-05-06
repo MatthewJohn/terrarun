@@ -31,6 +31,8 @@ class OauthToken(Base, BaseObject):
     ssh_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     token = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
+    authorised_repos = sqlalchemy.orm.relation("AuthorisedRepo", back_populates="oauth_token")
+
     @classmethod
     def create(cls, oauth_client, service_provider_user, token, session=None):
         """Create Oauth Token"""
