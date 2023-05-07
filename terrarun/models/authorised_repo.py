@@ -1,6 +1,7 @@
 
 
 from enum import Enum
+import json
 import uuid
 import sqlalchemy
 import sqlalchemy.orm
@@ -8,6 +9,7 @@ import sqlalchemy.orm
 import terrarun.database
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
+from terrarun.models.blob import Blob
 import terrarun.utils
 
 
@@ -37,6 +39,10 @@ class AuthorisedRepo(Base, BaseObject):
         nullable=False
     )
     oauth_token = sqlalchemy.orm.relationship("OauthToken", back_populates="authorised_repos")
+
+    # Store vendor-specific information about the repository
+    vendor_configuration_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    _vendor_configuration = sqlalchemy.orm.relation("Blob", foreign_keys=[vendor_configuration_id])
 
     projects = sqlalchemy.orm.relation("Project", back_populates="authorised_repo")
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="workspace_authorised_repo")
@@ -74,6 +80,34 @@ class AuthorisedRepo(Base, BaseObject):
         """Get authorised repo by external_id and oauth token"""
         session = Database.get_session()
         return session.query(cls).filter(cls.oauth_token==oauth_token, cls.external_id==external_id).first()
+
+    @property
+    def vendor_configuration(self):
+        """Return vendor configuration"""
+        if self._vendor_configuration and self._vendor_configuration.data:
+            return json.loads(self._vendor_configuration.data.decode('utf-8'))
+        return {}
+
+    def set_vendor_configuration(self, value, session=None):
+        """Set vendor configuration"""
+        should_commit = False
+        if session is None:
+            session = Database.get_session()
+            should_commit = True
+
+        if self._vendor_configuration:
+            vendor_configuration_blob = self._vendor_configuration
+            session.refresh(vendor_configuration_blob)
+        else:
+            vendor_configuration_blob = Blob()
+
+        vendor_configuration_blob.data = bytes(json.dumps(value), 'utf-8')
+
+        session.add(vendor_configuration_blob)
+        self._vendor_configuration = vendor_configuration_blob
+        session.add(self)
+        if should_commit:
+            session.commit()
 
     def get_api_details(self):
         """Return API details"""

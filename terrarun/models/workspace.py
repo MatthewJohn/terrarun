@@ -363,6 +363,11 @@ class Workspace(Base, BaseObject):
         self._vcs_repo_tags_regex = value if value else None
 
     @property
+    def can_run_vcs_build(self):
+        """Return whether a build can be run from VCS"""
+        return bool(self.authorised_repo)
+
+    @property
     def working_directory(self):
         """Return working_directory"""
         if self._working_directory is not None:
