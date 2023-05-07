@@ -177,24 +177,14 @@ class OauthServiceGithub(BaseOauthServiceProvider):
 
     def get_targz_by_commit_ref(self, authorised_repo, commit_ref):
         """Download commit archive and return as targz data"""
-        redirect_res = self._make_github_api_request(
+        data_res = self._make_github_api_request(
             oauth_token=authorised_repo.oauth_token,
             method=requests.get,
             endpoint=f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}/tarball/{commit_ref}'
         )
-        if redirect_res.status_code != 302:
-            print(f"archive redirect is not 302: {redirect_res.status_code}")
-            return None
-
-        if not (redirect_url := redirect_res.headers.get('Location')):
-            print(f"No location header found")
-            return None
-
-        data_res = requests.get(redirect_url)
         if data_res.status_code != 200:
-            print(f"archive data is not 200: {data_res.status_code}")
+            print(f"archive redirect is not 302: {data_res.status_code}")
             return None
-
         return data_res.content
 
     def update_repos(self, oauth_token):
