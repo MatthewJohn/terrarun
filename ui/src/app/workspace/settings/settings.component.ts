@@ -43,7 +43,7 @@ export class SettingsComponent implements OnInit {
       }
     ).then((workspaceDetails) => {
       // Update project details from response
-      this.workspaceDetails.data = workspaceDetails;
+      this.workspaceDetails = workspaceDetails;
     })
   }
 
