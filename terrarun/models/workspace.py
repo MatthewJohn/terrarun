@@ -6,9 +6,12 @@ from enum import Enum
 import re
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.api_error import ApiError
+from terrarun.models.authorised_repo import AuthorisedRepo
 
 from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
+from terrarun.models.oauth_token import OauthToken
 import terrarun.models.organisation
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
@@ -382,6 +385,61 @@ class Workspace(Base, BaseObject):
     def assessments_enabled(self, value):
         """Set assessments_enabled"""
         self._assessments_enabled = value
+
+    def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
+        """Update VCS repo from request"""
+        update_kwargs = {}
+        errors = []
+        # Check if VCS is defined in project
+        if self.project.authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "VCS repo cannot be updated as it's managed in the parent project", "/data/attributes/vcs-repo"
+            )]
+
+        if 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
+            return {}, []
+
+        new_oauth_token_id = vcs_repo_attributes['oauth-token-id']
+        new_vcs_identifier = vcs_repo_attributes['identifier']
+
+        # If both settings have been cleared, unset repo
+        if not new_oauth_token_id and not new_vcs_identifier:
+            return {'authorised_repo': None}, []
+
+        # Otherwise, attempt to get oauth token and authorised repo
+        oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
+        # If oauth token does not exist or is not associated to organisation, return error
+        if (not oauth_token) or oauth_token.oauth_client.organisation != self.project.organisation:
+            return {}, [ApiError(
+                "invalid attribute", "Oauth token does not exist", "/data/attributes/vcs-repo/oauth-token-id"
+            )]
+
+        authorised_repo = AuthorisedRepo.get_by_external_id(
+            oauth_token=oauth_token, external_id=new_vcs_identifier)
+        if not authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "Authorized repo does not exist", "/data/attributes/vcs-repo/identifier"
+            )]
+
+        return {"authorised_repo": authorised_repo}, []
+
+    def update_attributes_from_request(self, attributes):
+        """Update attributes from patch request"""
+        update_kwargs = {}
+        errors = []
+
+        if 'vcs-repo' in attributes:
+            vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
+                vcs_repo_attributes=attributes["vcs-repo"]
+            )
+            errors += vcs_repo_errors
+            update_kwargs.update(vcs_repo_kwargs)
+
+        if errors:
+            return errors
+        
+        self.update_attributes(**update_kwargs)
+        return []
 
     def associate_task(
             self,

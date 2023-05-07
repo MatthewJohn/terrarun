@@ -1429,40 +1429,16 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
 
         attributes = json_data.get('attributes', {})
 
-        update_kwargs = {}
-
-        if 'vcs-repo' in attributes:
-            # Check if VCS is defined in project
-            if workspace.project.authorised_repo:
-                # Reject any changes to the VCS repo
-                return {}, 400
-
-            if 'oauth-token-id' in attributes['vcs-repo'] and 'identifier' in attributes['vcs-repo']:
-                new_oauth_token_id = attributes['vcs-repo']['oauth-token-id']
-                new_vcs_identifier = attributes['vcs-repo']['identifier']
-                # If both settings have been cleared, unset repo
-                if not new_oauth_token_id and not new_vcs_identifier:
-                    update_kwargs['authorised_repo'] = None
-                
-                else:
-                    # Otherwise, attempt to get oauth token and authorised repo
-                    oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
-                    if not oauth_token:
-                        return {}, 400
-
-                    if oauth_token.oauth_client.organisation != workspace.project.organisation:
-                        return {}, 400
-
-                    authorised_repo = AuthorisedRepo.get_by_external_id(
-                        oauth_token=oauth_token, external_id=new_vcs_identifier)
-                    if not authorised_repo:
-                        return {}, 400
-                    
-                    update_kwargs['authorised_repo'] = authorised_repo
-
-        workspace.update_attributes(
-            **update_kwargs
+        errors = workspace.update_attributes_from_request(
+            attributes
         )
+        if errors:
+            return {
+                "errors": [
+                    error.get_api_details()
+                    for error in errors
+                ]
+            }, 422
         return {"data": workspace.get_api_details(effective_user=current_user)}
 
 
