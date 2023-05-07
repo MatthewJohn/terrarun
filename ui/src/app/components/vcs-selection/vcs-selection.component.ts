@@ -9,8 +9,7 @@ import { OrganisationStateType, StateService } from 'src/app/state.service';
 @Component({
   selector: 'app-vcs-selection',
   templateUrl: './vcs-selection.component.html',
-  styleUrls: ['./vcs-selection.component.scss'],
-  providers: [StateService, OauthTokenService, OrganisationService]
+  styleUrls: ['./vcs-selection.component.scss']
 })
 export class VcsSelectionComponent implements OnInit {
 
@@ -49,15 +48,12 @@ export class VcsSelectionComponent implements OnInit {
   ngOnInit(): void {
     // Subscribe to current organisation
     this.stateService.currentOrganisation.subscribe((currentOrganisation) => {
-      console.log("GOT ORGANISATION DETAILS!: ");
-      console.log(currentOrganisation);
       // Store current organisation
       this.currentOrganisation = currentOrganisation;
 
       // Obtain list of oauth clients for organisation
       if (this.currentOrganisation?.name) {
         this.organisationService.getOrganisationOauthClients(this.currentOrganisation.name).then((data) => {
-          console.log("here");
           this.organisationOauthClients = data.filter((val: any) => val.relationships["oauth-tokens"].data.length);
         })
       }
