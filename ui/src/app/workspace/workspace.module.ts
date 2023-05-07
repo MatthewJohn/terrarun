@@ -8,18 +8,23 @@ import { RunListComponent } from './run-list/run-list.component';
 import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbSelectComponent, NbSelectModule, NbTagModule, NbToggleModule, NbTreeGridModule } from '@nebular/theme';
 import { TaskListComponent } from './task-list/task-list.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { SettingsComponent } from './settings/settings.component';
+import { ComponentsModule } from '../components/components.module';
 
 
 @NgModule({
   declarations: [
     OverviewComponent,
     RunListComponent,
-    TaskListComponent
+    TaskListComponent,
+    SettingsComponent
   ],
   imports: [
     CommonModule,
     WorkspaceRoutingModule,
     RunModule,
+
+    ComponentsModule,
 
     NbFormFieldModule,
     NbInputModule,

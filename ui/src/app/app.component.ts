@@ -127,13 +127,21 @@ export class AppComponent {
             link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}`,
             children: [
               {
+                title: 'Overview',
+                link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}`
+              },
+              {
                 title: 'Runs',
                 link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/runs`
               },
               {
                 title: 'Tasks',
                 link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/tasks`
-              }
+              },
+              {
+                title: 'Settings',
+                link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/settings`
+              },
             ]
           })
         }

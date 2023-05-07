@@ -54,7 +54,7 @@ export class OverviewComponent implements OnInit {
       }
     ).then((projectDetails) => {
       // Update project details from response
-      this.projectDetails.data = projectDetails;
+      this.projectDetails = projectDetails;
     })
   }
 

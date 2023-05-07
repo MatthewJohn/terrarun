@@ -67,7 +67,7 @@ export class ProjectService {
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data: any) => {
-          resolve(data.data);
+          resolve(data);
         },
         error: () => {
           reject();
