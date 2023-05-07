@@ -16,52 +16,5 @@
 </nb-card>
 
 
-<nb-card>
-    <nb-card-header>VCS Assignment</nb-card-header>
-    <nb-card-body>
-
-        <!-- Check if connected to VCS repo -->
-        <ng-container *ngIf="projectDetails && projectDetails.data.attributes['vcs-repo-identifier'] && !selectAnotherRepo; then vcsAttached else vcsNotAttached"></ng-container>
-        <ng-template #vcsAttached>
-            Connected to: {{projectDetails.data.attributes["vcs-repo-identifier"]}}
-            <br />
-            <br />
-            <button nbButton (click)="onSelectAnotherRepo()">Change Repository</button>
-            <br />
-            <br />
-            <button nbButton (click)="onSelectRepository(null)">Remove Repository</button>
-        </ng-template>
-
-        <ng-template #vcsNotAttached>
-          <ng-container *ngIf="!organisationOauthClients; then noOauthClients else oauthClientsAvailable"></ng-container>
-          <ng-template #noOauthClients>
-            There are no VCS providers registered, goto <a href="/{{(currentOrganisation | async).name}}/vcs-providers">VCS Providers</a>
-          </ng-template>
-          <ng-template #oauthClientsAvailable>
-              <ng-container *ngIf="selectedOauthClient; then showAvailableRepos else showAvailableOauthClients"></ng-container>
-
-              <ng-template #showAvailableRepos>
-                <nb-card size="tiny">
-                    <nb-card-header>
-                      Select Repository
-                    </nb-card-header>
-                    <nb-list>
-                      <nb-list-item (click)="onSelectRepository(authorisedRepo)" *ngFor="let authorisedRepo of authorisedRepos">
-                        {{ authorisedRepo.attributes.name }}
-                      </nb-list-item>
-                    </nb-list>
-                  </nb-card>
-              </ng-template>
-
-              <ng-template #showAvailableOauthClients>
-                <div>Connect VCS Repo</div>
-                <br />
-                <div *ngFor="let oauthClient of organisationOauthClients">
-                    <button (click)="onOauthClientSelect(oauthClient)" nbButton>{{oauthClient.attributes.name}}</button>
-                </div>
-              </ng-template>
-          </ng-template>
-        </ng-template>
-    </nb-card-body>
-</nb-card>
-
+<app-vcs-selection (onChangeVcs)="onChangeVcs($event)" [vcsConfig]="projectDetails?.data.attributes['vcs-repo']"></app-vcs-selection>
+<!-- <app-vcs-selection></app-vcs-selection> -->

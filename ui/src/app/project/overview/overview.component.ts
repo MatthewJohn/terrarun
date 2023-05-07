@@ -21,34 +21,20 @@ export class OverviewComponent implements OnInit {
   currentProject: Observable<any>;
   workspaceList: string[];
   workspaces: Map<string, Observable<any>>;
-  organisationOauthClients: any[];
   organisationDetails: any;
   projectDetails: any;
-  selectedOauthClient: any | null;
-
-  // Whether the user has started to attach to a new repo
-  selectAnotherRepo: boolean;
-
-  // List of authorised reposities from selected oauth token
-  authorisedRepos: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships>[];
 
   constructor(
     private stateService: StateService,
     private projectService: ProjectService,
     private workspaceService: WorkspaceService,
-    private organisationService: OrganisationService,
-    private oauthTokenService: OauthTokenService,
     private router: Router
   ) {
     this.currentProject = new Observable();
-    this.organisationOauthClients = [];
     this.currentOrganisation = new Observable();
     this.projectDetails = null;
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
-    this.selectedOauthClient = null;
-    this.authorisedRepos = [];
-    this.selectAnotherRepo = false;
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -57,23 +43,7 @@ export class OverviewComponent implements OnInit {
     });
   }
 
-  onOauthClientSelect(oauthClient: any) {
-    this.selectedOauthClient = oauthClient;
-    if (oauthClient?.relationships['oauth-tokens'].data && oauthClient.relationships['oauth-tokens'].data[0].id) {
-      this.oauthTokenService.getAuthorisedRepos(oauthClient.relationships['oauth-tokens'].data[0].id).then((data) => {
-        this.authorisedRepos = data;
-      });
-    } else {
-      // Otherwise, clear list of repos
-      this.authorisedRepos = [];
-    }
-  }
-
-  onSelectAnotherRepo() {
-    this.selectAnotherRepo = true;
-  }
-
-  onSelectRepository(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
+  onChangeVcs(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
     this.projectService.update(
       this.projectDetails.data.id,
       {
@@ -87,9 +57,9 @@ export class OverviewComponent implements OnInit {
       this.projectDetails.data = projectDetails;
 
       // Reset data for selecting VCS provider etc.
-      this.selectAnotherRepo = false;
-      this.selectedOauthClient = null;
-      this.authorisedRepos = [];
+      // this.selectAnotherRepo = false;
+      // this.selectedOauthClient = null;
+      // this.authorisedRepos = [];
     })
   }
 
@@ -100,12 +70,6 @@ export class OverviewComponent implements OnInit {
     this.workspaces = new Map<string, Observable<any>>();
 
     this.stateService.currentOrganisation.subscribe((currentOrganisation: OrganisationStateType) => {
-
-      if (currentOrganisation.name) {
-        this.organisationService.getOrganisationOauthClients(currentOrganisation.name).then((data) => {
-          this.organisationOauthClients = data.filter((val: any) => val.relationships["oauth-tokens"].data.length);
-        })
-      }
 
       this.stateService.currentProject.subscribe((currentProject: ProjectStateType) => {
         // Get list of environments from project details
