@@ -1,6 +1,8 @@
 
 from enum import Enum
+from io import BytesIO
 import secrets
+import tarfile
 import uuid
 import urllib.parse
 
@@ -185,7 +187,32 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         if data_res.status_code != 200:
             print(f"archive redirect is not 302: {data_res.status_code}")
             return None
-        return data_res.content
+
+        data = self._move_archive_into_root(archive_data=data_res.content)
+        return data
+
+    def _move_archive_into_root(self, archive_data):
+        """
+        Github places repo files into sub-directory of archive.
+        Moves contents of sub-directory into the root and
+        generates new archive
+        """
+        original_fh = BytesIO(initial_bytes=archive_data)
+        original_tar = tarfile.open(fileobj=original_fh, mode="r:gz")
+        new_fh = BytesIO(initial_bytes=None)
+        new_tar = tarfile.TarFile.open(fileobj=new_fh, mode="w|gz")
+
+        for member in original_tar.getmembers():
+            f = original_tar.extractfile(member)
+            if f is not None:
+                member.path = '/'.join(member.path.split('/')[1:])
+                new_tar.addfile(member, fileobj=f)
+        original_tar.close()
+        new_tar.close()
+
+        # Seek to beginning and return data from new bytes
+        new_fh.seek(0)
+        return new_fh.read()
 
     def update_repos(self, oauth_token):
         """Update stored repos"""

@@ -1648,7 +1648,6 @@ class ApiTerraformRun(AuthenticatedEndpoint):
                 workspace=workspace,
                 speculative=request_attributes.get('plan-only', False)
             )
-            print("Got here!")
             if not cv:
                 return {}, 400
         else:
