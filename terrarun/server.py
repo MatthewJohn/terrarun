@@ -631,6 +631,8 @@ class ApiTerraformUserDetails(AuthenticatedEndpoint):
     def _get(self, user_id, current_user, current_job):
         """Obtain user details"""
         user = User.get_by_api_id(user_id)
+        if not user:
+            return {}, 404
         return {"data": user.get_api_details(effective_user=current_user)}
 
 
