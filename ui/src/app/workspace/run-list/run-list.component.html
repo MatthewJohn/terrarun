@@ -1,7 +1,13 @@
 <nb-layout>
     <nb-layout-column>
         <nb-card>
+            <nb-card-header>
+                Runs
+            </nb-card-header>
             <nb-card-body>
+                <button (click)="openTriggerRunDialogue()" nbButton>
+                    Trigger Run
+                </button>
                 <table [nbTreeGrid]="runs$ | async" style="table-layout: auto;">
 
                     <tr class="runRow" nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>

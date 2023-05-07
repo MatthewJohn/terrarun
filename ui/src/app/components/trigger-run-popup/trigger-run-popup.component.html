@@ -1,0 +1,51 @@
+<nb-card>
+    <nb-card-header>Trigger Run</nb-card-header>
+    <nb-card-body>
+        <form [formGroup]="triggerForm" (ngSubmit)="onSubmit()">
+
+            <nb-form-field>
+                <label for="comment">
+                    Reason for run
+                </label>
+                <input nbInput id="comment" type="text" formControlName="comment">
+                <br /><br />
+            </nb-form-field>
+
+            <nb-form-field>
+                <label for="type">
+                    Run Type
+                </label>
+                <nb-select (selectedChange)="onTypeChange()" formControlName="type">
+                    <nb-option value="apply">Plan and Apply</nb-option>
+                    <nb-option value="plan">Plan Only</nb-option>
+                    <nb-option value="refresh">Refresh State</nb-option>
+                    <nb-option value="destroy" *ngIf="canDestroy">Destroy</nb-option>
+                </nb-select>
+                <br /><br />
+            </nb-form-field>
+
+            <nb-form-field *ngIf="showTerraformVersion">
+                <label for="terraformVersion">
+                    Terraform Version
+                </label>
+                <nb-select formControlName="terraformVersion">
+                    <nb-option value="1.4.5">1.4.5</nb-option>
+                </nb-select>
+                <br /><br />
+            </nb-form-field>
+
+            <nb-form-field *ngIf="showTerraformDestroyConfirmation">
+                <label for="destroyConfirmation">
+                    Type 'destroy' to confirm a destroy action
+                </label>
+                <input nbInput id="destroyConfirmation" type="text" formControlName="destroyConfirmation">
+                <br /><br />
+            </nb-form-field>
+
+            <span *ngIf="showTerraformDestroyValidationError">Ensure that the destroy confirmation is filled out.<br /><br /></span>
+            <button nbButton (click)="onSubmit()">Submit Run</button>
+            <br />
+
+        </form>
+    </nb-card-body>
+</nb-card>

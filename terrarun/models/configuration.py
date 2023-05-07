@@ -63,6 +63,40 @@ class ConfigurationVersion(Base, BaseObject):
             cv.queue()
         return cv
 
+    @classmethod
+    def generate_from_vcs(cls, workspace, speculative):
+        """Create configuration version from VCS"""
+        service_provider = workspace.authorised_repo.oauth_token.oauth_client.service_provider_instance
+
+        # Obtain branch from workspace
+        branch = workspace.vcs_repo_branch
+        # If it doesn't exist, obtain default branch from repository
+        if not branch:
+            branch = service_provider.get_default_branch(authorised_repo=workspace.authorised_repo)
+
+        if not branch:
+            return None
+
+        commit_ref = service_provider.get_latest_commit_ref(
+            authorised_repo=workspace.authorised_repo, branch=branch
+        )
+        if commit_ref is None:
+            return None
+
+        archive_data = service_provider.get_targz_by_commit_ref(
+            authorised_repo=workspace.authorised_repo, commit_ref=commit_ref
+        )
+        if archive_data is None:
+            return None
+
+        configuration_version = cls.create(
+            workspace=workspace,
+            auto_queue_runs=False,
+            speculative=speculative
+        )
+        configuration_version.process_upload(archive_data)
+        return configuration_version
+
     @property
     def plan_only(self):
         """Return whether only a plan."""
