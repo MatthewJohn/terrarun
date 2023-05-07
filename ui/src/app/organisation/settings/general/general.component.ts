@@ -4,11 +4,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { OrganisationService } from 'src/app/organisation.service';
 
 @Component({
-  selector: 'app-settings',
-  templateUrl: './settings.component.html',
-  styleUrls: ['./settings.component.scss']
+  selector: 'app-settings-general',
+  templateUrl: './general.component.html',
+  styleUrls: ['./general.component.scss']
 })
-export class SettingsComponent implements OnInit {
+export class GeneralComponent implements OnInit {
 
   nameValidStates = {
     invalid: {icon: 'close-outline', valid: false, iconStatus: 'danger'},

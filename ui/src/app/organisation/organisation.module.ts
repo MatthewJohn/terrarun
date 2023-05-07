@@ -8,7 +8,6 @@ import { FormBuilder, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ListComponent } from './list/list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 import { OverviewComponent } from './overview/overview.component';
-import { SettingsComponent } from './settings/settings.component';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { TaskListComponent } from './task-list/task-list.component';
 import { ProjectListComponent } from './project-list/project-list.component';
@@ -22,7 +21,6 @@ import { ProjectListComponent } from './project-list/project-list.component';
     TaskListComponent,
     ProjectListComponent,
     OverviewComponent,
-    SettingsComponent
   ],
   imports: [
     CommonModule,

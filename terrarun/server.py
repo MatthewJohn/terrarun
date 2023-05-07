@@ -12,7 +12,7 @@ from time import sleep
 import traceback
 import os
 
-from flask import Flask, make_response, request
+from flask import Flask, make_response, request, session
 from sqlalchemy import desc
 from sqlalchemy.orm import scoped_session
 import flask
@@ -29,10 +29,13 @@ from terrarun.models.agent_pool import AgentPool
 from terrarun.models.agent_token import AgentToken
 from terrarun.models.apply import Apply
 from terrarun.models.audit_event import AuditEvent
+from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
+from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.lifecycle import Lifecycle
 from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
+from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
 from terrarun.permissions.organisation import OrganisationPermissions
@@ -127,7 +130,8 @@ class Server(object):
         )
         self._api.add_resource(
             ApiTerraformWorkspace,
-            '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
+            '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>',
+            '/api/v2/workspaces/<string:workspace_id>'
         )
         self._api.add_resource(
             ApiTerraformOrganisationWorkspaceRelationshipsProjects,
@@ -151,10 +155,6 @@ class Server(object):
             '/api/v2/oauth-clients/<string:oauth_client_id>'
         )
 
-        self._api.add_resource(
-            ApiTerraformWorkspaces,
-            '/api/v2/workspaces/<string:workspace_id>'
-        )
         self._api.add_resource(
             ApiTerraformWorkspaceConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
@@ -265,6 +265,14 @@ class Server(object):
             ApiTerraformUserTokens,
             '/api/v2/users/<string:user_id>/authentication-tokens'
         )
+        self._api.add_resource(
+            ApiUserGithubAppOauthTokens,
+            '/api/v2/users/<string:user_id>/github-app-oauth-tokens'
+        )
+        self._api.add_resource(
+            ApiOauthTokenAuthorisedRepos,
+            '/api/v2/oauth-tokens/<string:oauth_token_id>/authorized-repos'
+        )
 
         # Custom Terrarun-specific endpoints
         self._api.add_resource(
@@ -318,6 +326,16 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/agent-pools'
         )
 
+        # VCS Oauth authorize
+        self._api.add_resource(
+            OauthAuthorise,
+            '/auth/<string:callback_uuid>'
+        )
+        self._api.add_resource(
+            OauthAuthoriseCallback,
+            '/auth/<string:callback_uuid>/callback'
+        )
+
         # Agent APIs
         self._api.add_resource(
             ApiAgentRegister,
@@ -350,12 +368,18 @@ class Server(object):
             'host': self.host,
             'port': self.port,
             'debug': True,
-            'threaded': True
+            'threaded': True,
         }
         if self.ssl_public_key and self.ssl_private_key:
             kwargs['ssl_context'] = (self.ssl_public_key, self.ssl_private_key)
 
         self._app.secret_key = "abcefg"
+        # Set cookie values
+        self._app.config.update({
+            'SESSION_COOKIE_SECURE': True,
+            'SESSION_COOKIE_HTTPONLY': True,
+            'SESSION_COOKIE_SAMESITE': 'Lax',
+        })
 
         self._app.run(**kwargs)
 
@@ -366,6 +390,9 @@ class AuthenticatedEndpoint(Resource):
     def _get_current_user(self):
         """Obtain current user based on API token key in request"""
         authorization_header = request.headers.get('Authorization', '')
+        if not authorization_header:
+            authorization_header = session.get('Authorization', '')
+
         # @TODO don't use regex
         auth_token = re.sub(r'^Bearer ', '', authorization_header)
         user_token = UserToken.get_by_token(auth_token)
@@ -505,6 +532,11 @@ class ApiAuthenticate(Resource):
             return {}, 403
 
         token = UserToken.create(user=user, type=UserTokenType.UI)
+
+        # Set Authorization session token
+        session['Authorization'] = token.token
+        session.modified = True
+
         return {"data": token.get_creation_api_details()}
 
 
@@ -557,6 +589,31 @@ class ApiTerraformUserTokens(AuthenticatedEndpoint):
         )
         return {
             "data": user_token.get_creation_api_details()
+        }
+
+
+class ApiUserGithubAppOauthTokens(AuthenticatedEndpoint):
+    """Get github app oauth tokens for user"""
+
+    def check_permissions_get(self, user_id, current_user, current_job, *args, **kwargs):
+        """Check if user has permission to modify user tokens"""
+        target_user = User.get_by_api_id(user_id)
+        # @TODO Do not return 403 when user does not exist
+        if not target_user:
+            return False
+        return UserPermissions(current_user=current_user, user=target_user).check_permission(
+            UserPermissions.Permissions.CAN_MANAGE_USER_TOKENS)
+
+    def _get(self, user_id, current_user, current_job):
+        """Return tokens for user"""
+        user = User.get_by_api_id(user_id)
+        if not user_id:
+            return {}, 404
+        return {
+            "data": [
+                github_app_oauth_token.get_api_details()
+                for github_app_oauth_token in GithubAppOauthToken.get_by_user(user)
+            ]
         }
 
 
@@ -1103,23 +1160,22 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, project_id, current_user, current_job):
-        """Create environment"""
+    def _patch(self, project_id, current_user, current_job):
+        """Update attributes of project"""
         project = Project.get_by_api_id(project_id)
         if not project:
             return {}, 404
 
         json_data = flask.request.get_json().get('data', {})
-        if json_data.get('type') != "environments":
+        if json_data.get('type') != "projects":
             return {}, 400
 
         attributes = json_data.get('attributes', {})
-        name = attributes.get('name')
 
-        project.update_attributes(
-            name=name,
-            variables=json.dumps(attributes.get('variables', {}))
-        )
+        errors = project.update_attributes_from_request(attributes)
+
+        if errors:
+            return 
 
         return {
             "data": project.get_api_details()
@@ -1267,12 +1323,29 @@ class ApiTerraformTaskDetails(AuthenticatedEndpoint):
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
-    def check_permissions_get(self, organisation_name, workspace_name, current_user, current_job, *args, **kwargs):
+    def _get_workspace(self, organisation_name, workspace_name, workspace_id):
+        """Obtain workspace given either workspace ID or organisation/workspace names"""
+        # Handle URLs containing organisation and workspace name
+        if organisation_name and workspace_name:
+            organisation = Organisation.get_by_name_id(organisation_name)
+            if not organisation:
+                return None
+
+            return Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        # Handle URLs containing workspace ID
+        elif workspace_id:
+            return Workspace.get_by_api_id(workspace_id)
+        return None
+
+    def check_permissions_get(self, current_user, current_job,
+                              organisation_name=None, workspace_name=None, workspace_id=None,
+                              *args, **kwargs):
         """Check permissions"""
-        organisation = Organisation.get_by_name_id(organisation_name)
-        if not organisation:
-            return False
-        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return False
 
@@ -1282,34 +1355,60 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
             WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def _get(self, organisation_name, workspace_name, current_user, current_job):
+    def _get(self, current_user, current_job,
+             organisation_name=None, workspace_name=None, workspace_id=None):
         """Return workspace details."""
-        organisation = Organisation.get_by_name_id(organisation_name)
-        if not organisation:
-            return {}, 404
-        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return {}, 404
+
         return {"data": workspace.get_api_details(effective_user=current_user)}
 
-
-class ApiTerraformWorkspaces(AuthenticatedEndpoint):
-    """Workspaces details endpoint."""
-
-    def check_permissions_get(self, workspace_id, current_user, current_job, *args, **kwargs):
-        """Check permissions"""
-        workspace = Workspace.get_by_api_id(workspace_id)
+    def check_permissions_patch(self, current_user, current_job,
+                                organisation_name=None, workspace_name=None, workspace_id=None):
+        """Check permissions for updating workspace"""
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return False
 
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
-            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+            WorkspacePermissions.Permissions.CAN_UPDATE)
 
-    def _get(self, workspace_id, current_user, current_job):
-        """Return workspace details."""
-        workspace = Workspace.get_by_api_id(workspace_id)
+    def _patch(self, current_user, current_job,
+               organisation_name=None, workspace_name=None, workspace_id=None):
+        """Update workspace"""
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "workspaces":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+
+        errors = workspace.update_attributes_from_request(
+            attributes
+        )
+        if errors:
+            return {
+                "errors": [
+                    error.get_api_details()
+                    for error in errors
+                ]
+            }, 422
         return {"data": workspace.get_api_details(effective_user=current_user)}
 
 
@@ -1692,7 +1791,7 @@ class ApiTerraformOrganisationOauthClients(AuthenticatedEndpoint):
         return {
             "data": [
                 oauth_client.get_api_details()
-                for oauth_client in organisation.auth_clients
+                for oauth_client in organisation.oauth_clients
             ]
         }
 
@@ -1782,13 +1881,21 @@ class ApiTerraformOauthClient(AuthenticatedEndpoint):
         if data.get("type") != "oauth-clients":
             return {}, 400
 
-        attributes = data.get("attributes", {})
+        request_attributes = data.get("attributes", {})
+
+        # Create dictionary of allowed attributes,
+        # using mapping of request attribtues to model attributes,
+        # adding only if they are present in the request
+        update_attributes = {
+            target_attribute: request_attributes.get(req_attribute)
+            for req_attribute, target_attribute in {
+                "name": "name", "key": "key", "secret": "secret", "ras-public-key": "rsa_public_key"
+            }.items()
+            if req_attribute in request_attributes
+        }
 
         oauth_client.update_attributes(
-            name=attributes.get("name"),
-            key=attributes.get("key"),
-            secret=attributes.get("secret"),
-            rsa_public_key=attributes.get("rsa-public-key")
+            **update_attributes
         )
 
         if not oauth_client:
@@ -1797,6 +1904,26 @@ class ApiTerraformOauthClient(AuthenticatedEndpoint):
         return {
             "data": oauth_client.get_api_details()
         }
+
+    def check_permissions_delete(self, current_user, current_job, oauth_client_id):
+        """Check permissions for modifying oauth client"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+        if not oauth_client:
+            return {}, 404
+
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=oauth_client.organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_UPDATE_OAUTH)
+
+    def _delete(self, oauth_client_id, current_user, current_job):
+        """Delete oauth client"""
+        oauth_client = OauthClient.get_by_api_id(oauth_client_id)
+
+        oauth_client.delete()
+
+        if not oauth_client:
+            return {}, 400
 
 
 class ApiTerraformPlans(AuthenticatedEndpoint):
@@ -2782,3 +2909,68 @@ class ApiTerraformPlanJsonProvidersSchemas(Resource):
         if not plan:
             return {}, 404
         plan.providers_schemas = providers_schemas_json
+
+
+class OauthAuthorise(Resource):
+    """Provide redirect to oauth authorisation flow"""
+
+    def get(self, callback_uuid):
+        """Provide redirect to oauth endpoint"""
+        oauth_client = OauthClient.get_by_callback_uuid(callback_uuid)
+        if not oauth_client:
+            return {}, 404
+
+        response_object, session_changes = oauth_client.service_provider_instance.get_authorise_response_object()
+        session.update(**session_changes)
+        session.modified = True
+        return response_object
+
+
+class OauthAuthoriseCallback(AuthenticatedEndpoint):
+    """Provide interface to handle oauth callbacks"""
+
+    def check_permissions_get(self, current_user, current_job, callback_uuid):
+        oauth_client = OauthClient.get_by_callback_uuid(callback_uuid)
+        if not oauth_client:
+            return False
+
+        return OrganisationPermissions(organisation=oauth_client.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_UPDATE_OAUTH)
+
+    def _get(self, callback_uuid, current_user, current_job):
+        """Handle oauth callback"""
+        oauth_client = OauthClient.get_by_callback_uuid(callback_uuid)
+        if not oauth_client:
+            return {}, 404
+
+        oauth_token = oauth_client.service_provider_instance.handle_authorise_callback(
+            current_user=current_user,
+            request=request,
+            request_session=session
+        )
+        if not oauth_token:
+            return {}, 400
+
+        return {"staus": "ok", "message": "Please close this window"}, 200
+
+
+class ApiOauthTokenAuthorisedRepos(AuthenticatedEndpoint):
+    """Interface to obtain repositories using oauth token"""
+
+    def check_permissions_get(self, current_user, current_job, oauth_token_id):
+        oauth_token = OauthToken.get_by_api_id(oauth_token_id)
+        if not oauth_token:
+            return False
+
+        return OrganisationPermissions(organisation=oauth_token.oauth_client.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, current_user, current_job, oauth_token_id):
+        """Obtain list of repositories provided by oauth client"""
+        oauth_token = OauthToken.get_by_api_id(oauth_token_id)
+        if not oauth_token:
+            return False
+
+        return {
+            "data": oauth_token.oauth_client.get_repositories_api_details(oauth_token)
+        }

@@ -101,7 +101,17 @@ export class AppComponent {
             },
             {
               title: 'Settings',
-              link: `/${this._currentOrganisationState.id}/settings`
+              link: `/${this._currentOrganisationState.id}/settings`,
+              children: [
+                {
+                  title: 'General',
+                  link: `/${this._currentOrganisationState.id}/settings/general`
+                },
+                {
+                  title: 'Version Control',
+                  link: `/${this._currentOrganisationState.id}/settings/version-control`
+                }
+              ]
             }
           ]
         });
@@ -117,13 +127,21 @@ export class AppComponent {
             link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}`,
             children: [
               {
+                title: 'Overview',
+                link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}`
+              },
+              {
                 title: 'Runs',
                 link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/runs`
               },
               {
                 title: 'Tasks',
                 link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/tasks`
-              }
+              },
+              {
+                title: 'Settings',
+                link: `/${this._currentOrganisationState.id}/${this._currentWorkspace.name}/settings`
+              },
             ]
           })
         }

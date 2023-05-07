@@ -66,4 +66,21 @@ export class WorkspaceService {
         { headers: this.accountService.getAuthHeader() }
       );
   }
+
+  update(workspaceId: string, attributes: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.patch<any>(
+        `/api/v2/workspaces/${workspaceId}`,
+        { data: { type: 'workspaces', 'attributes': attributes } },
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data: any) => {
+          resolve(data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
 }

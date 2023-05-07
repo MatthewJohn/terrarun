@@ -1,8 +1,13 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
+import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
+import { OauthClient } from 'src/app/interfaces/oauth-client';
+import { ResponseObject, ResponseObjectWithRelationships } from 'src/app/interfaces/response';
+import { OrganisationService } from 'src/app/organisation.service';
 import { ProjectService } from 'src/app/project.service';
-import { StateService } from 'src/app/state.service';
+import { OauthTokenService } from 'src/app/services/oauth-token.service';
+import { OrganisationStateType, ProjectStateType, StateService } from 'src/app/state.service';
 import { WorkspaceService } from 'src/app/workspace.service';
 
 @Component({
@@ -12,9 +17,12 @@ import { WorkspaceService } from 'src/app/workspace.service';
 })
 export class OverviewComponent implements OnInit {
 
+  currentOrganisation: Observable<any>;
   currentProject: Observable<any>;
   workspaceList: string[];
   workspaces: Map<string, Observable<any>>;
+  organisationDetails: any;
+  projectDetails: any;
 
   constructor(
     private stateService: StateService,
@@ -23,6 +31,8 @@ export class OverviewComponent implements OnInit {
     private router: Router
   ) {
     this.currentProject = new Observable();
+    this.currentOrganisation = new Observable();
+    this.projectDetails = null;
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
   }
@@ -33,16 +43,35 @@ export class OverviewComponent implements OnInit {
     });
   }
 
+  onChangeVcs(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
+    this.projectService.update(
+      this.projectDetails.data.id,
+      {
+        "vcs-repo": {
+          "identifier": authorisedRepo ? authorisedRepo.attributes.name : null,
+          "oauth-token-id": authorisedRepo ? authorisedRepo.relationships['oauth-token'].data.id : null
+        }
+      }
+    ).then((projectDetails) => {
+      // Update project details from response
+      this.projectDetails = projectDetails;
+    })
+  }
+
   ngOnInit(): void {
+    this.currentOrganisation = this.stateService.currentOrganisation;
     this.currentProject = this.stateService.currentProject;
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
 
-    this.stateService.currentOrganisation.subscribe((currentOrganisation) => {
-      this.stateService.currentProject.subscribe((currentProject) => {
+    this.stateService.currentOrganisation.subscribe((currentOrganisation: OrganisationStateType) => {
+
+      this.stateService.currentProject.subscribe((currentProject: ProjectStateType) => {
         // Get list of environments from project details
         if (currentOrganisation.name && currentProject.name) {
           this.projectService.getDetailsByName(currentOrganisation.name, currentProject.name).subscribe((projectDetails) => {
+
+            this.projectDetails = projectDetails;
 
             let workspaces = projectDetails.data.relationships.workspaces.data;
 

@@ -1,14 +1,22 @@
 
 from enum import Enum
+import secrets
 import uuid
+import urllib.parse
+
 import sqlalchemy
 import sqlalchemy.orm
+from flask import redirect, make_response
+import requests
 
 import terrarun.database
 from terrarun.database import Base, Database
+from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.base_object import BaseObject
+from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.oauth_token import OauthToken
 import terrarun.utils
+import terrarun.config
 
 
 class OauthServiceProvider(Enum):
@@ -33,6 +41,28 @@ class BaseOauthServiceProvider:
         """Return display name"""
         raise NotImplementedError
 
+    @property
+    def state_cookie_key(self):
+        """Return cookie key for state"""
+        return f"{self._oauth_client.api_id}_authorize_state"
+
+    @staticmethod
+    def _generate_state_value():
+        """Return random state value"""
+        return secrets.token_urlsafe(15)
+
+    def get_authorise_response_object(self):
+        """Obtain redirect location and cookie to be set"""
+        raise NotImplementedError
+
+    def handle_authorise_callback(self, current_user, request, request_session):
+        """Handle authorise callback"""
+        raise NotImplementedError
+
+    def update_repos(self, oauth_client):
+        """Update stored authorised repos"""
+        raise NotImplementedError
+
 
 class OauthServiceGitlabEnterpriseEdition(BaseOauthServiceProvider):
     """Oauth service for Gitlab Enterprise Edition"""
@@ -42,6 +72,7 @@ class OauthServiceGitlabEnterpriseEdition(BaseOauthServiceProvider):
         """Return display name"""
         return "Gitlab Enterprise Edition"
 
+
 class OauthServiceGithub(BaseOauthServiceProvider):
     """Oauth service for Github hosted"""
 
@@ -49,6 +80,182 @@ class OauthServiceGithub(BaseOauthServiceProvider):
     def display_name(self):
         """Return display name"""
         return "Github"
+
+    def _user_current_username(self, token):
+        """Get username for authenticated user"""
+        res = requests.get(
+            f"{self._oauth_client.api_url}/user",
+            headers={
+                "X-GitHub-Api-Version": "2022-11-28",
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json"
+            }
+        )
+
+        if res.status_code != 200:
+            return None
+
+        return res.json().get("login", None)
+
+    def get_authorise_response_object(self):
+        """Obtain redirect location and cookie to be set"""
+        state = self._generate_state_value()
+        query_params = {
+            'client_id': self._oauth_client.key,
+            'response_type': 'code',
+            'scope': 'user,repo,admin:repo_hook',
+            'state': state,
+            'redirect_uri': self._oauth_client.callback_url
+        }
+
+        url = f"{self._oauth_client.http_url}/login/oauth/authorize?{urllib.parse.urlencode(query_params)}"
+
+        response_obj = make_response(redirect(url, code=302))
+        session = {
+            self.state_cookie_key: state
+        }
+
+        return response_obj, session
+
+    def _make_github_api_request(self, oauth_token, method, endpoint, params):
+        """Make Github request"""
+        url = f"{self._oauth_client.api_url}{endpoint}"
+        headers = {
+            "X-GitHub-Api-Version": "2022-11-28",
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {oauth_token.token}"
+        }
+        # print(f'Making github request to: {url}')
+        # print(f'params: {params}')
+        # print(f'headers: {headers}')
+        res = method(
+            url,
+            headers=headers,
+            params=params
+        )
+        return res
+
+    def update_repos(self, oauth_token):
+        """Update stored repos"""
+
+        github_repos = []
+        current_page = 1
+        while True:
+            github_repos_res = self._make_github_api_request(
+                oauth_token=oauth_token,
+                method=requests.get,
+                #endpoint=f"/orgs/{oauth_token.service_provider_user}/repos",
+                endpoint=f"/user/repos",
+                params={
+                    # "type": "all",
+                    "per_page": 100,
+                    "page": current_page
+                }
+            )
+            if github_repos_res.status_code != 200:
+                print(f'Got bad response from github org repos: {github_repos_res.status_code}')
+                return None
+            
+            # Add results to all repos list
+            github_repos += github_repos_res.json()
+
+            # If fewer than 100 repos were found,
+            # treat as last page
+            if len(github_repos_res.json()) < 100:
+                break
+
+            current_page += 1
+
+        session = Database.get_session()
+        for repo in github_repos:
+            repo_provider_id = repo.get("id")
+            repo_external_id = repo.get("full_name")
+            repo_display_identifier = repo.get("full_name")
+            repo_name = repo.get("full_name")
+            repo_http_url = repo.get("html_url")
+
+            if not (authorised_repo := AuthorisedRepo.get_by_provider_id(
+                    provider_id=repo_provider_id, oauth_token=oauth_token)):
+                # Create new authorised repo
+                authorised_repo = AuthorisedRepo.create(
+                    provider_id=repo_provider_id,
+                    external_id=repo_external_id,
+                    display_identifier=repo_display_identifier,
+                    name=repo_name,
+                    oauth_token=oauth_token,
+                    http_url=repo_http_url,
+                    session=session
+                )
+
+            else:
+                # Check for repo name modifications
+                if authorised_repo.external_id != repo_external_id:
+                    authorised_repo.external_id = repo_external_id
+                    session.add(authorised_repo)
+
+                if authorised_repo.display_identifier != repo_display_identifier:
+                    authorised_repo.display_identifier = repo_display_identifier
+                    session.add(authorised_repo)
+
+                if authorised_repo.name != repo_name:
+                    authorised_repo.name = repo_name
+                    session.add(authorised_repo)
+
+                if authorised_repo.http_url != repo_http_url:
+                    authorised_repo.http_url = repo_http_url
+                    session.add(authorised_repo)
+
+        session.commit()
+                
+
+    def _generate_access_token(self, code):
+        """Generate a github access token using temporary code"""
+        res = requests.post(
+            f"{self._oauth_client.http_url}/login/oauth/access_token",
+            headers={
+                "Accept": "application/json"
+            },
+            params={
+                "client_id": self._oauth_client.key,
+                "client_secret": self._oauth_client.secret,
+                "code": code,
+                "redirect_uri": self._oauth_client.callback_url
+            }
+        )
+
+        # Check staus code of access token request
+        if res.status_code != 200:
+            return None
+
+        # @TODO Check token_type and scope
+        return res.json().get("access_token")
+
+    def handle_authorise_callback(self, current_user, request, request_session):
+        """Handle authorise callback"""
+        request_args = request.args
+
+        # Ensure state in request matches cookie
+        state = request_args.get("state")
+        cookie_state = request_session.get(self.state_cookie_key)
+        if not state or not cookie_state or state != cookie_state:
+            return None
+
+        if not (code := request_args.get("code")):
+            return None
+
+        # Generate access token
+        access_token = self._generate_access_token(code)
+        if not access_token:
+            return None
+
+        if not (github_username := self._user_current_username(token=access_token)):
+            return None
+
+        return OauthToken.create(
+            oauth_client=self._oauth_client,
+            token=access_token,
+            service_provider_user=github_username
+        )
 
 
 class ServiceProviderFactory:
@@ -75,7 +282,7 @@ class OauthClient(Base, BaseObject):
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
-    key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     http_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     api_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     private_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
@@ -93,6 +300,12 @@ class OauthClient(Base, BaseObject):
     oauth_tokens = sqlalchemy.orm.relation("OauthToken", back_populates="oauth_client")
 
     @classmethod
+    def get_by_callback_uuid(cls, callback_uuid):
+        """Return oauth client by callback uuid"""
+        session = Database.get_session()
+        return session.query(cls).where(cls.callback_id==callback_uuid).first()
+
+    @classmethod
     def create(cls, organisation, name, service_provider, key, http_url, api_url, oauth_token_string, private_key, secret, rsa_public_key):
         """Create oauth client"""
         oauth_client = cls(
@@ -105,24 +318,60 @@ class OauthClient(Base, BaseObject):
             private_key=private_key,
             secret=secret,
             rsa_public_key=rsa_public_key,
-            callback_id=uuid.uuid4().hex
+            callback_id=str(uuid.uuid4())
         )
         session = Database.get_session()
         session.add(oauth_client)
 
-        if oauth_token_string:
-            OauthToken.create(
-                oauth_client=oauth_client,
-                token=oauth_token_string,
-                session=session
-            )
+        # @TODO How should user for oauth token be handled?
+        # if oauth_token_string:
+        #     OauthToken.create(
+        #         oauth_client=oauth_client,
+        #         token=oauth_token_string,
+        #         session=session
+        #     )
         session.commit()
         return oauth_client
+
+    def delete(self):
+        """Mark object as deleted"""
+        session = Database.get_session()
+        # Delete any oauth tokens
+        for oauth_token in self.oauth_tokens:
+            oauth_token.delete()
+
+        session.delete(self)
+        session.commit()
+
+    def get_repositories_api_details(self, oauth_token):
+        """Get API details for oauth client repositories"""
+        self.service_provider_instance.update_repos(oauth_token)
+        return [
+            repo.get_api_details()
+            for repo in oauth_token.authorised_repos
+        ]
 
     @property
     def service_provider_instance(self):
         """Return instance of service provider"""
         return ServiceProviderFactory.get_by_service_provider_name(self.service_provider)(self)
+
+    @property
+    def callback_url(self):
+        """Return callback URL for oauth client"""
+        return f"{terrarun.config.Config().BASE_URL}/auth/{self.callback_id}/callback"
+
+    @property
+    def connect_path(self):
+        """Return connect path"""
+        return f"/auth/{self.callback_id}?organization_id={self.organisation.api_id}"
+
+    def get_relationship(self):
+        """Return relationship data for oauth client."""
+        return {
+            "id": self.api_id,
+            "type": "oauth-clients"
+        }
 
     def get_api_details(self):
         """Return API details for oauth client"""
@@ -131,15 +380,16 @@ class OauthClient(Base, BaseObject):
             "type": "oauth-clients",
             "attributes": {
                 "created-at": terrarun.utils.datetime_to_json(self.created_at),
-                "callback-url": f"https://app.terraform.io/auth/{self.callback_id}/callback",
-                "connect-path": f"/auth/{self.callback_id}?organization_id={self.organisation.api_id}",
+                "callback-url": self.callback_url,
+                "connect-path": self.connect_path,
                 "service-provider": self.service_provider.value,
                 "service-provider-display-name": self.service_provider_instance.display_name,
                 "name": self.name,
                 "http-url": self.http_url,
                 "api-url": self.api_url,
                 "key": self.key,
-                "secret": self.secret,
+                # Never return the secret
+                "secret": None,
                 "rsa-public-key": self.rsa_public_key
             },
             "relationships": {

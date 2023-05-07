@@ -2,15 +2,20 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+import json
 import re
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.api_error import ApiError
+from terrarun.models.authorised_repo import AuthorisedRepo
 
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
+from terrarun.models.oauth_token import OauthToken
 from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
+import terrarun.config
 
 
 class Project(Base, BaseObject):
@@ -47,11 +52,14 @@ class Project(Base, BaseObject):
     terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
     trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
-    vcs_repo = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo")
-    vcs_repo_oath_token_id = None
+
+    authorised_repo_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("authorised_repo.id", name="fk_project_authorised_repo_id_authorised_repo_id"),
+        nullable=True
+    )
+    authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="projects")
     vcs_repo_branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_branch")
     vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="vcs_repo_ingress_submodules")
-    vcs_repo_identifier = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_identifier")
     vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
     working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
@@ -138,6 +146,79 @@ class Project(Base, BaseObject):
                 environment=new_environment
             )
 
+    def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
+        """Update VCS repo from request"""
+        # Check if VCS is defined in project
+        if 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
+            return {}, []
+
+        new_oauth_token_id = vcs_repo_attributes['oauth-token-id']
+        new_vcs_identifier = vcs_repo_attributes['identifier']
+
+        # Check if any child workspaces have a repository set
+        errors = []
+        for workspace in self.workspaces:
+            if workspace.workspace_authorised_repo:
+                errors.append(ApiError(
+                    "Child workspace has a VCS repository configured",
+                    f"A child workspace: {workspace.name} has a VCS repo configured",
+                    "/data/attributes/vcs-repo"
+                ))
+        if errors:
+            return {}, errors
+
+        # If both settings have been cleared, unset repo
+        if not new_oauth_token_id and not new_vcs_identifier:
+            return {'authorised_repo': None}, []
+
+        # Otherwise, attempt to get oauth token and authorised repo
+        oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
+        # If oauth token does not exist or is not associated to organisation, return error
+        if (not oauth_token) or oauth_token.oauth_client.organisation != self.organisation:
+            return {}, [ApiError(
+                "invalid attribute", "Oauth token does not exist", "/data/attributes/vcs-repo/oauth-token-id"
+            )]
+
+        authorised_repo = AuthorisedRepo.get_by_external_id(
+            oauth_token=oauth_token, external_id=new_vcs_identifier)
+        if not authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "Authorized repo does not exist", "/data/attributes/vcs-repo/identifier"
+            )]
+
+        return {"authorised_repo": authorised_repo}, []
+
+    def update_attributes_from_request(self, attributes):
+        """Update attributes from request"""
+        update_kwargs = {}
+        errors = []
+        if "name" in attributes and attributes.get("name") != self.name:
+            if self.validate_new_name(self.organisation, name=attributes.get("name")):
+                update_kwargs["name"] = attributes.get("name")
+            else:
+                errors.append("Name is invalid", "Name either already exists or is invalid", "/data/attributes/name")
+
+        if "variables" in attributes:
+            update_kwargs["variables"] = json.dumps(attributes.get("variables"))
+
+        if "vcs-repo" in attributes:
+            vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
+                vcs_repo_attributes=attributes["vcs-repo"]
+            )
+            errors += vcs_repo_errors
+            update_kwargs.update(vcs_repo_kwargs)
+
+        # If any errors have been found, return early
+        # before updating any attributes
+        if errors:
+            return errors
+
+        # Update attributes and return without errors
+        self.update_attributes(
+            **update_kwargs
+        )
+        return []
+
     def get_api_details(self):
         """Return details for workspace."""
         return {
@@ -161,8 +242,18 @@ class Project(Base, BaseObject):
                 "terraform-version": self.terraform_version,
                 "trigger-prefixes": [],
                 "updated-at": "2021-08-16T18:54:06.874Z",
-                "vcs-repo": self.vcs_repo,
-                "vcs-repo-identifier": self.vcs_repo_identifier,
+                "vcs-repo": {
+                    "branch": self.vcs_repo_branch,
+                    "ingress-submodules": self.vcs_repo_ingress_submodules,
+                    "tags-regex": self.vcs_repo_tags_regex,
+                    "identifier": self.authorised_repo.external_id,
+                    "display-identifier": self.authorised_repo.display_identifier,
+                    "oauth-token-id": self.authorised_repo.oauth_token.api_id,
+                    "webhook-url": f"{terrarun.config.Config().BASE_URL}/webhooks/vcs/{self.authorised_repo.webhook_id}",
+                    "repository-http-url": self.authorised_repo.http_url,
+                    "service-provider": self.authorised_repo.oauth_token.oauth_client.service_provider.value
+                } if self.authorised_repo else None,
+                "vcs-repo-identifier": self.authorised_repo.display_identifier if self.authorised_repo else None,
                 "working-directory": self.working_directory
             },
             "id": self.api_id,
