@@ -56,7 +56,7 @@ class AuthorisedRepo(Base, BaseObject):
             name=name,
             oauth_token=oauth_token,
             http_url=http_url,
-            webhook_id=uuid.uuid4().hex()
+            webhook_id=str(uuid.uuid4())
         )
         session.add(authorised_repo)
         if should_commit:
