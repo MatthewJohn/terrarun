@@ -2,17 +2,18 @@
 <nb-card>
     <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
     <nb-card-body>
-        <table id="projectEnvironmentsTable" equalColumnsWidth>
-            <thead>
-                <tr>
-                    <th>Environments</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr *ngFor="let workspaceId of workspaceList" class="environmentRow">
-                    <td (click)="onWorkspaceClick(workspaceId)" *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async).data.attributes.environment}}</td>
-                </tr>
-            </tbody>
-        </table>
+        <nb-card size="tiny">
+            <nb-card-header>
+              Select Environment
+            </nb-card-header>
+            <nb-list>
+              <nb-list-item (click)="onWorkspaceClick(workspaceId)" *ngFor="let workspaceId of workspaceList">
+                <ng-container *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async).data.attributes.environment}}</ng-container>
+              </nb-list-item>
+            </nb-list>
+          </nb-card>
     </nb-card-body>
 </nb-card>
+
+
+<app-vcs-selection (onChangeVcs)="onChangeVcs($event)" [vcsConfig]="projectDetails?.data.attributes['vcs-repo']"></app-vcs-selection>

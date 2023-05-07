@@ -6,9 +6,12 @@ from enum import Enum
 import re
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.api_error import ApiError
+from terrarun.models.authorised_repo import AuthorisedRepo
 
 from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
+from terrarun.models.oauth_token import OauthToken
 import terrarun.models.organisation
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
@@ -19,6 +22,7 @@ import terrarun.models.user
 from terrarun.database import Base, Database
 from terrarun.models.workspace_tag import WorkspaceTag
 import terrarun.database
+import terrarun.config
 
 
 class Workspace(Base, BaseObject):
@@ -67,11 +71,14 @@ class Workspace(Base, BaseObject):
     _terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
     _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
-    _vcs_repo = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo")
-    _vcs_repo_oath_token_id = None
+
+    authorised_repo_id = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("authorised_repo.id", name="fk_workspace_authorised_repo_id_authorised_repo_id"),
+        nullable=True
+    )
+    workspace_authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="workspaces")
     _vcs_repo_branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_branch")
     _vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="vcs_repo_ingress_submodules")
-    _vcs_repo_identifier = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_identifier")
     _vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
     _working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     _assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="assessments_enabled")
@@ -308,28 +315,16 @@ class Workspace(Base, BaseObject):
         self._trigger_patterns = value if value else None
 
     @property
-    def vcs_repo(self):
-        """Return vcs_repo"""
-        if self._vcs_repo is not None:
-            return self._vcs_repo
-        return self.project.vcs_repo
+    def authorised_repo(self):
+        """Return authorised_repo"""
+        if self.workspace_authorised_repo is not None:
+            return self.workspace_authorised_repo
+        return self.project.authorised_repo
 
-    @vcs_repo.setter
-    def vcs_repo(self, value):
-        """Set vcs_repo"""
-        self._vcs_repo = value if value else None
-
-    @property
-    def vcs_repo_oath_token_id(self):
-        """Return vcs_repo_oath_token_id"""
-        if self._vcs_repo_oath_token_id is not None:
-            return self._vcs_repo_oath_token_id
-        return self.project.vcs_repo_oath_token_id
-
-    @vcs_repo_oath_token_id.setter
-    def vcs_repo_oath_token_id(self, value):
-        """Set vcs_repo_oath_token_id"""
-        self._vcs_repo_oath_token_id = value if value else None
+    @authorised_repo.setter
+    def authorised_repo(self, value):
+        """Set authorised_repo"""
+        self.workspace_authorised_repo = value if value else None
 
     @property
     def vcs_repo_branch(self):
@@ -354,18 +349,6 @@ class Workspace(Base, BaseObject):
     def vcs_repo_ingress_submodules(self, value):
         """Set vcs_repo_ingress_submodules"""
         self._vcs_repo_ingress_submodules = value
-
-    @property
-    def vcs_repo_identifier(self):
-        """Return vcs_repo_identifier"""
-        if self._vcs_repo_identifier is not None:
-            return self._vcs_repo_identifier
-        return self.project.vcs_repo_identifier
-
-    @vcs_repo_identifier.setter
-    def vcs_repo_identifier(self, value):
-        """Set vcs_repo_identifier"""
-        self._vcs_repo_identifier = value if value else None
 
     @property
     def vcs_repo_tags_regex(self):
@@ -402,6 +385,59 @@ class Workspace(Base, BaseObject):
     def assessments_enabled(self, value):
         """Set assessments_enabled"""
         self._assessments_enabled = value
+
+    def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
+        """Update VCS repo from request"""
+        # Check if VCS is defined in project
+        if self.project.authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "VCS repo cannot be updated as it's managed in the parent project", "/data/attributes/vcs-repo"
+            )]
+
+        if 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
+            return {}, []
+
+        new_oauth_token_id = vcs_repo_attributes['oauth-token-id']
+        new_vcs_identifier = vcs_repo_attributes['identifier']
+
+        # If both settings have been cleared, unset repo
+        if not new_oauth_token_id and not new_vcs_identifier:
+            return {'authorised_repo': None}, []
+
+        # Otherwise, attempt to get oauth token and authorised repo
+        oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
+        # If oauth token does not exist or is not associated to organisation, return error
+        if (not oauth_token) or oauth_token.oauth_client.organisation != self.project.organisation:
+            return {}, [ApiError(
+                "invalid attribute", "Oauth token does not exist", "/data/attributes/vcs-repo/oauth-token-id"
+            )]
+
+        authorised_repo = AuthorisedRepo.get_by_external_id(
+            oauth_token=oauth_token, external_id=new_vcs_identifier)
+        if not authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "Authorized repo does not exist", "/data/attributes/vcs-repo/identifier"
+            )]
+
+        return {"authorised_repo": authorised_repo}, []
+
+    def update_attributes_from_request(self, attributes):
+        """Update attributes from patch request"""
+        update_kwargs = {}
+        errors = []
+
+        if 'vcs-repo' in attributes:
+            vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
+                vcs_repo_attributes=attributes["vcs-repo"]
+            )
+            errors += vcs_repo_errors
+            update_kwargs.update(vcs_repo_kwargs)
+
+        if errors:
+            return errors
+        
+        self.update_attributes(**update_kwargs)
+        return []
 
     def associate_task(
             self,
@@ -456,8 +492,18 @@ class Workspace(Base, BaseObject):
                 "terraform-version": self.terraform_version,
                 "trigger-prefixes": [],
                 "updated-at": "2021-08-16T18:54:06.874Z",
-                "vcs-repo": self.vcs_repo,
-                "vcs-repo-identifier": self.vcs_repo_identifier,
+                "vcs-repo": {
+                    "branch": self.vcs_repo_branch,
+                    "ingress-submodules": self.vcs_repo_ingress_submodules,
+                    "tags-regex": self.vcs_repo_tags_regex,
+                    "identifier": self.authorised_repo.external_id,
+                    "display-identifier": self.authorised_repo.display_identifier,
+                    "oauth-token-id": self.authorised_repo.oauth_token.api_id,
+                    "webhook-url": f"{terrarun.config.Config().BASE_URL}/webhooks/vcs/{self.authorised_repo.webhook_id}",
+                    "repository-http-url": self.authorised_repo.http_url,
+                    "service-provider": self.authorised_repo.oauth_token.oauth_client.service_provider.value
+                } if self.authorised_repo else None,
+                "vcs-repo-identifier": self.authorised_repo.display_identifier if self.authorised_repo else None,
                 "working-directory": self.working_directory,
                 "workspace-kpis-runs-count": 7
             },
@@ -488,6 +534,15 @@ class Workspace(Base, BaseObject):
                     },
                     "links": {
                         "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
+                    }
+                },
+                "project": {
+                    "data": {
+                        "id": self.project.api_id,
+                        "type": "projects"
+                    },
+                    "links": {
+                        "related": f"/api/v2/projects/{self.project.api_id}"
                     }
                 },
                 "current-state-version": {

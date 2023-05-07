@@ -93,6 +93,22 @@ export class OrganisationService {
     });
   }
 
+  getOrganisationOauthClients(organisationName: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `/api/v2/organizations/${organisationName}/oauth-clients`,
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data) => {
+          resolve(data.data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    });
+  }
+
   getAllWorkspaces(organisationName: string): Observable<any> {
     return this.http.get<any>(`/api/v2/organizations/${organisationName}/workspaces`,
                               { headers: this.accountService.getAuthHeader() }).pipe(map((response) => response.data));

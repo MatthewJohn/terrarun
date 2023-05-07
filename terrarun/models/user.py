@@ -145,6 +145,13 @@ class User(Base, BaseObject):
                     organisations.append(org)
         return organisations
 
+    def get_relationship(self):
+        """Get API relationship for user"""
+        return {
+            "id": self.api_id,
+            "type": "users"
+        }
+
     def get_account_details(self, effective_user):
         """Get API details for account endpoint."""
         user_permissions = UserPermissions(current_user=effective_user, user=self)
@@ -226,6 +233,13 @@ class User(Base, BaseObject):
                 "authentication-tokens": {
                     "links": {
                         "related": f"/api/v2/users/{self.api_id}/authentication-tokens"
+                    }
+                },
+                "github-app-oauth-tokens": {
+                    "links": {
+                        "related": {
+                            f"/api/v2/users/{self.api_id}/github-app-oauth-tokens"
+                        }
                     }
                 }
             },

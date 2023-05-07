@@ -31,20 +31,33 @@ class OauthToken(Base, BaseObject):
     ssh_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     token = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
+    authorised_repos = sqlalchemy.orm.relation("AuthorisedRepo", back_populates="oauth_token")
+
     @classmethod
-    def create(cls, oauth_client, token, session):
+    def create(cls, oauth_client, service_provider_user, token, session=None):
         """Create Oauth Token"""
         should_commit = False
         if not session:
             session = Database.get_session()
             should_commit = True
 
-        oauth_token = cls(token=token, oauth_client=oauth_client)
+        oauth_token = cls(
+            token=token,
+            oauth_client=oauth_client,
+            service_provider_user=service_provider_user
+        )
+
         session = Database.get_session()
         session.add(oauth_token)
         if should_commit:
             session.commit()
         return oauth_token
+
+    def delete(self):
+        """Delete object"""
+        session = Database.get_session()
+        session.delete(self)
+        session.commit()
 
     def get_relationship(self):
         """Return relationship data for oauth token."""

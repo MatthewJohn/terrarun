@@ -7,7 +7,6 @@ import { ListComponent } from './list/list.component';
 import { OrganisationExistsGuard } from './organisation-exists.guard';
 import { OverviewComponent } from './overview/overview.component';
 import { ProjectListComponent } from './project-list/project-list.component';
-import { SettingsComponent } from './settings/settings.component';
 import { TaskListComponent } from './task-list/task-list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 import { ProjectExistsGuard } from '../project-exists.guard';
@@ -50,7 +49,7 @@ const routes: Routes = [
   },
   {
     path: ':organisationName/settings',
-    component: SettingsComponent,
+    loadChildren: () => import(`./settings/settings.module`).then(m => m.SettingsModule),
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
