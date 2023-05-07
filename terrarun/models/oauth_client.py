@@ -1,6 +1,8 @@
 
 from enum import Enum
+from io import BytesIO
 import secrets
+import tarfile
 import uuid
 import urllib.parse
 
@@ -63,14 +65,17 @@ class BaseOauthServiceProvider:
         """Update stored authorised repos"""
         raise NotImplementedError
 
+    def get_default_branch(self, authorised_repo):
+        """Get default branch"""
+        raise NotImplementedError
 
-class OauthServiceGitlabEnterpriseEdition(BaseOauthServiceProvider):
-    """Oauth service for Gitlab Enterprise Edition"""
+    def get_latest_commit_ref(self, authorised_repo, branch):
+        """Get latest commit ref for branch"""
+        raise NotImplementedError
 
-    @property
-    def display_name(self):
-        """Return display name"""
-        return "Gitlab Enterprise Edition"
+    def get_targz_by_commit_ref(self, authorised_repo, commit_ref):
+        """Download commit archive and return as targz data"""
+        raise NotImplementedError
 
 
 class OauthServiceGithub(BaseOauthServiceProvider):
@@ -117,8 +122,11 @@ class OauthServiceGithub(BaseOauthServiceProvider):
 
         return response_obj, session
 
-    def _make_github_api_request(self, oauth_token, method, endpoint, params):
+    def _make_github_api_request(self, oauth_token, method, endpoint, params=None):
         """Make Github request"""
+        if params is None:
+            params = {}
+
         url = f"{self._oauth_client.api_url}{endpoint}"
         headers = {
             "X-GitHub-Api-Version": "2022-11-28",
@@ -134,6 +142,77 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             params=params
         )
         return res
+
+    def get_default_branch(self, authorised_repo):
+        """Get default branch"""
+        res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}'
+        )
+        if res.status_code != 200:
+            return None
+        return res.json().get("default_branch")
+
+    def get_latest_commit_ref(self, authorised_repo, branch):
+        """Get latest commit ref for branch"""
+        res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}/commits',
+            params={
+                "sha": branch,
+                "page": 1,
+                "per_page": 1
+            }
+        )
+        if res.status_code != 200:
+            return None
+
+        data = res.json()
+
+        # No commits found
+        if not data:
+            return None
+
+        return data[0].get("sha")
+
+    def get_targz_by_commit_ref(self, authorised_repo, commit_ref):
+        """Download commit archive and return as targz data"""
+        data_res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}/tarball/{commit_ref}'
+        )
+        if data_res.status_code != 200:
+            print(f"archive redirect is not 302: {data_res.status_code}")
+            return None
+
+        data = self._move_archive_into_root(archive_data=data_res.content)
+        return data
+
+    def _move_archive_into_root(self, archive_data):
+        """
+        Github places repo files into sub-directory of archive.
+        Moves contents of sub-directory into the root and
+        generates new archive
+        """
+        original_fh = BytesIO(initial_bytes=archive_data)
+        original_tar = tarfile.open(fileobj=original_fh, mode="r:gz")
+        new_fh = BytesIO(initial_bytes=None)
+        new_tar = tarfile.TarFile.open(fileobj=new_fh, mode="w|gz")
+
+        for member in original_tar.getmembers():
+            f = original_tar.extractfile(member)
+            if f is not None:
+                member.path = '/'.join(member.path.split('/')[1:])
+                new_tar.addfile(member, fileobj=f)
+        original_tar.close()
+        new_tar.close()
+
+        # Seek to beginning and return data from new bytes
+        new_fh.seek(0)
+        return new_fh.read()
 
     def update_repos(self, oauth_token):
         """Update stored repos"""
@@ -174,6 +253,11 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             repo_name = repo.get("full_name")
             repo_http_url = repo.get("html_url")
 
+            vendor_configuration = {
+                "name": repo.get("name"),
+                "owner": repo.get("owner", {}).get("login")
+            }
+
             if not (authorised_repo := AuthorisedRepo.get_by_provider_id(
                     provider_id=repo_provider_id, oauth_token=oauth_token)):
                 # Create new authorised repo
@@ -186,6 +270,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
                     http_url=repo_http_url,
                     session=session
                 )
+                authorised_repo.set_vendor_configuration(vendor_configuration, session=session)
 
             else:
                 # Check for repo name modifications
@@ -203,6 +288,10 @@ class OauthServiceGithub(BaseOauthServiceProvider):
 
                 if authorised_repo.http_url != repo_http_url:
                     authorised_repo.http_url = repo_http_url
+                    session.add(authorised_repo)
+
+                if authorised_repo.vendor_configuration != vendor_configuration:
+                    authorised_repo.set_vendor_configuration(vendor_configuration, session=session)
                     session.add(authorised_repo)
 
         session.commit()
@@ -263,9 +352,7 @@ class ServiceProviderFactory:
     @classmethod
     def get_by_service_provider_name(cls, service_provider):
         """Get service provider class based on service provider name"""
-        if service_provider is OauthServiceProvider.GITLAB_ENTERPRISE_EDITION:
-            return OauthServiceGitlabEnterpriseEdition
-        elif service_provider is OauthServiceProvider.GITHUB:
+        if service_provider is OauthServiceProvider.GITHUB:
             return OauthServiceGithub
         raise Exception(f"Unsupported service provider: {service_provider.name}")
 

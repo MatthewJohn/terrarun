@@ -237,9 +237,7 @@ class User(Base, BaseObject):
                 },
                 "github-app-oauth-tokens": {
                     "links": {
-                        "related": {
-                            f"/api/v2/users/{self.api_id}/github-app-oauth-tokens"
-                        }
+                        "related":  f"/api/v2/users/{self.api_id}/github-app-oauth-tokens"
                     }
                 }
             },

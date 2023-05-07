@@ -5,6 +5,8 @@ Open source alternative to Terraform Cloud/Enterprise
 Current backend features (all partial):
 
  * Organisations
+ * Projects (custom implementation, allowing project-level VCS configuration/permissions etc.)
+ * Environments and environment lifecycles
  * Workspaces
  * Users
  * Teams
@@ -18,6 +20,9 @@ Current backend features (all partial):
    * Terraform plan
    * Terraform apply
    * Terraform state
+   * Terraform destroy
+   * Targetted plan/apply/destroys
+ * Github Integration - perform runs throuugh UI pulling source from Github repos
 
 Current UI implementation:
  * Authentication

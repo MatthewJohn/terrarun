@@ -1,8 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { NbDialogService } from '@nebular/theme';
 import { map, Observable } from 'rxjs';
+import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
+import { RunCreateAttributes } from 'src/app/interfaces/run-create-attributes';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
+import { RunService } from 'src/app/run.service';
 import { OrganisationStateType, StateService, WorkspaceStateType } from 'src/app/state.service';
 import { WorkspaceService } from 'src/app/workspace.service';
 
@@ -28,7 +32,9 @@ export class RunListComponent implements OnInit {
               private router: Router,
               private route: ActivatedRoute,
               private formBuilder: FormBuilder,
-              private runStatusFactory: RunStatusFactory) {
+              private runStatusFactory: RunStatusFactory,
+              private dialogService: NbDialogService,
+              private runService: RunService) {
     this.state.currentWorkspace.subscribe((data) => {
       this.currentWorkspace = data;
       this.updateRuns();
@@ -39,10 +45,21 @@ export class RunListComponent implements OnInit {
 
     this.state.currentOrganisation.subscribe((data) => this.currentOrganisation = data);
   }
+
   ngOnDestroy() {
     if (this._updateInterval) {
       window.clearTimeout(this._updateInterval);
     }
+  }
+
+  openTriggerRunDialogue() {
+    this.dialogService.open(TriggerRunPopupComponent, {
+      context: {canDestroy: true}
+    }).onClose.subscribe((runAttributes: RunCreateAttributes | null) => {
+      if (runAttributes && this.currentWorkspace?.id) {
+        this.runService.create(this.currentWorkspace.id, runAttributes);
+      }
+    });
   }
 
   updateRuns(): void {

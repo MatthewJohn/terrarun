@@ -631,6 +631,8 @@ class ApiTerraformUserDetails(AuthenticatedEndpoint):
     def _get(self, user_id, current_user, current_job):
         """Obtain user details"""
         user = User.get_by_api_id(user_id)
+        if not user:
+            return {}, 404
         return {"data": user.get_api_details(effective_user=current_user)}
 
 
@@ -1636,12 +1638,21 @@ class ApiTerraformRun(AuthenticatedEndpoint):
 
 
         configuration_version_id = data.get('relationships', {}).get('configuration-version', {}).get('data', {}).get('id', None)
-        if not configuration_version_id:
-            return {}, 422
-
-        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
-        if not cv:
-            return {}, 404
+        cv = None
+        if configuration_version_id:
+            cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
+            if not cv:
+                return {}, 404
+        elif workspace.can_run_vcs_build:
+            cv = ConfigurationVersion.generate_from_vcs(
+                workspace=workspace,
+                speculative=request_attributes.get('plan-only', False)
+            )
+            if not cv:
+                return {}, 400
+        else:
+            print("Cannot run VCS build and no configuration version provided!")
+            return {}, 400
 
         if cv.workspace.id != workspace.id:
             print('Configuration version ID and workspace ID mismatch')
@@ -1741,6 +1752,21 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
             return {}, 404
 
         return {"data": [run.get_api_details() for run in workspace.runs]}
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions for run creation"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.PLAN)
+
+    def _post(self, workspace_id, current_user, current_job):
+        """Handle run creation"""
+        pass
 
 
 class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
