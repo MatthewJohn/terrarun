@@ -27,7 +27,6 @@ import { ComponentsModule } from 'src/app/components/components.module';
     ReactiveFormsModule,
     NbFormFieldModule,
     NbSelectModule,
-    NbDialogModule.forRoot({}),
     ComponentsModule,
     NbSpinnerModule,
   ]

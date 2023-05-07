@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AccountService } from './account.service';
+import { RunCreateAttributes } from './interfaces/run-create-attributes';
 
 @Injectable({
   providedIn: 'root'
@@ -23,6 +24,25 @@ export class RunService {
       `/api/v2/runs/${runId}/relationships/audit-events`,
       { headers: this.accountService.getAuthHeader() }
     );
+  }
+
+  create(workspaceId: string, runAttributes: RunCreateAttributes): Promise<any> {
+    return new Promise((resolve, reject) => {
+      this.http.post<any>(`/api/v2/runs`,
+      { "data": {
+        "type":"runs",
+        "attributes": runAttributes,
+        "relationships": {"workspace": {"data": {"type": "workspaces","id": workspaceId}}}}},
+      { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data: any) => {
+          resolve(data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    })
   }
 
   applyRun(runId: string): Observable<any> {
