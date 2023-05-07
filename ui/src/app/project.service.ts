@@ -52,6 +52,13 @@ export class ProjectService {
     );
   }
 
+  getDetailsById(projectId: string): Observable<any> {
+    return this.http.get<any>(
+      `/api/v2/projects/${projectId}`,
+      { headers: this.accountService.getAuthHeader() }
+    );
+  }
+
   getDetailsByOrganisationNameAndWorkspaceName(organisationName: string, workspaceName: string): Observable<any> {
     return this.http.get<any>(
       `/api/v2/organizations/${organisationName}/workspaces/${workspaceName}/relationships/projects`,

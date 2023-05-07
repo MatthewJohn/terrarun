@@ -480,6 +480,15 @@ class Workspace(Base, BaseObject):
                         "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
                     }
                 },
+                "project": {
+                    "data": {
+                        "id": self.project.api_id,
+                        "type": "projects"
+                    },
+                    "links": {
+                        "related": f"/api/v2/projects/{self.project.api_id}"
+                    }
+                },
                 "current-state-version": {
                     "data": {
                         "id": self.latest_state.api_id,

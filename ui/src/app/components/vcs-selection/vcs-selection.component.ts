@@ -16,6 +16,9 @@ export class VcsSelectionComponent implements OnInit {
   @Input()
   vcsConfig: ProjectWorkspaceVcsConfig | null = null;
 
+  @Input()
+  parentVcsConfig: ProjectWorkspaceVcsConfig | null = null;
+
   @Output()
   onChangeVcs: EventEmitter<ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null> = new EventEmitter();
 

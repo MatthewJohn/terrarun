@@ -8,10 +8,17 @@
             Connected to: {{vcsConfig && vcsConfig['display-identifier']}}
             <br />
             <br />
-            <button nbButton (click)="onSelectAnotherRepo()">Change Repository</button>
-            <br />
-            <br />
-            <button nbButton (click)="onSelectRepository(null)">Remove Repository</button>
+
+            <ng-container *ngIf="parentVcsConfig; else changeVcsButtons">
+                Repository is configured on a parent object, so cannot be re-configured
+            </ng-container>
+            <ng-template #changeVcsButtons>
+
+                <button nbButton (click)="onSelectAnotherRepo()">Change Repository</button>
+                <br />
+                <br />
+                <button nbButton (click)="onSelectRepository(null)">Remove Repository</button>
+            </ng-template>
         </ng-template>
 
         <ng-template #vcsNotAttached>
