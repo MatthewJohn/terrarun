@@ -2,13 +2,17 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+import json
 import re
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.api_error import ApiError
+from terrarun.models.authorised_repo import AuthorisedRepo
 
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
+from terrarun.models.oauth_token import OauthToken
 from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.config
@@ -141,6 +145,79 @@ class Project(Base, BaseObject):
                 project=self,
                 environment=new_environment
             )
+
+    def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
+        """Update VCS repo from request"""
+        # Check if VCS is defined in project
+        if 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
+            return {}, []
+
+        new_oauth_token_id = vcs_repo_attributes['oauth-token-id']
+        new_vcs_identifier = vcs_repo_attributes['identifier']
+
+        # Check if any child workspaces have a repository set
+        errors = []
+        for workspace in self.workspaces:
+            if workspace.workspace_authorised_repo:
+                errors.append(ApiError(
+                    "Child workspace has a VCS repository configured",
+                    f"A child workspace: {workspace.name} has a VCS repo configured",
+                    "/data/attributes/vcs-repo"
+                ))
+        if errors:
+            return {}, errors
+
+        # If both settings have been cleared, unset repo
+        if not new_oauth_token_id and not new_vcs_identifier:
+            return {'authorised_repo': None}, []
+
+        # Otherwise, attempt to get oauth token and authorised repo
+        oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
+        # If oauth token does not exist or is not associated to organisation, return error
+        if (not oauth_token) or oauth_token.oauth_client.organisation != self.organisation:
+            return {}, [ApiError(
+                "invalid attribute", "Oauth token does not exist", "/data/attributes/vcs-repo/oauth-token-id"
+            )]
+
+        authorised_repo = AuthorisedRepo.get_by_external_id(
+            oauth_token=oauth_token, external_id=new_vcs_identifier)
+        if not authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "Authorized repo does not exist", "/data/attributes/vcs-repo/identifier"
+            )]
+
+        return {"authorised_repo": authorised_repo}, []
+
+    def update_attributes_from_request(self, attributes):
+        """Update attributes from request"""
+        update_kwargs = {}
+        errors = []
+        if "name" in attributes and attributes.get("name") != self.name:
+            if self.validate_new_name(self.organisation, name=attributes.get("name")):
+                update_kwargs["name"] = attributes.get("name")
+            else:
+                errors.append("Name is invalid", "Name either already exists or is invalid", "/data/attributes/name")
+
+        if "variables" in attributes:
+            update_kwargs["variables"] = json.dumps(attributes.get("variables"))
+
+        if "vcs-repo" in attributes:
+            vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
+                vcs_repo_attributes=attributes["vcs-repo"]
+            )
+            errors += vcs_repo_errors
+            update_kwargs.update(vcs_repo_kwargs)
+
+        # If any errors have been found, return early
+        # before updating any attributes
+        if errors:
+            return errors
+
+        # Update attributes and return without errors
+        self.update_attributes(
+            **update_kwargs
+        )
+        return []
 
     def get_api_details(self):
         """Return details for workspace."""

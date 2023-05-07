@@ -1172,40 +1172,10 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
 
         attributes = json_data.get('attributes', {})
 
-        update_kwargs = {}
-        if 'name' in attributes:
-            update_kwargs['name'] = attributes.get('name')
+        errors = project.update_attributes_from_request(attributes)
 
-        if 'variables' in attributes:
-            update_kwargs['variables'] = json.dumps(attributes.get('variables'))
-
-        if 'vcs-repo' in attributes:
-            if 'oauth-token-id' in attributes['vcs-repo'] and 'identifier' in attributes['vcs-repo']:
-                new_oauth_token_id = attributes['vcs-repo']['oauth-token-id']
-                new_vcs_identifier = attributes['vcs-repo']['identifier']
-                # If both settings have been cleared, unset repo
-                if not new_oauth_token_id and not new_vcs_identifier:
-                    update_kwargs['authorised_repo'] = None
-                
-                else:
-                    # Otherwise, attempt to get oauth token and authorised repo
-                    oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
-                    if not oauth_token:
-                        return {}, 400
-
-                    if oauth_token.oauth_client.organisation != project.organisation:
-                        return {}, 400
-
-                    authorised_repo = AuthorisedRepo.get_by_external_id(
-                        oauth_token=oauth_token, external_id=new_vcs_identifier)
-                    if not authorised_repo:
-                        return {}, 400
-                    
-                    update_kwargs['authorised_repo'] = authorised_repo
-
-        project.update_attributes(
-            **update_kwargs
-        )
+        if errors:
+            return 
 
         return {
             "data": project.get_api_details()

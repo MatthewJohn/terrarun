@@ -76,7 +76,7 @@ class Workspace(Base, BaseObject):
         sqlalchemy.ForeignKey("authorised_repo.id", name="fk_workspace_authorised_repo_id_authorised_repo_id"),
         nullable=True
     )
-    _authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="workspaces")
+    workspace_authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="workspaces")
     _vcs_repo_branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_branch")
     _vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="vcs_repo_ingress_submodules")
     _vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
@@ -317,14 +317,14 @@ class Workspace(Base, BaseObject):
     @property
     def authorised_repo(self):
         """Return authorised_repo"""
-        if self._authorised_repo is not None:
-            return self._authorised_repo
+        if self.workspace_authorised_repo is not None:
+            return self.workspace_authorised_repo
         return self.project.authorised_repo
 
     @authorised_repo.setter
     def authorised_repo(self, value):
         """Set authorised_repo"""
-        self._authorised_repo = value if value else None
+        self.workspace_authorised_repo = value if value else None
 
     @property
     def vcs_repo_branch(self):
@@ -388,8 +388,6 @@ class Workspace(Base, BaseObject):
 
     def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
         """Update VCS repo from request"""
-        update_kwargs = {}
-        errors = []
         # Check if VCS is defined in project
         if self.project.authorised_repo:
             return {}, [ApiError(
