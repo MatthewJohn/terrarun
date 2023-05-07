@@ -130,7 +130,8 @@ class Server(object):
         )
         self._api.add_resource(
             ApiTerraformWorkspace,
-            '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>'
+            '/api/v2/organizations/<string:organisation_name>/workspaces/<string:workspace_name>',
+            '/api/v2/workspaces/<string:workspace_id>'
         )
         self._api.add_resource(
             ApiTerraformOrganisationWorkspaceRelationshipsProjects,
@@ -154,10 +155,6 @@ class Server(object):
             '/api/v2/oauth-clients/<string:oauth_client_id>'
         )
 
-        self._api.add_resource(
-            ApiTerraformWorkspaces,
-            '/api/v2/workspaces/<string:workspace_id>'
-        )
         self._api.add_resource(
             ApiTerraformWorkspaceConfigurationVersions,
             '/api/v2/workspaces/<string:workspace_id>/configuration-versions'
@@ -1356,12 +1353,29 @@ class ApiTerraformTaskDetails(AuthenticatedEndpoint):
 class ApiTerraformWorkspace(AuthenticatedEndpoint):
     """Organisation workspace details endpoint."""
 
-    def check_permissions_get(self, organisation_name, workspace_name, current_user, current_job, *args, **kwargs):
+    def _get_workspace(self, organisation_name, workspace_name, workspace_id):
+        """Obtain workspace given either workspace ID or organisation/workspace names"""
+        # Handle URLs containing organisation and workspace name
+        if organisation_name and workspace_name:
+            organisation = Organisation.get_by_name_id(organisation_name)
+            if not organisation:
+                return None
+
+            return Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        # Handle URLs containing workspace ID
+        elif workspace_id:
+            return Workspace.get_by_api_id(workspace_id)
+        return None
+
+    def check_permissions_get(self, current_user, current_job,
+                              organisation_name=None, workspace_name=None, workspace_id=None,
+                              *args, **kwargs):
         """Check permissions"""
-        organisation = Organisation.get_by_name_id(organisation_name)
-        if not organisation:
-            return False
-        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return False
 
@@ -1371,34 +1385,84 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
             WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
 
-    def _get(self, organisation_name, workspace_name, current_user, current_job):
+    def _get(self, current_user, current_job,
+             organisation_name=None, workspace_name=None, workspace_id=None):
         """Return workspace details."""
-        organisation = Organisation.get_by_name_id(organisation_name)
-        if not organisation:
-            return {}, 404
-        workspace = Workspace.get_by_organisation_and_name(organisation, workspace_name)
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return {}, 404
+
         return {"data": workspace.get_api_details(effective_user=current_user)}
 
-
-class ApiTerraformWorkspaces(AuthenticatedEndpoint):
-    """Workspaces details endpoint."""
-
-    def check_permissions_get(self, workspace_id, current_user, current_job, *args, **kwargs):
-        """Check permissions"""
-        workspace = Workspace.get_by_api_id(workspace_id)
+    def check_permissions_patch(self, current_user, current_job,
+                                organisation_name=None, workspace_name=None, workspace_id=None):
+        """Check permissions for updating workspace"""
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return False
 
         return WorkspacePermissions(current_user=current_user, workspace=workspace).check_permission(
-            WorkspacePermissions.Permissions.CAN_READ_SETTINGS)
+            WorkspacePermissions.Permissions.CAN_UPDATE)
 
-    def _get(self, workspace_id, current_user, current_job):
-        """Return workspace details."""
-        workspace = Workspace.get_by_api_id(workspace_id)
+    def _patch(self, current_user, current_job,
+               organisation_name=None, workspace_name=None, workspace_id=None):
+        """Update workspace"""
+        workspace = self._get_workspace(
+            organisation_name=organisation_name,
+            workspace_name=workspace_name,
+            workspace_id=workspace_id
+        )
         if not workspace:
             return {}, 404
+
+        json_data = flask.request.get_json().get('data', {})
+        if json_data.get('type') != "workspaces":
+            return {}, 400
+
+        attributes = json_data.get('attributes', {})
+
+        update_kwargs = {}
+
+        if 'vcs-repo' in attributes:
+            # Check if VCS is defined in project
+            if workspace.project.authorised_repo:
+                # Reject any changes to the VCS repo
+                return {}, 400
+
+            if 'oauth-token-id' in attributes['vcs-repo'] and 'identifier' in attributes['vcs-repo']:
+                new_oauth_token_id = attributes['vcs-repo']['oauth-token-id']
+                new_vcs_identifier = attributes['vcs-repo']['identifier']
+                # If both settings have been cleared, unset repo
+                if not new_oauth_token_id and not new_vcs_identifier:
+                    update_kwargs['authorised_repo'] = None
+                
+                else:
+                    # Otherwise, attempt to get oauth token and authorised repo
+                    oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
+                    if not oauth_token:
+                        return {}, 400
+
+                    if oauth_token.oauth_client.organisation != workspace.project.organisation:
+                        return {}, 400
+
+                    authorised_repo = AuthorisedRepo.get_by_external_id(
+                        oauth_token=oauth_token, external_id=new_vcs_identifier)
+                    if not authorised_repo:
+                        return {}, 400
+                    
+                    update_kwargs['authorised_repo'] = authorised_repo
+
+        workspace.update_attributes(
+            **update_kwargs
+        )
         return {"data": workspace.get_api_details(effective_user=current_user)}
 
 
