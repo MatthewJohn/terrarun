@@ -78,6 +78,11 @@ export class VcsSelectionComponent implements OnInit {
 
   onSelectRepository(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
     this.onChangeVcs.emit(authorisedRepo);
+
+      // Reset data for selecting VCS provider etc.
+      this.selectAnotherRepo = false;
+      this.selectedOauthClient = null;
+      this.authorisedRepos = [];
   }
 
 }

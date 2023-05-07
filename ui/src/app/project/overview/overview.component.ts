@@ -55,11 +55,6 @@ export class OverviewComponent implements OnInit {
     ).then((projectDetails) => {
       // Update project details from response
       this.projectDetails.data = projectDetails;
-
-      // Reset data for selecting VCS provider etc.
-      // this.selectAnotherRepo = false;
-      // this.selectedOauthClient = null;
-      // this.authorisedRepos = [];
     })
   }
 
