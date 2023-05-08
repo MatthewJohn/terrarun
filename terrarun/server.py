@@ -2082,13 +2082,9 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
 
     def _post(self, current_user, current_job, workspace_id):
         """Return latest state for workspace."""
-        print('got here')
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
-        print('got here2')
-        print(request.data)
-        print(request.headers)
 
         data = request.json.get("data", {})
         # @TODO Handle this more nicely
@@ -2097,7 +2093,6 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
         state_base64 = data.get("attributes", {}).get("state", None)
         if not state_base64:
             return {}, 400
-        print(base64.b64decode(state_base64).decode('utf-8'))
 
         run_id = data.get("relationships", {}).get("run", {}).get("data", {}).get("id", None)
         run = None
