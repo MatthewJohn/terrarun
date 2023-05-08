@@ -2750,11 +2750,13 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
         if job:
             if job.job_type is JobQueueType.PLAN:
-                # Update run to show plan as in progress
-                job.run.update_status(RunStatus.PLANNING)
+                # @TODO: Work out what state showing the plan
+                # has been assigned to an agent
+                pass
             elif job.job_type is JobQueueType.APPLY:
-                # Update run to show plan as in progress
-                job.run.update_status(RunStatus.APPLYING)
+                # @TODO: Work out what state showing the apply
+                # has been assigned to an agent
+                pass
             else:
                 print(f'Job does not have a valid job_type: {job.job_type}')
                 return {}, 204
