@@ -24,6 +24,9 @@ class AgentPool(Base, BaseObject):
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=True)
     organisation = sqlalchemy.orm.relationship("Organisation")
 

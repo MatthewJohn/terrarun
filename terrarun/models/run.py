@@ -74,6 +74,8 @@ class Run(Base, BaseObject):
 
     __tablename__ = 'run'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     configuration_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
     configuration_version = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
