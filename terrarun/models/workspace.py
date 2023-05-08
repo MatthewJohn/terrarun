@@ -394,6 +394,18 @@ class Workspace(Base, BaseObject):
         """Set assessments_enabled"""
         self._assessments_enabled = value
 
+    def get_branch(self):
+        """Get branch, either defined in workspace, project or default VCS branch"""
+        # Obtain branch from workspace
+        branch = self.vcs_repo_branch
+
+        # If it doesn't exist, obtain default branch from repository
+        if not branch and self.authorised_repo:
+            branch = self.authorised_repo.oauth_token.oauth_client.service_provider_instance.get_default_branch(
+                authorised_repo=self.authorised_repo
+            )
+        return branch
+
     def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
         """Update VCS repo from request"""
         # Check if VCS is defined in project

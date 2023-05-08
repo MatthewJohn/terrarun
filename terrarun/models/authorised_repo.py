@@ -83,6 +83,14 @@ class AuthorisedRepo(Base, BaseObject):
         session = Database.get_session()
         return session.query(cls).filter(cls.oauth_token==oauth_token, cls.external_id==external_id).first()
 
+    @classmethod
+    def get_all_utilised_repos(cls):
+        """Get all repos that are used by a workspace or project"""
+        session = Database.get_session()
+        return session.query(cls).filter(
+            sqlalchemy.or_(cls.projects.any(), cls.workspaces.any())
+        ).all()
+
     @property
     def vendor_configuration(self):
         """Return vendor configuration"""
