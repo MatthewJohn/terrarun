@@ -100,6 +100,10 @@ export class AppComponent {
               link: `/${this._currentOrganisationState.id}/tasks`
             },
             {
+              title: 'Environments',
+              link: `/${this._currentOrganisationState.id}/environments`
+            },
+            {
               title: 'Settings',
               link: `/${this._currentOrganisationState.id}/settings`,
               children: [

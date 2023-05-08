@@ -98,7 +98,7 @@ class Run(Base, BaseObject):
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
-    created_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_created_by_id_user_id"))
+    created_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_created_by_id_user_id"), nullable=True)
     created_by = sqlalchemy.orm.relation("User", foreign_keys=[created_by_id])
 
     task_stages = sqlalchemy.orm.relationship("TaskStage", back_populates="run")

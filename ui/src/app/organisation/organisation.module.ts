@@ -11,6 +11,7 @@ import { OverviewComponent } from './overview/overview.component';
 import { WorkspaceModule } from '../workspace/workspace.module';
 import { TaskListComponent } from './task-list/task-list.component';
 import { ProjectListComponent } from './project-list/project-list.component';
+import { EnvironmentListComponent } from './environment-list/environment-list.component';
 
 
 @NgModule({
@@ -21,6 +22,7 @@ import { ProjectListComponent } from './project-list/project-list.component';
     TaskListComponent,
     ProjectListComponent,
     OverviewComponent,
+    EnvironmentListComponent,
   ],
   imports: [
     CommonModule,
