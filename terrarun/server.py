@@ -988,8 +988,13 @@ class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
         name = attributes.get('name')
         if not name:
             return {}, 400
+        description = attributes.get('description')
 
-        environment = Environment.create(organisation=organisation, name=name)
+        environment = Environment.create(
+            organisation=organisation,
+            name=name,
+            description=description
+        )
 
         return {
             "data": environment.get_api_details()
