@@ -31,6 +31,8 @@ class RunQueue(Base, BaseObject):
     __tablename__ = 'run_queue'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
     run = sqlalchemy.orm.relation("Run", back_populates="run_queue")

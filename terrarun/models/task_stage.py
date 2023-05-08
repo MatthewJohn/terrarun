@@ -35,6 +35,8 @@ class TaskStage(Base, BaseObject):
     __tablename__ = 'task_stage'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     stage = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceTaskStage))
     status = sqlalchemy.Column(sqlalchemy.Enum(TaskStageStatus))

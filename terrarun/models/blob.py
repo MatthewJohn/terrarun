@@ -16,5 +16,9 @@ class Blob(Base, BaseObject):
 
     __tablename__ = 'blob'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+
     # Create blob of 200MB
     data = sqlalchemy.Column(sqlalchemy.LargeBinary(length=((2**20) * 200)))

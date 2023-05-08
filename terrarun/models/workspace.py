@@ -33,6 +33,9 @@ class Workspace(Base, BaseObject):
 
     __tablename__ = 'workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
     _description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="description")
 
@@ -476,7 +479,7 @@ class Workspace(Base, BaseObject):
                 "created-at": "2021-06-03T17:50:20.307Z",
                 "description": self.description,
                 "environment": self.environment.name,
-                "execution-mode": self.execution_mode.value,
+                "execution-mode": "local", #self.execution_mode.value,
                 "file-triggers-enabled": self.file_triggers_enabled,
                 "global-remote-state": self.global_remote_state,
                 "latest-change-at": "2021-06-23T17:50:48.815Z",

@@ -18,6 +18,8 @@ class StateVersion(Base, BaseObject):
 
     __tablename__ = 'state_version'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")

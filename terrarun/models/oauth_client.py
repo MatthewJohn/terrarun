@@ -295,7 +295,6 @@ class OauthServiceGithub(BaseOauthServiceProvider):
                     session.add(authorised_repo)
 
         session.commit()
-                
 
     def _generate_access_token(self, code):
         """Generate a github access token using temporary code"""
@@ -365,6 +364,8 @@ class OauthClient(Base, BaseObject):
     __tablename__ = 'oauth_client'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 

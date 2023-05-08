@@ -24,6 +24,8 @@ class Plan(TerraformCommand, Base):
 
     __tablename__ = 'plan'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
     run = sqlalchemy.orm.relationship("Run", back_populates="plans")
