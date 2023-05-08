@@ -19,6 +19,8 @@ class ApiId(Base):
 
     __table_args__ = (
         sqlalchemy.UniqueConstraint('object_class', 'object_id', name='_object_class_object_id_uc'),
+        sqlalchemy.Index('_object_class_object_id_in', 'object_class', 'object_id'),
+        sqlalchemy.Index('_api_id_suffix_index', 'api_id_suffix'),
     )
 
     @classmethod
