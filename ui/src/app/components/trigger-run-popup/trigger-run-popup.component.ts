@@ -15,7 +15,7 @@ export class TriggerRunPopupComponent implements OnInit {
   // Hold form information for run
   triggerForm = this.formBuilder.group({
     comment: '',
-    type: '',
+    type: 'apply',
     terraformVersion: '',
     destroyConfirmation: ''
   });
