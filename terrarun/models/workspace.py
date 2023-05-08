@@ -33,6 +33,9 @@ class Workspace(Base, BaseObject):
 
     __tablename__ = 'workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
     _description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="description")
 

@@ -31,6 +31,9 @@ class UserToken(Base, BaseObject):
     __tablename__ = 'user_token'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+
     type = sqlalchemy.Column(sqlalchemy.Enum(UserTokenType))
     created_at = sqlalchemy.Column(sqlalchemy.DateTime)
     last_used = sqlalchemy.Column(sqlalchemy.DateTime)
