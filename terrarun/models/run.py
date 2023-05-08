@@ -107,6 +107,8 @@ class Run(Base, BaseObject):
 
     @property
     def replace_addrs(self):
+        if not self._replace_addrs:
+            return []
         return json.loads(self._replace_addrs)
 
     @replace_addrs.setter
@@ -115,6 +117,8 @@ class Run(Base, BaseObject):
 
     @property
     def target_addrs(self):
+        if not self._target_addrs:
+            return []
         return json.loads(self._target_addrs)
 
     @target_addrs.setter

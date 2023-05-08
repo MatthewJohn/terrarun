@@ -85,16 +85,14 @@ services:
     volumes:
       - ./:/app
 
-  agent:
+  cron-tasks:
     restart: unless-stopped
     build: .
     networks:
       - web
-    depends_on:
-      - traefik
     env_file:
       - ./.env
-    entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
+    entrypoint: ["python", "-u", "./cron_tasks.py"]
 
     # Only for local development
     volumes:
@@ -141,6 +139,22 @@ services:
       /usr/bin/mc mb jmonminio/$AWS_BUCKET_NAME;
       exit 0;
       "
+
+  # Example custom agent
+  agent:
+    restart: unless-stopped
+    build: .
+    networks:
+      - web
+    depends_on:
+      - traefik
+    env_file:
+      - ./.env
+    entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
+
+    # Only for local development
+    volumes:
+      - ./:/app
 
   # Example run task application
   tfsec-task:

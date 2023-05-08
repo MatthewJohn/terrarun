@@ -49,13 +49,16 @@ class ConfigurationVersion(Base, BaseObject):
     auto_queue_runs = sqlalchemy.Column(sqlalchemy.Boolean)
     status = sqlalchemy.Column(sqlalchemy.Enum(ConfigurationVersionStatus))
 
+    git_commit_sha = sqlalchemy.Column(Database.GeneralString, nullable=True)
+
     @classmethod
-    def create(cls, workspace, auto_queue_runs=True, speculative=False):
+    def create(cls, workspace, auto_queue_runs=True, speculative=False, git_commit_sha=None):
         """Create configuration and return instance."""
         cv = ConfigurationVersion(
             workspace=workspace,
             speculative=speculative,
             auto_queue_runs=auto_queue_runs,
+            git_commit_sha=git_commit_sha,
             status=ConfigurationVersionStatus.PENDING
         )
         session = Database.get_session()
@@ -67,22 +70,19 @@ class ConfigurationVersion(Base, BaseObject):
         return cv
 
     @classmethod
-    def generate_from_vcs(cls, workspace, speculative):
+    def generate_from_vcs(cls, workspace, speculative, commit_ref=None):
         """Create configuration version from VCS"""
         service_provider = workspace.authorised_repo.oauth_token.oauth_client.service_provider_instance
 
-        # Obtain branch from workspace
-        branch = workspace.vcs_repo_branch
-        # If it doesn't exist, obtain default branch from repository
-        if not branch:
-            branch = service_provider.get_default_branch(authorised_repo=workspace.authorised_repo)
+        if commit_ref is None:
+            # Obtain branch from workspace
+            branch = workspace.get_branch()
+            if not branch:
+                return None
 
-        if not branch:
-            return None
-
-        commit_ref = service_provider.get_latest_commit_ref(
-            authorised_repo=workspace.authorised_repo, branch=branch
-        )
+            commit_ref = service_provider.get_latest_commit_ref(
+                authorised_repo=workspace.authorised_repo, branch=branch
+            )
         if commit_ref is None:
             return None
 
@@ -94,11 +94,21 @@ class ConfigurationVersion(Base, BaseObject):
 
         configuration_version = cls.create(
             workspace=workspace,
-            auto_queue_runs=False,
-            speculative=speculative
+            auto_queue_runs=True,
+            speculative=speculative,
+            git_commit_sha=commit_ref
         )
         configuration_version.process_upload(archive_data)
         return configuration_version
+
+    @classmethod
+    def get_configuration_version_by_git_commit_sha(cls, workspace, git_commit_sha):
+        """Return configuration versions by workspace and git commit sha"""
+        session = Database.get_session()
+        return session.query(cls).filter(
+            cls.workspace==workspace,
+            cls.git_commit_sha==git_commit_sha
+        ).all()
 
     @property
     def plan_only(self):

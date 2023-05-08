@@ -184,7 +184,7 @@ class TaskResult(Base, BaseObject):
             "run_id": self.task_stage.run.api_id,
             "run_message": self.task_stage.run.message,
             "run_created_at": datetime_to_json(self.task_stage.run.created_at),
-            "run_created_by": self.task_stage.run.created_by.username,
+            "run_created_by": self.task_stage.run.created_by.username if self.task_stage.run.created_by else None,
             "workspace_id": self.task_stage.run.configuration_version.workspace.api_id,
             "workspace_name": self.task_stage.run.configuration_version.workspace.name,
             "workspace_app_url": f"{config.BASE_URL}/app/{self.task_stage.run.configuration_version.workspace.organisation.name}/{self.task_stage.run.configuration_version.workspace.name}",
