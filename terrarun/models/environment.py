@@ -20,6 +20,7 @@ class Environment(Base, BaseObject):
     __tablename__ = 'environment'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
+    description = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
     organisation_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("organisation.id", name="fk_environment_organisation_id_organisation_id"),
@@ -35,14 +36,14 @@ class Environment(Base, BaseObject):
         return session.query(cls).filter(cls.name==name, cls.organisation==organisation).first()
 
     @classmethod
-    def validate_new_name_id(cls, organisation, name):
-        """Ensure lifecycle does not already exist and name isn't reserved"""
+    def validate_new_name(cls, organisation, name):
+        """Ensure environment does not already exist and name isn't reserved"""
         session = Database.get_session()
-        existing_org = session.query(cls).filter(
+        existing_name = session.query(cls).filter(
             cls.organisation == organisation,
             cls.name == name
         ).first()
-        if existing_org:
+        if existing_name:
             return False
         if name in cls.RESERVED_NAMES:
             return False
@@ -51,12 +52,16 @@ class Environment(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, organisation, name):
+    def create(cls, organisation, name, description=None):
         """Create lifecycle"""
-        if not cls.validate_new_name_id(organisation, name):
+        if not cls.validate_new_name(organisation, name):
             return None
 
-        lifecycle = cls(organisation=organisation, name=name)
+        lifecycle = cls(
+            organisation=organisation,
+            name=name,
+            description=description
+        )
         session = Database.get_session()
         session.add(lifecycle)
         session.commit()
@@ -78,7 +83,8 @@ class Environment(Base, BaseObject):
             "id": self.api_id,
             "type": "environments",
             "attributes": {
-                "name": self.name
+                "name": self.name,
+                "description": self.description
             },
             "relationships": {
                 "organization": {

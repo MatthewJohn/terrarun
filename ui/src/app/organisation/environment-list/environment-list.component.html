@@ -1,0 +1,79 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-header>
+                Environments
+            </nb-card-header>
+            <nb-card-body>
+
+                <table [nbTreeGrid]="environments$ | async" equalColumnsWidth>
+                    <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
+                    <tr nbTreeGridRow class="environmentRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+                            {{column}}
+                        </th>
+                        <td nbTreeGridCell (click)="onEnvironmentClick(row)" *nbTreeGridCellDef="let row">
+                            {{row.data.attributes[column]}}
+                        </td>
+                    </ng-container>
+
+                </table>
+            </nb-card-body>
+
+            <nb-card *ngIf="editEnvironment != null">
+                <nb-card-header>Edit environment</nb-card-header>
+
+                <nb-card-body>
+                    <form [formGroup]="editForm" (ngSubmit)="onEdit()">
+                        <nb-form-field>
+                            <label for="name">Name:</label>
+                            <input nbInput (change)="validateEditEnvironmentName()" placeholder="My App" id="name"
+                                formControlName="name" type="text">
+                            <nb-icon nbSuffix [icon]="editEnvironmentNameValid.icon" [status]="editEnvironmentNameValid.iconStatus" pack="eva">
+                            </nb-icon>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="description">Description:</label>
+                            <input nbInput placeholder="" id="description" formControlName="description" type="text">
+                        </nb-form-field>
+                        <br />
+                        <button [disabled]="!editEnvironmentNameValid.valid" nbButton>Save</button>
+                    </form>
+                    <br />
+                    <button (click)="cancelEdit()" nbButton>Cancel</button>
+                </nb-card-body>
+            </nb-card>
+
+            <nb-card>
+                <nb-card-header>
+                    Create environment
+                </nb-card-header>
+                <nb-card-body>
+                    <form [formGroup]="createForm" (ngSubmit)="onCreate()">
+                        <nb-form-field>
+                            <label for="name">Name:</label>
+                            <input nbInput (change)="validateNewEnvironmentName()" placeholder="My App" id="name"
+                                formControlName="name" type="text">
+                            <nb-icon nbSuffix [icon]="createEnvironmentNameValid.icon" [status]="createEnvironmentNameValid.iconStatus" pack="eva">
+                            </nb-icon>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="description">Description:</label>
+                            <input nbInput placeholder="" id="description" formControlName="description" type="text">
+                        </nb-form-field>
+                        <br />
+                        <button [disabled]="!createEnvironmentNameValid.valid" nbButton>Create</button>
+                    </form>
+                </nb-card-body>
+            </nb-card>
+
+        </nb-card>
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>

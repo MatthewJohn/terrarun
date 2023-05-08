@@ -55,10 +55,20 @@ class UserToken(Base, BaseObject):
     def create_agent_job_token(cls, job):
         """Create token for agent job"""
         expiry = datetime.datetime.now() + datetime.timedelta(seconds=Config().AGENT_JOB_TIMEOUT)
+        kwargs = {}
+        # If the job was started by a user,
+        # generate a token against the user,
+        # otherwise, generate one against the job
+        if job.run.created_by:
+            kwargs['user'] = job.run.created_by
+        else:
+            kwargs['job'] = job
+
         token = cls(
-            job=job,
             expiry=expiry,
-            token=cls.generate_token()
+            token=cls.generate_token(),
+            description=f"Created for {job.run.api_id}",
+            **kwargs
         )
         session = Database.get_session()
         session.add(token)

@@ -10,6 +10,7 @@ import { ProjectListComponent } from './project-list/project-list.component';
 import { TaskListComponent } from './task-list/task-list.component';
 import { WorkspaceListComponent } from './workspace-list/workspace-list.component';
 import { ProjectExistsGuard } from '../project-exists.guard';
+import { EnvironmentListComponent } from './environment-list/environment-list.component';
 
 const routes: Routes = [
   {
@@ -30,6 +31,11 @@ const routes: Routes = [
   {
     path: ':organisationName/workspaces',
     component: WorkspaceListComponent,
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
+  },
+  {
+    path: ':organisationName/environments',
+    component: EnvironmentListComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
