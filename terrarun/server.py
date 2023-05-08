@@ -280,8 +280,8 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/environments'
         )
         self._api.add_resource(
-            ApiTerraformEnvironments,
-            '/api/v2/environments/<string:envirionment_id>'
+            ApiTerraformEnvironment,
+            '/api/v2/environments/<string:environment_id>'
         )
         self._api.add_resource(
             ApiTerraformOrganisationProjects,
@@ -319,6 +319,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerrarunTaskCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/task-name-validate'
+        )
+        self._api.add_resource(
+            ApiTerrarunEnvironmentCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/environment-name-validate'
         )
 
         self._api.add_resource(
@@ -992,7 +996,7 @@ class ApiTerraformOrganisationEnvironments(AuthenticatedEndpoint):
         }
 
 
-class ApiTerraformEnvironments(AuthenticatedEndpoint):
+class ApiTerraformEnvironment(AuthenticatedEndpoint):
     """Interface to show/update environment"""
 
     def check_permissions_get(self, environment_id, current_user, current_job, *args, **kwargs):
@@ -1022,8 +1026,8 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
             # Most admin permission
             OrganisationPermissions.Permissions.CAN_DESTROY)
 
-    def _post(self, environment_id, current_user, current_job):
-        """Create environment"""
+    def _patch(self, environment_id, current_user, current_job):
+        """Update environment attributes"""
         environment = Environment.get_by_api_id(environment_id)
         if not environment:
             return {}, 404
@@ -1033,11 +1037,15 @@ class ApiTerraformEnvironments(AuthenticatedEndpoint):
             return {}, 400
 
         attributes = json_data.get('attributes', {})
-        name = attributes.get('name')
+
+        update_kwargs = {}
+        if 'name' in attributes:
+            update_kwargs['name'] = attributes.get('name')
+        if 'description' in attributes:
+            update_kwargs['description'] = attributes.get('description')
 
         environment.update_attributes(
-            name=name,
-            variables=json.dumps(attributes.get('variables', {}))
+            **update_kwargs
         )
 
         return {
@@ -2335,7 +2343,7 @@ class ApiTerrarunWorkspaceCreateNameValidation(AuthenticatedEndpoint):
 
 
 class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
-    """Endpoint to validate new workspace name"""
+    """Endpoint to validate new task name"""
 
     def check_permissions_post(self, organisation_name, current_user, current_job):
         """Check permissions"""
@@ -2346,7 +2354,7 @@ class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
             OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
 
     def _post(self, organisation_name, current_user, current_job):
-        """Validate new organisation name"""
+        """Validate new task name"""
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, location='json')
         args = parser.parse_args()
@@ -2358,6 +2366,34 @@ class ApiTerrarunTaskCreateNameValidation(AuthenticatedEndpoint):
         return {
             "data": {
                 "valid": Task.validate_new_name(organisation, args.name),
+                "name": args.name
+            }
+        }
+
+class ApiTerrarunEnvironmentCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new environment name"""
+
+    def check_permissions_post(self, organisation_name, current_user, current_job):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
+
+    def _post(self, organisation_name, current_user, current_job):
+        """Validate new environment name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": Environment.validate_new_name(organisation, args.name),
                 "name": args.name
             }
         }
