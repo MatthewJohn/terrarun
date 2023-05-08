@@ -125,8 +125,10 @@ class TaskResult(Base, BaseObject):
                     })
                 if res.status_code == 200:
                     break
-            except requests.exceptions.ConnectionError:
-                pass
+                else:
+                    print(f"Got invalid response from task result: {res.status_code}")
+            except requests.exceptions.ConnectionError as exc:
+                print(f'Exception occurred whilst calling task result: {exc}')
         else:
             # If unable to get 200 response from remote,
             # mark task result as failed

@@ -137,7 +137,7 @@ class RunStatusPolicySoftFailed extends RunStatusBaseClass {
 }
 class RunStatusPostPlanCompleted extends RunStatusBaseClass {
     _nameString = "Post-plan completed";
-    _labelColour = "success";
+    _labelColour = "warning";
     _icon = "radio-button-on-outline";
     public override _availableActions = [RunAction.CONFIRM_AND_APPLY];
 }

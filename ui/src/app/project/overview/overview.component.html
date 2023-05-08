@@ -8,7 +8,7 @@
             </nb-card-header>
             <nb-list>
               <nb-list-item (click)="onWorkspaceClick(workspaceId)" *ngFor="let workspaceId of workspaceList">
-                <ng-container *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async).data.attributes.environment}}</ng-container>
+                <ng-container *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async)?.data.attributes.environment}}</ng-container>
               </nb-list-item>
             </nb-list>
           </nb-card>
