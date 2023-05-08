@@ -71,7 +71,7 @@ class AuditEvent(Base, BaseObject):
             },
             "relationships": {
                 "user": {
-                    "data": { "id": terrarun.models.user.User.api_id_from_db_id(self.user_id), "type": "users" } if self.user_id else {}
+                    "data": { "id": self.api_id, "type": "users" } if self.user_id else {}
                 }
             },
             "type": "audit-events"

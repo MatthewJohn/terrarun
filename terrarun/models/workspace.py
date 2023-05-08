@@ -476,7 +476,7 @@ class Workspace(Base, BaseObject):
                 "created-at": "2021-06-03T17:50:20.307Z",
                 "description": self.description,
                 "environment": self.environment.name,
-                "execution-mode": self.execution_mode.value,
+                "execution-mode": "local", #self.execution_mode.value,
                 "file-triggers-enabled": self.file_triggers_enabled,
                 "global-remote-state": self.global_remote_state,
                 "latest-change-at": "2021-06-23T17:50:48.815Z",
