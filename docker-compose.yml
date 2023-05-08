@@ -76,6 +76,7 @@ services:
       - db
     links:
       - db
+      - tfsec-task
     env_file:
       - ./.env
 
@@ -93,8 +94,6 @@ services:
       - traefik
     env_file:
       - ./.env
-    volumes:
-      - ./:/app
     entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
 
     # Only for local development
@@ -142,6 +141,12 @@ services:
       /usr/bin/mc mb jmonminio/$AWS_BUCKET_NAME;
       exit 0;
       "
+
+  # Example run task application
+  tfsec-task:
+    build: https://gitlab.dockstudios.co.uk/pub/terra/tfcloud-tfsec.git
+    networks:
+     - web
 
 volumes:
   mysqldata:

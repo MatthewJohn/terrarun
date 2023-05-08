@@ -99,19 +99,29 @@ class JobProcessor:
         if run.status == RunStatus.CANCELED:
             return
 
+        elif plan_status is TerraformCommandState.RUNNING:
+            run.update_status(RunStatus.PLANNING)
+
         elif plan_status is TerraformCommandState.ERRORED:
             run.update_status(RunStatus.ERRORED)
             return
-        elif run.plan_only or run.configuration_version.speculative or not run.plan.has_changes:
-            run.update_status(RunStatus.PLANNED_AND_FINISHED)
-            return
+
+        elif plan_status is TerraformCommandState.FINISHED:
+            if run.plan_only or run.configuration_version.speculative or not run.plan.has_changes:
+                run.update_status(RunStatus.PLANNED_AND_FINISHED)
+                return
+
+            else:
+                run.update_status(RunStatus.PLANNED)
+                Apply.create(plan=run.plan)
+
+                # Queue worker job for next stages
+                run.queue_worker_job()
 
         else:
-            run.update_status(RunStatus.PLANNED)
-            Apply.create(plan=run.plan)
+            raise Exception(f"Unhandled plan status: {plan_status}")
 
-            # Queue worker job for next stages
-            run.queue_worker_job()
+
 
     @classmethod
     def handle_apply_status_update(cls, job_status):
@@ -135,8 +145,15 @@ class JobProcessor:
         if run.status == RunStatus.CANCELED:
             return
 
+        elif apply_status is TerraformCommandState.RUNNING:
+            run.update_status(RunStatus.APPLYING)
+
         elif apply_status is TerraformCommandState.ERRORED:
             run.update_status(RunStatus.ERRORED)
             return
-        else:
+
+        elif apply_status is TerraformCommandState.FINISHED:
             run.update_status(RunStatus.APPLIED)
+
+        else:
+            raise Exception(f"Unhandled apply status: {apply_status}")
