@@ -408,15 +408,6 @@ class Workspace(Base, BaseObject):
 
     def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
         """Update VCS repo from request"""
-        # If the attribute is None, unset VCS repo
-        if vcs_repo_attributes is None:
-            return {"authorised_repo": None}, []
-
-        # Check if VCS is defined in project
-        if self.project.authorised_repo:
-            return {}, [ApiError(
-                "invalid attribute", "VCS repo cannot be updated as it's managed in the parent project", "/data/attributes/vcs-repo"
-            )]
 
         if 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
             return {}, []
@@ -424,9 +415,15 @@ class Workspace(Base, BaseObject):
         new_oauth_token_id = vcs_repo_attributes['oauth-token-id']
         new_vcs_identifier = vcs_repo_attributes['identifier']
 
-        # If both settings have been cleared, unset repo
+        # If both settings are present and have been cleared, unset repo
         if not new_oauth_token_id and not new_vcs_identifier:
             return {'authorised_repo': None}, []
+
+        # Check if VCS is defined in project
+        if self.project.authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "VCS repo cannot be updated as it's managed in the parent project", "/data/attributes/vcs-repo"
+            )]
 
         # Otherwise, attempt to get oauth token and authorised repo
         oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)

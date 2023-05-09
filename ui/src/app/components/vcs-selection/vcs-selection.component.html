@@ -55,4 +55,79 @@
           </ng-template>
       </nb-card-body>
   </nb-card>
+
+
+  <nb-card *ngIf="vcsConfig && vcsConfig['vcs-repo'] && !selectAnotherRepo">
+    <nb-card-header>
+      Configuration
+    </nb-card-header>
+    <nb-card-body>
+      <!-- Branch configuration -->
+      <ng-container *ngIf="canSetBranch; else parentBranchConfigured">
+        <label for="branch">
+          Branch
+          <br />
+        </label>
+        <input nbInput id="branch" type="text" [(ngModel)]="branch">
+        <br />
+        The branch that will be monitoring for new changes. This defaults to the repository default branch.
+      </ng-container>
+      <ng-template #parentBranchConfigured>
+        Branch has been defined in the parent: {{parentVcsConfig?.['vcs-repo']?.['branch']}}<br />
+      </ng-template>
+
+      <br />
+      <br />
+
+      <!-- Options for file triggers -->
+      <label>
+        Triggers
+      </label>
+      <nb-radio-group name="triggerType" [disabled]="!canSetTrigger" [(ngModel)]="selectedTriggerOption">
+        <nb-radio value="all">Trigger on all changes</nb-radio>
+        <nb-radio value="file_trigger">Trigger when a changed files match a pattern</nb-radio>
+        <nb-radio value="tag_trigger">Trigger when a tag is pushed</nb-radio>
+      </nb-radio-group>
+      <br />
+      <ng-container *ngIf="!canSetTrigger">
+        Trigger has been defined in the parent
+      </ng-container>
+
+      <!-- Options for file triggers -->
+      <ng-container *ngIf="selectedTriggerOption == 'file_trigger'">
+        <nb-radio-group name="pathTriggerType" [disabled]="!canSetTrigger" [(ngModel)]="selectedPathTriggerType">
+          <nb-radio value="pattern">Pattern based match</nb-radio>
+          <nb-radio value="prefix">Prefix based match</nb-radio>
+        </nb-radio-group>
+
+        <nb-tag-list (tagRemove)="onTriggerPatternRemove($event)" *ngIf="selectedPathTriggerType == 'pattern'">
+          <nb-tag *ngFor="let tree of triggerPatterns" [text]="tree" removable></nb-tag>
+          <input type="text" nbTagInput (tagAdd)="onTriggerPatternAdd($event)" fullWidth>
+        </nb-tag-list>
+        <nb-tag-list (tagRemove)="onTriggerPrefixRemove($event)" *ngIf="selectedPathTriggerType == 'prefix'">
+          <nb-tag *ngFor="let tree of triggerPrefixes" [text]="tree" removable></nb-tag>
+          <input type="text" nbTagInput (tagAdd)="onTriggerPrefixAdd($event)" fullWidth>
+        </nb-tag-list>
+        Type a {{selectedPathTriggerType}} and press "Enter"
+        <br />
+      </ng-container>
+
+      <!-- Options for tag triggers -->
+      <ng-container *ngIf="selectedTriggerOption == 'tag_trigger'">
+        <label for="tagRegex">
+          Tag Regex
+          <br />
+        </label>
+        <input [disabled]="!canSetTrigger" nbInput id="tagRegex" [(ngModel)]="tagRegex" type="text">
+        <br />
+        Specify the tag pattern that you wish to match.<br />
+        For semantic versions, use <code>\d+\.\d+\.\d+</code>.<br />
+        To support semantic versions with <code>v</code> prefix, use <code>v\d+\.\d+\.\d+</code>
+        <br />
+      </ng-container>
+
+      <br />
+      <button nbButton (click)="onUpdateSettings()" size="small">Update</button>
+    </nb-card-body>
+  </nb-card>
 </ng-container>
