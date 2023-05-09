@@ -1,7 +1,7 @@
 
 <app-vcs-selection
     (onChangeVcs)="onChangeVcs($event)"
-    [vcsConfig]="workspaceDetails?.data.attributes['vcs-repo']"
-    [parentVcsConfig]="projectDetails?.data.attributes['vcs-repo']"
+    [vcsConfig]="workspaceDetails?.data.attributes"
+    [parentVcsConfig]="projectDetails?.data.attributes"
     >
 </app-vcs-selection>

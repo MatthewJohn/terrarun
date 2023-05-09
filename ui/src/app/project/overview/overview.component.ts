@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
 import { OauthClient } from 'src/app/interfaces/oauth-client';
+import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
 import { ResponseObject, ResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { OrganisationService } from 'src/app/organisation.service';
 import { ProjectService } from 'src/app/project.service';
@@ -43,15 +44,10 @@ export class OverviewComponent implements OnInit {
     });
   }
 
-  onChangeVcs(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
+  onChangeVcs(vcsConfig: ProjectWorkspaceVcsConfig) {
     this.projectService.update(
       this.projectDetails.data.id,
-      {
-        "vcs-repo": {
-          "identifier": authorisedRepo ? authorisedRepo.attributes.name : null,
-          "oauth-token-id": authorisedRepo ? authorisedRepo.relationships['oauth-token'].data.id : null
-        }
-      }
+      vcsConfig
     ).then((projectDetails) => {
       // Update project details from response
       this.projectDetails = projectDetails;
