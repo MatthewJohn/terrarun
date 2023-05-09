@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
+import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
 import { ResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { ProjectService } from 'src/app/project.service';
 import { OrganisationStateType, StateService, WorkspaceStateType } from 'src/app/state.service';
@@ -32,15 +33,10 @@ export class SettingsComponent implements OnInit {
     this.projectDetails = null;
   }
 
-  onChangeVcs(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
+  onChangeVcs(vcsConfig: ProjectWorkspaceVcsConfig) {
     this.workspaceService.update(
       this.workspaceDetails.data.id,
-      {
-        "vcs-repo": {
-          "identifier": authorisedRepo ? authorisedRepo.attributes.name : null,
-          "oauth-token-id": authorisedRepo ? authorisedRepo.relationships['oauth-token'].data.id : null
-        }
-      }
+      vcsConfig
     ).then((workspaceDetails) => {
       // Update project details from response
       this.workspaceDetails = workspaceDetails;

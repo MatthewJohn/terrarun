@@ -20,7 +20,7 @@ export class VcsSelectionComponent implements OnInit {
   parentVcsConfig: ProjectWorkspaceVcsConfig | null = null;
 
   @Output()
-  onChangeVcs: EventEmitter<ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null> = new EventEmitter();
+  onChangeVcs: EventEmitter<ProjectWorkspaceVcsConfig> = new EventEmitter();
 
   // Whether a change of repo has been selected
   selectAnotherRepo: boolean;
@@ -80,12 +80,27 @@ export class VcsSelectionComponent implements OnInit {
   }
 
   onSelectRepository(authorisedRepo: ResponseObjectWithRelationships<AuthorisedRepo, AuthorisedRepoRelationships> | null) {
-    this.onChangeVcs.emit(authorisedRepo);
+    this.onChangeVcs.emit({
+      "vcs-repo": authorisedRepo == null ? null : {
+        branch: null,
+        "tags-regex": null,
+        identifier: authorisedRepo.attributes.name,
+        "oauth-token-id": authorisedRepo.relationships['oauth-token'].data.id,
 
-      // Reset data for selecting VCS provider etc.
-      this.selectAnotherRepo = false;
-      this.selectedOauthClient = null;
-      this.authorisedRepos = [];
+        "ingress-submodules": undefined,
+        "display-identifier": undefined,
+        "webhook-url": undefined,
+        "repository-http-url": undefined,
+        "service-provider": undefined
+      },
+      "file-triggers-enabled": false,
+      "trigger-prefixes": [],
+      "trigger-patterns": []
+    });
+
+    // Reset data for selecting VCS provider etc.
+    this.selectAnotherRepo = false;
+    this.selectedOauthClient = null;
+    this.authorisedRepos = [];
   }
-
 }
