@@ -2,6 +2,7 @@
 import re
 import signal
 import time
+import fnmatch
 
 import schedule
 from terrarun.database import Database
@@ -83,6 +84,48 @@ class CronTasks:
                     git_commit_sha=branch_shas[workspace_branch]):
                 commit_sha = branch_shas[workspace_branch]
 
+                # Check if filters match
+                if workspace.trigger_patterns or workspace.trigger_prefixes:
+                    print("Trigger pattern/prefixes enabled")
+                    latest_configuration_version = workspace.latest_configuration_version
+                    # If there is a configuration version and it contains a git sha...
+                    if latest_configuration_version and latest_configuration_version.git_commit_sha:
+                        # Get the file changes between the commits
+                        file_changes = service_provider.get_changed_files(
+                            authorised_repo=workspace.authorised_repo,
+                            base=latest_configuration_version.git_commit_sha,
+                            head=commit_sha
+                        )
+                        print(f"Found file changes: {file_changes}")
+                        if workspace.trigger_patterns:
+                            print("Checking trigger patterns")
+                            for trigger_pattern in workspace.trigger_patterns:
+                                print(f"Checking pattern: {trigger_pattern}")
+                                # If any of the filters match, break
+                                if fnmatch.filter(file_changes, trigger_pattern):
+                                    print("Pattern matched")
+                                    break
+                            else:
+                                # If no match was found, unset commit sha to avoid build
+                                print('No patterns matched')
+                                commit_sha = None
+
+                        elif workspace.trigger_prefixes:
+                            print("Checking trigger prefixes")
+
+                            for trigger_prefix in workspace.trigger_prefixes:
+                                print(f"Checking prefix: {trigger_prefix}")
+
+                                if filter(lambda x: x.startswith(trigger_prefix), file_changes):
+                                    print("Prefix matched")
+                                    break
+                            else:
+                                print('No prefixes matched')
+                                commit_sha = None
+
+                    else:
+                        print("No latest configuration version found or "
+                            "latest configuration version has no commit ID")
 
         if commit_sha is not None:
             print(f"Creating configuration version for commit {commit_sha}")

@@ -88,7 +88,6 @@ class Workspace(Base, BaseObject):
     _assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="assessments_enabled")
 
     _latest_state = None
-    _latest_configuration_version = None
     _latest_run = None
 
     @classmethod
@@ -148,8 +147,9 @@ class Workspace(Base, BaseObject):
     @property
     def latest_configuration_version(self):
         """Return latest configuration version."""
-        if self.configuration_versions:
-            return self.configuration_versions[-1]
+        configuration_versions = self.configuration_versions
+        if configuration_versions:
+            return configuration_versions[-1]
         return None
 
     @property
