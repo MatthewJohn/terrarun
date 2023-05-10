@@ -3,6 +3,7 @@
 # Proprietary and confidential
 
 from enum import Enum
+import json
 import re
 import sqlalchemy
 import sqlalchemy.orm
@@ -296,26 +297,26 @@ class Workspace(Base, BaseObject):
     @property
     def trigger_prefixes(self):
         """Return trigger_prefixes"""
-        if self._trigger_prefixes is not None:
-            return self._trigger_prefixes
+        if self._trigger_prefixes and (json_val := json.loads(self._trigger_prefixes)):
+            return json_val
         return self.project.trigger_prefixes
 
     @trigger_prefixes.setter
     def trigger_prefixes(self, value):
         """Set trigger_prefixes"""
-        self._trigger_prefixes = value if value else None
+        self._trigger_prefixes = json.dumps(value) if value else None
 
     @property
     def trigger_patterns(self):
         """Return trigger_patterns"""
-        if self._trigger_patterns is not None:
-            return self._trigger_patterns
+        if self._trigger_patterns and (json_val := json.loads(self._trigger_patterns)):
+            return json_val
         return self.project.trigger_patterns
 
     @trigger_patterns.setter
     def trigger_patterns(self, value):
         """Set trigger_patterns"""
-        self._trigger_patterns = value if value else None
+        self._trigger_patterns = json.dumps(value) if value else None
 
     @property
     def authorised_repo(self):
@@ -454,6 +455,43 @@ class Workspace(Base, BaseObject):
             errors += vcs_repo_errors
             update_kwargs.update(vcs_repo_kwargs)
 
+            if attributes["vcs-repo"] is not None:
+                if "tags-regex" in attributes["vcs-repo"]:
+                    if self.project.vcs_repo_tags_regex and attributes["vcs-repo"]["tags-regex"]:
+                        errors.append(ApiError(
+                            "Tags regex defined in project.",
+                            "Tags regex cannot be set on the workspace, as it is defined in the parent project.",
+                            "/data/attributes/vcs-repo/tags-regex"))
+                    else:
+                        update_kwargs["vcs_repo_tags_regex"] = attributes["vcs-repo"]["tags-regex"]
+
+                if "branch" in attributes["vcs-repo"]:
+                    if self.project.vcs_repo_branch and attributes["vcs-repo"]["branch"]:
+                        errors.append(ApiError(
+                            "Branch defined in project.",
+                            "Branch cannot be set on the workspace, as it is defined in the parent project.",
+                            "/data/attributes/vcs-repo/branch"))
+                    else:
+                        update_kwargs["vcs_repo_branch"] = attributes["vcs-repo"]["branch"]
+
+            if "trigger-patterns" in attributes:
+                if self.project.trigger_patterns and attributes["trigger-patterns"]:
+                    errors.append(ApiError(
+                        "Trigger patterns defined in project.",
+                        "Trigger patterns cannot be set on the workspace, as it is defined in the parent project.",
+                        "/data/attributes/trigger-patterns"))
+                else:
+                    update_kwargs["trigger_patterns"] = attributes["trigger-patterns"]
+
+            if "trigger-prefixes" in attributes:
+                if self.project.trigger_prefixes and attributes["trigger-prefixes"]:
+                    errors.append(ApiError(
+                        "Trigger prefixes defined in project.",
+                        "Trigger prefixes cannot be set on the workspace, as it is defined in the parent project.",
+                        "/data/attributes/trigger-prefixes"))
+                else:
+                    update_kwargs["trigger_prefixes"] = attributes["trigger-prefixes"]
+
         if errors:
             return errors
         
@@ -511,7 +549,8 @@ class Workspace(Base, BaseObject):
                 "speculative-enabled": self.speculative_enabled,
                 "structured-run-output-enabled": False,
                 "terraform-version": self.terraform_version,
-                "trigger-prefixes": [],
+                "trigger-prefixes": self.trigger_prefixes,
+                "trigger-patterns": self.trigger_patterns,
                 "updated-at": "2021-08-16T18:54:06.874Z",
                 "vcs-repo": {
                     "branch": self.vcs_repo_branch,
