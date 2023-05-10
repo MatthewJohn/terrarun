@@ -1,4 +1,5 @@
 
+import re
 import signal
 import time
 
@@ -34,25 +35,62 @@ class CronTasks:
         """Handle checking workspace for new commits to create run for"""
         print(f'Handling workspace: {workspace.name}')
         service_provider = authorised_repo.oauth_token.oauth_client.service_provider_instance
-        workspace_branch = workspace.get_branch()
 
-        # Obtain latest sha for branch, if not already cached
-        if workspace_branch not in branch_shas:
-            branch_shas[workspace_branch] =  service_provider.get_latest_commit_ref(
-                authorised_repo=workspace.authorised_repo, branch=workspace_branch
+        commit_sha = None
+
+        # Handle workspaces with git tag regex
+        if workspace.vcs_repo_tags_regex:
+            print("Handling tag-based search")
+            tag_re = re.compile(workspace.vcs_repo_tags_regex)
+            tags = service_provider.get_tags(
+                authorised_repo=workspace.authorised_repo
             )
-        if not branch_shas[workspace_branch]:
-            print(f'Could not find latest commit for branch: {workspace_branch}')
-            return branch_shas
+            for tag in tags:
+                print(f"Checking tag: {tag}")
+                if tag_re.match(tag):
+                    print("Tag matches regex")
+                    # Once a match tag is found, check if there is a run for it
+                    if not ConfigurationVersion.get_configuration_version_by_git_commit_sha(
+                            workspace=workspace,
+                            git_commit_sha=tags[tag]):
+                        # If there wasn't, perform a run with the commit sha
+                        commit_sha = tags[tag]
+                        print(f"Using tag commit {tags[tag]}")
+                    else:
+                        print(f"Run already exists for commit {tags[tag]}")
 
-        if not ConfigurationVersion.get_configuration_version_by_git_commit_sha(
-                workspace=workspace,
-                git_commit_sha=branch_shas[workspace_branch]):
+                    # Otherwise, the commit sha is not set, but exit
+                    # as all other tags are older
+                    break
+                else:
+                    print("Tag does not match regex")
+
+        else:
+            workspace_branch = workspace.get_branch()
+
+            # Obtain latest sha for branch, if not already cached
+            if workspace_branch not in branch_shas:
+                branch_shas[workspace_branch] =  service_provider.get_latest_commit_ref(
+                    authorised_repo=workspace.authorised_repo, branch=workspace_branch
+                )
+
+            if not branch_shas[workspace_branch]:
+                print(f'Could not find latest commit for branch: {workspace_branch}')
+                return branch_shas
+
+            if not ConfigurationVersion.get_configuration_version_by_git_commit_sha(
+                    workspace=workspace,
+                    git_commit_sha=branch_shas[workspace_branch]):
+                commit_sha = branch_shas[workspace_branch]
+
+
+        if commit_sha is not None:
+            print(f"Creating configuration version for commit {commit_sha}")
             # If there is not a configuration version for the git commit,
             # create one
             cv = ConfigurationVersion.generate_from_vcs(
                 workspace=workspace,
-                commit_ref=branch_shas[workspace_branch],
+                commit_ref=commit_sha,
                 # Allow all runs to be queued to be applied
                 speculative=False
             )
@@ -60,6 +98,7 @@ class CronTasks:
                 print('Unable to create configuration version')
                 return branch_shas
 
+            print(f"Creating run")
             # Create run
             Run.create(
                 configuration_version=cv,
