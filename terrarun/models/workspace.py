@@ -3,6 +3,7 @@
 # Proprietary and confidential
 
 from enum import Enum
+import json
 import re
 import sqlalchemy
 import sqlalchemy.orm
@@ -87,7 +88,6 @@ class Workspace(Base, BaseObject):
     _assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="assessments_enabled")
 
     _latest_state = None
-    _latest_configuration_version = None
     _latest_run = None
 
     @classmethod
@@ -147,8 +147,9 @@ class Workspace(Base, BaseObject):
     @property
     def latest_configuration_version(self):
         """Return latest configuration version."""
-        if self.configuration_versions:
-            return self.configuration_versions[-1]
+        configuration_versions = self.configuration_versions
+        if configuration_versions:
+            return configuration_versions[-1]
         return None
 
     @property
@@ -296,26 +297,26 @@ class Workspace(Base, BaseObject):
     @property
     def trigger_prefixes(self):
         """Return trigger_prefixes"""
-        if self._trigger_prefixes is not None:
-            return self._trigger_prefixes
+        if self._trigger_prefixes and (json_val := json.loads(self._trigger_prefixes)):
+            return json_val
         return self.project.trigger_prefixes
 
     @trigger_prefixes.setter
     def trigger_prefixes(self, value):
         """Set trigger_prefixes"""
-        self._trigger_prefixes = value if value else None
+        self._trigger_prefixes = json.dumps(value) if value else None
 
     @property
     def trigger_patterns(self):
         """Return trigger_patterns"""
-        if self._trigger_patterns is not None:
-            return self._trigger_patterns
+        if self._trigger_patterns and (json_val := json.loads(self._trigger_patterns)):
+            return json_val
         return self.project.trigger_patterns
 
     @trigger_patterns.setter
     def trigger_patterns(self, value):
         """Set trigger_patterns"""
-        self._trigger_patterns = value if value else None
+        self._trigger_patterns = json.dumps(value) if value else None
 
     @property
     def authorised_repo(self):
@@ -408,11 +409,6 @@ class Workspace(Base, BaseObject):
 
     def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
         """Update VCS repo from request"""
-        # Check if VCS is defined in project
-        if self.project.authorised_repo:
-            return {}, [ApiError(
-                "invalid attribute", "VCS repo cannot be updated as it's managed in the parent project", "/data/attributes/vcs-repo"
-            )]
 
         if 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
             return {}, []
@@ -420,9 +416,15 @@ class Workspace(Base, BaseObject):
         new_oauth_token_id = vcs_repo_attributes['oauth-token-id']
         new_vcs_identifier = vcs_repo_attributes['identifier']
 
-        # If both settings have been cleared, unset repo
+        # If both settings are present and have been cleared, unset repo
         if not new_oauth_token_id and not new_vcs_identifier:
             return {'authorised_repo': None}, []
+
+        # Check if VCS is defined in project
+        if self.project.authorised_repo:
+            return {}, [ApiError(
+                "invalid attribute", "VCS repo cannot be updated as it's managed in the parent project", "/data/attributes/vcs-repo"
+            )]
 
         # Otherwise, attempt to get oauth token and authorised repo
         oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
@@ -452,6 +454,43 @@ class Workspace(Base, BaseObject):
             )
             errors += vcs_repo_errors
             update_kwargs.update(vcs_repo_kwargs)
+
+            if attributes["vcs-repo"] is not None:
+                if "tags-regex" in attributes["vcs-repo"]:
+                    if self.project.vcs_repo_tags_regex and attributes["vcs-repo"]["tags-regex"]:
+                        errors.append(ApiError(
+                            "Tags regex defined in project.",
+                            "Tags regex cannot be set on the workspace, as it is defined in the parent project.",
+                            "/data/attributes/vcs-repo/tags-regex"))
+                    else:
+                        update_kwargs["vcs_repo_tags_regex"] = attributes["vcs-repo"]["tags-regex"]
+
+                if "branch" in attributes["vcs-repo"]:
+                    if self.project.vcs_repo_branch and attributes["vcs-repo"]["branch"]:
+                        errors.append(ApiError(
+                            "Branch defined in project.",
+                            "Branch cannot be set on the workspace, as it is defined in the parent project.",
+                            "/data/attributes/vcs-repo/branch"))
+                    else:
+                        update_kwargs["vcs_repo_branch"] = attributes["vcs-repo"]["branch"]
+
+            if "trigger-patterns" in attributes:
+                if self.project.trigger_patterns and attributes["trigger-patterns"]:
+                    errors.append(ApiError(
+                        "Trigger patterns defined in project.",
+                        "Trigger patterns cannot be set on the workspace, as it is defined in the parent project.",
+                        "/data/attributes/trigger-patterns"))
+                else:
+                    update_kwargs["trigger_patterns"] = attributes["trigger-patterns"]
+
+            if "trigger-prefixes" in attributes:
+                if self.project.trigger_prefixes and attributes["trigger-prefixes"]:
+                    errors.append(ApiError(
+                        "Trigger prefixes defined in project.",
+                        "Trigger prefixes cannot be set on the workspace, as it is defined in the parent project.",
+                        "/data/attributes/trigger-prefixes"))
+                else:
+                    update_kwargs["trigger_prefixes"] = attributes["trigger-prefixes"]
 
         if errors:
             return errors
@@ -510,7 +549,8 @@ class Workspace(Base, BaseObject):
                 "speculative-enabled": self.speculative_enabled,
                 "structured-run-output-enabled": False,
                 "terraform-version": self.terraform_version,
-                "trigger-prefixes": [],
+                "trigger-prefixes": self.trigger_prefixes,
+                "trigger-patterns": self.trigger_patterns,
                 "updated-at": "2021-08-16T18:54:06.874Z",
                 "vcs-repo": {
                     "branch": self.vcs_repo_branch,
@@ -582,7 +622,7 @@ class Workspace(Base, BaseObject):
                     "links": {
                         "related": f"/api/v2/runs/{self.latest_run.api_id}"
                     }
-                } if self._latest_run else {},
+                } if self.latest_run else {},
                 "organization": {
                     "data": {
                         "id": self.organisation.name,

@@ -1,55 +1,137 @@
-<nb-card>
-    <nb-card-header>VCS Assignment</nb-card-header>
-    <nb-card-body>
+<ng-container *ngIf="_vcsConfig">
+  <nb-card>
+      <nb-card-header>VCS Assignment</nb-card-header>
+      <nb-card-body>
 
-        <!-- Check if connected to VCS repo -->
-        <ng-container *ngIf="vcsConfig && !selectAnotherRepo; then vcsAttached else vcsNotAttached"></ng-container>
-        <ng-template #vcsAttached>
-            Connected to: {{vcsConfig && vcsConfig['display-identifier']}}
-            <br />
-            <br />
+          <!-- Check if connected to VCS repo -->
+          <ng-container *ngIf="_vcsConfig['vcs-repo'] && !selectAnotherRepo; then vcsAttached else vcsNotAttached"></ng-container>
+          <ng-template #vcsAttached>
+              Connected to: {{_vcsConfig['vcs-repo'] && _vcsConfig['vcs-repo']['display-identifier']}}
+              <br />
+              <br />
 
-            <ng-container *ngIf="parentVcsConfig; else changeVcsButtons">
-                Repository is configured on a parent object, so cannot be re-configured
-            </ng-container>
-            <ng-template #changeVcsButtons>
+              <ng-container *ngIf="_parentVcsConfig?.['vcs-repo']; else changeVcsButtons">
+                  Repository is configured on a parent object, so cannot be re-configured
+              </ng-container>
+              <ng-template #changeVcsButtons>
 
-                <button nbButton (click)="onSelectAnotherRepo()">Change Repository</button>
-                <br />
-                <br />
-                <button nbButton (click)="onSelectRepository(null)">Remove Repository</button>
+                  <button nbButton (click)="onSelectAnotherRepo()" size="small">Change Repository</button>
+                  <br />
+                  <br />
+                  <button nbButton (click)="onSelectRepository(null)" size="small">Remove Repository</button>
+              </ng-template>
+
+          </ng-template>
+
+          <ng-template #vcsNotAttached>
+            <ng-container *ngIf="!organisationOauthClients; then noOauthClients else oauthClientsAvailable"></ng-container>
+            <ng-template #noOauthClients>
+              There are no VCS providers registered, goto <a href="/{{currentOrganisation?.name}}/vcs-providers">VCS Providers</a>
             </ng-template>
-        </ng-template>
+            <ng-template #oauthClientsAvailable>
+                <ng-container *ngIf="selectedOauthClient; then showAvailableRepos else showAvailableOauthClients"></ng-container>
 
-        <ng-template #vcsNotAttached>
-          <ng-container *ngIf="!organisationOauthClients; then noOauthClients else oauthClientsAvailable"></ng-container>
-          <ng-template #noOauthClients>
-            There are no VCS providers registered, goto <a href="/{{currentOrganisation?.name}}/vcs-providers">VCS Providers</a>
+                <ng-template #showAvailableRepos>
+                  <nb-card size="tiny">
+                      <nb-card-header>
+                        Select Repository
+                      </nb-card-header>
+                      <nb-list>
+                        <nb-list-item (click)="onSelectRepository(authorisedRepo)" *ngFor="let authorisedRepo of authorisedRepos">
+                          {{ authorisedRepo.attributes.name }}
+                        </nb-list-item>
+                      </nb-list>
+                    </nb-card>
+                </ng-template>
+
+                <ng-template #showAvailableOauthClients>
+                  <div>Connect VCS Repo</div>
+                  <br />
+                  <div *ngFor="let oauthClient of organisationOauthClients">
+                      <button (click)="onOauthClientSelect(oauthClient)" nbButton size="small">{{oauthClient.attributes.name}}</button>
+                  </div>
+                </ng-template>
+            </ng-template>
           </ng-template>
-          <ng-template #oauthClientsAvailable>
-              <ng-container *ngIf="selectedOauthClient; then showAvailableRepos else showAvailableOauthClients"></ng-container>
+      </nb-card-body>
+  </nb-card>
 
-              <ng-template #showAvailableRepos>
-                <nb-card size="tiny">
-                    <nb-card-header>
-                      Select Repository
-                    </nb-card-header>
-                    <nb-list>
-                      <nb-list-item (click)="onSelectRepository(authorisedRepo)" *ngFor="let authorisedRepo of authorisedRepos">
-                        {{ authorisedRepo.attributes.name }}
-                      </nb-list-item>
-                    </nb-list>
-                  </nb-card>
-              </ng-template>
 
-              <ng-template #showAvailableOauthClients>
-                <div>Connect VCS Repo</div>
-                <br />
-                <div *ngFor="let oauthClient of organisationOauthClients">
-                    <button (click)="onOauthClientSelect(oauthClient)" nbButton>{{oauthClient.attributes.name}}</button>
-                </div>
-              </ng-template>
-          </ng-template>
-        </ng-template>
+  <nb-card *ngIf="_vcsConfig && _vcsConfig['vcs-repo'] && !selectAnotherRepo">
+    <nb-card-header>
+      Configuration
+    </nb-card-header>
+    <nb-card-body>
+      <!-- Branch configuration -->
+      <ng-container *ngIf="canSetBranch; else parentBranchConfigured">
+        <label for="branch">
+          Branch
+          <br />
+        </label>
+        <input nbInput id="branch" type="text" [(ngModel)]="branch">
+        <br />
+        The branch that will be monitoring for new changes. This defaults to the repository default branch.
+      </ng-container>
+      <ng-template #parentBranchConfigured>
+        Branch has been defined in the parent: {{_parentVcsConfig?.['vcs-repo']?.['branch']}}<br />
+      </ng-template>
+
+      <br />
+      <br />
+
+      <!-- Options for file triggers -->
+      <label>
+        Triggers
+      </label>
+      <nb-radio-group name="triggerType" [disabled]="!canSetTrigger" [(ngModel)]="selectedTriggerOption">
+        <nb-radio value="all">Trigger on all changes</nb-radio>
+        <nb-radio value="file_trigger">Trigger when a changed files match a pattern</nb-radio>
+        <nb-radio value="tag_trigger">Trigger when a tag is pushed</nb-radio>
+      </nb-radio-group>
+      <br />
+      <ng-container *ngIf="!canSetTrigger">
+        Trigger has been defined in the parent
+      </ng-container>
+
+      <!-- Options for file triggers -->
+      <ng-container *ngIf="selectedTriggerOption == 'file_trigger'">
+        <nb-radio-group name="pathTriggerType" [disabled]="!canSetTrigger" [(ngModel)]="selectedPathTriggerType">
+          <nb-radio value="pattern">Pattern based match</nb-radio>
+          <nb-radio value="prefix">Prefix based match</nb-radio>
+        </nb-radio-group>
+
+        <nb-tag-list (tagRemove)="onTriggerPatternRemove($event)" *ngIf="selectedPathTriggerType == 'pattern'">
+          <nb-tag *ngFor="let tree of triggerPatterns" [text]="tree" removable></nb-tag>
+          <input type="text" nbTagInput (tagAdd)="onTriggerPatternAdd($event)" fullWidth>
+        </nb-tag-list>
+        <nb-tag-list (tagRemove)="onTriggerPrefixRemove($event)" *ngIf="selectedPathTriggerType == 'prefix'">
+          <nb-tag *ngFor="let tree of triggerPrefixes" [text]="tree" removable></nb-tag>
+          <input type="text" nbTagInput (tagAdd)="onTriggerPrefixAdd($event)" fullWidth>
+        </nb-tag-list>
+        Type a {{selectedPathTriggerType}} and press "Enter".<br /><br />
+        After configuring a {{selectedPathTriggerType}}, when a new commit is pushed the selected branch,<br />
+        the list of changed files will be compared against the latest run to determine whether to trigger a run.<br />
+        If the latest run was peformed localled, a run will always be triggered.
+        <br />
+      </ng-container>
+
+      <!-- Options for tag triggers -->
+      <ng-container *ngIf="selectedTriggerOption == 'tag_trigger'">
+        <label for="tagRegex">
+          Tag Regex
+          <br />
+        </label>
+        <input [disabled]="!canSetTrigger" nbInput id="tagRegex" [(ngModel)]="tagRegex" type="text">
+        <br />
+        Specify the tag pattern that you wish to match.<br />
+        For semantic versions, use <code>\d+\.\d+\.\d+</code>.<br />
+        To support semantic versions with <code>v</code> prefix, use <code>v\d+\.\d+\.\d+</code><br /><br />
+        Tags will ignore the branch selection - a run will be created irrelevant of whether it's wihtin the history of the branch.
+        <br />
+      </ng-container>
+
+      <br />
+      <button nbButton (click)="onUpdateSettings()" size="small">Update</button>
     </nb-card-body>
-</nb-card>
+  </nb-card>
+</ng-container>

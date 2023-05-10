@@ -1,11 +1,18 @@
+export interface ProjectWorkspaceVcsConfigVcsChild {
+    branch: string | null | undefined;
+    "ingress-submodules": boolean | undefined;
+    "tags-regex": string | null | undefined;
+    identifier: string | null | undefined;
+    "display-identifier": string | null | undefined;
+    "oauth-token-id": string | null | undefined;
+    "webhook-url": string | undefined;
+    "repository-http-url": string | undefined;
+    "service-provider": string | undefined;
+}
+
 export interface ProjectWorkspaceVcsConfig {
-    branch: string | null;
-    "ingress-submodules": boolean;
-    "tags-regex": string | null;
-    identifier: string;
-    "display-identifier": string;
-    "oauth-token-id": string;
-    "webhook-url": string;
-    "repository-http-url": string;
-    "service-provider": string;
+    "vcs-repo": ProjectWorkspaceVcsConfigVcsChild | null;
+    "file-triggers-enabled": boolean | undefined;
+    "trigger-prefixes": string[] | undefined;
+    "trigger-patterns": string[] | undefined;
 }

@@ -77,6 +77,14 @@ class BaseOauthServiceProvider:
         """Download commit archive and return as targz data"""
         raise NotImplementedError
 
+    def get_tags(self, authorised_repo):
+        """Get dictionary of latest tags to commit ref"""
+        raise NotImplementedError
+
+    def get_changed_files(self, authorised_repo, base, head):
+        """Get list of changed files between two commits"""
+        raise NotImplementedError
+
 
 class OauthServiceGithub(BaseOauthServiceProvider):
     """Oauth service for Github hosted"""
@@ -143,12 +151,16 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         )
         return res
 
+    def _get_base_repo_endpoint(self, authorised_repo):
+        """Return base endpoint for authorised repo"""
+        return f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}'
+
     def get_default_branch(self, authorised_repo):
         """Get default branch"""
         res = self._make_github_api_request(
             oauth_token=authorised_repo.oauth_token,
             method=requests.get,
-            endpoint=f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}'
+            endpoint=self._get_base_repo_endpoint(authorised_repo)
         )
         if res.status_code != 200:
             return None
@@ -159,7 +171,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         res = self._make_github_api_request(
             oauth_token=authorised_repo.oauth_token,
             method=requests.get,
-            endpoint=f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}/commits',
+            endpoint=f'{self._get_base_repo_endpoint(authorised_repo)}/commits',
             params={
                 "sha": branch,
                 "page": 1,
@@ -182,7 +194,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         data_res = self._make_github_api_request(
             oauth_token=authorised_repo.oauth_token,
             method=requests.get,
-            endpoint=f'/repos/{authorised_repo.vendor_configuration.get("owner")}/{authorised_repo.vendor_configuration.get("name")}/tarball/{commit_ref}'
+            endpoint=f'{self._get_base_repo_endpoint(authorised_repo=authorised_repo)}/tarball/{commit_ref}'
         )
         if data_res.status_code != 200:
             print(f"archive redirect is not 302: {data_res.status_code}")
@@ -213,6 +225,55 @@ class OauthServiceGithub(BaseOauthServiceProvider):
         # Seek to beginning and return data from new bytes
         new_fh.seek(0)
         return new_fh.read()
+
+    def get_tags(self, authorised_repo):
+        """Get dictionary of latest tags to commit ref"""
+        res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f"{self._get_base_repo_endpoint(authorised_repo)}/tags",
+            params={
+                "per_page": 100,
+                "page": 1
+            }
+        )
+        if res.status_code != 200:
+            return {}
+
+        data = res.json()
+
+        return {
+            tag.get("name"): tag.get("commit").get("sha")
+            for tag in data
+        }
+
+    def get_changed_files(self, authorised_repo, base, head):
+        """Get list of changed files between two commits"""
+        res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f"{self._get_base_repo_endpoint(authorised_repo)}/compare/{base}...{head}",
+            params={
+                # Only require 1 commit, as we only care about files
+                "per_page": 1,
+                "page": 1
+            }
+        )
+        if res.status_code != 200:
+            return []
+
+        data = res.json()
+
+        # Return list of all files, including previous filename attributes,
+        # if they exist
+        return [
+            file.get("filename")
+            for file in data.get("files")
+        ] + [
+            file.get("previous_filename")
+            for file in data.get("files")
+            if file.get("previous_filename")
+        ]
 
     def update_repos(self, oauth_token):
         """Update stored repos"""
