@@ -108,7 +108,10 @@
           <nb-tag *ngFor="let tree of triggerPrefixes" [text]="tree" removable></nb-tag>
           <input type="text" nbTagInput (tagAdd)="onTriggerPrefixAdd($event)" fullWidth>
         </nb-tag-list>
-        Type a {{selectedPathTriggerType}} and press "Enter"
+        Type a {{selectedPathTriggerType}} and press "Enter".<br /><br />
+        After configuring a {{selectedPathTriggerType}}, when a new commit is pushed the selected branch,<br />
+        the list of changed files will be compared against the latest run to determine whether to trigger a run.<br />
+        If the latest run was peformed localled, a run will always be triggered.
         <br />
       </ng-container>
 

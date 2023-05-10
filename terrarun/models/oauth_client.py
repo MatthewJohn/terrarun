@@ -81,6 +81,10 @@ class BaseOauthServiceProvider:
         """Get dictionary of latest tags to commit ref"""
         raise NotImplementedError
 
+    def get_changed_files(self, authorised_repo, base, head):
+        """Get list of changed files between two commits"""
+        raise NotImplementedError
+
 
 class OauthServiceGithub(BaseOauthServiceProvider):
     """Oauth service for Github hosted"""
@@ -242,6 +246,34 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             tag.get("name"): tag.get("commit").get("sha")
             for tag in data
         }
+
+    def get_changed_files(self, authorised_repo, base, head):
+        """Get list of changed files between two commits"""
+        res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f"{self._get_base_repo_endpoint(authorised_repo)}/compare/{base}...{head}",
+            params={
+                # Only require 1 commit, as we only care about files
+                "per_page": 1,
+                "page": 1
+            }
+        )
+        if res.status_code != 200:
+            return []
+
+        data = res.json()
+
+        # Return list of all files, including previous filename attributes,
+        # if they exist
+        return [
+            file.get("filename")
+            for file in data.get("files")
+        ] + [
+            file.get("previous_filename")
+            for file in data.get("files")
+            if file.get("previous_filename")
+        ]
 
     def update_repos(self, oauth_token):
         """Update stored repos"""
