@@ -25,8 +25,6 @@ export class VcsSelectionComponent implements OnInit {
     this.currentOrganisation = null;
     this.organisationOauthClients = [];
     this.authorisedRepos = [];
-    this.canSetBranch = false;
-    this.canSetTrigger = false;
     this.selectedTriggerOption = null;
     this.triggerPatterns = new Set(this.parentVcsConfig?.['trigger-patterns'] || this._vcsConfig?.['trigger-patterns'] || []);
     this.triggerPrefixes = new Set(this.parentVcsConfig?.['trigger-prefixes'] || this._vcsConfig?.['trigger-prefixes'] || []);
@@ -60,13 +58,7 @@ export class VcsSelectionComponent implements OnInit {
   set parentVcsConfig(value: ProjectWorkspaceVcsConfig | null) {
     this._parentVcsConfig = value;
 
-    // Setup available actions based on the configuration of the parent
-    this.canSetBranch = this._parentVcsConfig?.['vcs-repo']?.branch ? false : true;
-    this.canSetTrigger = ! (
-      this._parentVcsConfig?.['vcs-repo']?.['tags-regex'] ||
-      this._parentVcsConfig?.['trigger-patterns'] ||
-      this._parentVcsConfig?.['trigger-prefixes']
-    );
+    this.onParentVcsConfigSet();
   }
 
   @Output()
@@ -141,6 +133,25 @@ export class VcsSelectionComponent implements OnInit {
         })
       }
     });
+
+    // Update conifgs based on parent VCS, as this may not be called
+    // if parent VCS has not been passed into the component
+    this.onParentVcsConfigSet();
+  }
+
+  onParentVcsConfigSet() {
+    // Setup available actions based on the configuration of the parent
+    if (this._parentVcsConfig == null) {
+      this.canSetBranch = true;
+      this.canSetTrigger = true;
+    } else {
+      this.canSetBranch = this._parentVcsConfig?.['vcs-repo']?.branch ? false : true;
+      this.canSetTrigger = ! (
+        this._parentVcsConfig?.['vcs-repo']?.['tags-regex'] ||
+        this._parentVcsConfig?.['trigger-patterns'] ||
+        this._parentVcsConfig?.['trigger-prefixes']
+      );
+    }
   }
 
   onOauthClientSelect(oauthClient: any) {
