@@ -10,7 +10,7 @@
               <br />
               <br />
 
-              <ng-container *ngIf="parentVcsConfig?.['vcs-repo']; else changeVcsButtons">
+              <ng-container *ngIf="_parentVcsConfig?.['vcs-repo']; else changeVcsButtons">
                   Repository is configured on a parent object, so cannot be re-configured
               </ng-container>
               <ng-template #changeVcsButtons>
@@ -73,7 +73,7 @@
         The branch that will be monitoring for new changes. This defaults to the repository default branch.
       </ng-container>
       <ng-template #parentBranchConfigured>
-        Branch has been defined in the parent: {{parentVcsConfig?.['vcs-repo']?.['branch']}}<br />
+        Branch has been defined in the parent: {{_parentVcsConfig?.['vcs-repo']?.['branch']}}<br />
       </ng-template>
 
       <br />

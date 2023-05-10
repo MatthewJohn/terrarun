@@ -18,7 +18,6 @@ export class VcsSelectionComponent implements OnInit {
 
   @Input()
   set vcsConfig(value: ProjectWorkspaceVcsConfig | null) {
-    console.log("here");
     this._vcsConfig = value;
 
     // Reset all inputs on VCS config change
@@ -52,18 +51,23 @@ export class VcsSelectionComponent implements OnInit {
       // If neiter has been set, default to pattern
       this.selectedPathTriggerType = 'pattern';
     }
-    this.branch = this.parentVcsConfig?.['vcs-repo']?.branch || this._vcsConfig?.['vcs-repo']?.branch || '';
-
-    this.canSetBranch = this.parentVcsConfig?.['vcs-repo']?.branch ? false : true;
-    this.canSetTrigger = ! (
-      this.parentVcsConfig?.['vcs-repo']?.['tags-regex'] ||
-      this.parentVcsConfig?.['trigger-patterns'] ||
-      this.parentVcsConfig?.['trigger-prefixes']
-    );
+    this.branch = this._vcsConfig?.['vcs-repo']?.branch || '';
   }
 
+  _parentVcsConfig: ProjectWorkspaceVcsConfig | null = null;
+
   @Input()
-  parentVcsConfig: ProjectWorkspaceVcsConfig | null = null;
+  set parentVcsConfig(value: ProjectWorkspaceVcsConfig | null) {
+    this._parentVcsConfig = value;
+
+    // Setup available actions based on the configuration of the parent
+    this.canSetBranch = this._parentVcsConfig?.['vcs-repo']?.branch ? false : true;
+    this.canSetTrigger = ! (
+      this._parentVcsConfig?.['vcs-repo']?.['tags-regex'] ||
+      this._parentVcsConfig?.['trigger-patterns'] ||
+      this._parentVcsConfig?.['trigger-prefixes']
+    );
+  }
 
   @Output()
   onChangeVcs: EventEmitter<ProjectWorkspaceVcsConfig> = new EventEmitter();
