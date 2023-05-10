@@ -622,7 +622,7 @@ class Workspace(Base, BaseObject):
                     "links": {
                         "related": f"/api/v2/runs/{self.latest_run.api_id}"
                     }
-                } if self._latest_run else {},
+                } if self.latest_run else {},
                 "organization": {
                     "data": {
                         "id": self.organisation.name,
