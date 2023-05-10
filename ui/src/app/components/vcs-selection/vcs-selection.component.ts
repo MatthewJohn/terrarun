@@ -14,8 +14,53 @@ import { OrganisationStateType, StateService } from 'src/app/state.service';
 })
 export class VcsSelectionComponent implements OnInit {
 
+  _vcsConfig: ProjectWorkspaceVcsConfig | null = null;
+
   @Input()
-  vcsConfig: ProjectWorkspaceVcsConfig | null = null;
+  set vcsConfig(value: ProjectWorkspaceVcsConfig | null) {
+    console.log("here");
+    this._vcsConfig = value;
+
+    // Reset all inputs on VCS config change
+    this.selectAnotherRepo = false;
+    this.currentOrganisation = null;
+    this.organisationOauthClients = [];
+    this.authorisedRepos = [];
+    this.canSetBranch = false;
+    this.canSetTrigger = false;
+    this.selectedTriggerOption = null;
+    this.triggerPatterns = new Set(this.parentVcsConfig?.['trigger-patterns'] || this._vcsConfig?.['trigger-patterns'] || []);
+    this.triggerPrefixes = new Set(this.parentVcsConfig?.['trigger-prefixes'] || this._vcsConfig?.['trigger-prefixes'] || []);
+
+    // Default to all triggers
+    this.selectedTriggerOption = 'all';
+
+    this.tagRegex = this.parentVcsConfig?.['vcs-repo']?.['tags-regex'] || this._vcsConfig?.['vcs-repo']?.['tags-regex'] || '';
+    if (this.tagRegex) {
+      this.selectedTriggerOption = 'tag_trigger';
+    }
+
+    // If trigger pattern has been set, default to this
+    if (this.triggerPatterns.size) {
+      this.selectedPathTriggerType = 'pattern';
+      this.selectedTriggerOption = 'file_trigger';
+    } else if (this.triggerPrefixes.size) {
+      // Otherwise, if prefix has been defined, use this
+      this.selectedPathTriggerType = 'prefix';
+      this.selectedTriggerOption = 'file_trigger';
+    } else {
+      // If neiter has been set, default to pattern
+      this.selectedPathTriggerType = 'pattern';
+    }
+    this.branch = this.parentVcsConfig?.['vcs-repo']?.branch || this._vcsConfig?.['vcs-repo']?.branch || '';
+
+    this.canSetBranch = this.parentVcsConfig?.['vcs-repo']?.branch ? false : true;
+    this.canSetTrigger = ! (
+      this.parentVcsConfig?.['vcs-repo']?.['tags-regex'] ||
+      this.parentVcsConfig?.['trigger-patterns'] ||
+      this.parentVcsConfig?.['trigger-prefixes']
+    );
+  }
 
   @Input()
   parentVcsConfig: ProjectWorkspaceVcsConfig | null = null;
@@ -63,6 +108,7 @@ export class VcsSelectionComponent implements OnInit {
     private oauthTokenService: OauthTokenService,
     private organisationService: OrganisationService
   ) {
+    // Setup default empty values, until vcs repo is set
     this.selectAnotherRepo = false;
     this.currentOrganisation = null;
     this.organisationOauthClients = [];
@@ -70,30 +116,12 @@ export class VcsSelectionComponent implements OnInit {
     this.canSetBranch = false;
     this.canSetTrigger = false;
     this.selectedTriggerOption = null;
-    this.triggerPatterns = new Set(this.parentVcsConfig?.['trigger-patterns'] || this.vcsConfig?.['trigger-patterns'] || []);
-    this.triggerPrefixes = new Set(this.parentVcsConfig?.['trigger-prefixes'] || this.vcsConfig?.['trigger-prefixes'] || []);
-
-    // Default to all triggers
+    this.triggerPatterns = new Set([]);
+    this.triggerPrefixes = new Set([]);
     this.selectedTriggerOption = 'all';
-
-    this.tagRegex = this.parentVcsConfig?.['vcs-repo']?.['tags-regex'] || this.vcsConfig?.['vcs-repo']?.['tags-regex'] || '';
-    if (this.tagRegex) {
-      this.selectedTriggerOption = 'tag_trigger';
-    }
-
-    // If trigger pattern has been set, default to this
-    if (this.triggerPatterns.size) {
-      this.selectedPathTriggerType = 'pattern';
-      this.selectedTriggerOption = 'file_trigger';
-    } else if (this.triggerPrefixes.size) {
-      // Otherwise, if prefix has been defined, use this
-      this.selectedPathTriggerType = 'prefix';
-      this.selectedTriggerOption = 'file_trigger';
-    } else {
-      // If neiter has been set, default to pattern
-      this.selectedPathTriggerType = 'pattern';
-    }
-    this.branch = this.parentVcsConfig?.['vcs-repo']?.branch || this.vcsConfig?.['vcs-repo']?.branch || '';
+    this.tagRegex = '';
+    this.selectedPathTriggerType = 'pattern';
+    this.branch = '';
   }
 
   ngOnInit(): void {
@@ -109,13 +137,6 @@ export class VcsSelectionComponent implements OnInit {
         })
       }
     });
-
-    this.canSetBranch = this.parentVcsConfig?.['vcs-repo']?.branch ? false : true;
-    this.canSetTrigger = ! (
-      this.parentVcsConfig?.['vcs-repo']?.['tags-regex'] ||
-      this.parentVcsConfig?.['trigger-patterns'] ||
-      this.parentVcsConfig?.['trigger-prefixes']
-    );
   }
 
   onOauthClientSelect(oauthClient: any) {

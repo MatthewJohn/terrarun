@@ -1,12 +1,12 @@
-<ng-container *ngIf="vcsConfig">
+<ng-container *ngIf="_vcsConfig">
   <nb-card>
       <nb-card-header>VCS Assignment</nb-card-header>
       <nb-card-body>
 
           <!-- Check if connected to VCS repo -->
-          <ng-container *ngIf="vcsConfig['vcs-repo'] && !selectAnotherRepo; then vcsAttached else vcsNotAttached"></ng-container>
+          <ng-container *ngIf="_vcsConfig['vcs-repo'] && !selectAnotherRepo; then vcsAttached else vcsNotAttached"></ng-container>
           <ng-template #vcsAttached>
-              Connected to: {{vcsConfig['vcs-repo'] && vcsConfig['vcs-repo']['display-identifier']}}
+              Connected to: {{_vcsConfig['vcs-repo'] && _vcsConfig['vcs-repo']['display-identifier']}}
               <br />
               <br />
 
@@ -57,7 +57,7 @@
   </nb-card>
 
 
-  <nb-card *ngIf="vcsConfig && vcsConfig['vcs-repo'] && !selectAnotherRepo">
+  <nb-card *ngIf="_vcsConfig && _vcsConfig['vcs-repo'] && !selectAnotherRepo">
     <nb-card-header>
       Configuration
     </nb-card-header>
