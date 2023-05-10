@@ -53,8 +53,8 @@ class Project(Base, BaseObject):
     queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="queue_all_runs")
     speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="speculative_enabled")
     terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
-    trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
-    trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
+    _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
+    _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
 
     authorised_repo_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("authorised_repo.id", name="fk_project_authorised_repo_id_authorised_repo_id"),
@@ -110,6 +110,36 @@ class Project(Base, BaseObject):
         project.switch_lifecyce(lifecycle)
 
         return project
+
+    @property
+    def trigger_patterns(self):
+        """Return trigger prefixes"""
+        if not self._trigger_patterns:
+            return None
+        return json.loads(self._trigger_patterns)
+
+    @trigger_patterns.setter
+    def trigger_patterns(self, val):
+        """Return trigger prefixes"""
+        if not val:
+            self._trigger_patterns = None
+            return
+        self._trigger_patterns = json.dumps(val)
+
+    @property
+    def trigger_prefixes(self):
+        """Return trigger prefixes"""
+        if not self._trigger_prefixes:
+            return None
+        return json.loads(self._trigger_prefixes)
+
+    @trigger_prefixes.setter
+    def trigger_prefixes(self, val):
+        """Return trigger prefixes"""
+        if not val:
+            self._trigger_prefixes = None
+            return
+        self._trigger_prefixes = json.dumps(val)
 
     def update_attributes(self, session=None, **kwargs):
         """Determine if lifecycle is being updated."""
@@ -211,6 +241,20 @@ class Project(Base, BaseObject):
             errors += vcs_repo_errors
             update_kwargs.update(vcs_repo_kwargs)
 
+            if attributes["vcs-repo"] is not None:
+                if "tags-regex" in attributes["vcs-repo"]:
+                    update_kwargs["vcs_repo_tags_regex"] = attributes["vcs-repo"]["tags-regex"]
+
+                if "branch" in attributes["vcs-repo"]:
+                    update_kwargs["vcs_repo_branch"] = attributes["vcs-repo"]["branch"]
+
+            if "trigger-patterns" in attributes:
+                update_kwargs["trigger_patterns"] = attributes["trigger-patterns"]
+
+            if "trigger-prefixes" in attributes:
+                update_kwargs["trigger_prefixes"] = attributes["trigger-prefixes"]
+
+
         # If any errors have been found, return early
         # before updating any attributes
         if errors:
@@ -243,7 +287,8 @@ class Project(Base, BaseObject):
                 "speculative-enabled": self.speculative_enabled,
                 "structured-run-output-enabled": False,
                 "terraform-version": self.terraform_version,
-                "trigger-prefixes": [],
+                "trigger-prefixes": self.trigger_prefixes,
+                "trigger-patterns": self.trigger_patterns,
                 "updated-at": "2021-08-16T18:54:06.874Z",
                 "vcs-repo": {
                     "branch": self.vcs_repo_branch,
