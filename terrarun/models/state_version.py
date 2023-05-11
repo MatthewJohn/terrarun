@@ -24,7 +24,7 @@ class StateVersion(Base, BaseObject):
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")
 
-    run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
+    run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=True)
     run = sqlalchemy.orm.relationship("Run", back_populates="state_versions")
 
     # Optional references to either plan that generated state or apply
@@ -62,9 +62,9 @@ class StateVersion(Base, BaseObject):
         session.commit()
 
     @classmethod
-    def create_from_state_json(cls, run, state_json, session=None):
+    def create_from_state_json(cls, run, workspace, state_json, session=None):
         """Create StateVersion from state_json."""
-        sv = cls(run=run, workspace=run.configuration_version.workspace)
+        sv = cls(run=run, workspace=workspace)
         session = Database.get_session()
         session.add(sv)
         session.commit()
@@ -143,7 +143,7 @@ class StateVersion(Base, BaseObject):
                         "id": self.run.api_id,
                         "type": "runs"
                     }
-                },
+                } if self.run else {},
                 "created-by": {
                     "data": {
                         "id": "user-onZs69ThPZjBK2wo",
@@ -156,7 +156,7 @@ class StateVersion(Base, BaseObject):
                 },
                 "workspace": {
                     "data": {
-                        "id": self.run.configuration_version.workspace.api_id,
+                        "id": self.workspace.api_id,
                         "type": "workspaces"
                     }
                 },

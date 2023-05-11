@@ -2169,23 +2169,24 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
         run = None
         if run_id:
             run = Run.get_by_api_id(run_id)
+            if run is None:
+                return {}, 400
+
         # Attempt to get current run based on job authentication
         if not run_id and current_job:
             run = current_job.run
 
-        # @TODO Support without a run
-        if not run:
-            return {}, 400
-
         state_version = StateVersion.create_from_state_json(
+            workspace=workspace,
             run=run,
             state_json=json.loads(base64.b64decode(state_base64).decode('utf-8'))
         )
         if not state_version:
             return {}, 400
 
-        # Update run with state version
-        run.plan.apply.update_attributes(state_version=state_version)
+        if run:
+            # Update run with state version
+            run.plan.apply.update_attributes(state_version=state_version)
 
         return {'data': state_version.get_api_details()}
 
