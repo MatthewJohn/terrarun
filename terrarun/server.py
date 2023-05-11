@@ -172,6 +172,14 @@ class Server(object):
             '/api/v2/workspaces/<string:workspace_id>/relationships/tags'
         )
         self._api.add_resource(
+            ApiTerraformWorkspaceActionsLock,
+            '/api/v2/workspaces/<string:workspace_id>/actions/lock'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceActionsUnlock,
+            '/api/v2/workspaces/<string:workspace_id>/actions/unlock'
+        )
+        self._api.add_resource(
             ApiTerraformTaskDetails,
             '/api/v2/tasks/<string:task_id>'
         )
@@ -2074,6 +2082,56 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
             return {}, 404
         
         return {'data': state.get_api_details()}
+
+
+class ApiTerraformWorkspaceActionsLock(AuthenticatedEndpoint):
+    """Interface to lock workspace"""
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions to lock worksapce"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.WRITE)
+
+    def _post(self, current_user, current_job, workspace_id):
+        """Lock workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace.lock(user=current_user, reason=request.json.get("reason"))
+
+        return {'data': workspace.get_api_details(effective_user=current_user)}
+
+
+class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
+    """Interface to unlock workspace"""
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions to unlock worksapce"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.WRITE)
+
+    def _post(self, current_user, current_job, workspace_id):
+        """Return latest state for workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace.unlock()
+
+        return {'data': workspace.get_api_details(effective_user=current_user)}
 
 
 class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
