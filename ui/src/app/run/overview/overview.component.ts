@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Route, RouterModule } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { ApplyService } from 'src/app/apply.service';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
 import { RunAction } from 'src/app/models/RunAction/run-action-enum';
@@ -39,6 +39,10 @@ export class OverviewComponent implements OnInit {
   _createdByDetails: any;
   _updateInterval: any;
   _prePlanTaskResults$: Observable<any>;
+  runSubscription: Subscription | null;
+  userSubscription: Subscription | null;
+  planSubscription: Subscription | null;
+  applySubscription: Subscription | null;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -55,6 +59,10 @@ export class OverviewComponent implements OnInit {
     this._postPlanTaskStage = undefined;
     this._preApplyTaskStage = undefined;
     this._prePlanTaskResults$ = new Observable();
+    this.runSubscription = null;
+    this.userSubscription = null;
+    this.planSubscription = null;
+    this.applySubscription = null;
   }
 
   ngOnInit(): void {
@@ -71,11 +79,23 @@ export class OverviewComponent implements OnInit {
     if (this._updateInterval) {
       window.clearTimeout(this._updateInterval);
     }
+    if (this.runSubscription) {
+      this.runSubscription.unsubscribe();
+    }
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
+    if (this.planSubscription) {
+      this.planSubscription.unsubscribe();
+    }
+    if (this.applySubscription) {
+      this.applySubscription.unsubscribe();
+    }
   }
 
   getRunStatus() {
     if (this._runId) {
-      this.runService.getDetailsById(this._runId).subscribe((runData) => {
+      this.runSubscription = this.runService.getDetailsById(this._runId).subscribe((runData) => {
         this._runDetails = runData.data;
 
         // Obtain run status model
@@ -86,14 +106,14 @@ export class OverviewComponent implements OnInit {
 
         // Obtain "created by" user details
         if (this._runDetails.relationships["created-by"].data) {
-          this.userService.getUserDetailsById(this._runDetails.relationships["created-by"].data.id).subscribe((userDetails) => {
+          this.userSubscription = this.userService.getUserDetailsById(this._runDetails.relationships["created-by"].data.id).subscribe((userDetails) => {
             this._createdByDetails = userDetails.data;
           })
         }
 
         // Obtain plan details
         if (this._runDetails.relationships.plan) {
-          this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
+          this.planSubscription = this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
             this._planDetails = planData.data;
             this._planStatus = this.planApplyStatusFactory.getStatusByValue(this._planDetails.attributes.status);
             this.planService.getLog(this._planDetails.attributes['log-read-url']).subscribe((planLog) => {this._planLog = planLog;})
@@ -102,7 +122,7 @@ export class OverviewComponent implements OnInit {
 
         // Obtain apply details
         if (this._runDetails.relationships.apply.data !== undefined) {
-          this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
+          this.applySubscription = this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
             this._applyDetails = applyData.data;
             this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
             this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
