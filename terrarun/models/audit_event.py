@@ -74,7 +74,8 @@ class AuditEvent(Base, BaseObject):
             },
             "relationships": {
                 "user": {
-                    "data": { "id": self.api_id, "type": "users" } if self.user_id else {}
+                    # @TODO Convert user_id to a foreign key
+                    "data": { "id": terrarun.models.user.User.get_by_id(self.user_id).api_id, "type": "users" } if self.user_id else {}
                 }
             },
             "type": "audit-events"
