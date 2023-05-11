@@ -61,6 +61,7 @@ from terrarun.models.workspace_task import WorkspaceTask, WorkspaceTaskEnforceme
 from terrarun.models.environment import Environment
 from terrarun.agent_filesystem import AgentFilesystem
 from terrarun.presign import Presign
+from terrarun.api_error import ApiError
 
 
 class Server(object):
@@ -1198,7 +1199,12 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
         errors = project.update_attributes_from_request(attributes)
 
         if errors:
-            return 
+            return {
+                "errors": [
+                    error.get_api_details()
+                    for error in errors
+                ]
+            }, 422
 
         return {
             "data": project.get_api_details()
@@ -2104,7 +2110,16 @@ class ApiTerraformWorkspaceActionsLock(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        workspace.lock(user=current_user, reason=request.json.get("reason"))
+        if not workspace.lock(user=current_user, reason=request.json.get("reason")):
+            return {
+                "errors": [
+                    ApiError(
+                        "Workspace already locked",
+                        "The workspace is already locked, so cannot be locked.",
+                        status=409
+                    ).get_api_details()
+                ]
+            }, 409
 
         return {'data': workspace.get_api_details(effective_user=current_user)}
 
@@ -2189,7 +2204,6 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
             run.plan.apply.update_attributes(state_version=state_version)
 
         return {'data': state_version.get_api_details()}
-
 
 
 class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
