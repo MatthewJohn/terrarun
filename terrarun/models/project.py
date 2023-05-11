@@ -254,6 +254,17 @@ class Project(Base, BaseObject):
             if "trigger-prefixes" in attributes:
                 update_kwargs["trigger_prefixes"] = attributes["trigger-prefixes"]
 
+        # Handle update of execution mode
+        if "execution-mode" in attributes:
+            try:
+                execution_mode = WorkspaceExecutionMode(attributes["execution-mode"])
+                update_kwargs["execution_mode"] = execution_mode
+            except ValueError:
+                errors.append(ApiError(
+                    "Execution mode is invalid",
+                    "The value provided for execution mode is invalid",
+                    "/data/attributes/execution-mode"
+                ))
 
         # If any errors have been found, return early
         # before updating any attributes

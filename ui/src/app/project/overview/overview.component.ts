@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
@@ -25,11 +26,16 @@ export class OverviewComponent implements OnInit {
   organisationDetails: any;
   projectDetails: any;
 
+  generalSettingsForm = this.formBuilder.group({
+    executionMode: ''
+  });
+
   constructor(
     private stateService: StateService,
     private projectService: ProjectService,
     private workspaceService: WorkspaceService,
-    private router: Router
+    private router: Router,
+    private formBuilder: FormBuilder
   ) {
     this.currentProject = new Observable();
     this.currentOrganisation = new Observable();
@@ -54,6 +60,17 @@ export class OverviewComponent implements OnInit {
     })
   }
 
+  onGeneralSettingsSubmit() {
+    if (this.projectDetails?.data.id) {
+      this.projectService.update(
+        this.projectDetails.data.id,
+        {"execution-mode": this.generalSettingsForm.value.executionMode}
+      ).then((projectDetails) => {
+        this.projectDetails = projectDetails;
+      });
+    }
+  }
+
   ngOnInit(): void {
     this.currentOrganisation = this.stateService.currentOrganisation;
     this.currentProject = this.stateService.currentProject;
@@ -70,6 +87,11 @@ export class OverviewComponent implements OnInit {
             this.projectDetails = projectDetails;
 
             let workspaces = projectDetails.data.relationships.workspaces.data;
+
+            // Update general settings form
+            this.generalSettingsForm.setValue({
+              executionMode: this.projectDetails.data.attributes['execution-mode']
+            });
 
             // Sort workspaces by order
             workspaces.sort((a: any, b: any) => {

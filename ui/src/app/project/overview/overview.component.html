@@ -15,5 +15,25 @@
     </nb-card-body>
 </nb-card>
 
+<nb-card>
+  <nb-card-header>Settings</nb-card-header>
+  <nb-card-body>
+    <form [formGroup]="generalSettingsForm" (ngSubmit)="onGeneralSettingsSubmit()">
+      <label for="execution-mode">Execution mode</label><br />
+      <nb-select id="execution-mode" formControlName="executionMode">
+        <nb-option value="remote">Remote</nb-option>
+        <nb-option value="agent">Agent</nb-option>
+        <nb-option value="local">Local</nb-option>
+      </nb-select>
+      <br /><br />
+      Remote/Agent will execute Terraform remotely in Terrarun, either on global workers or assigned agent pools.<br />
+      Local execution will run Terraform locally on the workstation with only state being managed by Terrarun.<br />
+      In local execution mode, all VCS integration is ignored.<br />
+    
+      <br />
+      <button nbButton type="submit">Update</button>
+    </form>
+  </nb-card-body>
+</nb-card>
 
 <app-vcs-selection (onChangeVcs)="onChangeVcs($event)" [vcsConfig]="projectDetails?.data.attributes"></app-vcs-selection>
