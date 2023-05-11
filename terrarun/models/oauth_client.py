@@ -163,6 +163,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             endpoint=self._get_base_repo_endpoint(authorised_repo)
         )
         if res.status_code != 200:
+            print('rest !200')
             return None
         return res.json().get("default_branch")
 
