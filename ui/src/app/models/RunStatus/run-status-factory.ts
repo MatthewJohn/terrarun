@@ -8,6 +8,11 @@ abstract class RunStatusBaseClass implements IRunStatus {
     public abstract _labelColour: string;
     public abstract _icon: string;
     public _availableActions: RunAction[] = [];
+    public _shouldCheckPrePlan: boolean = false;
+    public _shouldCheckPlan: boolean = false;
+    public _shouldCheckPostPlan: boolean = false;
+    public _shouldCheckPreApply: boolean = false;
+    public _shouldCheckApply: boolean = false;
     public _isFinal: boolean = false;
 
     getName(): string {
@@ -25,6 +30,22 @@ abstract class RunStatusBaseClass implements IRunStatus {
     isFinal(): boolean {
         return this._isFinal;
     }
+    shouldCheckPrePlan(): boolean {
+        return this._shouldCheckPrePlan;
+    }
+    shouldCheckPlan(): boolean {
+        return this._shouldCheckPlan;
+    }
+    shouldCheckPostPlan(): boolean {
+        return this._shouldCheckPostPlan;
+    }
+    shouldCheckPreApply(): boolean {
+        return this._shouldCheckPreApply;
+    }
+    shouldCheckApply(): boolean {
+        return this._shouldCheckApply;
+    }
+
 }
 
 class RunStatusApplied extends RunStatusBaseClass {
@@ -38,6 +59,7 @@ class RunStatusApplying extends RunStatusBaseClass {
     _labelColour = "info";
     _icon = "activity-outline";
     public override _availableActions = [RunAction.CANCEL_RUN];
+    public override _shouldCheckApply = true;
 }
 class RunStatusApplyQueued extends RunStatusBaseClass {
     _nameString = "Apply queued";
@@ -70,6 +92,7 @@ class RunStatusDiscarded extends RunStatusBaseClass {
     _nameString = "Discarded";
     _labelColour = "danger";
     _icon = "alert-circle-outline";
+    public override _isFinal = true;
 }
 class RunStatusErrored extends RunStatusBaseClass {
     _nameString = "Errored";
@@ -108,6 +131,7 @@ class RunStatusPlanning extends RunStatusBaseClass {
     _labelColour = "info";
     _icon = "activity-outline";
     public override _availableActions = [RunAction.CANCEL_RUN];
+    public override _shouldCheckPlan = true;
 }
 class RunStatusPlanQueued extends RunStatusBaseClass {
     _nameString = "Plan queued";
@@ -145,6 +169,7 @@ class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _nameString = "Post-plan running";
     _labelColour = "info";
     _icon = "radio-button-on-outline";
+    public override _shouldCheckPostPlan = true;
 }
 class RunStatusPrePlanCompleted extends RunStatusBaseClass {
     _nameString = "Pre-plan completed";
@@ -155,6 +180,7 @@ class RunStatusPrePlanRunning extends RunStatusBaseClass {
     _nameString = "Pre-plan running";
     _labelColour = "info";
     _icon = "radio-button-on-outline";
+    public override _shouldCheckPrePlan = true;
 }
 class RunStatusPreApplyCompleted extends RunStatusBaseClass {
     _nameString = "Pre-apply completed";
@@ -165,6 +191,7 @@ class RunStatusPreApplyRunning extends RunStatusBaseClass {
     _nameString = "Pre-apply running";
     _labelColour = "info";
     _icon = "radio-button-on-outline";
+    public override _shouldCheckPreApply = true;
 }
 class RunStatusQueuing extends RunStatusBaseClass {
     _nameString = "Queuing";

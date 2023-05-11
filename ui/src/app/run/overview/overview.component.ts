@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Route, RouterModule } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { ApplyService } from 'src/app/apply.service';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
 import { RunAction } from 'src/app/models/RunAction/run-action-enum';
@@ -32,6 +32,11 @@ export class OverviewComponent implements OnInit {
   _applyStatus: any;
   _auditEvents: any;
 
+  // Whether the state has changed between
+  _stateChanged: boolean;
+  _previousRunStatus: string | null;
+  _knownTaskStages: string[] = [];
+
   _prePlanTaskStage: any;
   _postPlanTaskStage: any;
   _preApplyTaskStage: any;
@@ -55,6 +60,8 @@ export class OverviewComponent implements OnInit {
     this._postPlanTaskStage = undefined;
     this._preApplyTaskStage = undefined;
     this._prePlanTaskResults$ = new Observable();
+    this._stateChanged = true;
+    this._previousRunStatus = null;
   }
 
   ngOnInit(): void {
@@ -75,8 +82,12 @@ export class OverviewComponent implements OnInit {
 
   getRunStatus() {
     if (this._runId) {
-      this.runService.getDetailsById(this._runId).subscribe((runData) => {
+      let runSubscription = this.runService.getDetailsById(this._runId).subscribe((runData) => {
+        runSubscription.unsubscribe();
         this._runDetails = runData.data;
+
+        this._stateChanged = this._previousRunStatus !== this._runDetails.attributes.status;
+        this._previousRunStatus = this._runDetails.attributes.status;
 
         // Obtain run status model
         this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
@@ -84,16 +95,18 @@ export class OverviewComponent implements OnInit {
           window.clearTimeout(this._updateInterval);
         }
 
-        // Obtain "created by" user details
-        if (this._runDetails.relationships["created-by"].data) {
-          this.userService.getUserDetailsById(this._runDetails.relationships["created-by"].data.id).subscribe((userDetails) => {
+        // Obtain "created by" user details, if not already obtained
+        if (this._runDetails.relationships["created-by"]?.data && ! this._createdByDetails) {
+          let userSubscription = this.userService.getUserDetailsById(this._runDetails.relationships["created-by"].data.id).subscribe((userDetails) => {
+            userSubscription.unsubscribe();
             this._createdByDetails = userDetails.data;
           })
         }
 
         // Obtain plan details
-        if (this._runDetails.relationships.plan) {
-          this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
+        if (this._runDetails.relationships.plan && (this._runStatus.shouldCheckPlan() || this._stateChanged)) {
+          let planSubscription = this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
+            planSubscription.unsubscribe();
             this._planDetails = planData.data;
             this._planStatus = this.planApplyStatusFactory.getStatusByValue(this._planDetails.attributes.status);
             this.planService.getLog(this._planDetails.attributes['log-read-url']).subscribe((planLog) => {this._planLog = planLog;})
@@ -101,8 +114,9 @@ export class OverviewComponent implements OnInit {
         }
 
         // Obtain apply details
-        if (this._runDetails.relationships.apply.data !== undefined) {
-          this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
+        if (this._runDetails.relationships.apply.data !== undefined && (this._runStatus.shouldCheckApply() || this._stateChanged)) {
+          let applySubscription = this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
+            applySubscription.unsubscribe();
             this._applyDetails = applyData.data;
             this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
             this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
@@ -112,17 +126,30 @@ export class OverviewComponent implements OnInit {
         // Iterate over plan stages, obtain details and populate in
         // appropriate member variables
         for (let taskStageRelationship of this._runDetails.relationships['task-stages'].data) {
+
           let taskStageId = taskStageRelationship.id;
+
+          if (
+              this._knownTaskStages.indexOf(taskStageId) !== -1 &&
+              !this._runStatus.shouldCheckPrePlan() &&
+              !this._runStatus.shouldCheckPostPlan() &&
+              !this._runStatus.shouldCheckPreApply() &&
+              !this._stateChanged) {
+            break;
+          }
+
           if (taskStageId) {
             let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
-            ts.details$.subscribe((taskStageData) => {
+            let taskStateSubscribe = ts.details$.subscribe((taskStageData) => {
+              this._knownTaskStages.push(taskStageId);
+              taskStateSubscribe.unsubscribe();
               if (taskStageData.data.attributes.stage == 'pre_plan') {
                 if (this._prePlanTaskStage === undefined) {
                   this._prePlanTaskStage = new TaskStage(
                     taskStageData.data.id,
                     this.taskStageService,
                     this.taskResultService);
-                  } else {
+                  } else if (this._runStatus.shouldCheckPrePlan() || this._stateChanged) {
                     this._prePlanTaskStage.update();
                   }
                 // this._prePlanTaskStage = ts;
@@ -132,7 +159,7 @@ export class OverviewComponent implements OnInit {
                     taskStageData.data.id,
                     this.taskStageService,
                     this.taskResultService);
-                } else {
+                } else if (this._runStatus.shouldCheckPostPlan() || this._stateChanged) {
                   this._postPlanTaskStage.update();
                 }
               } else if (taskStageData.data.attributes.stage == 'pre_apply') {
@@ -141,7 +168,7 @@ export class OverviewComponent implements OnInit {
                     taskStageData.data.id,
                     this.taskStageService,
                     this.taskResultService);
-                } else {
+                } else if (this._runStatus.shouldCheckPreApply() || this._stateChanged) {
                   this._preApplyTaskStage.update();
                 }
               }
