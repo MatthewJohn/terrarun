@@ -38,6 +38,7 @@ from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
+from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
 from terrarun.permissions.workspace import WorkspacePermissions
@@ -49,7 +50,6 @@ from terrarun.models.tag import Tag
 from terrarun.models.task import Task
 from terrarun.models.task_result import TaskResult, TaskResultStatus
 from terrarun.models.task_stage import TaskStage
-from terrarun.terraform_binary import TerraformBinary
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.models.user_token import UserToken, UserTokenType
 from terrarun.models.workspace import Workspace
@@ -312,6 +312,10 @@ class Server(object):
         self._api.add_resource(
             ApiAuthenticate,
             '/api/terrarun/v1/authenticate'
+        )
+        self._api.add_resource(
+            ApiAdminTerraformVersions,
+            '/api/v2/admin/terraform-versions'
         )
         self._api.add_resource(
             ApiTerrarunOrganisationCreateNameValidation,
@@ -2881,6 +2885,10 @@ class ApiAgentJobs(Resource, AgentEndpoint):
             # Either the plan or apply api ID
             job_sub_task_id = job.run.plan.api_id if job.job_type is JobQueueType.PLAN else job.run.plan.apply.api_id
 
+            tool = Tool.upsert_by_version(tool_type=ToolType.TERRAFORM_VERSION, version=terraform_version)
+            if not tool:
+                raise Exception("Unable to obtain/generate tool version")
+
             return {
                 # @TODO Should this be apply for plans during an apply run?
                 "type": job.job_type.value,
@@ -2890,8 +2898,8 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "operation": job.job_type.value,
                     "organization_name": job.run.configuration_version.workspace.organisation.name_id,
                     "workspace_name": job.run.configuration_version.workspace.name,
-                    "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
-                    "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
+                    "terraform_url": tool.get_presigned_download_url(),
+                    "terraform_checksum": tool.get_checksum(),
                     "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/{job.job_type.value}/{job_sub_task_id}?key={run_key}",
                     "configuration_version_url": job.run.configuration_version.get_download_url(),
                     "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem?key={run_key}",
@@ -3110,4 +3118,22 @@ class ApiOauthTokenAuthorisedRepos(AuthenticatedEndpoint):
 
         return {
             "data": oauth_token.oauth_client.get_repositories_api_details(oauth_token)
+        }
+
+
+class ApiAdminTerraformVersions(AuthenticatedEndpoint):
+    """Interface to view/create terraform versions"""
+
+    def check_permissions_get(self, current_user, current_job):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _get(self, current_user, current_job):
+        """Provide list of terraform versions"""
+
+        return {
+            "data": [
+                tool.get_api_details()
+                for tool in Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
+            ]
         }
