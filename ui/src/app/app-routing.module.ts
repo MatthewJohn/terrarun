@@ -4,6 +4,7 @@ import { AppRedirectComponent } from './app-redirect/app-redirect.component';
 import { HomeComponent } from './home/home.component';
 import { LoggedInGuard } from './logged-in.guard';
 import { LoginComponent } from './login/login.component';
+import { SiteAdminGuard } from './site-admin.guard';
 
 const routes: Routes = [
   {
@@ -15,6 +16,11 @@ const routes: Routes = [
     path: 'settings',
     loadChildren: () => import(`./settings/settings.module`).then(m => m.SettingsModule),
     canActivate: [LoggedInGuard]
+  },
+  {
+    path: 'site-admin',
+    loadChildren: () => import(`./site-admin/site-admin.module`).then(m => m.SiteAdminModule),
+    canActivate: [LoggedInGuard, SiteAdminGuard]
   },
   {
     path: 'login',
