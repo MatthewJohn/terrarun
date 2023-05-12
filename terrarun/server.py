@@ -3137,7 +3137,7 @@ class ApiAdminTerraformVersions(AuthenticatedEndpoint):
 
         return {
             "data": [
-                tool.get_api_details()
+                tool.get_admin_api_details()
                 for tool in Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
             ]
         }
@@ -3170,7 +3170,7 @@ class ApiAdminTerraformVersions(AuthenticatedEndpoint):
             return {}, 400
 
         return {
-            "data": tool_version.get_api_details()
+            "data": tool_version.get_admin_api_details()
         }
 
 
@@ -3189,5 +3189,5 @@ class ApiAdminTerraformVersion(AuthenticatedEndpoint):
             return {}, 404
 
         return {
-            "data": tool.get_api_details()
+            "data": tool.get_admin_api_details()
         }

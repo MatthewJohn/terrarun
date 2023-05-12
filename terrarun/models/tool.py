@@ -47,6 +47,7 @@ class Tool(Base, BaseObject):
 
     tool_type = sqlalchemy.Column(sqlalchemy.Enum(ToolType), nullable=False)
     version = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    sha = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
 
@@ -167,15 +168,16 @@ class Tool(Base, BaseObject):
             # format zip file, retaining placeholders for platform and arch
             return self.CHECKSUM_UPSTREAM_URL.format(version=self.version)
 
-    def get_api_details(self):
+    def get_admin_api_details(self):
         """Return API details for tool versions"""
         return {
             "id": self.api_id,
             "type": self.tool_type.value,
             "attributes": {
                 "version": self.version,
-                "url": self.url.format(arch="amd64", platform="linux"),
-                "sha": "6b8ce67647a59b2a3f70199c304abca0ddec0e49fd060944c26f666298e23418",
+                "url": self.custom_url,
+                "sha": self.sha,
+                "checksum-url": self.custom_checksum_url,
                 "deprecated": self.deprecated,
                 "deprecated-reason": self.deprecated_reason,
                 "official": self.official,
@@ -221,6 +223,10 @@ class Tool(Base, BaseObject):
 
     def get_checksum(self):
         """Obtain checksum for zip file version"""
+        # If custom SHA has been defined, return it
+        if self.sha:
+            return self.sha
+
         object_storage = ObjectStorage()
         zip_file = self.ZIP_FORMAT.format(version=self.version, platform="linux", arch="amd64")
         checksum_key = self.S3_KEY_CHECKSUM.format(version=self.version)
