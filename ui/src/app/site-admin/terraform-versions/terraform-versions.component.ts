@@ -30,10 +30,6 @@ export class TerraformVersionsComponent implements OnInit {
     private adminTerraformVersionService: AdminTerraformVersionService
   ) { }
 
-  dumpData(val: any) {
-    console.log(val)
-  }
-
   ngOnInit(): void {
     this.adminTerraformVersionService.getVersions(
     ).then((terraformVersions: ResponseObject<AdminTerraformVersion>[]) => {
@@ -51,7 +47,6 @@ export class TerraformVersionsComponent implements OnInit {
           }
         };
       });
-      console.log(this.terraformVersionsRowData);
       this.loadingData = false;
     })
   }
