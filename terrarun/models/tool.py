@@ -65,7 +65,9 @@ class Tool(Base, BaseObject):
         return session.query(cls).filter(cls.tool_type==tool_type).all()
 
     @classmethod
-    def upsert_by_version(cls, tool_type, version, url=None, checksum_url=None, only_create=False):
+    def upsert_by_version(cls, tool_type, version, url=None, checksum_url=None,
+                          sha=None, enabled=True, deprecated=False, deprecated_reason=None,
+                          only_create=False):
         """Upsert version based on version number"""
         # Check version is valid
         try:
@@ -102,7 +104,11 @@ class Tool(Base, BaseObject):
             tool_type=tool_type,
             version=version,
             custom_url=url,
-            custom_checksum_url=checksum_url
+            custom_checksum_url=checksum_url,
+            sha=sha,
+            deprecated=deprecated,
+            deprecated_reason=deprecated_reason,
+            enabled=enabled
         )
 
         session.add(tool_version)

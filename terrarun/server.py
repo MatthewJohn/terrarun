@@ -318,6 +318,10 @@ class Server(object):
             '/api/v2/admin/terraform-versions'
         )
         self._api.add_resource(
+            ApiAdminTerraformVersion,
+            '/api/v2/admin/terraform-versions/<string:tool_id>'
+        )
+        self._api.add_resource(
             ApiTerrarunOrganisationCreateNameValidation,
             '/api/terrarun/v1/organisation/create/name-validation'
         )
@@ -3136,4 +3140,54 @@ class ApiAdminTerraformVersions(AuthenticatedEndpoint):
                 tool.get_api_details()
                 for tool in Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
             ]
+        }
+
+    def check_permissions_post(self, current_user, current_job):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _post(self, current_user, current_job):
+        """Create terraform version"""
+
+        data = request.json
+        assert data.get("type") == "terraform-versions"
+
+        attributes = data.get("attributes", {})
+
+        # beta, official are ignored, as these are calculated automatically
+        tool_version = Tool.upsert_by_version(
+            tool_type=ToolType.TERRAFORM_VERSION,
+            version=attributes.get("version", None),
+            url=attributes.get("url", None),
+            sha=attributes.get("sha", None),
+            checksum_url=attributes.get("checksum-url", None),
+            enabled=attributes.get("enabled", True),
+            deprecated=attributes.get("deprecated", False),
+            deprecated_reason=attributes.get("deprecated-reason", None),
+            only_create=True
+        )
+        if not tool_version:
+            return {}, 400
+
+        return {
+            "data": tool_version.get_api_details()
+        }
+
+
+class ApiAdminTerraformVersion(AuthenticatedEndpoint):
+    """Interface to view terraform version"""
+
+    def check_permissions_get(self, current_user, current_job, tool_id):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _get(self, current_user, current_job, tool_id):
+        """Provide list of terraform versions"""
+
+        tool = Tool.get_by_api_id(tool_id)
+        if not tool:
+            return {}, 404
+
+        return {
+            "data": tool.get_api_details()
         }
