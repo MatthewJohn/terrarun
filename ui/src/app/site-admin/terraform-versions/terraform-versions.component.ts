@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { NbDialogService } from '@nebular/theme';
+import { Subject } from 'rxjs';
+import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { AdminTerraformVersion } from 'src/app/interfaces/admin-terraform-version';
 import { DataItem } from 'src/app/interfaces/data';
 import { ResponseObject } from 'src/app/interfaces/response';
@@ -19,6 +22,9 @@ export class TerraformVersionsComponent implements OnInit {
   showEditForm: boolean = false;
   editTool: ResponseObject<AdminTerraformVersion> | null = null;
 
+  resetCreateForm: Subject<void> = new Subject<void>();
+  resetEditForm: Subject<void> = new Subject<void>();
+
   columnNames: {[key: string]: string} = {
     'version': 'Version',
     'url': 'Download Url',
@@ -31,7 +37,8 @@ export class TerraformVersionsComponent implements OnInit {
   tableColumns: string[] = ['version', 'url', 'checksum-url', 'sha', 'enabled', 'deprecated', 'deprecated-message'];
 
   constructor(
-    private adminTerraformVersionService: AdminTerraformVersionService
+    private adminTerraformVersionService: AdminTerraformVersionService,
+    private dialogService: NbDialogService
   ) { }
 
   onRowClick(toolId: string) {
@@ -72,19 +79,32 @@ export class TerraformVersionsComponent implements OnInit {
 
   onCreateSubmit(attributes: AdminTerraformVersion) {
     this.adminTerraformVersionService.create(attributes).then(() => {
+      // Reset new form and reload table data
+      this.resetCreateForm.next();
       this.loadData();
-    });
+    }).catch((err) => {
+      this.dialogService.open(ErrorDialogueComponent, {
+        context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+      });
+    });;
   }
 
   onEditSubmit(attributes: AdminTerraformVersion) {
     // If edit tool is set, update item in service
     if (this.editTool) {
       this.adminTerraformVersionService.update(this.editTool.id, attributes).then(() => {
+        // Hide edit form
+        this.editTool = null;
+        this.showEditForm = false;
+        this.resetEditForm.next();
+
+        // Reload table data
         this.loadData();
+      }).catch((err) => {
+        this.dialogService.open(ErrorDialogueComponent, {
+          context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+        });
       });
-      // Hide edit form
-      this.editTool = null;
-      this.showEditForm = false;
     }
   }
   onEditCancel() {
@@ -94,9 +114,17 @@ export class TerraformVersionsComponent implements OnInit {
   }
   onEditDelete(toolId: string) {
     this.adminTerraformVersionService.delete(toolId).then(() => {
+      // Unset edit tool and reset form
+      this.editTool = null;
+      this.showEditForm = false;
+      this.resetCreateForm.next();
+
+      // Reload table data
       this.loadData();
+    }).catch((err) => {
+      this.dialogService.open(ErrorDialogueComponent, {
+        context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+      });
     });
-    this.editTool = null;
-    this.showEditForm = false;
   }
 }

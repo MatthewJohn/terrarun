@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
+import { Observable, Subscription } from 'rxjs';
 import { AdminTerraformVersion } from 'src/app/interfaces/admin-terraform-version';
 import { ResponseObject } from 'src/app/interfaces/response';
 
@@ -34,6 +35,11 @@ export class TerraformVersionFormComponent implements OnInit {
   @Output()
   onDelete: EventEmitter<string> = new EventEmitter();
 
+  private resetFormSubscription: Subscription | null = null;
+
+  @Input()
+  resetForm: Observable<void> | null = null;
+
   _initialData: ResponseObject<AdminTerraformVersion> | null = null;
 
   @Input()
@@ -42,23 +48,7 @@ export class TerraformVersionFormComponent implements OnInit {
   }
   set initialData(value: ResponseObject<AdminTerraformVersion> | null) {
     this._initialData = value;
-    if (value !== null) {
-      this.formData.setValue({
-        version: value.attributes.version,
-        downloadUrl: value.attributes.url,
-        checksumUrl: value.attributes['checksum-url'],
-        checksumSha: value.attributes.sha,
-        enabled: value.attributes.enabled,
-        deprecated: value.attributes.deprecated,
-        deprecatedReason: value.attributes['deprecated-reason']
-      })
-
-      // Disable version input
-      this.formData.get('version')?.disable();
-
-      // Disable deprecated message, if deprecated is unset
-      this.onChangeDeprecation();
-    }
+    this.resetFormData();
   }
 
   formData = this.formBuilder.group({
@@ -77,7 +67,49 @@ export class TerraformVersionFormComponent implements OnInit {
     this.formData.get('deprecatedReason')?.disable();
   }
 
+  resetFormData() {
+    if (this._initialData !== null) {
+      this.formData.setValue({
+        version: this._initialData.attributes.version,
+        downloadUrl: this._initialData.attributes.url,
+        checksumUrl: this._initialData.attributes['checksum-url'],
+        checksumSha: this._initialData.attributes.sha,
+        enabled: this._initialData.attributes.enabled,
+        deprecated: this._initialData.attributes.deprecated,
+        deprecatedReason: this._initialData.attributes['deprecated-reason']
+      })
+
+      // Disable version input
+      this.formData.get('version')?.disable();
+
+      // Disable deprecated message, if deprecated is unset
+      this.onChangeDeprecation();
+    } else {
+      // Reset form data
+      this.formData.setValue({
+        version: '',
+        downloadUrl: '',
+        checksumUrl: '',
+        checksumSha: '',
+        enabled: true,
+        deprecated: false,
+        deprecatedReason: ''
+      });
+    }
+  }
+
   ngOnInit(): void {
+    if (this.resetForm !== null) {
+      this.resetFormSubscription = this.resetForm.subscribe(() => {
+        this.resetFormData();
+      });
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.resetFormSubscription !== null) {
+      this.resetFormSubscription.unsubscribe();
+    }
   }
 
   onChangeDeprecation() {
@@ -104,16 +136,6 @@ export class TerraformVersionFormComponent implements OnInit {
       "created-at": undefined,
       usage: undefined
     });
-    // Reset form data
-    this.formData.setValue({
-      version: '',
-      downloadUrl: '',
-      checksumUrl: '',
-      checksumSha: '',
-      enabled: true,
-      deprecated: false,
-      deprecatedReason: ''
-    });
   }
 
   onFormCancel() {
@@ -125,5 +147,4 @@ export class TerraformVersionFormComponent implements OnInit {
       this.onDelete.emit(this.initialData.id);
     }
   }
-
 }

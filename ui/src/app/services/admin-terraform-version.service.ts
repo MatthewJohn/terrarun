@@ -41,8 +41,8 @@ export class AdminTerraformVersionService {
         next: (data: DataItem<ResponseObject<AdminTerraformVersion>>) => {
           resolve(data.data);
         },
-        error: () => {
-          reject();
+        error: (err) => {
+          reject(err);
         }
       });
     });
@@ -58,8 +58,8 @@ export class AdminTerraformVersionService {
         next: (data: DataItem<ResponseObject<AdminTerraformVersion>>) => {
           resolve(data.data);
         },
-        error: () => {
-          reject();
+        error: (err) => {
+          reject(err);
         }
       });
     });
@@ -74,8 +74,8 @@ export class AdminTerraformVersionService {
         next: (data: DataItem<ResponseObject<AdminTerraformVersion>>) => {
           resolve(null);
         },
-        error: () => {
-          reject();
+        error: (err) => {
+          reject(err);
         }
       });
     });
