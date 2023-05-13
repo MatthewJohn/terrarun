@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AccountService } from '../account.service';
-import { DataList } from '../interfaces/data';
+import { DataItem, DataList } from '../interfaces/data';
 import { LifecycleAttributes } from '../interfaces/lifecycle-attributes';
 import { ResponseObject } from '../interfaces/response';
 
@@ -18,9 +18,26 @@ export class LifecycleService {
   getLifecycles(organisationName: string): Promise<ResponseObject<LifecycleAttributes>[]> {
     return new Promise((resolve, reject) => {
       this.http.get<any>(
-      `/api/v2/organizations/${organisationName}/lifecycles`,
-      { headers: this.accountService.getAuthHeader() }).subscribe({
+        `/api/v2/organizations/${organisationName}/lifecycles`,
+        { headers: this.accountService.getAuthHeader()
+      }).subscribe({
         next: (data: DataList<ResponseObject<LifecycleAttributes>>) => {
+          resolve(data.data);
+        },
+        error: (err) => {
+          reject(err);
+        }
+      });
+    });
+  }
+
+  getByName(organisationName: string, lifecycleName: string): Promise<ResponseObject<LifecycleAttributes>> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `/api/v2/organizations/${organisationName}/lifecycles/${lifecycleName}`,
+        { headers: this.accountService.getAuthHeader()
+      }).subscribe({
+        next: (data: DataItem<ResponseObject<LifecycleAttributes>>) => {
           resolve(data.data);
         },
         error: (err) => {

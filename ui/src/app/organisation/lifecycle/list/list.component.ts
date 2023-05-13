@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { DataItem, DataList } from 'src/app/interfaces/data';
 import { LifecycleAttributes } from 'src/app/interfaces/lifecycle-attributes';
@@ -48,7 +49,8 @@ export class ListComponent implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private stateService: StateService,
-    private lifecycleService: LifecycleService
+    private lifecycleService: LifecycleService,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -99,6 +101,7 @@ export class ListComponent implements OnInit {
   }
 
   onLifecycleClick(row: DataItem<ResponseObject<LifecycleAttributes>>) {
+    this.router.navigateByUrl(`/${this.currentOrganisation?.name}/lifecycles/${row.data.attributes.name}`);
   }
 
 
