@@ -1,5 +1,5 @@
-import { Component, forwardRef, Input, OnInit } from '@angular/core';
-import { ControlContainer, ControlValueAccessor, Form, FormControlName, FormGroup, FormGroupDirective, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { Component, Input, OnInit } from '@angular/core';
+import { ControlContainer, Form, FormControlName, FormGroup, FormGroupDirective } from '@angular/forms';
 import { ResponseObject } from 'src/app/interfaces/response';
 import { TerraformVersion } from 'src/app/interfaces/terraform-version';
 import { TerraformVersionService } from 'src/app/services/terraform-version.service';
@@ -8,13 +8,20 @@ import { TerraformVersionService } from 'src/app/services/terraform-version.serv
   selector: 'terraform-version-select',
   templateUrl: './terraform-version-select.component.html',
   styleUrls: ['./terraform-version-select.component.scss'],
-  providers: [{ 
-    provide: NG_VALUE_ACCESSOR,
-    multi: true,
-    useExisting: forwardRef(() => TerraformVersionSelectComponent),
-  }],
+  viewProviders: [
+    {
+        provide: ControlContainer,
+        useExisting: FormGroupDirective
+    }
+  ]
 })
-export class TerraformVersionSelectComponent implements ControlValueAccessor {
+export class TerraformVersionSelectComponent implements OnInit {
+
+  @Input()
+  formControlName: string | undefined;
+
+  @Input()
+  formGroup: FormGroup | undefined;
 
   loadingData: boolean = true;
   terraformVersions: ResponseObject<TerraformVersion>[] = [];
@@ -23,25 +30,17 @@ export class TerraformVersionSelectComponent implements ControlValueAccessor {
     private terraformVersionService: TerraformVersionService
   ) { }
 
-  value: string = "";
-  onChange() {}
-  onTouched() {}
-  isDisabled: boolean = false;
-
-  writeValue(value: string) {
-    this.value = value
+  getFormGroup(): FormGroup {
+    if (this.formGroup) {
+      return this.formGroup
+    }
+    throw new Error();
   }
-
-  registerOnChange(fn: any) {
-    this.onChange = fn
-  }
-
-  registerOnTouched(fn: any) {
-    this.onTouched = fn
-  }
-
-  setDisabledState(isDisabled: boolean) {
-    this.isDisabled = isDisabled;
+  getFormControlName(): string {
+    if (this.formControlName) {
+      return this.formControlName;
+    }
+    throw new Error();
   }
 
   ngOnInit(): void {
