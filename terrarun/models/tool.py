@@ -27,6 +27,8 @@ class ToolType(Enum):
 
     TERRAFORM_VERSION = "terraform-versions"
 
+ToolType.TERRAFORM_VERSION.display_name = "terraform"
+
 
 class Tool(Base, BaseObject):
 
@@ -96,8 +98,6 @@ class Tool(Base, BaseObject):
             # Set the objects' custom checksum URL and
             # attempt a download to ensure that it works
             self.custom_checksum_url = kwargs['custom_checksum_url']
-            self.get_checksum(force_download=True)
-            update_kwargs['custom_checksum_url'] = kwargs['custom_checksum_url']
 
         if 'sha' in kwargs:
             update_kwargs['sha'] = kwargs['sha']
@@ -260,6 +260,24 @@ class Tool(Base, BaseObject):
             }
         }
 
+    def get_api_details(self):
+        """Return end-user API details"""
+        return {
+            "id": f"{self.tool_type.display_name}-{self.version}",
+            "type": "tool-versions",
+            "attributes": {
+                "tool": self.tool_type.display_name,
+                "version": self.version,
+                "url": self.url.format(arch="amd64", platform="linux"),
+                "sha": self.get_checksum(),
+                "official": self.official,
+                "enabled": self.enabled,
+                "beta": self.beta,
+                "deprecated": self.deprecated,
+                "deprecated-reason": self.deprecated_reason
+            }
+        }
+
     def get_presigned_download_url(self, force_download=False):
         """Obtain pre-signed URL for terraform binary"""
         object_storage = ObjectStorage()
@@ -305,7 +323,7 @@ class Tool(Base, BaseObject):
         logger.debug(f'URL: {url}')
         return url
 
-    def get_checksum(self, force_download=False):
+    def get_checksum(self, platform="linux", arch="amd64", force_download=False):
         """Obtain checksum for zip file version"""
         # If custom SHA has been defined, return it
         if self.sha:
@@ -313,7 +331,7 @@ class Tool(Base, BaseObject):
 
         object_storage = ObjectStorage()
         zip_file = self.ZIP_FORMAT.format(
-            version=self.version, platform="linux", arch="amd64")
+            version=self.version, platform=platform, arch=arch)
         checksum_key = self.S3_KEY_CHECKSUM.format(
             version=self.version,
             type=self.tool_type.value,

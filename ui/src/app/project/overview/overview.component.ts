@@ -27,7 +27,8 @@ export class OverviewComponent implements OnInit {
   projectDetails: any;
 
   generalSettingsForm = this.formBuilder.group({
-    executionMode: ''
+    executionMode: '',
+    terraformVersion: ''
   });
 
   constructor(
@@ -64,7 +65,10 @@ export class OverviewComponent implements OnInit {
     if (this.projectDetails?.data.id) {
       this.projectService.update(
         this.projectDetails.data.id,
-        {"execution-mode": this.generalSettingsForm.value.executionMode}
+        {
+          "execution-mode": this.generalSettingsForm.value.executionMode,
+          "terraform-version": this.generalSettingsForm.value.terraformVersion
+        }
       ).then((projectDetails) => {
         this.projectDetails = projectDetails;
       });
@@ -90,7 +94,8 @@ export class OverviewComponent implements OnInit {
 
             // Update general settings form
             this.generalSettingsForm.setValue({
-              executionMode: this.projectDetails.data.attributes['execution-mode']
+              executionMode: this.projectDetails.data.attributes['execution-mode'],
+              terraformVersion: this.projectDetails.data.attributes['terraform-version']
             });
 
             // Sort workspaces by order

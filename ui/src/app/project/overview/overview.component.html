@@ -20,7 +20,7 @@
       <nb-card-header>Settings</nb-card-header>
       <nb-card-body>
         <form [formGroup]="generalSettingsForm" (ngSubmit)="onGeneralSettingsSubmit()">
-          <label for="execution-mode">Execution mode</label><br />
+          <label for="execution-mode"><b>Execution mode</b></label><br />
           <nb-select id="execution-mode" formControlName="executionMode">
             <nb-option value="remote">Remote</nb-option>
             <nb-option value="agent">Agent</nb-option>
@@ -32,6 +32,13 @@
           In local execution mode, all VCS integration is ignored.<br />
         
           <br />
+
+          <terraform-version-select [formGroup]="generalSettingsForm" formControlName="terraformVersion">
+
+          </terraform-version-select>
+          <br /><br />
+
+
           <button nbButton type="submit">Update</button>
         </form>
       </nb-card-body>

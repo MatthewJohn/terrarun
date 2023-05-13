@@ -6,6 +6,7 @@ import { VcsSelectionComponent } from './vcs-selection/vcs-selection.component';
 import { TriggerRunPopupComponent } from './trigger-run-popup/trigger-run-popup.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TerraformVersionFormComponent } from './terraform-version-form/terraform-version-form.component';
+import { TerraformVersionSelectComponent } from './terraform-version-select/terraform-version-select.component';
 
 
 
@@ -14,7 +15,8 @@ import { TerraformVersionFormComponent } from './terraform-version-form/terrafor
     ErrorDialogueComponent,
     VcsSelectionComponent,
     TriggerRunPopupComponent,
-    TerraformVersionFormComponent
+    TerraformVersionFormComponent,
+    TerraformVersionSelectComponent,
   ],
   imports: [
     CommonModule,
@@ -37,11 +39,13 @@ import { TerraformVersionFormComponent } from './terraform-version-form/terrafor
     VcsSelectionComponent,
     TriggerRunPopupComponent,
     TerraformVersionFormComponent,
+    TerraformVersionSelectComponent,
   ],
   exports: [
     VcsSelectionComponent,
     TriggerRunPopupComponent,
     TerraformVersionFormComponent,
+    TerraformVersionSelectComponent,
   ]
 })
 export class ComponentsModule { }

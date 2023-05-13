@@ -348,6 +348,11 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/agent-pools'
         )
 
+        self._api.add_resource(
+            ApiToolVersions,
+            "/api/v2/tool-versions"
+        )
+
         # VCS Oauth authorize
         self._api.add_resource(
             OauthAuthorise,
@@ -3139,6 +3144,23 @@ class ApiOauthTokenAuthorisedRepos(AuthenticatedEndpoint):
         }
 
 
+class ApiToolVersions(AuthenticatedEndpoint):
+    """Interface to view tool versions"""
+    def check_permissions_get(self, current_user, current_job):
+        """Can be access by any logged in user"""
+        return bool(current_user)
+
+    def _get(self, current_user, current_job):
+        """Provide list of terraform versions"""
+
+        return {
+            "data": [
+                tool.get_api_details()
+                for tool in Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
+            ]
+        }
+
+
 class ApiAdminTerraformVersions(AuthenticatedEndpoint):
     """Interface to view/create terraform versions"""
 
@@ -3278,6 +3300,7 @@ class ApiAdminTerraformVersion(AuthenticatedEndpoint):
             }.items()
             if request_attribute in attributes
         }
+        print(update_kwargs)
 
         error = None        
         try:
