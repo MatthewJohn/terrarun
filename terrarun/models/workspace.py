@@ -14,6 +14,7 @@ from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
 from terrarun.models.oauth_token import OauthToken
 import terrarun.models.organisation
+from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
 import terrarun.models.configuration
@@ -458,6 +459,18 @@ class Workspace(Base, BaseObject):
             )
             errors += vcs_repo_errors
             update_kwargs.update(vcs_repo_kwargs)
+
+        if "terraform-version" in attributes:
+            tool = None
+            if attributes["terraform-version"]:
+                tool = Tool.get_by_version(tool_type=ToolType.TERRAFORM_VERSION, version=attributes["terraform-version"])
+                if not tool:
+                    errors.append(ApiError(
+                        'Invalid tool version',
+                        'The tool version is invalid or the tool version does not exist.',
+                        pointer='/data/attributes/terraform-version'
+                    ))
+            update_kwargs["tool"] = tool
 
             if attributes["vcs-repo"] is not None:
                 if "tags-regex" in attributes["vcs-repo"]:
