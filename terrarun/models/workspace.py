@@ -66,7 +66,10 @@ class Workspace(Base, BaseObject):
     workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace")
 
     locked_by_user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="fk_workspace_locked_by_user_id_user_id"), nullable=True)
-    locked_by = sqlalchemy.orm.relation("User", foreign_keys=[locked_by_user_id])
+    locked_by_user = sqlalchemy.orm.relation("User", foreign_keys=[locked_by_user_id])
+
+    locked_by_run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id", name="fk_workspace_locked_by_run_id_run_id"), nullable=True)
+    locked_by_run = sqlalchemy.orm.relation("Run", foreign_keys=[locked_by_run_id])
 
     _allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="allow_destroy_plan")
     _auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="auto_apply")
@@ -532,20 +535,29 @@ class Workspace(Base, BaseObject):
         session.commit()
         return workspace_task
 
-    def lock(self, reason, user):
+    def lock(self, reason, user=None, run=None, session=None):
         """Lock workspace"""
-        if self.locked_by:
+        if self.locked:
             return False
-        
-        self.locked_by = user
-        session = Database.get_session()
+
+        if run:
+            self.locked_by_run = run
+        elif user:
+            self.locked_by_user = user
+
+        should_commit = False
+        if session is None:
+            session = Database.get_session()
+            should_commit = True
+
         session.add(self)
-        session.commit()
+        if should_commit:
+            session.commit()
         return True
 
     def unlock(self):
         """Unlock workspace"""
-        if not self.locked_by:
+        if not self.locked:
             return False
 
         self.locked_by = None
@@ -553,6 +565,11 @@ class Workspace(Base, BaseObject):
         session.add(self)
         session.commit()
         return True
+
+    @property
+    def locked(self):
+        """Return whether workspace is locked"""
+        return bool(self.locked_by_user or self.locked_by_run)
 
     def get_api_details(self, effective_user: terrarun.models.user.User):
         """Return details for workspace."""
@@ -573,7 +590,7 @@ class Workspace(Base, BaseObject):
                 "file-triggers-enabled": self.file_triggers_enabled,
                 "global-remote-state": self.global_remote_state,
                 "latest-change-at": "2021-06-23T17:50:48.815Z",
-                "locked": (self.locked_by is not None),
+                "locked": self.locked,
                 "name": self.name,
                 "operations": self.operations,
                 "permissions": workspace_permissions.get_api_permissions(),
@@ -689,14 +706,24 @@ class Workspace(Base, BaseObject):
             "type": "workspaces"
         }
 
-        if self.locked_by:
+        if self.locked_by_run:
             api_details["relationships"]["locked-by"] = {
                 "data": {
-                    "id": self.locked_by.api_id,
+                    "id": self.locked_by_run.api_id,
+                    "type": "runs"
+                },
+                "links": {
+                    "related": f"/api/v2/runs/{self.locked_by_run.api_id}"
+                }
+            }
+        elif self.locked_by_user:
+            api_details["relationships"]["locked-by"] = {
+                "data": {
+                    "id": self.locked_by_user.api_id,
                     "type": "users"
                 },
                 "links": {
-                    "related": f"/api/v2/users/{self.locked_by.api_id}"
+                    "related": f"/api/v2/users/{self.locked_by_user.api_id}"
                 }
             }
 

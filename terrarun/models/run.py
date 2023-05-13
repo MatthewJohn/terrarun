@@ -152,6 +152,11 @@ class Run(Base, BaseObject):
             created_by=created_by,
             **attributes)
         session.add(run)
+
+        if not configuration_version.workspace.lock(run=run, session=session):
+            session.rollback()
+            raise Exception("Workspace is already locked")
+
         session.commit()
         session.refresh(run)
         run.update_status(RunStatus.PENDING, current_user=created_by)
