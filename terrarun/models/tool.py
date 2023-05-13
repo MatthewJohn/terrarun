@@ -98,7 +98,7 @@ class Tool(Base, BaseObject):
         if 'deprecated_reason' in kwargs:
             update_kwargs['deprecated_reason'] = kwargs['deprecated_reason']
 
-        self.update_attributes(session=session, **update_kwargs)
+        return super().update_attributes(session=session, **update_kwargs)
 
     @staticmethod
     def _validate_version(version):
