@@ -15,6 +15,10 @@ export class TerraformVersionsComponent implements OnInit {
   terraformVersions: ResponseObject<AdminTerraformVersion>[] = [];
   terraformVersionsRowData: DataItem<ResponseObject<AdminTerraformVersion>>[] = [];
 
+  // Set to false
+  showEditForm: boolean = false;
+  editTool: ResponseObject<AdminTerraformVersion> | null = null;
+
   columnNames: {[key: string]: string} = {
     'version': 'Version',
     'url': 'Download Url',
@@ -30,24 +34,69 @@ export class TerraformVersionsComponent implements OnInit {
     private adminTerraformVersionService: AdminTerraformVersionService
   ) { }
 
+  onRowClick(toolId: string) {
+    let toolData = this.terraformVersions.filter((value) => value.id === toolId);
+    if (toolData.length !== 1) {
+      return;
+    }
+    this.showEditForm = true;
+    this.editTool = toolData[0];
+  }
+
   ngOnInit(): void {
+    this.loadData();
+  }
+
+  loadData(): void {
+    this.loadingData = true;
+    this.terraformVersions = [];
     this.adminTerraformVersionService.getVersions(
-    ).then((terraformVersions: ResponseObject<AdminTerraformVersion>[]) => {
-      this.terraformVersions = terraformVersions;
-      this.terraformVersionsRowData = this.terraformVersions.map((val) => {
-        return {
-          data: {
-            ...val,
-            attributes: {
-              ...val.attributes,
-              'url': val.attributes.url || 'Default URL',
-              'checksum-url': val.attributes['checksum-url'] || 'Default Checksum URL',
-              'sha': val.attributes.sha || 'Obtained from Checksum URL',
+      ).then((terraformVersions: ResponseObject<AdminTerraformVersion>[]) => {
+        this.terraformVersions = terraformVersions;
+        this.terraformVersionsRowData = this.terraformVersions.map((val) => {
+          return {
+            data: {
+              ...val,
+              attributes: {
+                ...val.attributes,
+                'url': val.attributes.url || 'Default URL',
+                'checksum-url': val.attributes['checksum-url'] || 'Default Checksum URL',
+                'sha': val.attributes.sha || 'Obtained from Checksum URL',
+              }
             }
-          }
-        };
+          };
+        });
+        this.loadingData = false;
+      })
+  }
+
+  onCreateSubmit(attributes: AdminTerraformVersion) {
+    this.adminTerraformVersionService.create(attributes).then(() => {
+      this.loadData();
+    });
+  }
+
+  onEditSubmit(attributes: AdminTerraformVersion) {
+    // If edit tool is set, update item in service
+    if (this.editTool) {
+      this.adminTerraformVersionService.update(this.editTool.id, attributes).then(() => {
+        this.loadData();
       });
-      this.loadingData = false;
-    })
+      // Hide edit form
+      this.editTool = null;
+      this.showEditForm = false;
+    }
+  }
+  onEditCancel() {
+    // Unset edit tool
+    this.editTool = null;
+    this.showEditForm = false;
+  }
+  onEditDelete(toolId: string) {
+    this.adminTerraformVersionService.delete(toolId).then(() => {
+      this.loadData();
+    });
+    this.editTool = null;
+    this.showEditForm = false;
   }
 }

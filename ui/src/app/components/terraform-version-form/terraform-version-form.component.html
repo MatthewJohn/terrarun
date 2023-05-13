@@ -1,0 +1,65 @@
+<ng-container *ngIf="show">
+  <nb-card>
+    <nb-card-header>{{ title }} Terraform Version</nb-card-header>
+    <nb-card-body>
+
+      <form [formGroup]="formData" (ngSubmit)="onFormSubmit()">
+
+        <nb-form-field>
+          <label for="version">
+            Version
+          </label>
+          <input nbInput id="version" type="text" formControlName="version">
+        </nb-form-field>
+        <br />
+
+        <nb-form-field>
+          <label for="downloadUrl">
+            Download URL
+          </label>
+          <input nbInput id="downloadUrl" type="text" formControlName="downloadUrl" placeholder="Default Hashicorp Download URL">
+        </nb-form-field>
+        <br />
+
+        <nb-form-field>
+          <label for="checksumUrl">
+            Checksum file URL
+          </label>
+          <input nbInput id="checksumUrl" type="text" formControlName="checksumUrl" placeholder="Default Hashicorp Checksum URL">
+        </nb-form-field>
+        <br />
+
+        <nb-form-field>
+          <label for="checksumSha">
+            Checksum SHA
+          </label>
+          <input nbInput id="checksumSha" type="text" formControlName="checksumSha"
+            placeholder="Default to value from Checksum URL">
+        </nb-form-field>
+        <br />
+
+        <br />
+        <nb-checkbox formControlName="enabled">Enabled</nb-checkbox>
+        <br />
+
+        <br />
+        <nb-checkbox (change)="onChangeDeprecation()" formControlName="deprecated">Deprecated</nb-checkbox>
+        <br />
+
+        <nb-form-field>
+          <label for="deprecatedReason">
+            Deprecation Message
+          </label>
+          <input nbInput id="deprecatedReason" type="text" formControlName="deprecatedReason">
+        </nb-form-field>
+        <br />
+
+      </form>
+
+      <button nbButton (click)="onFormSubmit()">{{ submitMessage }}</button>
+      <button nbButton *ngIf="showCancel" (click)="onFormCancel()">Cancel</button>
+      <button nbButton *ngIf="showDelete" (click)="onFormDelete()">Delete</button>
+
+    </nb-card-body>
+  </nb-card>
+</ng-container>

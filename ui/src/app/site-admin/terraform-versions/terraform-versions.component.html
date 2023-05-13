@@ -11,7 +11,7 @@
                     <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
 
                     <tr nbTreeGridRow class="terraformVersionRow" [clickToToggle]="false"
-                        *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+                        *nbTreeGridRowDef="let row; columns: tableColumns" (click)="onRowClick(row.data.id)"></tr>
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
                         <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>{{columnNames[column]}}</th>
@@ -22,5 +22,21 @@
 
             </nb-card-body>
         </nb-card>
+
+
+        <!-- Edit Terraform Version -->
+        <app-terraform-version-form title="Edit" [initialData]="editTool"
+            submitMessage="Save" [show]="showEditForm"
+            [showDelete]="true" [showCancel]="true"
+            (onSubmit)="onEditSubmit($event)"
+            (onCancel)="onEditCancel()"
+            (onDelete)="onEditDelete($event)">
+        </app-terraform-version-form>
+
+        <!-- New Terraform Version -->
+        <app-terraform-version-form title="Create" submitMessage="Create" (onSubmit)="onCreateSubmit($event)">
+        </app-terraform-version-form>
+
+
     </nb-layout-column>
 </nb-layout>

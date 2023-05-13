@@ -5,9 +5,10 @@ export interface AdminTerraformVersion {
     sha: string | null;
     deprecated: boolean;
     "deprecated-reason": string | null;
-    official: boolean;
     enabled: boolean;
-    beta: boolean;
+    // These are present in the response, but not in post data
+    beta: boolean | undefined;
+    official: boolean | undefined;
     usage: number | undefined;
     "created-at": string | undefined;
 }

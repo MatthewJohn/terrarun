@@ -1,10 +1,11 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ErrorDialogueComponent } from './error-dialogue/error-dialogue.component';
-import { NbButtonModule, NbCardModule, NbFormFieldModule, NbInputModule, NbListModule, NbRadioModule, NbSelectModule, NbTagModule } from '@nebular/theme';
+import { NbButtonModule, NbCardModule, NbCheckboxModule, NbFormFieldModule, NbInputModule, NbListModule, NbRadioModule, NbSelectModule, NbTagModule } from '@nebular/theme';
 import { VcsSelectionComponent } from './vcs-selection/vcs-selection.component';
 import { TriggerRunPopupComponent } from './trigger-run-popup/trigger-run-popup.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { TerraformVersionFormComponent } from './terraform-version-form/terraform-version-form.component';
 
 
 
@@ -12,7 +13,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   declarations: [
     ErrorDialogueComponent,
     VcsSelectionComponent,
-    TriggerRunPopupComponent
+    TriggerRunPopupComponent,
+    TerraformVersionFormComponent
   ],
   imports: [
     CommonModule,
@@ -25,6 +27,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     NbFormFieldModule,
     NbRadioModule,
     NbTagModule,
+    NbCheckboxModule,
     FormsModule,
     ReactiveFormsModule,
   ],
@@ -32,10 +35,12 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     ErrorDialogueComponent,
     VcsSelectionComponent,
     TriggerRunPopupComponent,
+    TerraformVersionFormComponent,
   ],
   exports: [
     VcsSelectionComponent,
     TriggerRunPopupComponent,
+    TerraformVersionFormComponent,
   ]
 })
 export class ComponentsModule { }
