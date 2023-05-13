@@ -1,0 +1,48 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-header>
+                Terraform Versions
+            </nb-card-header>
+            <nb-card-body [nbSpinner]="loadingData" nbSpinnerStatus="primary">
+
+                <table [nbTreeGrid]="terraformVersionsRowData" equalColumnsWidth>
+
+                    <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
+
+                    <tr nbTreeGridRow class="terraformVersionRow" [clickToToggle]="false"
+                        *nbTreeGridRowDef="let row; columns: tableColumns" (click)="onRowClick(row.data.id)"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>{{columnNames[column]}}</th>
+                        <td nbTreeGridCell *nbTreeGridCellDef="let row">{{row.data.attributes[column]}}</td>
+                    </ng-container>
+
+                </table>
+
+            </nb-card-body>
+        </nb-card>
+
+
+        <!-- Edit Terraform Version -->
+        <app-terraform-version-form title="Edit" [initialData]="editTool"
+            submitMessage="Save" [show]="showEditForm"
+            [showDelete]="true" [showCancel]="true"
+            (onSubmit)="onEditSubmit($event)"
+            (onCancel)="onEditCancel()"
+            (onDelete)="onEditDelete($event)"
+            [resetForm]="resetEditForm.asObservable()"
+            [showLoading]="editToolLoading">
+        </app-terraform-version-form>
+
+        <!-- New Terraform Version -->
+        <app-terraform-version-form
+            title="Create" submitMessage="Create"
+            (onSubmit)="onCreateSubmit($event)"
+            [resetForm]="resetCreateForm.asObservable()"
+            [showLoading]="createToolLoading">
+        </app-terraform-version-form>
+
+
+    </nb-layout-column>
+</nb-layout>

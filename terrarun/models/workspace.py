@@ -14,6 +14,7 @@ from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
 from terrarun.models.oauth_token import OauthToken
 import terrarun.models.organisation
+from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
 import terrarun.models.configuration
@@ -64,6 +65,12 @@ class Workspace(Base, BaseObject):
 
     workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace")
 
+    locked_by_user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="fk_workspace_locked_by_user_id_user_id"), nullable=True)
+    locked_by_user = sqlalchemy.orm.relation("User", foreign_keys=[locked_by_user_id])
+
+    locked_by_run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id", name="fk_workspace_locked_by_run_id_run_id"), nullable=True)
+    locked_by_run = sqlalchemy.orm.relation("Run", foreign_keys=[locked_by_run_id])
+
     _allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="allow_destroy_plan")
     _auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="auto_apply")
     _execution_mode = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceExecutionMode), nullable=True, default=None, name="execution_mode")
@@ -72,7 +79,8 @@ class Workspace(Base, BaseObject):
     _operations = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="operations")
     _queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="queue_all_runs")
     _speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="speculative_enabled")
-    _terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
+    tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
+    _tool = sqlalchemy.orm.relationship("Tool")
     _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
 
@@ -283,16 +291,16 @@ class Workspace(Base, BaseObject):
         self._speculative_enabled = value
 
     @property
-    def terraform_version(self):
-        """Return terraform_version"""
-        if self._terraform_version is not None:
-            return self._terraform_version
-        return self.project.terraform_version
+    def tool(self):
+        """Return tool"""
+        if self._tool is not None:
+            return self._tool
+        return self.project.tool
 
-    @terraform_version.setter
-    def terraform_version(self, value):
-        """Set terraform_version"""
-        self._terraform_version = value if value else None
+    @tool.setter
+    def tool(self, value):
+        """Set tool"""
+        self._tool = value if value else None
 
     @property
     def trigger_prefixes(self):
@@ -455,6 +463,18 @@ class Workspace(Base, BaseObject):
             errors += vcs_repo_errors
             update_kwargs.update(vcs_repo_kwargs)
 
+        if "terraform-version" in attributes:
+            tool = None
+            if attributes["terraform-version"]:
+                tool = Tool.get_by_version(tool_type=ToolType.TERRAFORM_VERSION, version=attributes["terraform-version"])
+                if not tool:
+                    errors.append(ApiError(
+                        'Invalid tool version',
+                        'The tool version is invalid or the tool version does not exist.',
+                        pointer='/data/attributes/terraform-version'
+                    ))
+            update_kwargs["tool"] = tool
+
             if attributes["vcs-repo"] is not None:
                 if "tags-regex" in attributes["vcs-repo"]:
                     if self.project.vcs_repo_tags_regex and attributes["vcs-repo"]["tags-regex"]:
@@ -515,10 +535,59 @@ class Workspace(Base, BaseObject):
         session.commit()
         return workspace_task
 
+    def lock(self, reason, user=None, run=None, session=None):
+        """Lock workspace"""
+        if self.locked:
+            return False
+
+        if run:
+            self.locked_by_run = run
+        elif user:
+            self.locked_by_user = user
+
+        should_commit = False
+        if session is None:
+            session = Database.get_session()
+            should_commit = True
+
+        session.add(self)
+        if should_commit:
+            session.commit()
+        return True
+
+    def unlock(self, user=None, run=None, force=False):
+        """Unlock workspace"""
+        if not self.locked:
+            return False
+
+        # Handle force unlock
+        if force:
+            self.locked_by_run = None
+            self.locked_by_user = None
+
+        # Otherwise, match user/run against the locked by user/run and unlock if matching
+        elif self.locked_by_user and user and self.locked_by_user == user:
+            self.locked_by_user = None
+        elif self.locked_by_run and run and self.locked_by_run == run:
+            self.locked_by_run = None
+        else:
+            # Otherwise, not able to unlock
+            return False
+
+        session = Database.get_session()
+        session.add(self)
+        session.commit()
+        return True
+
+    @property
+    def locked(self):
+        """Return whether workspace is locked"""
+        return bool(self.locked_by_user or self.locked_by_run)
+
     def get_api_details(self, effective_user: terrarun.models.user.User):
         """Return details for workspace."""
         workspace_permissions = WorkspacePermissions(current_user=effective_user, workspace=self)
-        return {
+        api_details = {
             "attributes": {
                 "actions": {
                     "is-destroyable": True
@@ -534,7 +603,7 @@ class Workspace(Base, BaseObject):
                 "file-triggers-enabled": self.file_triggers_enabled,
                 "global-remote-state": self.global_remote_state,
                 "latest-change-at": "2021-06-23T17:50:48.815Z",
-                "locked": False,
+                "locked": self.locked,
                 "name": self.name,
                 "operations": self.operations,
                 "permissions": workspace_permissions.get_api_permissions(),
@@ -548,7 +617,7 @@ class Workspace(Base, BaseObject):
                 "source-url": None,
                 "speculative-enabled": self.speculative_enabled,
                 "structured-run-output-enabled": False,
-                "terraform-version": self.terraform_version,
+                "terraform-version": self.tool.version if self.tool else None,
                 "trigger-prefixes": self.trigger_prefixes,
                 "trigger-patterns": self.trigger_patterns,
                 "updated-at": "2021-08-16T18:54:06.874Z",
@@ -649,3 +718,26 @@ class Workspace(Base, BaseObject):
             },
             "type": "workspaces"
         }
+
+        if self.locked_by_run:
+            api_details["relationships"]["locked-by"] = {
+                "data": {
+                    "id": self.locked_by_run.api_id,
+                    "type": "runs"
+                },
+                "links": {
+                    "related": f"/api/v2/runs/{self.locked_by_run.api_id}"
+                }
+            }
+        elif self.locked_by_user:
+            api_details["relationships"]["locked-by"] = {
+                "data": {
+                    "id": self.locked_by_user.api_id,
+                    "type": "users"
+                },
+                "links": {
+                    "related": f"/api/v2/users/{self.locked_by_user.api_id}"
+                }
+            }
+
+        return api_details

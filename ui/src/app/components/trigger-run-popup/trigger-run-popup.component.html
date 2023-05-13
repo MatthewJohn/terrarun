@@ -24,15 +24,8 @@
                 <br /><br />
             </nb-form-field>
 
-            <nb-form-field *ngIf="showTerraformVersion">
-                <label for="terraformVersion">
-                    Terraform Version
-                </label>
-                <nb-select formControlName="terraformVersion">
-                    <nb-option value="1.4.5">1.4.5</nb-option>
-                </nb-select>
-                <br /><br />
-            </nb-form-field>
+            <terraform-version-select *ngIf="showTerraformVersion" [(value)]="terraformVersion">
+            </terraform-version-select>
 
             <nb-form-field *ngIf="showTerraformDestroyConfirmation">
                 <label for="destroyConfirmation">
@@ -41,6 +34,8 @@
                 <input nbInput id="destroyConfirmation" type="text" formControlName="destroyConfirmation">
                 <br /><br />
             </nb-form-field>
+            <br />
+            <br />
 
             <span *ngIf="showTerraformDestroyValidationError">Ensure that the destroy confirmation is filled out.<br /><br /></span>
             <button nbButton (click)="onSubmit()">Submit Run</button>

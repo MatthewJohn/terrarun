@@ -85,3 +85,7 @@ class ObjectStorage:
             Params={'Bucket': self.bucket_name, 'Key': path},
             ExpiresIn=expiry
         )
+
+    def delete_file(self, path):
+        """Delete file from storage"""
+        return self._get_bucket().delete_key(path)

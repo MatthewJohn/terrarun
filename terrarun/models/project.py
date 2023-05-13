@@ -13,6 +13,7 @@ from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
 from terrarun.models.oauth_token import OauthToken
+from terrarun.models.tool import Tool, ToolType
 from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.config
@@ -52,7 +53,8 @@ class Project(Base, BaseObject):
     operations = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="operations")
     queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="queue_all_runs")
     speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="speculative_enabled")
-    terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
+    tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
+    tool = sqlalchemy.orm.relationship("Tool")
     _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
 
@@ -234,6 +236,18 @@ class Project(Base, BaseObject):
         if "variables" in attributes:
             update_kwargs["variables"] = json.dumps(attributes.get("variables"))
 
+        if "terraform-version" in attributes:
+            tool = None
+            if attributes["terraform-version"]:
+                tool = Tool.get_by_version(tool_type=ToolType.TERRAFORM_VERSION, version=attributes["terraform-version"])
+                if not tool:
+                    errors.append(ApiError(
+                        'Invalid tool version',
+                        'The tool version is invalid or the tool version does not exist.',
+                        pointer='/data/attributes/terraform-version'
+                    ))
+            update_kwargs["tool"] = tool
+
         if "vcs-repo" in attributes:
             vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
                 vcs_repo_attributes=attributes["vcs-repo"]
@@ -254,6 +268,17 @@ class Project(Base, BaseObject):
             if "trigger-prefixes" in attributes:
                 update_kwargs["trigger_prefixes"] = attributes["trigger-prefixes"]
 
+        # Handle update of execution mode
+        if "execution-mode" in attributes:
+            try:
+                execution_mode = WorkspaceExecutionMode(attributes["execution-mode"])
+                update_kwargs["execution_mode"] = execution_mode
+            except ValueError:
+                errors.append(ApiError(
+                    "Execution mode is invalid",
+                    "The value provided for execution mode is invalid",
+                    "/data/attributes/execution-mode"
+                ))
 
         # If any errors have been found, return early
         # before updating any attributes
@@ -286,7 +311,7 @@ class Project(Base, BaseObject):
                 "source-url": None,
                 "speculative-enabled": self.speculative_enabled,
                 "structured-run-output-enabled": False,
-                "terraform-version": self.terraform_version,
+                "terraform-version": self.tool.version if self.tool else None,
                 "trigger-prefixes": self.trigger_prefixes,
                 "trigger-patterns": self.trigger_patterns,
                 "updated-at": "2021-08-16T18:54:06.874Z",

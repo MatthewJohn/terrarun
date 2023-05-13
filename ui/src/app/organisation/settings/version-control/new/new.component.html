@@ -1,118 +1,121 @@
-<nb-card>
-    <nb-card-header>
-        Github Integration (Oauth)
-    </nb-card-header>
-    <nb-card-body style="padding: 50px">
-      <nb-stepper orientation="horizontal" (stepChange)="handleStepChange($event)">
-        <nb-step [label]="labelOne" [stepControl]="basicDetailsForm">
-          <ng-template #labelOne>Basic Details</ng-template>
-          <h4>Basic Details</h4>
-          <!-- <p> -->
-            <form [formGroup]="basicDetailsForm">
-              <nb-form-field>
-                <label for="name">
-                  Friendly Name
-                </label>
-                <input nbInput id="name" type="text" formControlName="name">
-              </nb-form-field>
+<nb-layout>
+  <nb-layout-column>
+    <nb-card>
+      <nb-card-header>
+          Github Integration (Oauth)
+      </nb-card-header>
+      <nb-card-body style="padding: 50px">
+        <nb-stepper orientation="horizontal" (stepChange)="handleStepChange($event)">
+          <nb-step [label]="labelOne" [stepControl]="basicDetailsForm">
+            <ng-template #labelOne>Basic Details</ng-template>
+            <h4>Basic Details</h4>
+            <!-- <p> -->
+              <form [formGroup]="basicDetailsForm">
+                <nb-form-field>
+                  <label for="name">
+                    Friendly Name
+                  </label>
+                  <input nbInput id="name" type="text" formControlName="name">
+                </nb-form-field>
+                <br />
+
+                <nb-form-field>
+                  <label for="serviceProvider">
+                    Provider
+                  </label>
+                  <nb-select (selectedChange)="onServiceProviderChange()" formControlName="serviceProvider">
+                    <nb-option value="github">Github (Oauth)</nb-option>
+                  </nb-select>
+                </nb-form-field>
+
+                <nb-form-field>
+                  <label for="httpUrl">
+                    HTTP URL
+                  </label>
+                  <input nbInput id="httpUrl" type="text" formControlName="httpUrl">
+                  For self-hosted Github instances, set this to the base URL of the installation.
+                </nb-form-field>
+                <br />
+
+                <nb-form-field>
+                  <label for="apiUrl">
+                    HTTP URL
+                  </label>
+                  <input nbInput id="apiUrl" type="text" formControlName="apiUrl">
+                  For self-hosted Github instances, set this to the API endpoint. E.g. <code>https://gh.example.com/api/v3</code>.
+                </nb-form-field>
+
+              </form>
+            <!-- </p> -->
+            <button nbButton disabled nbStepperPrevious>Prev</button>
+            <button nbButton nbStepperNext>Next</button>
+          </nb-step>
+
+          <nb-step [label]="labelTwo" [stepControl]="secretsForm">
+            <ng-template #labelTwo>Setup Application</ng-template>
+            <h4>Setup Application</h4>
+            <!-- <p> -->
+              Configure a new application in Github from <a href="https://github.com/settings/applications/new">https://github.com/settings/applications/new</a>
+              <ol>
+                <li>Set 'Application Name' to a recognisable name (e.g. 'Terrarun')</li>
+                <li>Set 'Homepage URL' to the base URL of your Terrarun installation</li>
+                <li>Set 'Application description' to a value of your chosing</li>
+                <li>Set 'Authorization callback URL' to: <code>{{ callbackUrl }}</code></li>
+              </ol>
+              Once created, provide the 'Client ID' below from the resulting page.
               <br />
-
-              <nb-form-field>
-                <label for="serviceProvider">
-                  Provider
-                </label>
-                <nb-select (selectedChange)="onServiceProviderChange()" formControlName="serviceProvider">
-                  <nb-option value="github">Github (Oauth)</nb-option>
-                </nb-select>
-              </nb-form-field>
-
-              <nb-form-field>
-                <label for="httpUrl">
-                  HTTP URL
-                </label>
-                <input nbInput id="httpUrl" type="text" formControlName="httpUrl">
-                For self-hosted Github instances, set this to the base URL of the installation.
-              </nb-form-field>
+              Under 'Client Secrets', click 'Generate a new client secret'. Enter the provided secret below.
+            <!-- </p> -->
+            <!-- <p> -->
               <br />
-
-              <nb-form-field>
-                <label for="apiUrl">
-                  HTTP URL
-                </label>
-                <input nbInput id="apiUrl" type="text" formControlName="apiUrl">
-                For self-hosted Github instances, set this to the API endpoint. E.g. <code>https://gh.example.com/api/v3</code>.
-              </nb-form-field>
-
-            </form>
-          <!-- </p> -->
-          <button nbButton disabled nbStepperPrevious>Prev</button>
-          <button nbButton nbStepperNext>Next</button>
-        </nb-step>
-
-        <nb-step [label]="labelTwo" [stepControl]="secretsForm">
-          <ng-template #labelTwo>Setup Application</ng-template>
-          <h4>Setup Application</h4>
-          <!-- <p> -->
-            Configure a new application in Github from <a href="https://github.com/settings/applications/new">https://github.com/settings/applications/new</a>
-            <ol>
-              <li>Set 'Application Name' to a recognisable name (e.g. 'Terrarun')</li>
-              <li>Set 'Homepage URL' to the base URL of your Terrarun installation</li>
-              <li>Set 'Application description' to a value of your chosing</li>
-              <li>Set 'Authorization callback URL' to: <code>{{ callbackUrl }}</code></li>
-            </ol>
-            Once created, provide the 'Client ID' below from the resulting page.
-            <br />
-            Under 'Client Secrets', click 'Generate a new client secret'. Enter the provided secret below.
-          <!-- </p> -->
-          <!-- <p> -->
-            <br />
-            <br />
-            <form [formGroup]="secretsForm">
-              <nb-form-field>
-                <label for="clientId">
-                  Client ID
-                </label>
-                <input nbInput id="clientId" type="text" formControlName="clientId">
-              </nb-form-field>
               <br />
-              <nb-form-field>
-                <label for="clientSecret">
-                  Client Secret
-                </label>
-                <input nbInput id="clientSecret" type="text" formControlName="clientSecret">
+              <form [formGroup]="secretsForm">
+                <nb-form-field>
+                  <label for="clientId">
+                    Client ID
+                  </label>
+                  <input nbInput id="clientId" type="text" formControlName="clientId">
+                </nb-form-field>
+                <br />
+                <nb-form-field>
+                  <label for="clientSecret">
+                    Client Secret
+                  </label>
+                  <input nbInput id="clientSecret" type="text" formControlName="clientSecret">
 
-              </nb-form-field>
-            </form>
-          <!-- </p> -->
-          <button nbButton nbStepperPrevious>Prev</button>
-          <button nbButton nbStepperNext>Next</button>
-        </nb-step>
+                </nb-form-field>
+              </form>
+            <!-- </p> -->
+            <button nbButton nbStepperPrevious>Prev</button>
+            <button nbButton nbStepperNext>Next</button>
+          </nb-step>
 
-        <nb-step [label]="labelThree">
-          <ng-template #labelThree>Authorisation</ng-template>
-          <h4>Authorisation</h4>
+          <nb-step [label]="labelThree">
+            <ng-template #labelThree>Authorisation</ng-template>
+            <h4>Authorisation</h4>
 
-          <nb-card *ngIf="authoriseUrlLoading" [nbSpinner]="authoriseUrlLoading" nbSpinnerStatus="primary">
-            <nb-card-body>
-              <span>
-                Please wait whilst authorisation is initialised.
-              </span>
-            </nb-card-body>
-          </nb-card>
+            <nb-card *ngIf="authoriseUrlLoading" [nbSpinner]="authoriseUrlLoading" nbSpinnerStatus="primary">
+              <nb-card-body>
+                <span>
+                  Please wait whilst authorisation is initialised.
+                </span>
+              </nb-card-body>
+            </nb-card>
 
-          <nb-card *ngIf="!authoriseUrlLoading">
-            <nb-card-body>
-              <span>
-                <a href="{{authoriseUrl}}" target="_blank">Authorize with Github</a>
-              </span>
-            </nb-card-body>
-          </nb-card>
+            <nb-card *ngIf="!authoriseUrlLoading">
+              <nb-card-body>
+                <span>
+                  <a href="{{authoriseUrl}}" target="_blank">Authorize with Github</a>
+                </span>
+              </nb-card-body>
+            </nb-card>
 
-          <button nbButton nbStepperPrevious>Prev</button>
-          <button nbButton nbStepperNext>Next</button>
-        </nb-step>
+            <button nbButton nbStepperPrevious>Prev</button>
+            <button nbButton nbStepperNext>Next</button>
+          </nb-step>
 
-      </nb-stepper>
-    </nb-card-body>
-  </nb-card>
-  
+        </nb-stepper>
+      </nb-card-body>
+    </nb-card>
+  </nb-layout-column>
+</nb-layout>  

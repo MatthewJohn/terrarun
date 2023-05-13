@@ -1,0 +1,11 @@
+
+<b>Terraform Version</b><br />
+<br />
+<nb-select [selected]="value" (selectedChange)="valueChange.emit($event)">
+    <nb-option value="{{ terraformVersion.attributes.version }}" *ngFor="let terraformVersion of terraformVersions">
+        {{ terraformVersion.attributes.version }}
+    </nb-option>
+</nb-select>
+<br /><br />
+Select the Terraform version to use<br />
+New versions can be added by a site admin<br />

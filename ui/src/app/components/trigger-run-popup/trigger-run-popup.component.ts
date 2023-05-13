@@ -16,12 +16,14 @@ export class TriggerRunPopupComponent implements OnInit {
   triggerForm = this.formBuilder.group({
     comment: '',
     type: 'apply',
-    terraformVersion: '',
     destroyConfirmation: ''
   });
 
   // Whether input for TerraformVersion should be shown
   showTerraformVersion: boolean = false;
+
+  // Selected terraform version
+  terraformVersion: string = "";
 
   // Whether to show destroy confirmation
   showTerraformDestroyConfirmation: boolean = false;
@@ -54,7 +56,7 @@ export class TriggerRunPopupComponent implements OnInit {
     }
     this.ref.close({
       "message": this.triggerForm.get("comment")?.value,
-      "terraform-version": this.triggerForm.get("type")?.value == "plan" ? this.triggerForm.get("terraformVersion")?.value : null,
+      "terraform-version": this.triggerForm.get("type")?.value == "plan" ? this.terraformVersion : null,
       "plan-only": this.triggerForm.get("type")?.value == "plan",
       "is-destroy": this.triggerForm.get("type")?.value == "destroy",
       "refresh": true,

@@ -12,7 +12,7 @@ import { AuthenticationStateType, OrganisationStateType, ProjectStateType, RunSt
 export class AppComponent {
 
   title = 'ui';
-  _authenticationState: AuthenticationStateType = {authenticated: false, id: null, username: null};
+  _authenticationState: AuthenticationStateType = {authenticated: false, id: null, username: null, siteAdmin: null};
   _currentOrganisationState: OrganisationStateType = {id: null, name: null};
   _currentProjectState: ProjectStateType = {id: null, name: null};
   _currentWorkspace: WorkspaceStateType = {id: null, name: null};
@@ -156,6 +156,21 @@ export class AppComponent {
           });
         }
       }
+
+      if (this._authenticationState.siteAdmin == true) {
+        // Add site admin to end of list
+        this.items.splice(this.items.length, 0, {
+          title: "Site Admin",
+          link: "/site-admin",
+          children: [
+            {
+              title: "Terraform Versions",
+              link: "/site-admin/terraform-versions"
+            }
+          ]
+        })
+      }
+
     } else {
       this.items = [{
         title: 'Login',

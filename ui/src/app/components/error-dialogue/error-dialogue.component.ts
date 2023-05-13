@@ -10,6 +10,9 @@ export class ErrorDialogueComponent {
   @Input()
   data: string = '';
 
+  @Input()
+  title: string = 'An error has occurred';
+
   constructor(protected ref: NbDialogRef<ErrorDialogueComponent>) {
   }
 

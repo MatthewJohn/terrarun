@@ -13,7 +13,7 @@ class Config:
     AGENT_IMAGE_FILENAME = os.environ.get('AGENT_IMAGE_FILENAME')
     AGENT_PRESIGN_ENCRYPTION_KEY = os.environ.get('AGENT_PRESIGN_ENCRYPTION_KEY')
 
-    MODULE_LOG_LEVELS = os.environ.get("MODULE_LOG_LEVELS", "TerraformBinary:debug")
+    MODULE_LOG_LEVELS = os.environ.get("MODULE_LOG_LEVELS", "Tool:debug")
     LOG_LEVEL_DEFAULT = os.environ.get("LOG_LEVEL_DEFAULT", "info")
 
     @property

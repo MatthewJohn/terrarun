@@ -40,7 +40,7 @@ export class RunListComponent implements OnInit {
       this.updateRuns();
       this._updateInterval = setInterval(() => {
         this.updateRuns();
-      }, 1000);
+      }, 5000);
     });
 
     this.state.currentOrganisation.subscribe((data) => this.currentOrganisation = data);

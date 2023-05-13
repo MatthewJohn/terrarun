@@ -1,19 +1,48 @@
+<nb-layout>
+  <nb-layout-column>
+    <nb-card>
+        <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
+        <nb-card-body>
+            <nb-card size="tiny">
+                <nb-card-header>
+                  Select Environment
+                </nb-card-header>
+                <nb-list>
+                  <nb-list-item (click)="onWorkspaceClick(workspaceId)" *ngFor="let workspaceId of workspaceList">
+                    <ng-container *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async)?.data.attributes.environment}}</ng-container>
+                  </nb-list-item>
+                </nb-list>
+              </nb-card>
+        </nb-card-body>
+    </nb-card>
 
-<nb-card>
-    <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
-    <nb-card-body>
-        <nb-card size="tiny">
-            <nb-card-header>
-              Select Environment
-            </nb-card-header>
-            <nb-list>
-              <nb-list-item (click)="onWorkspaceClick(workspaceId)" *ngFor="let workspaceId of workspaceList">
-                <ng-container *ngIf="workspaces.get(workspaceId) | async">{{(workspaces.get(workspaceId) | async)?.data.attributes.environment}}</ng-container>
-              </nb-list-item>
-            </nb-list>
-          </nb-card>
-    </nb-card-body>
-</nb-card>
+    <nb-card>
+      <nb-card-header>Settings</nb-card-header>
+      <nb-card-body>
+        <form [formGroup]="generalSettingsForm" (ngSubmit)="onGeneralSettingsSubmit()">
+          <label for="execution-mode"><b>Execution mode</b></label><br />
+          <nb-select id="execution-mode" formControlName="executionMode">
+            <nb-option value="remote">Remote</nb-option>
+            <nb-option value="agent">Agent</nb-option>
+            <nb-option value="local">Local</nb-option>
+          </nb-select>
+          <br /><br />
+          Remote/Agent will execute Terraform remotely in Terrarun, either on global workers or assigned agent pools.<br />
+          Local execution will run Terraform locally on the workstation with only state being managed by Terrarun.<br />
+          In local execution mode, all VCS integration is ignored.<br />
+        
+          <br />
+
+          <terraform-version-select [(value)]="generalSettingsTerraformVersion">
+          </terraform-version-select>
+          <br /><br />
 
 
-<app-vcs-selection (onChangeVcs)="onChangeVcs($event)" [vcsConfig]="projectDetails?.data.attributes"></app-vcs-selection>
+          <button nbButton type="submit">Update</button>
+        </form>
+      </nb-card-body>
+    </nb-card>
+
+    <app-vcs-selection (onChangeVcs)="onChangeVcs($event)" [vcsConfig]="projectDetails?.data.attributes"></app-vcs-selection>
+  </nb-layout-column>
+</nb-layout>
