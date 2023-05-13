@@ -72,6 +72,12 @@ class Tool(Base, BaseObject):
         session = Database.get_session()
         return session.query(cls).filter(cls.tool_type == tool_type).all()
 
+    @classmethod
+    def get_by_version(cls, tool_type, version):
+        """Get tool by version"""
+        session = Database.get_session()
+        return session.query(cls).filter(cls.tool_type == tool_type, cls.version == version).first()
+
     def update_attributes(self, session=None, **kwargs):
         """Update attributes"""
         update_kwargs = {}

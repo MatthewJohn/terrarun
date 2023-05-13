@@ -96,7 +96,8 @@ class Run(Base, BaseObject):
     _replace_addrs = sqlalchemy.Column("replace_addrs", terrarun.database.Database.GeneralString)
     _target_addrs = sqlalchemy.Column("target_addrs", terrarun.database.Database.GeneralString)
     _variables = sqlalchemy.Column("variables", terrarun.database.Database.GeneralString)
-    terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString)
+    tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
+    tool = sqlalchemy.orm.relationship("Tool")
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
@@ -137,6 +138,15 @@ class Run(Base, BaseObject):
     def create(cls, configuration_version, created_by, **attributes):
         """Create run and return instance."""
         session = Database.get_session()
+
+        if configuration_version.workspace.tool is None:
+            raise Exception('Terraform version must be configured in project/workspace')
+
+        if ((tool := attributes.get('tool')) and
+                tool != configuration_version.workspace.tool and
+                not attributes.get('plan_only')):
+            raise Exception('Custom Terraform version cannot be used for non-refresh-only runs')
+
         run = Run(
             configuration_version=configuration_version,
             created_by=created_by,

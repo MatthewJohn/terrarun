@@ -75,7 +75,8 @@ class Workspace(Base, BaseObject):
     _operations = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="operations")
     _queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="queue_all_runs")
     _speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="speculative_enabled")
-    _terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
+    tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
+    _tool = sqlalchemy.orm.relationship("Tool")
     _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
 
@@ -286,16 +287,16 @@ class Workspace(Base, BaseObject):
         self._speculative_enabled = value
 
     @property
-    def terraform_version(self):
-        """Return terraform_version"""
-        if self._terraform_version is not None:
-            return self._terraform_version
-        return self.project.terraform_version
+    def tool(self):
+        """Return tool"""
+        if self._tool is not None:
+            return self._tool
+        return self.project.tool
 
-    @terraform_version.setter
-    def terraform_version(self, value):
-        """Set terraform_version"""
-        self._terraform_version = value if value else None
+    @tool.setter
+    def tool(self, value):
+        """Set tool"""
+        self._tool = value if value else None
 
     @property
     def trigger_prefixes(self):
@@ -573,7 +574,7 @@ class Workspace(Base, BaseObject):
                 "source-url": None,
                 "speculative-enabled": self.speculative_enabled,
                 "structured-run-output-enabled": False,
-                "terraform-version": self.terraform_version,
+                "terraform-version": self.tool.version if self.tool else None,
                 "trigger-prefixes": self.trigger_prefixes,
                 "trigger-patterns": self.trigger_patterns,
                 "updated-at": "2021-08-16T18:54:06.874Z",

@@ -52,7 +52,8 @@ class Project(Base, BaseObject):
     operations = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="operations")
     queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="queue_all_runs")
     speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="speculative_enabled")
-    terraform_version = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="terraform_version")
+    tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
+    tool = sqlalchemy.orm.relationship("Tool")
     _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
 
@@ -297,7 +298,7 @@ class Project(Base, BaseObject):
                 "source-url": None,
                 "speculative-enabled": self.speculative_enabled,
                 "structured-run-output-enabled": False,
-                "terraform-version": self.terraform_version,
+                "terraform-version": self.tool.version if self.tool else None,
                 "trigger-prefixes": self.trigger_prefixes,
                 "trigger-patterns": self.trigger_patterns,
                 "updated-at": "2021-08-16T18:54:06.874Z",

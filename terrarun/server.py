@@ -1695,6 +1695,23 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             # Hide error to prevent workspace ID/configuration ID enumeration
             return {}, 404
 
+        tool = None
+        if request_terraform_version := request_attributes.get('terraform-version'):
+            tool = Tool.get_by_version(
+                tool_type=ToolType.TERRAFORM_VERSION,
+                version=request_terraform_version
+            )
+            if not tool:
+                return {
+                    "errors": [
+                        ApiError(
+                            'Invalid tool version',
+                            'The tool version is invalid or the tool version does not exist.',
+                            pointer='/data/attributes/terraform-version'
+                        ).get_api_details()
+                    ]
+                }, 422
+
         create_attributes = {
             'auto_apply': request_attributes.get('auto-apply', workspace.auto_apply),
             'is_destroy': request_attributes.get('is-destroy', False),
@@ -1705,7 +1722,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'target_addrs': request_attributes.get('target-addrs'),
             'variables': request_attributes.get('variables', []),
             'plan_only': request_attributes.get('plan-only', cv.plan_only),
-            'terraform_version': request_attributes.get('terraform-version'),
+            'tool': tool,
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }
 
@@ -2879,7 +2896,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 print(f'Job does not have a valid job_type: {job.job_type}')
                 return {}, 204
 
-            terraform_version = job.run.terraform_version or '1.1.7'
+            tool = job.run.tool if job.run.tool else job.run.configuration_version.workspace.tool
 
             # Generate user token for run
             token = UserToken.create_agent_job_token(job=job)
@@ -2889,10 +2906,6 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
             # Either the plan or apply api ID
             job_sub_task_id = job.run.plan.api_id if job.job_type is JobQueueType.PLAN else job.run.plan.apply.api_id
-
-            tool = Tool.upsert_by_version(tool_type=ToolType.TERRAFORM_VERSION, version=terraform_version)
-            if not tool:
-                raise Exception("Unable to obtain/generate tool version")
 
             return {
                 # @TODO Should this be apply for plans during an apply run?
