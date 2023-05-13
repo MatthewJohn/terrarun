@@ -182,6 +182,10 @@ class Server(object):
             '/api/v2/workspaces/<string:workspace_id>/actions/unlock'
         )
         self._api.add_resource(
+            ApiTerraformWorkspaceActionsForceUnlock,
+            '/api/v2/workspaces/<string:workspace_id>/actions/force-unlock'
+        )
+        self._api.add_resource(
             ApiTerraformTaskDetails,
             '/api/v2/tasks/<string:task_id>'
         )
@@ -2133,7 +2137,7 @@ class ApiTerraformWorkspaceActionsLock(AuthenticatedEndpoint):
         return WorkspacePermissions(
             current_user=current_user,
             workspace=workspace
-        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.WRITE)
+        ).check_permission(WorkspacePermissions.Permissions.CAN_LOCK)
 
     def _post(self, current_user, current_job, workspace_id):
         """Lock workspace."""
@@ -2167,7 +2171,7 @@ class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
         return WorkspacePermissions(
             current_user=current_user,
             workspace=workspace
-        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.WRITE)
+        ).check_permission(WorkspacePermissions.Permissions.CAN_UNLOCK)
 
     def _post(self, current_user, current_job, workspace_id):
         """Return latest state for workspace."""
@@ -2175,7 +2179,38 @@ class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        workspace.unlock()
+        if not workspace.unlock(user=current_user):
+            return {
+                "errors": [ApiError(
+                    "Unable to unlock workspace",
+                    "The workspace is not locked or the lock is held by another user"
+                )]
+            }, 422
+
+        return {'data': workspace.get_api_details(effective_user=current_user)}
+
+
+class ApiTerraformWorkspaceActionsForceUnlock(AuthenticatedEndpoint):
+    """Interface to unlock workspace"""
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions to unlock worksapce"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_FORCE_UNLOCK)
+
+    def _post(self, current_user, current_job, workspace_id):
+        """Return latest state for workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace.unlock(force=True)
 
         return {'data': workspace.get_api_details(effective_user=current_user)}
 

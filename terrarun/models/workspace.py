@@ -555,12 +555,25 @@ class Workspace(Base, BaseObject):
             session.commit()
         return True
 
-    def unlock(self):
+    def unlock(self, user=None, run=None, force=False):
         """Unlock workspace"""
         if not self.locked:
             return False
 
-        self.locked_by = None
+        # Handle force unlock
+        if force:
+            self.locked_by_run = None
+            self.locked_by_user = None
+
+        # Otherwise, match user/run against the locked by user/run and unlock if matching
+        elif self.locked_by_user and user and self.locked_by_user == user:
+            self.locked_by_user = None
+        elif self.locked_by_run and run and self.locked_by_run == run:
+            self.locked_by_run = None
+        else:
+            # Otherwise, not able to unlock
+            return False
+
         session = Database.get_session()
         session.add(self)
         session.commit()
