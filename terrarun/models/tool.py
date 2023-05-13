@@ -42,28 +42,35 @@ class Tool(Base, BaseObject):
     __tablename__ = 'tools'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_fk = sqlalchemy.Column(
+        sqlalchemy.ForeignKey("api_id.id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     tool_type = sqlalchemy.Column(sqlalchemy.Enum(ToolType), nullable=False)
-    version = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
-    sha = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
+    version = sqlalchemy.Column(
+        terrarun.database.Database.GeneralString, nullable=False)
+    sha = sqlalchemy.Column(
+        terrarun.database.Database.GeneralString, nullable=True)
 
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
 
     deprecated = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-    deprecated_reason = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
+    deprecated_reason = sqlalchemy.Column(
+        terrarun.database.Database.GeneralString, nullable=True)
     # Override default URL
-    custom_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True, name="url")
-    custom_checksum_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True, name="checksum_url")
+    custom_url = sqlalchemy.Column(
+        terrarun.database.Database.GeneralString, nullable=True, name="url")
+    custom_checksum_url = sqlalchemy.Column(
+        terrarun.database.Database.GeneralString, nullable=True, name="checksum_url")
 
-    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
+    created_at = sqlalchemy.Column(
+        sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     @classmethod
     def get_all(cls, tool_type):
         """Return all tools"""
         session = Database.get_session()
-        return session.query(cls).filter(cls.tool_type==tool_type).all()
+        return session.query(cls).filter(cls.tool_type == tool_type).all()
 
     def update_attributes(self, session=None, **kwargs):
         """Update attributes"""
@@ -115,7 +122,8 @@ class Tool(Base, BaseObject):
             try:
                 url.format(platform="test", arch="test")
             except ValueError:
-                raise ToolUrlPlaceholderError("Tool URL contains invalid placeholder")
+                raise ToolUrlPlaceholderError(
+                    "Tool URL contains invalid placeholder")
 
     @staticmethod
     def _validate_checksum_url(checksum_url):
@@ -124,7 +132,8 @@ class Tool(Base, BaseObject):
             try:
                 checksum_url.format(platform="test", arch="test")
             except ValueError:
-                raise ToolChecksumUrlPlaceholderError("Tool checksum URL contains invalid placeholder")
+                raise ToolChecksumUrlPlaceholderError(
+                    "Tool checksum URL contains invalid placeholder")
 
     @classmethod
     def upsert_by_version(cls, tool_type, version, url=None, checksum_url=None,
@@ -138,15 +147,16 @@ class Tool(Base, BaseObject):
 
         session = Database.get_session()
         pre_existing = session.query(cls).filter(
-            cls.tool_type==tool_type,
-            cls.version==version
+            cls.tool_type == tool_type,
+            cls.version == version
         ).first()
-        
+
         # If the tool version already exists, raise exception
         # if only creating, otherwise return found version
         if pre_existing:
             if only_create:
-                raise ToolVersionAlreadyExistsError("Tool version already exists")
+                raise ToolVersionAlreadyExistsError(
+                    "Tool version already exists")
             return pre_existing
 
         # Create new version
@@ -202,9 +212,10 @@ class Tool(Base, BaseObject):
         """Return URL for tool"""
         if self.custom_url:
             return self.custom_url
-        
+
         elif self.tool_type is ToolType.TERRAFORM_VERSION:
-            zip_file = self.ZIP_FORMAT.format(version=self.version, platform="{platform}", arch="{arch}")
+            zip_file = self.ZIP_FORMAT.format(
+                version=self.version, platform="{platform}", arch="{arch}")
             return self.ZIP_UPSTREAM_URL.format(version=self.version, zip_file=zip_file)
 
     @property
@@ -212,7 +223,7 @@ class Tool(Base, BaseObject):
         """Return checksum URL"""
         if self.custom_checksum_url:
             return self.custom_checksum_url
-        
+
         elif self.tool_type is ToolType.TERRAFORM_VERSION:
             # format zip file, retaining placeholders for platform and arch
             return self.CHECKSUM_UPSTREAM_URL.format(version=self.version)
@@ -249,8 +260,10 @@ class Tool(Base, BaseObject):
         logger = get_logger(obj=self)
 
         # Generate keys in s3
-        zip_file = self.ZIP_FORMAT.format(version=self.version, platform="linux", arch="amd64")
-        object_key = self.S3_KEY_ZIP.format(zip_file=zip_file, type=self.tool_type.value, api_id=self.api_id)
+        zip_file = self.ZIP_FORMAT.format(
+            version=self.version, platform="linux", arch="amd64")
+        object_key = self.S3_KEY_ZIP.format(
+            zip_file=zip_file, type=self.tool_type.value, api_id=self.api_id)
 
         logger.debug(f'Getting pre-signed URL for {zip_file}')
 
@@ -259,17 +272,22 @@ class Tool(Base, BaseObject):
         if not object_storage.file_exists(object_key) or force_download:
             download_url = self.url.format(arch="amd64", platform="linux")
 
-            logger.debug(f'Terraform zip does not exist.. downloading: {download_url}')
+            logger.debug(
+                f'Terraform zip does not exist.. downloading: {download_url}')
             # Get binary
             try:
                 res = requests.get(
                     download_url,
-                    headers={"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"}
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"
+                    }
                 )
             except:
-                raise UnableToDownloadToolArchiveError("An error occured whilst downloading Terraform zip")
+                raise UnableToDownloadToolArchiveError(
+                    "An error occured whilst downloading Terraform zip")
             if res.status_code != 200:
-                raise UnableToDownloadToolArchiveError("Non-200 response whilst downloading Terraform zip")
+                raise UnableToDownloadToolArchiveError(
+                    "Non-200 response whilst downloading Terraform zip")
 
             logger.debug('Downloaded.. uploading to s3')
             object_storage.upload_file(path=object_key, content=res.content)
@@ -288,7 +306,8 @@ class Tool(Base, BaseObject):
             return self.sha
 
         object_storage = ObjectStorage()
-        zip_file = self.ZIP_FORMAT.format(version=self.version, platform="linux", arch="amd64")
+        zip_file = self.ZIP_FORMAT.format(
+            version=self.version, platform="linux", arch="amd64")
         checksum_key = self.S3_KEY_CHECKSUM.format(
             version=self.version,
             type=self.tool_type.value,
@@ -301,16 +320,20 @@ class Tool(Base, BaseObject):
         # If file does not exist, download and upload to s3
         if not object_storage.file_exists(checksum_key) or force_download:
             checksum_file_download_url = self.checksum_url
-            logger.debug(f'Checksum file does not exist.. downloading: {checksum_file_download_url}')
+            logger.debug(
+                f'Checksum file does not exist.. downloading: {checksum_file_download_url}')
 
             # Get checksum file
             try:
-                res = requests.get(checksum_file_download_url, headers={"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"})
+                res = requests.get(checksum_file_download_url, headers={
+                                   "User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"})
             except:
-                raise UnableToDownloadToolChecksumFileError("An error occured whilst downloading Terraform checksum file")
+                raise UnableToDownloadToolChecksumFileError(
+                    "An error occured whilst downloading Terraform checksum file")
 
             if res.status_code != 200:
-                raise UnableToDownloadToolChecksumFileError("Non-200 response whilst downloading Terraform checksum file")
+                raise UnableToDownloadToolChecksumFileError(
+                    "Non-200 response whilst downloading Terraform checksum file")
 
             logger.debug('Downloaded.. uploading to s3')
 
@@ -326,7 +349,8 @@ class Tool(Base, BaseObject):
             logger.debug(f'Checking line: {line}')
             if checksum_line_match := self.CHECKSUM_FILE_RE.match(line):
                 if checksum_line_match.group(2) == zip_file:
-                    logger.debug(f'Found match for terraform {checksum_line_match.group(2)}: {checksum_line_match.group(1)}')
+                    logger.debug(
+                        f'Found match for terraform {checksum_line_match.group(2)}: {checksum_line_match.group(1)}')
                     return checksum_line_match.group(1)
 
         logger.debug('No checksum found for zip')
@@ -337,7 +361,9 @@ class Tool(Base, BaseObject):
         object_storage = ObjectStorage()
 
         # Generate keys in s3
-        zip_file = self.ZIP_FORMAT.format(version=self.version, platform="linux", arch="amd64")
-        object_key = self.S3_KEY_ZIP.format(zip_file=zip_file, type=self.tool_type.value, api_id=self.api_id)
+        zip_file = self.ZIP_FORMAT.format(
+            version=self.version, platform="linux", arch="amd64")
+        object_key = self.S3_KEY_ZIP.format(
+            zip_file=zip_file, type=self.tool_type.value, api_id=self.api_id)
         if object_storage.file_exists(object_key):
             object_storage.delete_file(object_key)
