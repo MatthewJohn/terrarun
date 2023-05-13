@@ -118,9 +118,17 @@ class Lifecycle(Base, BaseObject):
                 "environments": {
                     "data": [
                         {
-                            "id": lifecycle_environment.environment_id,
-                            "order": lifecycle_environment.order,
+                            "id": lifecycle_environment.environment.api_id,
                             "type": "environments"
+                        }
+                        for lifecycle_environment in self.get_lifecycle_environments()
+                    ]
+                },
+                "environment-lifecycles": {
+                    "data": [
+                        {
+                            "id": lifecycle_environment.api_id,
+                            "type": "lifecycle-environments"
                         }
                         for lifecycle_environment in self.get_lifecycle_environments()
                     ]
