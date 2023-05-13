@@ -135,7 +135,7 @@ class Run(Base, BaseObject):
         self._variables = json.dumps(value)
 
     @classmethod
-    def create(cls, configuration_version, created_by, **attributes):
+    def create(cls, configuration_version, created_by, message, **attributes):
         """Create run and return instance."""
         session = Database.get_session()
 
@@ -150,12 +150,9 @@ class Run(Base, BaseObject):
         run = Run(
             configuration_version=configuration_version,
             created_by=created_by,
+            message=message,
             **attributes)
         session.add(run)
-
-        if not configuration_version.workspace.lock(run=run, session=session):
-            session.rollback()
-            raise Exception("Workspace is already locked")
 
         session.commit()
         session.refresh(run)
@@ -174,6 +171,10 @@ class Run(Base, BaseObject):
             run=run,
             stage=WorkspaceTaskStage.PRE_APPLY,
             workspace_tasks=run.pre_apply_workspace_tasks)
+
+        # if not configuration_version.workspace.lock(reason=message, run=run, session=session):
+        #     session.rollback()
+        #     raise Exception("Workspace is already locked")
 
         # Queue to be processed
         run.queue_worker_job()
