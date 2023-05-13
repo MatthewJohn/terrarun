@@ -24,6 +24,8 @@ def get_logger(obj):
 
 
     logger = logging.getLogger(name)
+    logger.setLevel(log_levels.get(class_name, Config().LOG_LEVEL_DEFAULT).upper())
+
     # Add handler to logger
     logHandler = logging.StreamHandler(sys.stdout)
     logHandler.setLevel(log_levels.get(class_name, Config().LOG_LEVEL_DEFAULT).upper())

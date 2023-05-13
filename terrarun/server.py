@@ -19,6 +19,7 @@ import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
+from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, UnableToDownloadToolArchiveError, UnableToDownloadToolChecksumFileError
 
 from terrarun.job_processor import JobProcessor
 import terrarun.config
@@ -38,6 +39,7 @@ from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
+from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
 from terrarun.permissions.workspace import WorkspacePermissions
@@ -49,7 +51,6 @@ from terrarun.models.tag import Tag
 from terrarun.models.task import Task
 from terrarun.models.task_result import TaskResult, TaskResultStatus
 from terrarun.models.task_stage import TaskStage
-from terrarun.terraform_binary import TerraformBinary
 from terrarun.terraform_command import TerraformCommandState
 from terrarun.models.user_token import UserToken, UserTokenType
 from terrarun.models.workspace import Workspace
@@ -61,6 +62,7 @@ from terrarun.models.workspace_task import WorkspaceTask, WorkspaceTaskEnforceme
 from terrarun.models.environment import Environment
 from terrarun.agent_filesystem import AgentFilesystem
 from terrarun.presign import Presign
+from terrarun.api_error import ApiError
 
 
 class Server(object):
@@ -170,6 +172,18 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformWorkspaceRelationshipsTags,
             '/api/v2/workspaces/<string:workspace_id>/relationships/tags'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceActionsLock,
+            '/api/v2/workspaces/<string:workspace_id>/actions/lock'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceActionsUnlock,
+            '/api/v2/workspaces/<string:workspace_id>/actions/unlock'
+        )
+        self._api.add_resource(
+            ApiTerraformWorkspaceActionsForceUnlock,
+            '/api/v2/workspaces/<string:workspace_id>/actions/force-unlock'
         )
         self._api.add_resource(
             ApiTerraformTaskDetails,
@@ -289,7 +303,7 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/projects/<string:project_name>'
         )
         self._api.add_resource(
-            ApiTerraformProjects,
+            ApiTerraformProject,
             '/api/v2/projects/<string:project_id>'
         )
         self._api.add_resource(
@@ -303,6 +317,14 @@ class Server(object):
         self._api.add_resource(
             ApiAuthenticate,
             '/api/terrarun/v1/authenticate'
+        )
+        self._api.add_resource(
+            ApiAdminTerraformVersions,
+            '/api/v2/admin/terraform-versions'
+        )
+        self._api.add_resource(
+            ApiAdminTerraformVersion,
+            '/api/v2/admin/terraform-versions/<string:tool_id>'
         )
         self._api.add_resource(
             ApiTerrarunOrganisationCreateNameValidation,
@@ -328,6 +350,11 @@ class Server(object):
         self._api.add_resource(
             ApiOrganisationAgentPoolList,
             '/api/v2/organizations/<string:organisation_name>/agent-pools'
+        )
+
+        self._api.add_resource(
+            ApiToolVersions,
+            "/api/v2/tool-versions"
         )
 
         # VCS Oauth authorize
@@ -1145,7 +1172,7 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
         }
 
 
-class ApiTerraformProjects(AuthenticatedEndpoint):
+class ApiTerraformProject(AuthenticatedEndpoint):
     """Interface to show/update projects"""
 
     def check_permissions_get(self, project_id, current_user, current_job, *args, **kwargs):
@@ -1190,7 +1217,12 @@ class ApiTerraformProjects(AuthenticatedEndpoint):
         errors = project.update_attributes_from_request(attributes)
 
         if errors:
-            return 
+            return {
+                "errors": [
+                    error.get_api_details()
+                    for error in errors
+                ]
+            }, 422
 
         return {
             "data": project.get_api_details()
@@ -1672,6 +1704,23 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             # Hide error to prevent workspace ID/configuration ID enumeration
             return {}, 404
 
+        tool = None
+        if request_terraform_version := request_attributes.get('terraform-version'):
+            tool = Tool.get_by_version(
+                tool_type=ToolType.TERRAFORM_VERSION,
+                version=request_terraform_version
+            )
+            if not tool:
+                return {
+                    "errors": [
+                        ApiError(
+                            'Invalid tool version',
+                            'The tool version is invalid or the tool version does not exist.',
+                            pointer='/data/attributes/terraform-version'
+                        ).get_api_details()
+                    ]
+                }, 422
+
         create_attributes = {
             'auto_apply': request_attributes.get('auto-apply', workspace.auto_apply),
             'is_destroy': request_attributes.get('is-destroy', False),
@@ -1682,7 +1731,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'target_addrs': request_attributes.get('target-addrs'),
             'variables': request_attributes.get('variables', []),
             'plan_only': request_attributes.get('plan-only', cv.plan_only),
-            'terraform_version': request_attributes.get('terraform-version'),
+            'tool': tool,
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }
 
@@ -2076,6 +2125,96 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
         return {'data': state.get_api_details()}
 
 
+class ApiTerraformWorkspaceActionsLock(AuthenticatedEndpoint):
+    """Interface to lock workspace"""
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions to lock worksapce"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_LOCK)
+
+    def _post(self, current_user, current_job, workspace_id):
+        """Lock workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        if not workspace.lock(user=current_user, reason=request.json.get("reason")):
+            return {
+                "errors": [
+                    ApiError(
+                        "Workspace already locked",
+                        "The workspace is already locked, so cannot be locked.",
+                        status=409
+                    ).get_api_details()
+                ]
+            }, 409
+
+        return {'data': workspace.get_api_details(effective_user=current_user)}
+
+
+class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
+    """Interface to unlock workspace"""
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions to unlock worksapce"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_UNLOCK)
+
+    def _post(self, current_user, current_job, workspace_id):
+        """Return latest state for workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        if not workspace.unlock(user=current_user):
+            return {
+                "errors": [ApiError(
+                    "Unable to unlock workspace",
+                    "The workspace is not locked or the lock is held by another user"
+                )]
+            }, 422
+
+        return {'data': workspace.get_api_details(effective_user=current_user)}
+
+
+class ApiTerraformWorkspaceActionsForceUnlock(AuthenticatedEndpoint):
+    """Interface to unlock workspace"""
+
+    def check_permissions_post(self, current_user, current_job, workspace_id):
+        """Check permissions to unlock worksapce"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_permission(WorkspacePermissions.Permissions.CAN_FORCE_UNLOCK)
+
+    def _post(self, current_user, current_job, workspace_id):
+        """Return latest state for workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        workspace.unlock(force=True)
+
+        return {'data': workspace.get_api_details(effective_user=current_user)}
+
+
 class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
     """Interface to list/create state versions"""
 
@@ -2111,26 +2250,26 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
         run = None
         if run_id:
             run = Run.get_by_api_id(run_id)
+            if run is None:
+                return {}, 400
+
         # Attempt to get current run based on job authentication
         if not run_id and current_job:
             run = current_job.run
 
-        # @TODO Support without a run
-        if not run:
-            return {}, 400
-
         state_version = StateVersion.create_from_state_json(
+            workspace=workspace,
             run=run,
             state_json=json.loads(base64.b64decode(state_base64).decode('utf-8'))
         )
         if not state_version:
             return {}, 400
 
-        # Update run with state version
-        run.plan.apply.update_attributes(state_version=state_version)
+        if run:
+            # Update run with state version
+            run.plan.apply.update_attributes(state_version=state_version)
 
         return {'data': state_version.get_api_details()}
-
 
 
 class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
@@ -2797,7 +2936,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 print(f'Job does not have a valid job_type: {job.job_type}')
                 return {}, 204
 
-            terraform_version = job.run.terraform_version or '1.1.7'
+            tool = job.run.tool if job.run.tool else job.run.configuration_version.workspace.tool
 
             # Generate user token for run
             token = UserToken.create_agent_job_token(job=job)
@@ -2817,8 +2956,8 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "operation": job.job_type.value,
                     "organization_name": job.run.configuration_version.workspace.organisation.name_id,
                     "workspace_name": job.run.configuration_version.workspace.name,
-                    "terraform_url": TerraformBinary.get_terraform_url(version=terraform_version),
-                    "terraform_checksum": TerraformBinary.get_checksum(version=terraform_version),
+                    "terraform_url": tool.get_presigned_download_url(),
+                    "terraform_checksum": tool.get_checksum(),
                     "terraform_log_url": f"{terrarun.config.Config().BASE_URL}/api/agent/log/{job.job_type.value}/{job_sub_task_id}?key={run_key}",
                     "configuration_version_url": job.run.configuration_version.get_download_url(),
                     "filesystem_url": f"{terrarun.config.Config().BASE_URL}/api/agent/filesystem?key={run_key}",
@@ -3038,3 +3177,223 @@ class ApiOauthTokenAuthorisedRepos(AuthenticatedEndpoint):
         return {
             "data": oauth_token.oauth_client.get_repositories_api_details(oauth_token)
         }
+
+
+class ApiToolVersions(AuthenticatedEndpoint):
+    """Interface to view tool versions"""
+    def check_permissions_get(self, current_user, current_job):
+        """Can be access by any logged in user"""
+        return bool(current_user)
+
+    def _get(self, current_user, current_job):
+        """Provide list of terraform versions"""
+
+        return {
+            "data": [
+                tool.get_api_details()
+                for tool in Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
+            ]
+        }
+
+
+class ApiAdminTerraformVersions(AuthenticatedEndpoint):
+    """Interface to view/create terraform versions"""
+
+    def check_permissions_get(self, current_user, current_job):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _get(self, current_user, current_job):
+        """Provide list of terraform versions"""
+
+        return {
+            "data": [
+                tool.get_admin_api_details()
+                for tool in Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
+            ]
+        }
+
+    def check_permissions_post(self, current_user, current_job):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _post(self, current_user, current_job):
+        """Create terraform version"""
+
+        data = request.json
+        assert data.get("type") == "terraform-versions"
+
+        attributes = data.get("attributes", {})
+
+        # beta, official are ignored, as these are calculated automatically
+        error = None
+        tool_version = None      
+        try:
+            tool_version = Tool.upsert_by_version(
+                tool_type=ToolType.TERRAFORM_VERSION,
+                version=attributes.get("version", None),
+                url=attributes.get("url", None),
+                sha=attributes.get("sha", None),
+                checksum_url=attributes.get("checksum-url", None),
+                enabled=attributes.get("enabled", True),
+                deprecated=attributes.get("deprecated", False),
+                deprecated_reason=attributes.get("deprecated-reason", None),
+                only_create=True
+            )
+        except UnableToDownloadToolArchiveError:
+            error = ApiError(
+                "Unable to download Terraform archive",
+                "The Terraform archive could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/url"
+            )
+        except UnableToDownloadToolChecksumFileError:
+            error = ApiError(
+                "Unable to download Terraform checksum file",
+                "The Terraform checksum file could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/checksum-url"
+            )
+        except InvalidVersionNumberError:
+            error = ApiError(
+                "Invalid version number",
+                "The version number is invalid - it must be in the form x.y.z or x.y.z-something.",
+                pointer="/data/attributes/version"
+            )
+        except ToolUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in download URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/url"
+            )
+        except ToolChecksumUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in checksum file URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/checksum-url"
+            )
+
+        if error:
+            return {
+                "errors": [
+                    error.get_api_details()
+                ]
+            }, 422
+
+        if not tool_version:
+            return {}, 400
+
+        return {
+            "data": tool_version.get_admin_api_details()
+        }
+
+
+class ApiAdminTerraformVersion(AuthenticatedEndpoint):
+    """Interface to view terraform version"""
+
+    def check_permissions_get(self, current_user, current_job, tool_id):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _get(self, current_user, current_job, tool_id):
+        """Provide details about terraform version"""
+
+        tool = Tool.get_by_api_id(tool_id)
+        if not tool:
+            return {}, 404
+
+        return {
+            "data": tool.get_admin_api_details()
+        }
+
+    def check_permissions_patch(self, current_user, current_job, tool_id):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _patch(self, current_user, current_job, tool_id):
+        """Update attributes of terraform version"""
+
+        tool = Tool.get_by_api_id(tool_id)
+        if not tool:
+            return {}, 404
+
+        data = request.json
+        if data.get("type") != "terraform-versions":
+            return {}, 400
+
+        if data.get("id") != tool_id:
+            return {}, 400
+
+        attributes = data.get("attributes", {})
+
+        # Create map of kwargs to update, using
+        # mapping of request attributes and database
+        # model attributes
+        update_kwargs = {
+            object_attribute: attributes.get(request_attribute)
+            for request_attribute, object_attribute in {
+                'url': 'custom_url', 'checksum-url': 'custom_checksum_url', 'enabled': 'enabled',
+                'sha': 'sha', 'deprecated': 'deprecated', 'deprecated-reason': 'deprecated_reason'
+            }.items()
+            if request_attribute in attributes
+        }
+        print(update_kwargs)
+
+        error = None        
+        try:
+            tool.update_attributes(**update_kwargs)
+        except UnableToDownloadToolArchiveError:
+            error = ApiError(
+                "Unable to download Terraform archive",
+                "The Terraform archive could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/url"
+            )
+        except UnableToDownloadToolChecksumFileError:
+            error = ApiError(
+                "Unable to download Terraform checksum file",
+                "The Terraform checksum file could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/checksum-url"
+            )
+        except InvalidVersionNumberError:
+            error = ApiError(
+                "Invalid version number",
+                "The version number is invalid - it must be in the form x.y.z or x.y.z-something.",
+                pointer="/data/attributes/version"
+            )
+        except ToolUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in download URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/url"
+            )
+        except ToolChecksumUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in checksum file URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/checksum-url"
+            )
+
+        if error:
+            return {
+                "errors": [
+                    error.get_api_details()
+                ]
+            }, 422
+
+        return {
+            "data": tool.get_admin_api_details()
+        }
+
+    def check_permissions_delete(self, current_user, current_job, tool_id):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _delete(self, current_user, current_job, tool_id):
+        """Delete terraform version"""
+
+        tool = Tool.get_by_api_id(tool_id)
+        if not tool:
+            return {}, 404
+
+        tool.delete()
+
+        return {}, 200
+

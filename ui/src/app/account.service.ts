@@ -73,7 +73,8 @@ export class AccountService {
           this.stateService.getAuthenticationObserver().next({
             authenticated: true,
             username: response.data.username,
-            id: response.data.id
+            id: response.data.id,
+            siteAdmin: response.data.attributes["is-site-admin"]
           })
           resolve();
         },

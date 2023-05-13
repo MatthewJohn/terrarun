@@ -8,6 +8,7 @@ export interface AuthenticationStateType {
     authenticated: boolean | null;
     id: string | null;
     username: string | null;
+    siteAdmin: boolean | null;
 };
 
 export interface OrganisationStateType {
@@ -35,7 +36,7 @@ export interface RunStateType {
 })
 export class StateService {
 
-    authenticationState: BehaviorSubject<AuthenticationStateType> = new BehaviorSubject<AuthenticationStateType>({authenticated: null, id: null, username: null});
+    authenticationState: BehaviorSubject<AuthenticationStateType> = new BehaviorSubject<AuthenticationStateType>({authenticated: null, id: null, username: null, siteAdmin: null});
     currentOrganisation: BehaviorSubject<OrganisationStateType> = new BehaviorSubject<OrganisationStateType>({id: null, name: null});
     currentProject: BehaviorSubject<ProjectStateType> = new BehaviorSubject<ProjectStateType>({id: null, name: null});
     currentWorkspace: BehaviorSubject<WorkspaceStateType> = new BehaviorSubject<WorkspaceStateType>({id: null, name: null});
