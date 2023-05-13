@@ -346,6 +346,10 @@ class Server(object):
             ApiTerrarunEnvironmentCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/environment-name-validate'
         )
+        self._api.add_resource(
+            ApiTerrarunLifecycleCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/lifecycle-name-validate'
+        )
 
         self._api.add_resource(
             ApiOrganisationAgentPoolList,
@@ -2538,6 +2542,35 @@ class ApiTerrarunEnvironmentCreateNameValidation(AuthenticatedEndpoint):
         return {
             "data": {
                 "valid": Environment.validate_new_name(organisation, args.name),
+                "name": args.name
+            }
+        }
+
+
+class ApiTerrarunLifecycleCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new environment lifecycle name"""
+
+    def check_permissions_post(self, organisation_name, current_user, current_job):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_VARSETS)
+
+    def _post(self, organisation_name, current_user, current_job):
+        """Validate new environment name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": Lifecycle.validate_new_name(organisation, args.name),
                 "name": args.name
             }
         }
