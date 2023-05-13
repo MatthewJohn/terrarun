@@ -74,7 +74,7 @@ class Tool(Base, BaseObject):
             self._validate_url(kwargs['custom_url'])
             # Set the objects' custom URL and
             # attempt a download to ensure that it works
-            self.custom_checksum_url = kwargs['custom_url']
+            self.custom_url = kwargs['custom_url']
             self.get_presigned_download_url(force_download=True)
             update_kwargs['custom_url'] = kwargs['custom_url']
 
