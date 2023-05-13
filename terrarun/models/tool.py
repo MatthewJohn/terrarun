@@ -166,7 +166,7 @@ class Tool(Base, BaseObject):
 
         # Attempt to download archive
         try:
-            tool_version.get_presigned_download_url()
+            tool_version.get_presigned_download_url(force_download=True)
         except Exception:
             # If a file fails to be downloaded,
             # remove from database and raise exception
@@ -176,7 +176,7 @@ class Tool(Base, BaseObject):
 
         # Attempt to download checksum
         try:
-            tool_version.get_checksum()
+            tool_version.get_checksum(force_download=True)
         except Exception:
             # If a file fails to be downloaded,
             # remove from database and raise exception
