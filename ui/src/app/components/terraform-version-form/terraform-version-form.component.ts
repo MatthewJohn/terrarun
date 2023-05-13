@@ -52,6 +52,12 @@ export class TerraformVersionFormComponent implements OnInit {
         deprecated: value.attributes.deprecated,
         deprecatedReason: value.attributes['deprecated-reason']
       })
+
+      // Disable version input
+      this.formData.get('version')?.disable();
+
+      // Disable deprecated message, if deprecated is unset
+      this.onChangeDeprecation();
     }
   }
 
