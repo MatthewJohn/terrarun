@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { DataItem, DataList } from 'src/app/interfaces/data';
-import { EnvironmentLifecycleAttributes } from 'src/app/interfaces/environment-lifecycle-attributes';
+import { LifecycleAttributes } from 'src/app/interfaces/lifecycle-attributes';
 import { ResponseObject } from 'src/app/interfaces/response';
-import { EnvironmentLifecycleService } from 'src/app/services/environment-lifecycle.service';
+import { LifecycleService } from 'src/app/services/lifecycle.service';
 import { OrganisationStateType, StateService } from 'src/app/state.service';
 
 @Component({
@@ -17,9 +17,9 @@ export class ListComponent implements OnInit {
   tableColumns: string[] = ['name', 'description'];
 
   // List of environment lifecycles in organisation
-  environmentLifecycles: ResponseObject<EnvironmentLifecycleAttributes>[] = [];
+  lifecycles: ResponseObject<LifecycleAttributes>[] = [];
   // Formatted environment lifecycles for dataList
-  environmentLifecyclesRowData: DataItem<ResponseObject<EnvironmentLifecycleAttributes>>[] = [];
+  lifecyclesRowData: DataItem<ResponseObject<LifecycleAttributes>>[] = [];
 
   // Whether list of environment lifecycles is loading
   listSpinner: boolean = false;
@@ -48,13 +48,13 @@ export class ListComponent implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     private stateService: StateService,
-    private environmentLifecycleService: EnvironmentLifecycleService
+    private lifecycleService: LifecycleService
   ) { }
 
   ngOnInit(): void {
     this.currentOrganisationSubscription = this.stateService.currentOrganisation.subscribe((currentOrganisation) => {
       this.currentOrganisation = currentOrganisation;
-      this.getEnvironmentLifecycleList();
+      this.getLifecycleList();
     });
   }
 
@@ -67,13 +67,13 @@ export class ListComponent implements OnInit {
   onCreate() {
     if (this.currentOrganisation?.name) {
       this.createSpinner = true;
-      this.environmentLifecycleService.create(
+      this.lifecycleService.create(
         this.currentOrganisation?.name,
         { name: this.createForm.value.name,
           description: this.createForm.value.description}
       ).then(() => {
         // Refresh environment list
-        this.getEnvironmentLifecycleList();
+        this.getLifecycleList();
 
         // Reset create form
         this.createForm.setValue({
@@ -89,7 +89,7 @@ export class ListComponent implements OnInit {
     this.createNameValid = this.nameValidStates.loading;
 
     if (this.currentOrganisation?.name) {
-      this.environmentLifecycleService.validateNewName(
+      this.lifecycleService.validateNewName(
         this.currentOrganisation.name,
         this.createForm.value.name
       ).then((validationResult) => {
@@ -98,18 +98,18 @@ export class ListComponent implements OnInit {
     }
   }
 
-  onEnvironmentLifecycleClick(row: DataItem<ResponseObject<EnvironmentLifecycleAttributes>>) {
+  onLifecycleClick(row: DataItem<ResponseObject<LifecycleAttributes>>) {
   }
 
 
-  getEnvironmentLifecycleList(): void {
+  getLifecycleList(): void {
     if (this.currentOrganisation?.name) {
       this.listSpinner = true;
-      this.environmentLifecycleService.getEnvironmentLifecycles(
+      this.lifecycleService.getLifecycles(
         this.currentOrganisation.name
-      ).then((environmentLifecycles: ResponseObject<EnvironmentLifecycleAttributes>[]) => {
-        this.environmentLifecycles = environmentLifecycles;
-        this.environmentLifecyclesRowData = this.environmentLifecycles.map((val) => {return {data: val}});
+      ).then((lifecycles: ResponseObject<LifecycleAttributes>[]) => {
+        this.lifecycles = lifecycles;
+        this.lifecyclesRowData = this.lifecycles.map((val) => {return {data: val}});
         this.listSpinner = false;
       });
     }

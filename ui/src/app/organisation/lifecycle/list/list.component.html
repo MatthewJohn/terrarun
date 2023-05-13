@@ -6,15 +6,15 @@
             </nb-card-header>
             <nb-card-body id="listCardBody" [nbSpinner]="listSpinner" nbSpinnerStatus="primary">
 
-                <table [nbTreeGrid]="environmentLifecyclesRowData" equalColumnsWidth>
+                <table [nbTreeGrid]="lifecyclesRowData" equalColumnsWidth>
                     <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
-                    <tr nbTreeGridRow class="environmentLifecycleRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+                    <tr nbTreeGridRow class="lifecycleRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 
                     <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
                         <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
                             {{column}}
                         </th>
-                        <td nbTreeGridCell (click)="onEnvironmentLifecycleClick(row)" *nbTreeGridCellDef="let row">
+                        <td nbTreeGridCell (click)="onLifecycleClick(row)" *nbTreeGridCellDef="let row">
                             {{row.data.attributes[column]}}
                         </td>
                     </ng-container>

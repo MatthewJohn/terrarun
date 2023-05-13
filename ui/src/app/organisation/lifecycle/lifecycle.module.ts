@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { EnvironmentLifecycleRoutingModule } from './environment-lifecycle-routing.module';
+import { LifecycleRoutingModule } from './lifecycle-routing.module';
 import { ListComponent } from './list/list.component';
 import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbSpinnerModule, NbTreeGridModule } from '@nebular/theme';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -13,7 +13,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
   ],
   imports: [
     CommonModule,
-    EnvironmentLifecycleRoutingModule,
+    LifecycleRoutingModule,
 
     NbLayoutModule,
     NbCardModule,
@@ -27,4 +27,4 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     NbSpinnerModule,
   ]
 })
-export class EnvironmentLifecycleModule { }
+export class LifecycleModule { }

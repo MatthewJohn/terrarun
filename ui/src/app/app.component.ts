@@ -105,7 +105,7 @@ export class AppComponent {
             },
             {
               title: 'Environment Lifecycles',
-              link: `/${this._currentOrganisationState.id}/environment-lifecycles`
+              link: `/${this._currentOrganisationState.id}/lifecycles`
             },
             {
               title: 'Settings',
