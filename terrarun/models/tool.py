@@ -39,7 +39,7 @@ class Tool(Base, BaseObject):
 
     ID_PREFIX = 'tool'
 
-    __tablename__ = 'tools'
+    __tablename__ = 'tool'
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(
