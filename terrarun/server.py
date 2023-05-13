@@ -299,7 +299,7 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/projects/<string:project_name>'
         )
         self._api.add_resource(
-            ApiTerraformProjects,
+            ApiTerraformProject,
             '/api/v2/projects/<string:project_id>'
         )
         self._api.add_resource(
@@ -1168,7 +1168,7 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
         }
 
 
-class ApiTerraformProjects(AuthenticatedEndpoint):
+class ApiTerraformProject(AuthenticatedEndpoint):
     """Interface to show/update projects"""
 
     def check_permissions_get(self, project_id, current_user, current_job, *args, **kwargs):

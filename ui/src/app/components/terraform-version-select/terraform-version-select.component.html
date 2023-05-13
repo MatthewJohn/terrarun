@@ -1,13 +1,11 @@
 
 <b>Terraform Version</b><br />
 <br />
-<div [formGroup]="getFormGroup()">
-    <nb-select [formControlName]="getFormControlName()">
-        <nb-option *ngFor="let terraformVersion of terraformVersions">
-            {{terraformVersion.attributes.version}}
-        </nb-option>
-    </nb-select>
-</div>
+<nb-select [selected]="value" (selectedChange)="valueChange.emit($event)">
+    <nb-option value="{{ terraformVersion.attributes.version }}" *ngFor="let terraformVersion of terraformVersions">
+        {{ terraformVersion.attributes.version }}
+    </nb-option>
+</nb-select>
 <br /><br />
 Select the Terraform version to use<br />
 New versions can be added by a site admin<br />

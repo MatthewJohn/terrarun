@@ -13,6 +13,7 @@ from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
 from terrarun.models.oauth_token import OauthToken
+from terrarun.models.tool import Tool, ToolType
 from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.config
@@ -234,6 +235,18 @@ class Project(Base, BaseObject):
 
         if "variables" in attributes:
             update_kwargs["variables"] = json.dumps(attributes.get("variables"))
+
+        if "terraform-version" in attributes:
+            tool = None
+            if attributes["terraform-version"]:
+                tool = Tool.get_by_version(tool_type=ToolType.TERRAFORM_VERSION, version=attributes["terraform-version"])
+                if not tool:
+                    errors.append(ApiError(
+                        'Invalid tool version',
+                        'The tool version is invalid or the tool version does not exist.',
+                        pointer='/data/attributes/terraform-version'
+                    ))
+                update_kwargs["tool"] = tool
 
         if "vcs-repo" in attributes:
             vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
