@@ -22,6 +22,9 @@ export class TerraformVersionsComponent implements OnInit {
   showEditForm: boolean = false;
   editTool: ResponseObject<AdminTerraformVersion> | null = null;
 
+  editToolLoading: boolean = false;
+  createToolLoading: boolean = false;
+
   resetCreateForm: Subject<void> = new Subject<void>();
   resetEditForm: Subject<void> = new Subject<void>();
 
@@ -78,11 +81,14 @@ export class TerraformVersionsComponent implements OnInit {
   }
 
   onCreateSubmit(attributes: AdminTerraformVersion) {
+    this.createToolLoading = true;
     this.adminTerraformVersionService.create(attributes).then(() => {
       // Reset new form and reload table data
+      this.createToolLoading = false;
       this.resetCreateForm.next();
       this.loadData();
     }).catch((err) => {
+      this.createToolLoading = false;
       this.dialogService.open(ErrorDialogueComponent, {
         context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
       });
@@ -92,15 +98,18 @@ export class TerraformVersionsComponent implements OnInit {
   onEditSubmit(attributes: AdminTerraformVersion) {
     // If edit tool is set, update item in service
     if (this.editTool) {
+      this.editToolLoading = true;
       this.adminTerraformVersionService.update(this.editTool.id, attributes).then(() => {
         // Hide edit form
         this.editTool = null;
         this.showEditForm = false;
         this.resetEditForm.next();
+        this.editToolLoading = false;
 
         // Reload table data
         this.loadData();
       }).catch((err) => {
+        this.editToolLoading = false;
         this.dialogService.open(ErrorDialogueComponent, {
           context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
         });
@@ -113,15 +122,18 @@ export class TerraformVersionsComponent implements OnInit {
     this.showEditForm = false;
   }
   onEditDelete(toolId: string) {
+    this.editToolLoading = true;
     this.adminTerraformVersionService.delete(toolId).then(() => {
       // Unset edit tool and reset form
       this.editTool = null;
       this.showEditForm = false;
       this.resetCreateForm.next();
+      this.editToolLoading = false;
 
       // Reload table data
       this.loadData();
     }).catch((err) => {
+      this.editToolLoading = false;
       this.dialogService.open(ErrorDialogueComponent, {
         context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
       });

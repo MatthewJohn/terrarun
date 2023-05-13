@@ -43,6 +43,9 @@ export class TerraformVersionFormComponent implements OnInit {
   _initialData: ResponseObject<AdminTerraformVersion> | null = null;
 
   @Input()
+  showLoading: boolean = false;
+
+  @Input()
   get initialData(): ResponseObject<AdminTerraformVersion> | null {
     return this._initialData;
   }
@@ -65,6 +68,20 @@ export class TerraformVersionFormComponent implements OnInit {
     private formBuilder: FormBuilder
   ) {
     this.formData.get('deprecatedReason')?.disable();
+  }
+
+  ngOnInit(): void {
+    if (this.resetForm !== null) {
+      this.resetFormSubscription = this.resetForm.subscribe(() => {
+        this.resetFormData();
+      });
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.resetFormSubscription !== null) {
+      this.resetFormSubscription.unsubscribe();
+    }
   }
 
   resetFormData() {
@@ -95,20 +112,9 @@ export class TerraformVersionFormComponent implements OnInit {
         deprecated: false,
         deprecatedReason: ''
       });
-    }
-  }
 
-  ngOnInit(): void {
-    if (this.resetForm !== null) {
-      this.resetFormSubscription = this.resetForm.subscribe(() => {
-        this.resetFormData();
-      });
-    }
-  }
-
-  ngOnDestroy() {
-    if (this.resetFormSubscription !== null) {
-      this.resetFormSubscription.unsubscribe();
+      // Reset deprecation disable
+      this.onChangeDeprecation();
     }
   }
 
@@ -122,6 +128,7 @@ export class TerraformVersionFormComponent implements OnInit {
   }
 
   onFormSubmit() {
+    // Emit create/update event
     this.onSubmit.emit({
       version: this.formData.value.version,
       url: this.formData.value.downloadUrl,
@@ -144,6 +151,7 @@ export class TerraformVersionFormComponent implements OnInit {
 
   onFormDelete() {
     if (this.initialData !== null) {
+      // Emit delete event
       this.onDelete.emit(this.initialData.id);
     }
   }

@@ -31,14 +31,16 @@
             (onSubmit)="onEditSubmit($event)"
             (onCancel)="onEditCancel()"
             (onDelete)="onEditDelete($event)"
-            [resetForm]="resetEditForm.asObservable()">
+            [resetForm]="resetEditForm.asObservable()"
+            [showLoading]="editToolLoading">
         </app-terraform-version-form>
 
         <!-- New Terraform Version -->
         <app-terraform-version-form
             title="Create" submitMessage="Create"
             (onSubmit)="onCreateSubmit($event)"
-            [resetForm]="resetCreateForm.asObservable()">
+            [resetForm]="resetCreateForm.asObservable()"
+            [showLoading]="createToolLoading">
         </app-terraform-version-form>
 
 

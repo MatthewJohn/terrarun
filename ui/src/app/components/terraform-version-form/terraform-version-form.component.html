@@ -1,5 +1,5 @@
 <ng-container *ngIf="show">
-  <nb-card>
+  <nb-card [nbSpinner]="showLoading" nbSpinnerStatus="primary">
     <nb-card-header>{{ title }} Terraform Version</nb-card-header>
     <nb-card-body>
 
