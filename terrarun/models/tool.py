@@ -10,7 +10,7 @@ import requests
 import sqlalchemy
 import sqlalchemy.orm
 import semantic_version
-from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, ToolVersionAlreadyExistsError
+from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, ToolVersionAlreadyExistsError, UnableToDownloadToolArchiveError, UnableToDownloadToolChecksumFileError
 
 from terrarun.logger import get_logger
 from terrarun.object_storage import ObjectStorage
@@ -65,27 +65,76 @@ class Tool(Base, BaseObject):
         session = Database.get_session()
         return session.query(cls).filter(cls.tool_type==tool_type).all()
 
+    def update_attributes(self, session=None, **kwargs):
+        """Update attributes"""
+        update_kwargs = {}
+
+        if 'custom_url' in kwargs:
+            # Validate custom URL
+            self._validate_url(kwargs['custom_url'])
+            # Set the objects' custom URL and
+            # attempt a download to ensure that it works
+            self.custom_checksum_url = kwargs['custom_url']
+            self.get_presigned_download_url(force_download=True)
+            update_kwargs['custom_url'] = kwargs['custom_url']
+
+        if 'custom_checksum_url' in kwargs:
+            self._validate_checksum_url(kwargs['custom_checksum_url'])
+            # Set the objects' custom checksum URL and
+            # attempt a download to ensure that it works
+            self.custom_checksum_url = kwargs['custom_checksum_url']
+            self.get_checksum(force_download=True)
+            update_kwargs['custom_checksum_url'] = kwargs['custom_checksum_url']
+
+        if 'sha' in kwargs:
+            update_kwargs['sha'] = kwargs['sha']
+
+        if 'enabled' in kwargs:
+            update_kwargs['enabled'] = kwargs['enabled']
+
+        if 'deprecated' in kwargs:
+            update_kwargs['deprecated'] = kwargs['deprecated']
+
+        if 'deprecated_reason' in kwargs:
+            update_kwargs['deprecated_reason'] = kwargs['deprecated_reason']
+
+        self.update_attributes(session=session, **update_kwargs)
+
+    @staticmethod
+    def _validate_version(version):
+        """Validate version number"""
+        try:
+            semantic_version.Version(version)
+        except ValueError:
+            raise InvalidVersionNumberError('Tool version number is invalid')
+
+    @staticmethod
+    def _validate_url(url):
+        """Validate download URL"""
+        if url:
+            try:
+                url.format(platform="test", arch="test")
+            except ValueError:
+                raise ToolUrlPlaceholderError("Tool URL contains invalid placeholder")
+
+    @staticmethod
+    def _validate_checksum_url(checksum_url):
+        """Validate checksum url"""
+        if checksum_url:
+            try:
+                checksum_url.format(platform="test", arch="test")
+            except ValueError:
+                raise ToolChecksumUrlPlaceholderError("Tool checksum URL contains invalid placeholder")
+
     @classmethod
     def upsert_by_version(cls, tool_type, version, url=None, checksum_url=None,
                           sha=None, enabled=True, deprecated=False, deprecated_reason=None,
                           only_create=False):
         """Upsert version based on version number"""
         # Check version is valid
-        try:
-            semantic_version.Version(version)
-        except ValueError:
-            raise InvalidVersionNumberError('Tool version number is invalid')
-
-        if url:
-            try:
-                url.format(platform="test", arch="test")
-            except ValueError:
-                raise ToolUrlPlaceholderError("Tool URL contains invalid placeholder")
-        if checksum_url:
-            try:
-                checksum_url.format(platform="test", arch="test")
-            except ValueError:
-                raise ToolChecksumUrlPlaceholderError("Tool checksum URL contains invalid placeholder")
+        cls._validate_version(version)
+        cls._validate_url(url)
+        cls._validate_checksum_url(checksum_url)
 
         session = Database.get_session()
         pre_existing = session.query(cls).filter(
@@ -168,6 +217,12 @@ class Tool(Base, BaseObject):
             # format zip file, retaining placeholders for platform and arch
             return self.CHECKSUM_UPSTREAM_URL.format(version=self.version)
 
+    def delete(self):
+        """Delete tool"""
+        session = Database.get_session()
+        session.delete(self)
+        session.commit()
+
     def get_admin_api_details(self):
         """Return API details for tool versions"""
         return {
@@ -188,7 +243,7 @@ class Tool(Base, BaseObject):
             }
         }
 
-    def get_presigned_download_url(self):
+    def get_presigned_download_url(self, force_download=False):
         """Obtain pre-signed URL for terraform binary"""
         object_storage = ObjectStorage()
         logger = get_logger(obj=self)
@@ -201,15 +256,20 @@ class Tool(Base, BaseObject):
 
         # Check if file exists in s3
         # If file does not exist, download and upload to s3
-        if not object_storage.file_exists(object_key):
-            logger.debug(f'Terraform zip does not exist.. downloading')
+        if not object_storage.file_exists(object_key) or force_download:
+            download_url = self.url.format(arch="amd64", platform="linux")
+
+            logger.debug(f'Terraform zip does not exist.. downloading: {download_url}')
             # Get binary
-            res = requests.get(
-                self.url,
-                headers={"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"}
-            )
+            try:
+                res = requests.get(
+                    download_url,
+                    headers={"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"}
+                )
+            except:
+                raise UnableToDownloadToolArchiveError("An error occured whilst downloading Terraform zip")
             if res.status_code != 200:
-                raise Exception("Non-200 response whilst downloading Terraform zip")
+                raise UnableToDownloadToolArchiveError("Non-200 response whilst downloading Terraform zip")
 
             logger.debug('Downloaded.. uploading to s3')
             object_storage.upload_file(path=object_key, content=res.content)
@@ -221,7 +281,7 @@ class Tool(Base, BaseObject):
         logger.debug(f'URL: {url}')
         return url
 
-    def get_checksum(self):
+    def get_checksum(self, force_download=False):
         """Obtain checksum for zip file version"""
         # If custom SHA has been defined, return it
         if self.sha:
@@ -235,14 +295,21 @@ class Tool(Base, BaseObject):
 
         # Check if file exists in s3
         # If file does not exist, download and upload to s3
-        if not object_storage.file_exists(checksum_key):
+        if not object_storage.file_exists(checksum_key) or force_download:
             checksum_file_download_url = self.checksum_url
             logger.debug(f'Checksum file does not exist.. downloading: {checksum_file_download_url}')
+
             # Get checksum file
-            res = requests.get(checksum_file_download_url, headers={"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"})
+            try:
+                res = requests.get(checksum_file_download_url, headers={"User-Agent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/112.0"})
+            except:
+                raise UnableToDownloadToolChecksumFileError("An error occured whilst downloading Terraform checksum file")
+
             if res.status_code != 200:
-                raise Exception("Non-200 response whilst downloading Terraform checksum")
+                raise UnableToDownloadToolChecksumFileError("Non-200 response whilst downloading Terraform checksum file")
+
             logger.debug('Downloaded.. uploading to s3')
+
             object_storage.upload_file(path=checksum_key, content=res.content)
             logger.debug('Uploaded to s3')
 

@@ -26,3 +26,15 @@ class ToolChecksumUrlPlaceholderError(TerrarunError):
     """Tools checksum URL contains invalid placeholder"""
 
     pass
+
+
+class UnableToDownloadToolArchiveError(TerrarunError):
+    """Unable to download tool zip file"""
+
+    pass
+
+
+class UnableToDownloadToolChecksumFileError(TerrarunError):
+    """Unable to download tool checksum file"""
+
+    pass

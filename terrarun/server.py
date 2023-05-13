@@ -19,6 +19,7 @@ import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
+from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, UnableToDownloadToolArchiveError, UnableToDownloadToolChecksumFileError
 
 from terrarun.job_processor import JobProcessor
 import terrarun.config
@@ -3155,17 +3156,58 @@ class ApiAdminTerraformVersions(AuthenticatedEndpoint):
         attributes = data.get("attributes", {})
 
         # beta, official are ignored, as these are calculated automatically
-        tool_version = Tool.upsert_by_version(
-            tool_type=ToolType.TERRAFORM_VERSION,
-            version=attributes.get("version", None),
-            url=attributes.get("url", None),
-            sha=attributes.get("sha", None),
-            checksum_url=attributes.get("checksum-url", None),
-            enabled=attributes.get("enabled", True),
-            deprecated=attributes.get("deprecated", False),
-            deprecated_reason=attributes.get("deprecated-reason", None),
-            only_create=True
-        )
+        error = None
+        tool_version = None      
+        try:
+            tool_version = Tool.upsert_by_version(
+                tool_type=ToolType.TERRAFORM_VERSION,
+                version=attributes.get("version", None),
+                url=attributes.get("url", None),
+                sha=attributes.get("sha", None),
+                checksum_url=attributes.get("checksum-url", None),
+                enabled=attributes.get("enabled", True),
+                deprecated=attributes.get("deprecated", False),
+                deprecated_reason=attributes.get("deprecated-reason", None),
+                only_create=True
+            )
+        except UnableToDownloadToolArchiveError:
+            error = ApiError(
+                "Unable to download Terraform archive",
+                "The Terraform archive could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/url"
+            )
+        except UnableToDownloadToolChecksumFileError:
+            error = ApiError(
+                "Unable to download Terraform checksum file",
+                "The Terraform checksum file could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/checksum-url"
+            )
+        except InvalidVersionNumberError:
+            error = ApiError(
+                "Invalid version number",
+                "The version number is invalid - it must be in the form x.y.z or x.y.z-something.",
+                pointer="/data/attributes/version"
+            )
+        except ToolUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in download URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/url"
+            )
+        except ToolChecksumUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in checksum file URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/checksum-url"
+            )
+
+        if error:
+            return {
+                "errors": [
+                    error.get_api_details()
+                ]
+            }, 422
+
         if not tool_version:
             return {}, 400
 
@@ -3182,7 +3224,7 @@ class ApiAdminTerraformVersion(AuthenticatedEndpoint):
         return current_user.site_admin
 
     def _get(self, current_user, current_job, tool_id):
-        """Provide list of terraform versions"""
+        """Provide details about terraform version"""
 
         tool = Tool.get_by_api_id(tool_id)
         if not tool:
@@ -3191,3 +3233,96 @@ class ApiAdminTerraformVersion(AuthenticatedEndpoint):
         return {
             "data": tool.get_admin_api_details()
         }
+
+    def check_permissions_patch(self, current_user, current_job, tool_id):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _patch(self, current_user, current_job, tool_id):
+        """Update attributes of terraform version"""
+
+        tool = Tool.get_by_api_id(tool_id)
+        if not tool:
+            return {}, 404
+
+        data = request.json
+        if data.get("type") != "terraform-versions":
+            return {}, 400
+
+        if data.get("id") != tool_id:
+            return {}, 400
+
+        attributes = data.get("attributes", {})
+
+        # Create map of kwargs to update, using
+        # mapping of request attributes and database
+        # model attributes
+        update_kwargs = {
+            object_attribute: attributes.get(request_attribute)
+            for request_attribute, object_attribute in {
+                'url': 'custom_url', 'checksum-url': 'custom_checksum_url', 'enabled': 'enabled',
+                'sha': 'sha', 'deprecated': 'deprecated', 'deprecated-reason': 'deprecated_reason'
+            }.items()
+            if request_attribute in attributes
+        }
+
+        error = None        
+        try:
+            tool.update_attributes(**update_kwargs)
+        except UnableToDownloadToolArchiveError:
+            error = ApiError(
+                "Unable to download Terraform archive",
+                "The Terraform archive could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/url"
+            )
+        except UnableToDownloadToolChecksumFileError:
+            error = ApiError(
+                "Unable to download Terraform checksum file",
+                "The Terraform checksum file could not be downloaded - either version number is wrong or URL is incorrect.",
+                pointer="/data/attributes/checksum-url"
+            )
+        except InvalidVersionNumberError:
+            error = ApiError(
+                "Invalid version number",
+                "The version number is invalid - it must be in the form x.y.z or x.y.z-something.",
+                pointer="/data/attributes/version"
+            )
+        except ToolUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in download URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/url"
+            )
+        except ToolChecksumUrlPlaceholderError:
+            error = ApiError(
+                "Invalid placeholders in checksum file URL",
+                "Only the placeholders {platform} (e.g. linux) and {arch} (e.g. amd64) are supported.",
+                pointer="/data/attributes/checksum-url"
+            )
+
+        if error:
+            return {
+                "errors": [
+                    error.get_api_details()
+                ]
+            }, 422
+
+        return {
+            "data": tool.get_admin_api_details()
+        }
+
+    def check_permissions_delete(self, current_user, current_job, tool_id):
+        """Can only be access by site admins"""
+        return current_user.site_admin
+
+    def _delete(self, current_user, current_job, tool_id):
+        """Delete terraform version"""
+
+        tool = Tool.get_by_api_id(tool_id)
+        if not tool:
+            return {}, 404
+
+        tool.delete()
+
+        return {}, 200
+
