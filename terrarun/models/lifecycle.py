@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+import re
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -51,6 +52,8 @@ class Lifecycle(Base, BaseObject):
         if name in cls.RESERVED_NAMES:
             return False
         if len(name) < cls.MINIMUM_NAME_LENGTH:
+            return False
+        if not re.match(r"^[a-zA-z0-9-_]+$", name):
             return False
         return True
 
