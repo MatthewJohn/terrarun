@@ -246,7 +246,7 @@ class Project(Base, BaseObject):
                         'The tool version is invalid or the tool version does not exist.',
                         pointer='/data/attributes/terraform-version'
                     ))
-                update_kwargs["tool"] = tool
+            update_kwargs["tool"] = tool
 
         if "vcs-repo" in attributes:
             vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
