@@ -24,6 +24,7 @@ class Lifecycle(Base, BaseObject):
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    description = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     organisation_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("organisation.id", name="fk_lifecycle_organisation_id_organisation_id"),
         nullable=False)
@@ -101,7 +102,8 @@ class Lifecycle(Base, BaseObject):
             "id": self.api_id,
             "type": "lifecycles",
             "attributes": {
-                "name": self.name
+                "name": self.name,
+                "description": self.description
             },
             "relationships": {
                 "organization": {
