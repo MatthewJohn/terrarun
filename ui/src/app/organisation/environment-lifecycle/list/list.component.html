@@ -1,0 +1,53 @@
+<nb-layout>
+    <nb-layout-column>
+        <nb-card>
+            <nb-card-header>
+                Environment Lifecycles
+            </nb-card-header>
+            <nb-card-body id="listCardBody" [nbSpinner]="listSpinner" nbSpinnerStatus="primary">
+
+                <table [nbTreeGrid]="environmentLifecyclesRowData" equalColumnsWidth>
+                    <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
+                    <tr nbTreeGridRow class="environmentLifecycleRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
+
+                    <ng-container *ngFor="let column of tableColumns" [nbTreeGridColumnDef]="column">
+                        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+                            {{column}}
+                        </th>
+                        <td nbTreeGridCell (click)="onEnvironmentLifecycleClick(row)" *nbTreeGridCellDef="let row">
+                            {{row.data.attributes[column]}}
+                        </td>
+                    </ng-container>
+
+                </table>
+            </nb-card-body>
+
+            <nb-card>
+                <nb-card-header>
+                    Create environment lifecycle
+                </nb-card-header>
+                <nb-card-body [nbSpinner]="createSpinner" nbSpinnerStatus="primary">
+                    <form [formGroup]="createForm" (ngSubmit)="onCreate()">
+                        <nb-form-field>
+                            <label for="name">Name:</label>
+                            <input nbInput (change)="validateNewName()" placeholder="Dev-Prod" id="name"
+                                formControlName="name" type="text">
+                            <nb-icon nbSuffix [icon]="createNameValid.icon" [status]="createNameValid.iconStatus" pack="eva">
+                            </nb-icon>
+                        </nb-form-field>
+
+                        <br />
+                        <nb-form-field>
+                            <label for="description">Description:</label>
+                            <input nbInput placeholder="" id="description" formControlName="description" type="text">
+                        </nb-form-field>
+                        <br />
+                        <button [disabled]="!createNameValid.valid" nbButton>Create</button>
+                    </form>
+                </nb-card-body>
+            </nb-card>
+
+        </nb-card>
+    </nb-layout-column>
+    <nb-layout-column></nb-layout-column>
+</nb-layout>
