@@ -311,7 +311,11 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/lifecycles'
         )
         self._api.add_resource(
-            ApiTerraformLifecycles,
+            ApiTerraformOrganisationLifecycle,
+            '/api/v2/organizations/<string:organisation_name>/lifecycles/<string:lifecycle_name>'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycle,
             '/api/v2/lifecycles/<string:lifecycle_id>'
         )
         self._api.add_resource(
@@ -1287,7 +1291,38 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
         }
 
 
-class ApiTerraformLifecycles(AuthenticatedEndpoint):
+class ApiTerraformOrganisationLifecycle(AuthenticatedEndpoint):
+    """Interface to show/update lifecycles"""
+
+    def check_permissions_get(self, organisation_name, lifecycle_name, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+
+        lifecycle = Lifecycle.get_by_name_and_organisation(name=lifecycle_name, organisation=organisation)
+        if not lifecycle:
+            return False
+
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, lifecycle_name, current_user, current_job):
+        """Return list of projects for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        lifecycle = Lifecycle.get_by_name_and_organisation(name=lifecycle_name, organisation=organisation)
+        if not lifecycle:
+            return {}, 404
+
+        return {
+            "data": lifecycle.get_api_details()
+        }
+
+
+class ApiTerraformLifecycle(AuthenticatedEndpoint):
     """Interface to show/update lifecycles"""
 
     def check_permissions_get(self, lifecycle_id, current_user, current_job, *args, **kwargs):
