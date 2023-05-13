@@ -33,8 +33,8 @@ class Tool(Base, BaseObject):
     ZIP_FORMAT = "terraform_{version}_{platform}_{arch}.zip"
     ZIP_UPSTREAM_URL = "https://releases.hashicorp.com/terraform/{version}/{zip_file}"
     CHECKSUM_UPSTREAM_URL = "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_SHA256SUMS"
-    S3_KEY_ZIP = "terraform-binaries/{zip_file}"
-    S3_KEY_CHECKSUM = "terraform-binaries/terraform_{version}_SHA256SUMS"
+    S3_KEY_ZIP = "tools/{type}/{api_id}/{zip_file}"
+    S3_KEY_CHECKSUM = "tools/{type}/{api_id}/terraform_{version}_SHA256SUMS"
     CHECKSUM_FILE_RE = re.compile(r"^([a-z0-9]+)\s+(.*)")
 
     ID_PREFIX = 'tool'
@@ -248,9 +248,9 @@ class Tool(Base, BaseObject):
         object_storage = ObjectStorage()
         logger = get_logger(obj=self)
 
-        # Generate keys in s3w
+        # Generate keys in s3
         zip_file = self.ZIP_FORMAT.format(version=self.version, platform="linux", arch="amd64")
-        object_key = self.S3_KEY_ZIP.format(zip_file=zip_file)
+        object_key = self.S3_KEY_ZIP.format(zip_file=zip_file, type=self.tool_type.value, api_id=self.api_id)
 
         logger.debug(f'Getting pre-signed URL for {zip_file}')
 
@@ -289,7 +289,11 @@ class Tool(Base, BaseObject):
 
         object_storage = ObjectStorage()
         zip_file = self.ZIP_FORMAT.format(version=self.version, platform="linux", arch="amd64")
-        checksum_key = self.S3_KEY_CHECKSUM.format(version=self.version)
+        checksum_key = self.S3_KEY_CHECKSUM.format(
+            version=self.version,
+            type=self.tool_type.value,
+            api_id=self.api_id
+        )
         logger = get_logger(obj=self)
         logger.debug(f'Getting checksum for {zip_file}')
 
@@ -334,6 +338,6 @@ class Tool(Base, BaseObject):
 
         # Generate keys in s3
         zip_file = self.ZIP_FORMAT.format(version=self.version, platform="linux", arch="amd64")
-        object_key = self.S3_KEY_ZIP.format(zip_file=zip_file)
+        object_key = self.S3_KEY_ZIP.format(zip_file=zip_file, type=self.tool_type.value, api_id=self.api_id)
         if object_storage.file_exists(object_key):
             object_storage.delete_file(object_key)
