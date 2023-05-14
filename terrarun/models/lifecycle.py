@@ -32,6 +32,7 @@ class Lifecycle(Base, BaseObject):
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="lifecycles", foreign_keys=[organisation_id])
 
     projects = sqlalchemy.orm.relation("Project", back_populates="lifecycle")
+    lifecycle_environments = sqlalchemy.orm.relation("LifecycleEnvironment", back_populates="lifecycle")
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):
@@ -75,17 +76,8 @@ class Lifecycle(Base, BaseObject):
         """Return list of environments"""
         return [
             Environment.get_by_id(lifecycle_environment.environment_id)
-            for lifecycle_environment in self.get_lifecycle_environments()
+            for lifecycle_environment in self.lifecycle
         ]
-
-    def get_lifecycle_environments(self):
-        """Return list of lifecycle environment objects"""
-        session = Database.get_session()
-        return session.query(
-            terrarun.models.lifecycle_environment.LifecycleEnvironment
-        ).filter(
-            terrarun.models.lifecycle_environment.LifecycleEnvironment.lifecycle_id==self.id
-        )
 
     def associate_environment(self, environment, order):
         """Associate environment with lifecycle"""
@@ -121,7 +113,7 @@ class Lifecycle(Base, BaseObject):
                             "id": lifecycle_environment.environment.api_id,
                             "type": "environments"
                         }
-                        for lifecycle_environment in self.get_lifecycle_environments()
+                        for lifecycle_environment in self.lifecycle_environments
                     ]
                 },
                 "environment-lifecycles": {
@@ -130,7 +122,7 @@ class Lifecycle(Base, BaseObject):
                             "id": lifecycle_environment.api_id,
                             "type": "lifecycle-environments"
                         }
-                        for lifecycle_environment in self.get_lifecycle_environments()
+                        for lifecycle_environment in self.lifecycle_environments
                     ]
                 }
             },

@@ -319,6 +319,10 @@ class Server(object):
             '/api/v2/lifecycles/<string:lifecycle_id>'
         )
         self._api.add_resource(
+            ApiTerraformLifecycleEnvironments,
+            '/api/v2/lifecycles/<string:lifecycle_id>/lifecycle-environments'
+        )
+        self._api.add_resource(
             ApiAuthenticate,
             '/api/terrarun/v1/authenticate'
         )
@@ -1289,6 +1293,60 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
         return {
             "data": environment.get_api_details()
         }
+
+
+class ApiTerraformLifecycleEnvironments(AuthenticatedEndpoint):
+    """Interface to list/create organisation lifecycle environments"""
+
+    def check_permissions_get(self, lifecycle_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return False
+        return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, lifecycle_id, current_user, current_job):
+        """Return list of projects for organisation"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return {}, 404
+
+        return {
+            "data": [
+                lifecycle_environment.get_api_details()
+                for lifecycle_environment in lifecycle.lifecycle_environments
+            ]
+        }
+
+    # def check_permissions_post(self, organisation_name, current_user, current_job, *args, **kwargs):
+    #     """Check permissions"""
+    #     organisation = Organisation.get_by_name_id(organisation_name)
+    #     if not organisation:
+    #         return False
+    #     return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+    #         OrganisationPermissions.Permissions.CAN_DESTROY)
+
+    # def _post(self, organisation_name, current_user, current_job):
+    #     """Create project"""
+    #     organisation = Organisation.get_by_name_id(organisation_name)
+    #     if not organisation:
+    #         return {}, 404
+
+    #     json_data = flask.request.get_json().get('data', {})
+    #     if json_data.get('type') != "lifecycles":
+    #         return {}, 400
+
+    #     attributes = json_data.get('attributes', {})
+    #     name = attributes.get('name')
+    #     if not name:
+    #         return {}, 400
+
+    #     environment = Lifecycle.create(organisation=organisation, name=name)
+
+    #     return {
+    #         "data": environment.get_api_details()
+    #     }
 
 
 class ApiTerraformOrganisationLifecycle(AuthenticatedEndpoint):

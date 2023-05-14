@@ -31,6 +31,7 @@ class Environment(Base, BaseObject):
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="environments")
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="environment")
+    lifecycle_environments = sqlalchemy.orm.relation("LifecycleEnvironment", back_populates="environment")
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):
@@ -71,15 +72,6 @@ class Environment(Base, BaseObject):
 
         return lifecycle
 
-    def get_lifecycle_environments(self):
-        """Return list of lifecycle environment objects"""
-        session = Database.get_session()
-        return session.query(
-            terrarun.models.lifecycle_environment.LifecycleEnvironment
-        ).filter(
-            terrarun.models.lifecycle_environment.LifecycleEnvironment.environment_id==self.id
-        )
-
     def get_api_details(self):
         """Return API details for environment"""
         return {
@@ -99,10 +91,10 @@ class Environment(Base, BaseObject):
                 "lifecycles": {
                     "data": [
                         {
-                            "id": lifecycle_environment.lifecycle_id,
+                            "id": lifecycle_environment.lifecycle.api_id,
                             "type": "lifecycles"
                         }
-                        for lifecycle_environment in self.get_lifecycle_environments()
+                        for lifecycle_environment in self.lifecycle_environments
                     ]
                 }
             },
