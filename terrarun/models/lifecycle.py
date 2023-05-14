@@ -101,7 +101,8 @@ class Lifecycle(Base, BaseObject):
                             "id": lifecycle_environment.environment.api_id,
                             "type": "environments"
                         }
-                        for lifecycle_environment in self.lifecycle_environments
+                        for lifecycle_environment_group in self.lifecycle_environment_groups
+                        for lifecycle_environment in lifecycle_environment_group.lifecycle_environments
                     ]
                 },
                 "environment-lifecycles": {
@@ -110,7 +111,17 @@ class Lifecycle(Base, BaseObject):
                             "id": lifecycle_environment.api_id,
                             "type": "lifecycle-environments"
                         }
-                        for lifecycle_environment in self.lifecycle_environments
+                        for lifecycle_environment_group in self.lifecycle_environment_groups
+                        for lifecycle_environment in lifecycle_environment_group.lifecycle_environments
+                    ]
+                },
+                "environment-lifecycle-groups": {
+                    "data": [
+                        {
+                            "id": lifecycle_environment_group.api_id,
+                            "type": "lifecycle-environments"
+                        }
+                        for lifecycle_environment_group in self.lifecycle_environment_groups
                     ]
                 }
             },

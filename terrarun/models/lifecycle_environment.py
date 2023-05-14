@@ -48,13 +48,13 @@ class LifecycleEnvironment(Base, BaseObject):
             "relationships": {
                 "lifecycle": {
                     "data": {
-                        "id": self.lifecycle.api_id,
+                        "id": self.lifecycle_environment_group.lifecycle.api_id,
                         "type": "lifecycles"
                     }
                 },
                 "lifecycle-environment-group": {
                     "data": {
-                        "id": self.lifecycle.api_id,
+                        "id": self.lifecycle_environment_group.api_id,
                         "type": "lifecycle-environment-groups"
                     }
                 },

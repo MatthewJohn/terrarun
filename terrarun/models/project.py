@@ -160,7 +160,8 @@ class Project(Base, BaseObject):
         # Create list of all environments that exist in new lifecycle
         new_environments = [
             lifecycle_environment.environment
-            for lifecycle_environment in new_lifecycle.get_lifecycle_environments()
+            for lifecycle_environment_group in new_lifecycle.lifecycle_environment_groups
+            for lifecycle_environment in lifecycle_environment_group.lifecycle_environments
         ] if new_lifecycle else []
 
         # Iterate through all workspaces for project,

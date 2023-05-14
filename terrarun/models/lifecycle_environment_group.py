@@ -90,6 +90,15 @@ class LifecycleEnvironmentGroup(Base, BaseObject):
                         "id": self.lifecycle.api_id,
                         "type": "lifecycles"
                     }
+                },
+                "lifecycle-environments": {
+                    "data": [
+                        {
+                            "id": lifecycle_environment.api_id,
+                            "type": "lifecycle-environments"
+                        }
+                        for lifecycle_environment in self.lifecycle_environments
+                    ]
                 }
             }
         }
