@@ -22,14 +22,17 @@ class LifecycleEnvironment(Base, BaseObject):
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id", name="fk_lifecycle_environment_api_id_id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
-    lifecycle_id = sqlalchemy.Column(sqlalchemy.ForeignKey("lifecycle.id", name="fk_lifecycle_environment_lifecycle_id_lifecycle_id"))
-    lifecycle = sqlalchemy.orm.relationship("Lifecycle", back_populates="lifecycle_environments")
+    lifecycle_environment_group_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
+        "lifecycle_environment_group.id",
+        name="fk_lifecycle_environment_lifecycle_environment_group_id"))
+    lifecycle_environment_group = sqlalchemy.orm.relationship("LifecycleEnvironmentGroup", back_populates="lifecycle_environments")
     environment_id = sqlalchemy.Column(sqlalchemy.ForeignKey("environment.id", name="fk_lifecycle_environment_environment_id_environment_id"))
     environment = sqlalchemy.orm.relationship("Environment", back_populates="lifecycle_environments")
+
     order = sqlalchemy.Column(sqlalchemy.Integer)
 
     __table_args__ = (
-        sqlalchemy.UniqueConstraint('lifecycle_id', 'environment_id', name='_lifecycel_id_environment_id_uc'),
+        sqlalchemy.UniqueConstraint('lifecycle_environment_group_id', 'environment_id', name='_lifecycel_id_environment_id_uc'),
     )
 
     def get_api_details(self):
@@ -45,6 +48,12 @@ class LifecycleEnvironment(Base, BaseObject):
                     "data": {
                         "id": self.lifecycle.api_id,
                         "type": "lifecycles"
+                    }
+                },
+                "lifecycle-environment-group": {
+                    "data": {
+                        "id": self.lifecycle.api_id,
+                        "type": "lifecycle-environment-groups"
                     }
                 },
                 "environment": {

@@ -32,7 +32,7 @@ class Lifecycle(Base, BaseObject):
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="lifecycles", foreign_keys=[organisation_id])
 
     projects = sqlalchemy.orm.relation("Project", back_populates="lifecycle")
-    lifecycle_environments = sqlalchemy.orm.relation("LifecycleEnvironment", back_populates="lifecycle")
+    lifecycle_environment_groups = sqlalchemy.orm.relation("LifecycleEnvironmentGroup", back_populates="lifecycle")
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):

@@ -31,7 +31,7 @@ class Environment(Base, BaseObject):
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="environments")
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="environment")
-    lifecycle_environments = sqlalchemy.orm.relation("LifecycleEnvironment", back_populates="environment")
+    lifecycle_environment_groups = sqlalchemy.orm.relation("LifecycleEnvironmentGroup", back_populates="environment")
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):
