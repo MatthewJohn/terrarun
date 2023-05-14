@@ -31,8 +31,6 @@ class LifecycleEnvironment(Base, BaseObject):
         "environment.id", name="fk_lifecycle_environment_environment_id_environment_id"), nullable=False)
     environment = sqlalchemy.orm.relationship("Environment", back_populates="lifecycle_environments")
 
-    order = sqlalchemy.Column(sqlalchemy.Integer)
-
     __table_args__ = (
         sqlalchemy.UniqueConstraint('lifecycle_environment_group_id', 'environment_id', name='_lifecycle_environment_group_id_environment_id_uc'),
     )
@@ -43,7 +41,6 @@ class LifecycleEnvironment(Base, BaseObject):
             "id": self.api_id,
             "type": "lifecycle-environments",
             "attributes": {
-                "order": self.order
             },
             "relationships": {
                 "lifecycle": {
