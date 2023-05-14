@@ -79,18 +79,6 @@ class Lifecycle(Base, BaseObject):
             for lifecycle_environment in self.lifecycle
         ]
 
-    def associate_environment(self, environment, order):
-        """Associate environment with lifecycle"""
-        session = Database.get_session()
-        lifecycle_environment = terrarun.models.lifecycle_environment.LifecycleEnvironment(
-            lifecycle_id=self.id,
-            environment_id=environment.id,
-            order=order
-        )
-        session.add(lifecycle_environment)
-        session.commit()
-        return lifecycle_environment
-
     def get_api_details(self):
         """Return API details for lifecycle"""
         return {

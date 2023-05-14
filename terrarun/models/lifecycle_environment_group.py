@@ -6,10 +6,11 @@ from enum import Enum
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base
+from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
 import terrarun.models.environment
 import terrarun.models.lifecycle
+import terrarun.models.lifecycle_environment
 
 
 class LifecycleEnvironmentGroup(Base, BaseObject):
@@ -38,6 +39,39 @@ class LifecycleEnvironmentGroup(Base, BaseObject):
     __table_args__ = (
         sqlalchemy.UniqueConstraint('lifecycle_id', 'order', name='_lifecycle_id_order_uc'),
     )
+
+    @classmethod
+    def create(cls, lifecycle, minimum_runs=None, minimum_successful_plans=None, minimum_successful_applies=None):
+        """Create environment lifecycle group"""
+        # Get pre-existing group with highest group
+        session = Database.get_session()
+        highest_order = session.query(cls).filter(cls.lifecycle==lifecycle).order_by(cls.order.desc()).limit(1).first()
+
+        order = 0
+        if highest_order:
+            order = highest_order.order + 1
+
+        lifecycle_environment_group = cls(
+            lifecycle=lifecycle,
+            minimum_runs=minimum_runs,
+            minimum_successful_plans=minimum_successful_plans,
+            minimum_successful_applies=minimum_successful_applies,
+            order=order
+        )
+        session.add(lifecycle_environment_group)
+        session.commit()
+        return lifecycle_environment_group
+
+    def associate_environment(self, environment):
+        """Associate environment with lifecycle"""
+        session = Database.get_session()
+        lifecycle_environment = terrarun.models.lifecycle_environment.LifecycleEnvironment(
+            lifecycle_environment_group=self,
+            environment=environment
+        )
+        session.add(lifecycle_environment)
+        session.commit()
+        return lifecycle_environment
 
     def get_api_details(self):
         """Return API details for lifecycle environment"""

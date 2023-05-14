@@ -56,11 +56,16 @@ if not (lifecycle := terrarun.Lifecycle.get_by_name_and_organisation(organisatio
 
 for environment_name in args.environment:
     if not terrarun.Environment.get_by_name_and_organisation(organisation=org, name=environment_name):
+        # Create environment lifecycle group
+        lifecycle_environment_group = terrarun.LifecycleEnvironmentGroup.create(
+            lifecycle=lifecycle
+        )
+        print('Created lifecycle environment group:', lifecycle_environment_group.api_id)
         environment = terrarun.Environment.create(organisation=org, name=environment_name)
         print('Created environment:', environment.name, environment.api_id)
 
-        lifecycle.associate_environment(environment=environment, order=0)
-        print('Added environment to lifecycle')
+        lifecycle_environment_group.associate_environment(environment=environment)
+        print('Added environment to lifecycle environment group')
 
 ## Create default agent pool
 if args.global_agent_pool and not terrarun.AgentPool.get_by_name_and_organisation(name=args.global_agent_pool, organisation=None):
