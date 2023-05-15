@@ -1,1 +1,118 @@
-<p>edit works!</p>
+<nb-layout>
+  <nb-layout-column>
+
+
+
+    <table [nbTreeGrid]="dataSource" [nbSort]="dataSource">
+
+      <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="allColumns"></tr>
+      <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: allColumns"></tr>
+
+      <!-- Name column -->
+      <ng-container *ngFor="let column of nameColumn; let index = index" [nbTreeGridColumnDef]="column">
+        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+          Group/Environment Name
+        </th>
+        <td nbTreeGridCell *nbTreeGridCellDef="let row">
+          <ng-container *ngIf="row.data.type == 'lifecycle-environments'; else lifeCycleGroupName">Environment: {{row.data[column] || '-'}}</ng-container>
+          <ng-template #lifeCycleGroupName>
+            Group {{row.data.attributes.order}}
+          </ng-template>
+        </td>
+      </ng-container>
+
+      <!-- Action column -->
+      <ng-container *ngFor="let column of actionColumn; let index = index" [nbTreeGridColumnDef]="column">
+        <th nbTreeGridHeaderCell *nbTreeGridHeaderCellDef>
+          Actions
+        </th>
+        <td nbTreeGridCell *nbTreeGridCellDef="let row">
+          <ng-container *ngIf="row.data.type == 'lifecycle-environments'; else lifeCycleGroupActions">
+            Remove environment from Lifecycle Group<br />
+            <button nbButton size="small" status="danger">Remove</button>
+          </ng-container>
+          <ng-template #lifeCycleGroupActions>
+
+            <h6>Progression Rules</h6>
+
+            <span>
+              Minimum Runs
+            </span>
+            <br />
+            <nb-select size="small">
+              <nb-option value="0">
+                None
+              </nb-option>
+
+              <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                {{itx}} Environment(s)
+              </nb-option>
+
+              <nb-option value="">
+                All Environments
+              </nb-option>
+            </nb-select>
+            <br /><br />
+
+            <span>
+              Minimum Successful Environment Plans
+            </span>
+            <br />
+            <nb-select size="small">
+              <nb-option value="0">
+                None
+              </nb-option>
+
+              <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                {{itx}} Environment(s)
+              </nb-option>
+
+              <nb-option value="">
+                All Environments
+              </nb-option>
+            </nb-select>
+            <br /><br />
+
+            <span>
+              Minimum Successful Environment Applies
+            </span>
+            <br />
+            <nb-select size="small">
+              <nb-option value="0">
+                None
+              </nb-option>
+
+              <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                {{itx}} Environment(s)
+              </nb-option>
+
+              <nb-option value="">
+                All Environments
+              </nb-option>
+            </nb-select>
+            <br /><br />
+
+            <button nbButton>Update</button>
+            <br /><br /><br />
+
+            Add environment<br />
+            <nb-select>
+              <nb-option>Staging</nb-option>
+            </nb-select>
+            <br />
+            <br />
+            <button nbButton>Add</button>
+
+
+
+          </ng-template>
+        </td>
+      </ng-container>
+
+
+    </table>
+
+
+
+  </nb-layout-column>
+</nb-layout>
