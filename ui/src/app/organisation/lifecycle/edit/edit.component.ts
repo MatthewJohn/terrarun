@@ -56,31 +56,6 @@ export class EditComponent implements OnInit {
   nameColumn: string[] = ['name'];
   actionColumn: string[] = ['actions'];
   allColumns: string[] = [...this.nameColumn, ...this.actionColumn];
-  dataSource: any = [
-    {
-      data: {
-        id: "blah", type: "lifecycle-environment-groups", attributes: {order: 1},
-        // Custom value
-        childItx: [1, 2]
-      },
-      expanded: true,
-      children: [
-        {data: {name: 'dev', type: "lifecycle-environments"}},
-        {data: {name: 'test', type: "lifecycle-environments"}}
-      ]
-    },
-    {
-      data: {
-        id: "blah2", attributes: {order: 2},
-        // Custom value
-        childItx: [1]
-      },
-      expanded: true,
-      children: [
-        {data: {name: 'prod', type: "lifecycle-environments"}},
-      ]
-    }
-  ]
 
   constructor(
     private stateService: StateService,
