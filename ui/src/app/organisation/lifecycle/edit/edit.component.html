@@ -14,9 +14,10 @@
           Group/Environment Name
         </th>
         <td nbTreeGridCell *nbTreeGridCellDef="let row">
-          <ng-container *ngIf="row.data.type == 'lifecycle-environments'; else lifeCycleGroupName">Environment: {{row.data[column] || '-'}}</ng-container>
+          <ng-container *ngIf="row.data.type == 'lifecycle-environments'; else lifeCycleGroupName">Environment:
+            {{row.data[column] || '-'}}</ng-container>
           <ng-template #lifeCycleGroupName>
-            Group {{row.data.attributes.order}}
+            Environment Progression Group {{row.data.attributes.order}}
           </ng-template>
         </td>
       </ng-container>
@@ -33,76 +34,101 @@
           </ng-container>
           <ng-template #lifeCycleGroupActions>
 
-            <h6>Progression Rules</h6>
+            <nb-accordion>
+              <nb-accordion-item>
+                <nb-accordion-item-header>Progression Rules</nb-accordion-item-header>
+                <nb-accordion-item-body>
+                  <span>
+                    Define rules that will allow a VCS commit/tag<br />
+                    to be run against the next environment group
+                  </span>
+                  <br /><br />
+                  <span>
+                    Minimum Runs
+                  </span>
+                  <br />
+                  <nb-select size="small">
+                    <nb-option value="0">
+                      None
+                    </nb-option>
 
-            <span>
-              Minimum Runs
-            </span>
-            <br />
-            <nb-select size="small">
-              <nb-option value="0">
-                None
-              </nb-option>
+                    <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                      {{itx}} Environment(s)
+                    </nb-option>
 
-              <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
-                {{itx}} Environment(s)
-              </nb-option>
+                    <nb-option value="">
+                      All Environments
+                    </nb-option>
+                  </nb-select>
+                  <br /><br />
 
-              <nb-option value="">
-                All Environments
-              </nb-option>
-            </nb-select>
-            <br /><br />
+                  <span>
+                    Minimum Successful Environment Plans
+                  </span>
+                  <br />
+                  <nb-select size="small">
+                    <nb-option value="0">
+                      None
+                    </nb-option>
 
-            <span>
-              Minimum Successful Environment Plans
-            </span>
-            <br />
-            <nb-select size="small">
-              <nb-option value="0">
-                None
-              </nb-option>
+                    <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                      {{itx}} Environment(s)
+                    </nb-option>
 
-              <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
-                {{itx}} Environment(s)
-              </nb-option>
+                    <nb-option value="">
+                      All Environments
+                    </nb-option>
+                  </nb-select>
+                  <br /><br />
 
-              <nb-option value="">
-                All Environments
-              </nb-option>
-            </nb-select>
-            <br /><br />
+                  <span>
+                    Minimum Successful Environment Applies
+                  </span>
+                  <br />
+                  <nb-select size="small">
+                    <nb-option value="0">
+                      None
+                    </nb-option>
 
-            <span>
-              Minimum Successful Environment Applies
-            </span>
-            <br />
-            <nb-select size="small">
-              <nb-option value="0">
-                None
-              </nb-option>
+                    <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                      {{itx}} Environment(s)
+                    </nb-option>
 
-              <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
-                {{itx}} Environment(s)
-              </nb-option>
+                    <nb-option value="">
+                      All Environments
+                    </nb-option>
+                  </nb-select>
+                  <br /><br />
 
-              <nb-option value="">
-                All Environments
-              </nb-option>
-            </nb-select>
-            <br /><br />
+                  <button nbButton>Update</button>
+                </nb-accordion-item-body>
+              </nb-accordion-item>
 
-            <button nbButton>Update</button>
-            <br /><br /><br />
+              <nb-accordion-item>
+                <nb-accordion-item-header>Add Environment</nb-accordion-item-header>
+                <nb-accordion-item-body>
+                  <nb-select>
+                    <nb-option>Staging</nb-option>
+                  </nb-select>
+                  <br />
+                  <br />
+                  <button nbButton>Add</button>
+                </nb-accordion-item-body>
+              </nb-accordion-item>
 
-            Add environment<br />
-            <nb-select>
-              <nb-option>Staging</nb-option>
-            </nb-select>
-            <br />
-            <br />
-            <button nbButton>Add</button>
-
+              <nb-accordion-item>
+                <nb-accordion-item-header>Delete</nb-accordion-item-header>
+                <nb-accordion-item-body>
+                  Delete Lifecycle Environment Group.<br /><br />
+                  <b>Warning:</b> This will remove all associated environments and<br />
+                  all workspaces associated to these environments for<br />
+                  projects attached to this lifecycle
+                  <br />
+                  <br />
+                  <button nbButton status="danger">Delete</button>
+                </nb-accordion-item-body>
+              </nb-accordion-item>
+            </nb-accordion>
 
 
           </ng-template>
