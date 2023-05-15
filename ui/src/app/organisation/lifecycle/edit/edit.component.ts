@@ -129,7 +129,6 @@ export class EditComponent implements OnInit {
             this.currentLifecycle.name
           ).then((lifecycleData) => {
             this.lifecycleData = lifecycleData;
-            console.log("called!!!!")
 
             // Get all lifecycle environment groups
             this.lifecycleService.getLifecycleEnvironmentGroups(this.lifecycleData.id).then((lifecycleEnvironmentGroups) => {
