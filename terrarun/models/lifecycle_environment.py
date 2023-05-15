@@ -41,6 +41,7 @@ class LifecycleEnvironment(Base, BaseObject):
             "id": self.api_id,
             "type": "lifecycle-environments",
             "attributes": {
+                "environment-name": self.environment.name
             },
             "relationships": {
                 "lifecycle": {

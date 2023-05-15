@@ -1,12 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { Subscription } from 'rxjs';
+import { EnvironmentService } from 'src/app/environment.service';
 import { LifecycleAttributes } from 'src/app/interfaces/lifecycle-attributes';
+import { LifecycleEnvironmentAttributes, LifecycleEnvironmentRelationships } from 'src/app/interfaces/lifecycle-environment-attributes';
+import { LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships } from 'src/app/interfaces/lifecycle-environment-group-attributes';
+import { LifecycleEnvironmentGroupService } from 'src/app/services/lifecycle-environment-group.service';
 import { LifecycleService } from 'src/app/services/lifecycle.service';
 import { LifecycleStateType, OrganisationStateType, StateService } from 'src/app/state.service';
 
-import { Environment } from '../../../interfaces/environment';
-import { ResponseObject } from '../../../interfaces/response';
+import { EnvironmentAttributes } from '../../../interfaces/environment';
+import { ResponseObject, ResponseObjectWithRelationships } from '../../../interfaces/response';
 
+interface RowDataType {
+  // Data attribute is LifecycleGroupdata with additional environmentItx list attribute
+  data: ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships> & {
+    environmentItx: number[];
+  }
+  children: {
+    data: ResponseObject<LifecycleEnvironmentAttributes>
+  }[];
+  expanded: boolean;
+}
 
 @Component({
   selector: 'app-edit',
@@ -15,13 +29,20 @@ import { ResponseObject } from '../../../interfaces/response';
 })
 export class EditComponent implements OnInit {
 
-  availableEnvironments: ResponseObject<Environment>[] = [];
+  availableEnvironments: ResponseObject<EnvironmentAttributes>[] = [];
   lifecycleData: ResponseObject<LifecycleAttributes> | null = null;
 
   stateServiceLifecycleSubscription: Subscription | null = null;
   stateServiceOrganisationSubscription: Subscription | null = null;
   currentLifecycle: LifecycleStateType | null = null;
   currentOrganisation: OrganisationStateType | null = null;
+
+  lifecycleEnvironmentGroups: ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships>[] = [];
+
+  rowData: RowDataType[] = [];
+
+  // Life of lifecycle environments keyed by lifecycle environment group
+  lifecycleEnvironments: {[key: string]: ResponseObjectWithRelationships<LifecycleEnvironmentAttributes, LifecycleEnvironmentRelationships>[]} = {};
 
   nameColumn: string[] = ['name'];
   actionColumn: string[] = ['actions'];
@@ -54,7 +75,9 @@ export class EditComponent implements OnInit {
 
   constructor(
     private stateService: StateService,
-    private lifecycleService: LifecycleService
+    private lifecycleService: LifecycleService,
+    private environmentService: EnvironmentService,
+    private lifecycleEnvironmentGroupService: LifecycleEnvironmentGroupService
   ) { }
 
   ngOnInit(): void {
@@ -81,13 +104,69 @@ export class EditComponent implements OnInit {
   }
 
   getLifecycleData() {
+    // Do not call until both organisation and lifecycle have been populated
     if (this.currentOrganisation?.name && this.currentLifecycle?.name) {
-      this.lifecycleService.getByName(
-        this.currentOrganisation.name,
-        this.currentLifecycle.name
-      ).then((lifecycleData) => {
-        this.lifecycleData = lifecycleData;
-      })
+
+      // Obtain list of environments
+      this.environmentService.getOrganisationEnvironments(
+        this.currentOrganisation.name
+      ).then((environments) => {
+        this.availableEnvironments = environments;
+
+        if (this.currentOrganisation?.name && this.currentLifecycle?.name) {
+          // Get lifecycle details
+          this.lifecycleService.getByName(
+            this.currentOrganisation.name,
+            this.currentLifecycle.name
+          ).then((lifecycleData) => {
+            this.lifecycleData = lifecycleData;
+            console.log("called!!!!")
+
+            // Get all lifecycle environment groups
+            this.lifecycleService.getLifecycleEnvironmentGroups(this.lifecycleData.id).then((lifecycleEnvironmentGroups) => {
+              this.lifecycleEnvironmentGroups = lifecycleEnvironmentGroups;
+
+              // Get all lifecycle environments for the group
+              this.lifecycleEnvironmentGroups.forEach((lifecycleEnvironmentGroup) => {
+
+                // Add lifecycle group to list of table data
+                this.rowData = [{
+                  data: {
+                    // Create array of environment itx (1.. number of environments) to display
+                    // in drop-down for environment rules
+                    environmentItx: Array.from(lifecycleEnvironmentGroup.relationships['lifecycle-environments'].data.keys()).map((val) => val + 1),
+                    ...lifecycleEnvironmentGroup
+                  },
+                  children: [],
+                  expanded: true
+                }, ...this.rowData];
+
+                // Order existing rows
+                this.rowData = this.rowData.sort((a, b) => {return a.data.attributes.order - b.data.attributes.order;});
+
+                this.lifecycleEnvironmentGroupService.getLifecycleEnvironments(lifecycleEnvironmentGroup.id).then((lifecycleEnvironments) => {
+                  this.lifecycleEnvironments[lifecycleEnvironmentGroup.id] = lifecycleEnvironments;
+
+                  // Iterate through each lifecycle environment and
+                  // add to children in row data and
+                  // remove the associated environment from list of available environments
+                  lifecycleEnvironments.forEach((lifecycleEnvironment) => {
+                    // Create child item in row data
+                    this.rowData.filter((row) => {return row.data.id == lifecycleEnvironmentGroup.id})[0]?.children.push({
+                      data: lifecycleEnvironment
+                    });
+                    this.rowData = [...this.rowData];
+
+                    this.availableEnvironments = this.availableEnvironments.filter((environment) => {return environment.id !== lifecycleEnvironment.relationships.environment.data.id})
+                  });
+
+                });
+              });
+            });
+          });
+        }
+
+      });
     }
   }
 

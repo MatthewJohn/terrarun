@@ -1,9 +1,7 @@
 <nb-layout>
   <nb-layout-column>
 
-
-
-    <table [nbTreeGrid]="dataSource" [nbSort]="dataSource">
+    <table [nbTreeGrid]="rowData">
 
       <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="allColumns"></tr>
       <tr nbTreeGridRow [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: allColumns"></tr>
@@ -15,7 +13,7 @@
         </th>
         <td nbTreeGridCell *nbTreeGridCellDef="let row">
           <ng-container *ngIf="row.data.type == 'lifecycle-environments'; else lifeCycleGroupName">Environment:
-            {{row.data[column] || '-'}}</ng-container>
+            {{row.data.attributes['environment-name']}}</ng-container>
           <ng-template #lifeCycleGroupName>
             Environment Progression Group {{row.data.attributes.order}}
           </ng-template>
@@ -52,7 +50,7 @@
                       None
                     </nb-option>
 
-                    <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                    <nb-option *ngFor="let itx of row.data.environmentItx" [value]="itx">
                       {{itx}} Environment(s)
                     </nb-option>
 
@@ -71,7 +69,7 @@
                       None
                     </nb-option>
 
-                    <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                    <nb-option *ngFor="let itx of row.data.environmentItx" [value]="itx">
                       {{itx}} Environment(s)
                     </nb-option>
 
@@ -90,7 +88,7 @@
                       None
                     </nb-option>
 
-                    <nb-option *ngFor="let itx of row.data.childItx" [value]="itx">
+                    <nb-option *ngFor="let itx of row.data.environmentItx" [value]="itx">
                       {{itx}} Environment(s)
                     </nb-option>
 
@@ -108,7 +106,7 @@
                 <nb-accordion-item-header>Add Environment</nb-accordion-item-header>
                 <nb-accordion-item-body>
                   <nb-select>
-                    <nb-option>Staging</nb-option>
+                    <nb-option *ngFor="let environment of availableEnvironments" [value]="environment.id">{{ environment.attributes.name }}</nb-option>
                   </nb-select>
                   <br />
                   <br />
@@ -137,8 +135,6 @@
 
 
     </table>
-
-
 
   </nb-layout-column>
 </nb-layout>

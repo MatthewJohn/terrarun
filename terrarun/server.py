@@ -35,6 +35,7 @@ from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.lifecycle import Lifecycle
+from terrarun.models.lifecycle_environment_group import LifecycleEnvironmentGroup
 from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
@@ -325,6 +326,14 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformLifecycleLifecycleEnvironmentGroups,
             '/api/v2/lifecycles/<string:lifecycle_id>/lifecycle-environment-groups'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycleEnvironmentGroup,
+            '/api/v2/lifecycle-environment-groups/<string:lifecycle_environment_group_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycleEnvironmentGroupLifecycleEnvironments,
+            '/api/v2/lifecycle-environment-groups/<string:lifecycle_environment_group_id>/lifecycle-environments'
         )
         self._api.add_resource(
             ApiAuthenticate,
@@ -1345,6 +1354,61 @@ class ApiTerraformLifecycleLifecycleEnvironmentGroups(AuthenticatedEndpoint):
             "data": [
                 lifecycle_environment_group.get_api_details()
                 for lifecycle_environment_group in lifecycle.lifecycle_environment_groups
+            ]
+        }
+
+
+class ApiTerraformLifecycleEnvironmentGroup(AuthenticatedEndpoint):
+    """Provide interface to obtain details for lifecycle environment group"""
+
+    def check_permissions_get(self, lifecycle_environment_group_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
+        )
+
+    def _get(self, lifecycle_environment_group_id, current_user, current_job):
+        """Return lifecycle environment group details"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return {}, 404
+
+        return {
+            "data": lifecycle_environment_group.get_api_details()
+        }
+
+
+class ApiTerraformLifecycleEnvironmentGroupLifecycleEnvironments(AuthenticatedEndpoint):
+    """Interface to obtain list of lifecycle group's lifecycle enivronments"""
+
+    def check_permissions_get(self, lifecycle_environment_group_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
+        )
+
+    def _get(self, lifecycle_environment_group_id, current_user, current_job):
+        """Return lifecycle environment group details"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return {}, 404
+
+        return {
+            "data": [
+                lifecycle_environment.get_api_details()
+                for lifecycle_environment in lifecycle_environment_group.lifecycle_environments
             ]
         }
 

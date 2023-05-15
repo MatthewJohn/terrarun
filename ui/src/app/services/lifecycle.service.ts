@@ -3,7 +3,8 @@ import { Injectable } from '@angular/core';
 import { AccountService } from '../account.service';
 import { DataItem, DataList } from '../interfaces/data';
 import { LifecycleAttributes } from '../interfaces/lifecycle-attributes';
-import { ResponseObject } from '../interfaces/response';
+import { LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships } from '../interfaces/lifecycle-environment-group-attributes';
+import { ResponseObject, ResponseObjectWithRelationships } from '../interfaces/response';
 
 @Injectable({
   providedIn: 'root'
@@ -96,5 +97,21 @@ export class LifecycleService {
         }
       });
     });
+  }
+
+  getLifecycleEnvironmentGroups(lifecycleId: string): Promise<ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships>[]> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `/api/v2/lifecycles/${lifecycleId}/lifecycle-environment-groups`,
+        { headers: this.accountService.getAuthHeader()
+      }).subscribe({
+        next: (data: DataList<ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships>>) => {
+          resolve(data.data);
+        },
+        error: (err) => {
+          reject(err);
+        }
+      });
+    })
   }
 }
