@@ -53,8 +53,8 @@
                     Minimum Runs
                   </span>
                   <br />
-                  <nb-select size="small">
-                    <nb-option value="0">
+                  <nb-select [(selected)]="row.data.attributes['minimum-runs']" size="small">
+                    <nb-option [value]="0">
                       None
                     </nb-option>
 
@@ -62,7 +62,7 @@
                       {{itx}} Environment(s)
                     </nb-option>
 
-                    <nb-option value="">
+                    <nb-option [value]="">
                       All Environments
                     </nb-option>
                   </nb-select>
@@ -72,7 +72,7 @@
                     Minimum Successful Environment Plans
                   </span>
                   <br />
-                  <nb-select size="small">
+                  <nb-select [(selected)]="row.data.attributes['minimum-successful-plans']" size="small">
                     <nb-option value="0">
                       None
                     </nb-option>
@@ -91,7 +91,7 @@
                     Minimum Successful Environment Applies
                   </span>
                   <br />
-                  <nb-select size="small">
+                  <nb-select [(selected)]="row.data.attributes['minimum-successful-applies']" size="small">
                     <nb-option value="0">
                       None
                     </nb-option>
