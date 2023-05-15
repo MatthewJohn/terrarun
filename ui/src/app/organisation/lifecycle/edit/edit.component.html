@@ -15,18 +15,15 @@
           <ng-container *ngIf="row.data.type == 'lifecycle-environments'; else lifeCycleGroupName">Environment:
             {{row.data.attributes['environment-name']}}</ng-container>
           <ng-template #lifeCycleGroupName>
+            Environment Progression Group {{row.data.attributes.order + 1}}
             <ng-container *ngIf="row.data.attributes.order == 0; else subsequentLifecycleEnvironmentGroupName">
-              First Environment Progression Group
+              <b>(First)</b>
             </ng-container>
             <ng-template #subsequentLifecycleEnvironmentGroupName>
-              <ng-container *ngIf="row.data.attributes.order != (rowData.length - 1); else lastLifecycleEnvironmentGroupName">
-                Environment Progression Group {{row.data.attributes.order + 1}}
+              <ng-container *ngIf="row.data.attributes.order == (rowData.length - 1)">
+                <b>(Last)</b>
               </ng-container>
-              <ng-template #lastLifecycleEnvironmentGroupName>
-                Last Environment Progression Group
-              </ng-template>
-
-              </ng-template>
+            </ng-template>
           </ng-template>
         </td>
       </ng-container>
