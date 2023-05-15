@@ -11,9 +11,18 @@ import { LifecycleStateType, OrganisationStateType, StateService } from 'src/app
 import { EnvironmentAttributes } from '../../../interfaces/environment';
 import { ResponseObject, ResponseObjectWithRelationships } from '../../../interfaces/response';
 
+// Create custom LifecycleEnvironmentGroupAttributes that converts
+// null minimum constraints to empty string, to support
+// empty field in nb-select
+type LifecycleEnvironmentGroupAttributesForm = Omit<LifecycleEnvironmentGroupAttributes, 'minimum-runs' | 'minimum-successful-plans' | 'minimum-successful-applies'> & {
+  'minimum-runs': '' | number;
+  'minimum-successful-plans': '' | number;
+  'minimum-successful-applies': '' | number;
+}
+
 interface RowDataType {
   // Data attribute is LifecycleGroupdata with additional environmentItx list attribute
-  data: ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships> & {
+  data: ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributesForm, LifecycleEnvironmentGroupRelationships> & {
     environmentItx: number[];
   }
   children: {
@@ -135,7 +144,23 @@ export class EditComponent implements OnInit {
                     // Create array of environment itx (1.. number of environments) to display
                     // in drop-down for environment rules
                     environmentItx: Array.from(lifecycleEnvironmentGroup.relationships['lifecycle-environments'].data.keys()).map((val) => val + 1),
-                    ...lifecycleEnvironmentGroup
+                    ...lifecycleEnvironmentGroup,
+                    attributes: {
+                      ...lifecycleEnvironmentGroup.attributes,
+                      // Replace minimum-X attributes with empty string, if they are none
+                      "minimum-runs": (
+                        lifecycleEnvironmentGroup.attributes['minimum-runs'] != null ?
+                        lifecycleEnvironmentGroup.attributes['minimum-runs'] : ''
+                      ),
+                      "minimum-successful-plans": (
+                        lifecycleEnvironmentGroup.attributes['minimum-successful-plans'] != null ?
+                        lifecycleEnvironmentGroup.attributes['minimum-successful-plans'] : ''
+                      ),
+                      "minimum-successful-applies": (
+                        lifecycleEnvironmentGroup.attributes['minimum-successful-applies'] != null ?
+                        lifecycleEnvironmentGroup.attributes['minimum-successful-applies'] : ''
+                      ),
+                    }
                   },
                   children: [],
                   expanded: true
