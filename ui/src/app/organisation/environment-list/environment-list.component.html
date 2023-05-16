@@ -6,7 +6,7 @@
             </nb-card-header>
             <nb-card-body>
 
-                <table [nbTreeGrid]="environments$ | async" equalColumnsWidth>
+                <table [nbTreeGrid]="environments" equalColumnsWidth>
                     <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="tableColumns"></tr>
                     <tr nbTreeGridRow class="environmentRow" [clickToToggle]="false" *nbTreeGridRowDef="let row; columns: tableColumns"></tr>
 

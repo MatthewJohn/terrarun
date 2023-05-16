@@ -2,6 +2,7 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+import re
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -24,12 +25,18 @@ class Lifecycle(Base, BaseObject):
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    description = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
+
+    # Whether to allow per-workspace VCS configurations
+    allow_per_workspace_vcs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, nullable=False)
+
     organisation_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("organisation.id", name="fk_lifecycle_organisation_id_organisation_id"),
         nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="lifecycles", foreign_keys=[organisation_id])
 
     projects = sqlalchemy.orm.relation("Project", back_populates="lifecycle")
+    lifecycle_environment_groups = sqlalchemy.orm.relation("LifecycleEnvironmentGroup", back_populates="lifecycle")
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):
@@ -51,6 +58,8 @@ class Lifecycle(Base, BaseObject):
             return False
         if len(name) < cls.MINIMUM_NAME_LENGTH:
             return False
+        if not re.match(r"^[a-zA-z0-9-_]+$", name):
+            return False
         return True
 
     @classmethod
@@ -71,29 +80,8 @@ class Lifecycle(Base, BaseObject):
         """Return list of environments"""
         return [
             Environment.get_by_id(lifecycle_environment.environment_id)
-            for lifecycle_environment in self.get_lifecycle_environments()
+            for lifecycle_environment in self.lifecycle
         ]
-
-    def get_lifecycle_environments(self):
-        """Return list of lifecycle environment objects"""
-        session = Database.get_session()
-        return session.query(
-            terrarun.models.lifecycle_environment.LifecycleEnvironment
-        ).filter(
-            terrarun.models.lifecycle_environment.LifecycleEnvironment.lifecycle_id==self.id
-        )
-
-    def associate_environment(self, environment, order):
-        """Associate environment with lifecycle"""
-        session = Database.get_session()
-        lifecycle_environment = terrarun.models.lifecycle_environment.LifecycleEnvironment(
-            lifecycle_id=self.id,
-            environment_id=environment.id,
-            order=order
-        )
-        session.add(lifecycle_environment)
-        session.commit()
-        return lifecycle_environment
 
     def get_api_details(self):
         """Return API details for lifecycle"""
@@ -101,7 +89,9 @@ class Lifecycle(Base, BaseObject):
             "id": self.api_id,
             "type": "lifecycles",
             "attributes": {
-                "name": self.name
+                "name": self.name,
+                "description": self.description,
+                "allow-per-workspace-vcs": self.allow_per_workspace_vcs
             },
             "relationships": {
                 "organization": {
@@ -113,11 +103,30 @@ class Lifecycle(Base, BaseObject):
                 "environments": {
                     "data": [
                         {
-                            "id": lifecycle_environment.environment_id,
-                            "order": lifecycle_environment.order,
+                            "id": lifecycle_environment.environment.api_id,
                             "type": "environments"
                         }
-                        for lifecycle_environment in self.get_lifecycle_environments()
+                        for lifecycle_environment_group in self.lifecycle_environment_groups
+                        for lifecycle_environment in lifecycle_environment_group.lifecycle_environments
+                    ]
+                },
+                "environment-lifecycles": {
+                    "data": [
+                        {
+                            "id": lifecycle_environment.api_id,
+                            "type": "lifecycle-environments"
+                        }
+                        for lifecycle_environment_group in self.lifecycle_environment_groups
+                        for lifecycle_environment in lifecycle_environment_group.lifecycle_environments
+                    ]
+                },
+                "environment-lifecycle-groups": {
+                    "data": [
+                        {
+                            "id": lifecycle_environment_group.api_id,
+                            "type": "lifecycle-environments"
+                        }
+                        for lifecycle_environment_group in self.lifecycle_environment_groups
                     ]
                 }
             },

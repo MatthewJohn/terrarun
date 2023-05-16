@@ -39,6 +39,11 @@ const routes: Routes = [
     canActivate: [LoggedInGuard, OrganisationExistsGuard]
   },
   {
+    path: ':organisationName/lifecycles',
+    loadChildren:  () => import('./lifecycle/lifecycle.module').then(m => m.LifecycleModule),
+    canActivate: [LoggedInGuard, OrganisationExistsGuard]
+  },
+  {
     path: ':organisationName/projects',
     component: ProjectListComponent,
     canActivate: [LoggedInGuard, OrganisationExistsGuard]

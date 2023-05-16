@@ -38,3 +38,15 @@ class UnableToDownloadToolChecksumFileError(TerrarunError):
     """Unable to download tool checksum file"""
 
     pass
+
+
+class LifecycleEnvironmentGroupHasLifecycleEnvironmentsError(TerrarunError):
+    """Lifecycle environment group was attempted to be deleted whilst lifecycle environment were associated with it"""
+
+    pass
+
+
+class OrganisationMixError(TerrarunError):
+    """Mixing organisationn in entities is not allowed"""
+    
+    pass

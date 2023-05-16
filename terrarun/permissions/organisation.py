@@ -36,6 +36,9 @@ class OrganisationPermissions:
         CAN_MANAGE_RUN_TASKS = "can-manage-run-tasks"
         CAN_READ_RUN_TASKS = "can-read-run-tasks"
 
+        # CUSTOM PERMISSIONS
+        CAN_MANAGE_ENVIRONMENTS = "can-manage-environments"
+
     def __init__(self, current_user, organisation):
         """Store member variables"""
         self._current_user = current_user
