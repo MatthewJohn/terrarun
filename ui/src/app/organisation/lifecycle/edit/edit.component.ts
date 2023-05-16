@@ -5,6 +5,7 @@ import { LifecycleAttributes } from 'src/app/interfaces/lifecycle-attributes';
 import { LifecycleEnvironmentAttributes, LifecycleEnvironmentRelationships } from 'src/app/interfaces/lifecycle-environment-attributes';
 import { LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships } from 'src/app/interfaces/lifecycle-environment-group-attributes';
 import { LifecycleEnvironmentGroupService } from 'src/app/services/lifecycle-environment-group.service';
+import { LifecycleEnvironmentService } from 'src/app/services/lifecycle-environment.service';
 import { LifecycleService } from 'src/app/services/lifecycle.service';
 import { LifecycleStateType, OrganisationStateType, StateService } from 'src/app/state.service';
 
@@ -50,8 +51,11 @@ export class EditComponent implements OnInit {
 
   rowData: RowDataType[] = [];
 
-  // Life of lifecycle environments keyed by lifecycle environment group
+  // List of lifecycle environments keyed by lifecycle environment group
   lifecycleEnvironments: {[key: string]: ResponseObjectWithRelationships<LifecycleEnvironmentAttributes, LifecycleEnvironmentRelationships>[]} = {};
+
+  // List of lifecycle environment group to environment ID mappings for stored value for environment addition form
+  newEnvironmentData: {[key: string]: string} = {};
 
   nameColumn: string[] = ['name'];
   actionColumn: string[] = ['actions'];
@@ -61,7 +65,8 @@ export class EditComponent implements OnInit {
     private stateService: StateService,
     private lifecycleService: LifecycleService,
     private environmentService: EnvironmentService,
-    private lifecycleEnvironmentGroupService: LifecycleEnvironmentGroupService
+    private lifecycleEnvironmentGroupService: LifecycleEnvironmentGroupService,
+    private lifecycleEnvironmentService: LifecycleEnvironmentService
   ) { }
 
   ngOnInit(): void {
@@ -105,12 +110,19 @@ export class EditComponent implements OnInit {
           ).then((lifecycleData) => {
             this.lifecycleData = lifecycleData;
 
+            // Reset row data and new environment data to handle reloads
+            this.rowData = [];
+            this.newEnvironmentData = {};
+
             // Get all lifecycle environment groups
             this.lifecycleService.getLifecycleEnvironmentGroups(this.lifecycleData.id).then((lifecycleEnvironmentGroups) => {
               this.lifecycleEnvironmentGroups = lifecycleEnvironmentGroups;
 
               // Get all lifecycle environments for the group
               this.lifecycleEnvironmentGroups.forEach((lifecycleEnvironmentGroup) => {
+
+                // Add to list of new environments
+                this.newEnvironmentData[lifecycleEnvironmentGroup.id] = "";
 
                 // Add lifecycle group to list of table data
                 this.rowData = [{
@@ -167,6 +179,66 @@ export class EditComponent implements OnInit {
 
       });
     }
+  }
+
+  onCreateLifecycleEnvironmentGroup() {
+    console.log("Creating lifecycle environment");
+    if (this.currentLifecycle?.id) {
+      this.lifecycleService.createLifecycleEnvironmentGroup(this.currentLifecycle.id).then(() => {
+        this.getLifecycleData();
+      })
+    }
+  }
+
+  onLifecycleEnvironmentGroupSettingsSave(lifecycleEnvironmentGroup: ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributesForm, LifecycleEnvironmentGroupRelationships>) {
+    console.log("Saving");
+    console.log(lifecycleEnvironmentGroup);
+    this.lifecycleEnvironmentGroupService.update(
+      lifecycleEnvironmentGroup.id,
+      {
+        ...lifecycleEnvironmentGroup.attributes,
+        "minimum-runs": (
+          lifecycleEnvironmentGroup.attributes['minimum-runs'] != '' ?
+          // Parse through "Number" as the nb-select is treating 0 as a string
+          Number(lifecycleEnvironmentGroup.attributes['minimum-runs']) : null
+        ),
+        "minimum-successful-plans": (
+          lifecycleEnvironmentGroup.attributes['minimum-successful-plans'] != '' ?
+          // Parse through "Number" as the nb-select is treating 0 as a string
+          Number(lifecycleEnvironmentGroup.attributes['minimum-successful-plans']) : null
+        ),
+        "minimum-successful-applies": (
+          lifecycleEnvironmentGroup.attributes['minimum-successful-applies'] != '' ?
+          // Parse through "Number" as the nb-select is treating 0 as a string
+          Number(lifecycleEnvironmentGroup.attributes['minimum-successful-applies']) : null
+        )
+      }
+    ).then(() => {
+      this.getLifecycleData();
+    })
+  }
+
+  onLifecycleEnvironmentGroupDelete(lifecycleEnvironmentGroupId: string) {
+    console.log('deleting ' + lifecycleEnvironmentGroupId)
+    this.lifecycleEnvironmentGroupService.delete(lifecycleEnvironmentGroupId).then(() => {
+      this.getLifecycleData();
+    })
+  }
+
+  onLifecycleEnvironmentCreate(lifecycleEnvironmentGroupId: string) {
+    console.log('creating environment in ' + lifecycleEnvironmentGroupId)
+    this.lifecycleEnvironmentGroupService.createLifecycleEnvironment(
+      lifecycleEnvironmentGroupId,
+      this.newEnvironmentData[lifecycleEnvironmentGroupId]
+    ).then(() => {
+      this.getLifecycleData();
+    })
+  }
+
+  onLifecycleEnvironmentDelete(lifecycleEnvironmentId: string) {
+    this.lifecycleEnvironmentService.delete(lifecycleEnvironmentId).then(() => {
+      this.getLifecycleData();
+    })
   }
 
 }

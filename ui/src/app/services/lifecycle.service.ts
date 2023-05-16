@@ -112,6 +112,22 @@ export class LifecycleService {
           reject(err);
         }
       });
-    })
+    });
+  }
+
+  createLifecycleEnvironmentGroup(lifecycleId: string): Promise<ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships>> {
+    return new Promise((resolve, reject) => {
+      this.http.post<any>(
+        `/api/v2/lifecycles/${lifecycleId}/lifecycle-environment-groups`,
+        { headers: this.accountService.getAuthHeader()
+      }).subscribe({
+        next: (data: DataItem<ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributes, LifecycleEnvironmentGroupRelationships>>) => {
+          resolve(data.data);
+        },
+        error: (err) => {
+          reject(err);
+        }
+      });
+    });
   }
 }
