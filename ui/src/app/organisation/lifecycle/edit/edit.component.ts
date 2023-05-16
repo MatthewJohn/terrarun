@@ -16,9 +16,9 @@ import { ResponseObject, ResponseObjectWithRelationships } from '../../../interf
 // null minimum constraints to empty string, to support
 // empty field in nb-select
 type LifecycleEnvironmentGroupAttributesForm = Omit<LifecycleEnvironmentGroupAttributes, 'minimum-runs' | 'minimum-successful-plans' | 'minimum-successful-applies'> & {
-  'minimum-runs': '' | number;
-  'minimum-successful-plans': '' | number;
-  'minimum-successful-applies': '' | number;
+  'minimum-runs': '' | '0' | number;
+  'minimum-successful-plans': '' | '0' | number;
+  'minimum-successful-applies': '' | '0' | number;
 }
 
 interface RowDataType {
@@ -92,6 +92,17 @@ export class EditComponent implements OnInit {
     }
   }
 
+  thresholdApiAttributeToFormData(input : number | null) : number | '' | '0' {
+    // Convert API attribute for thresholds to a value that is supported by nb-select
+    if (input === null) {
+      return '';
+    }
+    if (input === 0) {
+      return '0';
+    }
+    return input
+  }
+
   getLifecycleData() {
     // Do not call until both organisation and lifecycle have been populated
     if (this.currentOrganisation?.name && this.currentLifecycle?.name) {
@@ -134,18 +145,9 @@ export class EditComponent implements OnInit {
                     attributes: {
                       ...lifecycleEnvironmentGroup.attributes,
                       // Replace minimum-X attributes with empty string, if they are none
-                      "minimum-runs": (
-                        lifecycleEnvironmentGroup.attributes['minimum-runs'] != null ?
-                        lifecycleEnvironmentGroup.attributes['minimum-runs'] : ''
-                      ),
-                      "minimum-successful-plans": (
-                        lifecycleEnvironmentGroup.attributes['minimum-successful-plans'] != null ?
-                        lifecycleEnvironmentGroup.attributes['minimum-successful-plans'] : ''
-                      ),
-                      "minimum-successful-applies": (
-                        lifecycleEnvironmentGroup.attributes['minimum-successful-applies'] != null ?
-                        lifecycleEnvironmentGroup.attributes['minimum-successful-applies'] : ''
-                      ),
+                      "minimum-runs": this.thresholdApiAttributeToFormData(lifecycleEnvironmentGroup.attributes['minimum-runs']),
+                      "minimum-successful-plans": this.thresholdApiAttributeToFormData(lifecycleEnvironmentGroup.attributes['minimum-successful-plans']),
+                      "minimum-successful-applies": this.thresholdApiAttributeToFormData(lifecycleEnvironmentGroup.attributes['minimum-successful-applies']),
                     }
                   },
                   children: [],
