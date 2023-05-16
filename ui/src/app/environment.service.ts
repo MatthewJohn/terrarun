@@ -2,6 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { AccountService } from './account.service';
+import { DataList } from './interfaces/data';
+import { EnvironmentAttributes } from './interfaces/environment';
+import { ResponseObject } from './interfaces/response';
 
 @Injectable({
   providedIn: 'root'
@@ -11,10 +14,20 @@ export class EnvironmentService {
   constructor(private http: HttpClient,
     private accountService: AccountService) { }
 
-  getOrganisationEnvironments(organisationName: string): Observable<any> {
-    return this.http.get<any>(
-      `/api/v2/organizations/${organisationName}/environments`,
-      { headers: this.accountService.getAuthHeader() });
+  getOrganisationEnvironments(organisationName: string): Promise<ResponseObject<EnvironmentAttributes>[]> {
+    return new Promise((resolve, reject) => {
+      this.http.get<any>(
+        `/api/v2/organizations/${organisationName}/environments`,
+        { headers: this.accountService.getAuthHeader() }
+      ).subscribe({
+        next: (data: DataList<ResponseObject<EnvironmentAttributes>>) => {
+          resolve(data.data);
+        },
+        error: () => {
+          reject();
+        }
+      });
+    })
   }
 
   updateAttributes(environmentId: string, attributes: {[key: string]: string}): Promise<any> {

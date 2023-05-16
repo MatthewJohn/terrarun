@@ -151,7 +151,7 @@ class CronTasks:
                 refresh_only=False,
                 auto_apply=workspace.auto_apply,
                 plan_only=False,
-                reason="Initiated from SCM change"
+                message="Initiated from SCM change"
             )
         return branch_shas
 

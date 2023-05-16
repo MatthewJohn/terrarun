@@ -26,6 +26,7 @@ from terrarun.models.workspace_task import WorkspaceTask
 from terrarun.models.project import Project
 from terrarun.models.lifecycle import Lifecycle
 from terrarun.models.lifecycle_environment import LifecycleEnvironment
+from terrarun.models.lifecycle_environment_group import LifecycleEnvironmentGroup
 from terrarun.models.environment import Environment
 from terrarun.models.agent import Agent
 from terrarun.models.agent_pool import AgentPool

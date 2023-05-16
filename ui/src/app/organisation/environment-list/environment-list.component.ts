@@ -1,8 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map, Observable } from 'rxjs';
+import { map, Observable, Subscription } from 'rxjs';
 import { EnvironmentService } from 'src/app/environment.service';
+import { DataItem } from 'src/app/interfaces/data';
+import { EnvironmentAttributes } from 'src/app/interfaces/environment';
+import { ResponseObject } from 'src/app/interfaces/response';
 import { OrganisationStateType, StateService } from 'src/app/state.service';
 
 @Component({
@@ -11,7 +14,7 @@ import { OrganisationStateType, StateService } from 'src/app/state.service';
   styleUrls: ['./environment-list.component.scss']
 })
 export class EnvironmentListComponent implements OnInit {
-  environments$: Observable<any>;
+  environments: DataItem<ResponseObject<EnvironmentAttributes>>[] = [];
   tableColumns: string[] = ['name', 'description'];
   organisationName: string | null = null;
 
@@ -37,33 +40,39 @@ export class EnvironmentListComponent implements OnInit {
 
   currentOrganisation: OrganisationStateType | null = null;
 
+  routeSubscription: Subscription | null = null;
+  currentOrganisationSubscription: Subscription | null = null;
+
   constructor(private state: StateService,
               private enviornmentService: EnvironmentService,
               private router: Router,
               private route: ActivatedRoute,
               private formBuilder: FormBuilder) {
-    this.environments$ = new Observable();
-    this.route.paramMap.subscribe(params => {
-        this.organisationName = params.get('organisationName');
-        this.getEnvironmentList();
-    });
-
-    this.state.currentOrganisation.subscribe((data) => this.currentOrganisation = data);
   }
 
   getEnvironmentList(): void {
     if (this.organisationName) {
-      this.environments$ = this.enviornmentService.getOrganisationEnvironments(this.organisationName).pipe(
-        map((data) => {
-          return Array.from({length: data.data.length},
-            (_, n) => ({'data': data.data[n]}))
-        })
-      );
+      this.enviornmentService.getOrganisationEnvironments(this.organisationName).then((environments) => {
+        this.environments = environments.map((environment) => {return {data: environment}});
+      })
     }
   }
 
   ngOnInit(): void {
+    this.routeSubscription = this.route.paramMap.subscribe(params => {
+      this.organisationName = params.get('organisationName');
+      this.getEnvironmentList();
+    });
+    this.currentOrganisationSubscription = this.state.currentOrganisation.subscribe((data) => this.currentOrganisation = data);
+  }
 
+  ngOnDestroy() {
+    if (this.routeSubscription) {
+      this.routeSubscription.unsubscribe();
+    }
+    if (this.currentOrganisationSubscription) {
+      this.currentOrganisationSubscription.unsubscribe();
+    }
   }
 
   validateNewEnvironmentName(): void {

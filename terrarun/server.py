@@ -35,6 +35,8 @@ from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.lifecycle import Lifecycle
+from terrarun.models.lifecycle_environment import LifecycleEnvironment
+from terrarun.models.lifecycle_environment_group import LifecycleEnvironmentGroup
 from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
@@ -62,7 +64,7 @@ from terrarun.models.workspace_task import WorkspaceTask, WorkspaceTaskEnforceme
 from terrarun.models.environment import Environment
 from terrarun.agent_filesystem import AgentFilesystem
 from terrarun.presign import Presign
-from terrarun.api_error import ApiError
+from terrarun.api_error import ApiError, api_error_response
 
 
 class Server(object):
@@ -298,6 +300,10 @@ class Server(object):
             '/api/v2/environments/<string:environment_id>'
         )
         self._api.add_resource(
+            ApiTerraformEnvironmentLifecycleEnvironments,
+            '/api/v2/environments/<string:environment_id>/lifecycle-environments'
+        )
+        self._api.add_resource(
             ApiTerraformOrganisationProjects,
             '/api/v2/organizations/<string:organisation_name>/projects',
             '/api/v2/organizations/<string:organisation_name>/projects/<string:project_name>'
@@ -311,8 +317,28 @@ class Server(object):
             '/api/v2/organizations/<string:organisation_name>/lifecycles'
         )
         self._api.add_resource(
-            ApiTerraformLifecycles,
+            ApiTerraformOrganisationLifecycle,
+            '/api/v2/organizations/<string:organisation_name>/lifecycles/<string:lifecycle_name>'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycle,
             '/api/v2/lifecycles/<string:lifecycle_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycleLifecycleEnvironmentGroups,
+            '/api/v2/lifecycles/<string:lifecycle_id>/lifecycle-environment-groups'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycleEnvironmentGroup,
+            '/api/v2/lifecycle-environment-groups/<string:lifecycle_environment_group_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycleEnvironmentGroupLifecycleEnvironments,
+            '/api/v2/lifecycle-environment-groups/<string:lifecycle_environment_group_id>/lifecycle-environments'
+        )
+        self._api.add_resource(
+            ApiTerraformLifecycleEnvironment,
+            '/api/v2/lifecycle-environments/<string:lifecycle_environment_id>'
         )
         self._api.add_resource(
             ApiAuthenticate,
@@ -345,6 +371,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerrarunEnvironmentCreateNameValidation,
             '/api/terrarun/v1/organisation/<string:organisation_name>/environment-name-validate'
+        )
+        self._api.add_resource(
+            ApiTerrarunLifecycleCreateNameValidation,
+            '/api/terrarun/v1/organisation/<string:organisation_name>/lifecycle-name-validate'
         )
 
         self._api.add_resource(
@@ -1283,7 +1313,332 @@ class ApiTerraformOrganisationLifecycles(AuthenticatedEndpoint):
         }
 
 
-class ApiTerraformLifecycles(AuthenticatedEndpoint):
+class ApiTerraformEnvironmentLifecycleEnvironments(AuthenticatedEndpoint):
+    """Interface to obntain environment lifecycle environments"""
+
+    def check_permissions_get(self, environment_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return False
+        return OrganisationPermissions(organisation=environment.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, environment_id, current_user, current_job):
+        """Return list of projects for organisation"""
+        environment = Environment.get_by_api_id(environment_id)
+        if not environment:
+            return {}, 404
+
+        return {
+            "data": [
+                lifecycle_environment.get_api_details()
+                for lifecycle_environment in environment.lifecycle_environments
+            ]
+        }
+
+
+class ApiTerraformLifecycleLifecycleEnvironmentGroups(AuthenticatedEndpoint):
+    """Interface to list/create organisation lifecycle environments"""
+
+    def check_permissions_get(self, lifecycle_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return False
+        return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, lifecycle_id, current_user, current_job):
+        """Return list of projects for organisation"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return {}, 404
+
+        return {
+            "data": [
+                lifecycle_environment_group.get_api_details()
+                for lifecycle_environment_group in lifecycle.lifecycle_environment_groups
+            ]
+        }
+
+    def check_permissions_post(self, lifecycle_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return False
+        return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_ENVIRONMENTS)
+
+    def _post(self, lifecycle_id, current_user, current_job):
+        """Create lifecycle environment group"""
+        lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
+        if not lifecycle:
+            return {}, 404
+
+        lifecycle_environment_group = LifecycleEnvironmentGroup.create(lifecycle=lifecycle)
+
+        return {
+            "data": lifecycle_environment_group.get_api_details()
+        }
+
+
+class ApiTerraformLifecycleEnvironmentGroup(AuthenticatedEndpoint):
+    """Provide interface to obtain details for lifecycle environment group"""
+
+    def check_permissions_get(self, lifecycle_environment_group_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
+        )
+
+    def _get(self, lifecycle_environment_group_id, current_user, current_job):
+        """Return lifecycle environment group details"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return {}, 404
+
+        return {
+            "data": lifecycle_environment_group.get_api_details()
+        }
+
+    def check_permissions_patch(self, lifecycle_environment_group_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_ENVIRONMENTS
+        )
+
+    def _patch(self, lifecycle_environment_group_id, current_user, current_job):
+        """Update lifecycle environment group details"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return {}, 404
+
+        data = request.json.get("data", {})
+
+        if data.get("type") != "lifecycle-environment-groups":
+            return {}, 400
+
+        if data.get("id") != lifecycle_environment_group_id:
+            return {}, 400
+
+        request_attributes = data.get("attributes", {})
+
+        update_attributes = {
+            target_attribute: request_attributes.get(req_attribute)
+            for req_attribute, target_attribute in {
+                "minimum-runs": "minimum_runs", "minimum-successful-plans": "minimum_successful_plans",
+                "minimum-successful-applies": "minimum_successful_applies"
+            }.items()
+            if req_attribute in request_attributes
+        }
+
+        lifecycle_environment_group.update_attributes(
+            **update_attributes
+        )
+
+        return {
+            "data": lifecycle_environment_group.get_api_details()
+        }
+
+    def check_permissions_delete(self, lifecycle_environment_group_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_ENVIRONMENTS
+        )
+
+    def _delete(self, lifecycle_environment_group_id, current_user, current_job):
+        """Delete lifecycle environment group"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return {}, 404
+
+        if lifecycle_environment_group.lifecycle_environments:
+            return {
+                "errors": [ApiError(
+                    "Lifecycle environment group has environments assigned",
+                    "The lifecycle environment group cannot be deleted whilst it has environments assigned to it"
+                ).get_api_details()]
+            }, 422
+
+        lifecycle_environment_group.delete()
+
+        return {}, 200
+
+
+class ApiTerraformLifecycleEnvironment(AuthenticatedEndpoint):
+    """Interface to view/delete lifecycle environments"""
+
+    def check_permissions_get(self, lifecycle_environment_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment = LifecycleEnvironment.get_by_api_id(lifecycle_environment_id)
+        if not lifecycle_environment:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment.lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
+        )
+
+    def _get(self, lifecycle_environment_id, current_user, current_job):
+        """Return lifecycle environment details"""
+        lifecycle_environment = LifecycleEnvironment.get_by_api_id(lifecycle_environment_id)
+        if not lifecycle_environment:
+            return {}, 404
+
+        return {
+            "data": lifecycle_environment.get_api_details()
+        }
+
+    def check_permissions_delete(self, lifecycle_environment_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment = LifecycleEnvironment.get_by_api_id(lifecycle_environment_id)
+        if not lifecycle_environment:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment.lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_ENVIRONMENTS
+        )
+
+    def _delete(self, lifecycle_environment_id, current_user, current_job):
+        """Delete lifecycle environment"""
+        lifecycle_environment = LifecycleEnvironment.get_by_api_id(lifecycle_environment_id)
+        if not lifecycle_environment:
+            return {}, 404
+
+        lifecycle_environment.delete()
+
+        return {}, 200
+
+
+class ApiTerraformLifecycleEnvironmentGroupLifecycleEnvironments(AuthenticatedEndpoint):
+    """Interface to obtain list of lifecycle group's lifecycle enivronments"""
+
+    def check_permissions_get(self, lifecycle_environment_group_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
+        )
+
+    def _get(self, lifecycle_environment_group_id, current_user, current_job):
+        """Return lifecycle environment group details"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return {}, 404
+
+        return {
+            "data": [
+                lifecycle_environment.get_api_details()
+                for lifecycle_environment in lifecycle_environment_group.lifecycle_environments
+            ]
+        }
+
+    def check_permissions_post(self, lifecycle_environment_group_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return False
+        return OrganisationPermissions(
+            organisation=lifecycle_environment_group.lifecycle.organisation,
+            current_user=current_user
+        ).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_ENVIRONMENTS
+        )
+
+    def _post(self, lifecycle_environment_group_id, current_user, current_job):
+        """Create lifecycle environment"""
+        lifecycle_environment_group = LifecycleEnvironmentGroup.get_by_api_id(lifecycle_environment_group_id)
+        if not lifecycle_environment_group:
+            return {}, 404
+
+        data = request.json.get("data", {})
+
+        if data.get("type") != "lifecycle-environments":
+            return {}, 400
+
+        if data.get("id"):
+            return {}, 400
+
+        environment_details = data.get("relationships", {}).get("environment", {}).get("data")
+        if not environment_details:
+            return api_error_response(ApiError("Missing environment relationship", pointer="/data/relationships/environment/data"))
+        if environment_details.get("type") != "environments":
+            return api_error_response(ApiError("Invalid environment relationship type", pointer="/data/relationships/environment/data/type"))
+
+        environment = Environment.get_by_api_id(environment_details.get("id"))
+
+        if environment is None or environment.organisation != lifecycle_environment_group.lifecycle.organisation:
+            return api_error_response(ApiError("Environment does not exist", pointer="/data/relationships/environment/data/id"))
+
+        lifecycle_environment = LifecycleEnvironment.create(
+            lifecycle_environment_group=lifecycle_environment_group,
+            environment=environment
+        )
+
+        return {
+            "data": lifecycle_environment.get_api_details()
+        }
+
+
+class ApiTerraformOrganisationLifecycle(AuthenticatedEndpoint):
+    """Interface to show/update lifecycles"""
+
+    def check_permissions_get(self, organisation_name, lifecycle_name, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+
+        lifecycle = Lifecycle.get_by_name_and_organisation(name=lifecycle_name, organisation=organisation)
+        if not lifecycle:
+            return False
+
+        return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, organisation_name, lifecycle_name, current_user, current_job):
+        """Return list of projects for organisation"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        lifecycle = Lifecycle.get_by_name_and_organisation(name=lifecycle_name, organisation=organisation)
+        if not lifecycle:
+            return {}, 404
+
+        return {
+            "data": lifecycle.get_api_details()
+        }
+
+
+class ApiTerraformLifecycle(AuthenticatedEndpoint):
     """Interface to show/update lifecycles"""
 
     def check_permissions_get(self, lifecycle_id, current_user, current_job, *args, **kwargs):
@@ -1311,9 +1666,9 @@ class ApiTerraformLifecycles(AuthenticatedEndpoint):
             return False
         return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
             # Most admin permission
-            OrganisationPermissions.Permissions.CAN_DESTROY)
+            OrganisationPermissions.Permissions.CAN_MANAGE_ENVIRONMENTS)
 
-    def _post(self, lifecycle_id, current_user, current_job):
+    def _patch(self, lifecycle_id, current_user, current_job):
         """Update lifecycle"""
         lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
         if not lifecycle:
@@ -1323,11 +1678,22 @@ class ApiTerraformLifecycles(AuthenticatedEndpoint):
         if json_data.get('type') != "lifecycles":
             return {}, 400
 
-        attributes = json_data.get('attributes', {})
-        name = attributes.get('name')
+        if json_data.get('id') != lifecycle_id:
+            return {}, 400
+
+        request_attributes = json_data.get('attributes', {})
+
+        update_attributes = {
+            target_attribute: request_attributes.get(req_attribute)
+            for req_attribute, target_attribute in {
+                "name": "name", "description": "description",
+                "allow-per-workspace-vcs": "allow_per_workspace_vcs"
+            }.items()
+            if req_attribute in request_attributes
+        }        
 
         lifecycle.update_attributes(
-            name=name
+            **update_attributes
         )
 
         return {
@@ -2538,6 +2904,35 @@ class ApiTerrarunEnvironmentCreateNameValidation(AuthenticatedEndpoint):
         return {
             "data": {
                 "valid": Environment.validate_new_name(organisation, args.name),
+                "name": args.name
+            }
+        }
+
+
+class ApiTerrarunLifecycleCreateNameValidation(AuthenticatedEndpoint):
+    """Endpoint to validate new environment lifecycle name"""
+
+    def check_permissions_post(self, organisation_name, current_user, current_job):
+        """Check permissions"""
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return False
+        return OrganisationPermissions(current_user=current_user, organisation=organisation).check_permission(
+            OrganisationPermissions.Permissions.CAN_MANAGE_VARSETS)
+
+    def _post(self, organisation_name, current_user, current_job):
+        """Validate new environment name"""
+        parser = reqparse.RequestParser()
+        parser.add_argument('name', type=str, location='json')
+        args = parser.parse_args()
+
+        organisation = Organisation.get_by_name_id(organisation_name)
+        if not organisation:
+            return {}, 404
+
+        return {
+            "data": {
+                "valid": Lifecycle.validate_new_name(organisation, args.name),
                 "name": args.name
             }
         }

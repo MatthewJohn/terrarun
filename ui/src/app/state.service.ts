@@ -30,6 +30,11 @@ export interface RunStateType {
     id: string | null;
 }
 
+export interface LifecycleStateType {
+    id: string | null;
+    name: string | null;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -41,6 +46,7 @@ export class StateService {
     currentProject: BehaviorSubject<ProjectStateType> = new BehaviorSubject<ProjectStateType>({id: null, name: null});
     currentWorkspace: BehaviorSubject<WorkspaceStateType> = new BehaviorSubject<WorkspaceStateType>({id: null, name: null});
     currentRun: BehaviorSubject<RunStateType> = new BehaviorSubject<RunStateType>({id: null});
+    currentLifecycle: BehaviorSubject<LifecycleStateType> = new BehaviorSubject<LifecycleStateType>({id: null, name: null});
 
     constructor() {
         console.log("Created state object");
