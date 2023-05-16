@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { LifecycleRoutingModule } from './lifecycle-routing.module';
 import { ListComponent } from './list/list.component';
-import { NbAccordionModule, NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbSelectModule, NbSpinnerModule, NbTreeGridModule } from '@nebular/theme';
+import { NbAccordionModule, NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule, NbSelectModule, NbSpinnerModule, NbToggleModule, NbTreeGridModule } from '@nebular/theme';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { EditComponent } from './edit/edit.component';
 
@@ -29,6 +29,7 @@ import { EditComponent } from './edit/edit.component';
     NbSpinnerModule,
     NbSelectModule,
     NbAccordionModule,
+    NbToggleModule,
   ]
 })
 export class LifecycleModule { }

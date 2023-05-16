@@ -1666,9 +1666,9 @@ class ApiTerraformLifecycle(AuthenticatedEndpoint):
             return False
         return OrganisationPermissions(organisation=lifecycle.organisation, current_user=current_user).check_permission(
             # Most admin permission
-            OrganisationPermissions.Permissions.CAN_DESTROY)
+            OrganisationPermissions.Permissions.CAN_MANAGE_ENVIRONMENTS)
 
-    def _post(self, lifecycle_id, current_user, current_job):
+    def _patch(self, lifecycle_id, current_user, current_job):
         """Update lifecycle"""
         lifecycle = Lifecycle.get_by_api_id(lifecycle_id)
         if not lifecycle:
@@ -1678,11 +1678,22 @@ class ApiTerraformLifecycle(AuthenticatedEndpoint):
         if json_data.get('type') != "lifecycles":
             return {}, 400
 
-        attributes = json_data.get('attributes', {})
-        name = attributes.get('name')
+        if json_data.get('id') != lifecycle_id:
+            return {}, 400
+
+        request_attributes = json_data.get('attributes', {})
+
+        update_attributes = {
+            target_attribute: request_attributes.get(req_attribute)
+            for req_attribute, target_attribute in {
+                "name": "name", "description": "description",
+                "allow-per-workspace-vcs": "allow_per_workspace_vcs"
+            }.items()
+            if req_attribute in request_attributes
+        }        
 
         lifecycle.update_attributes(
-            name=name
+            **update_attributes
         )
 
         return {

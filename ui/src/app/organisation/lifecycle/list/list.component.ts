@@ -71,8 +71,11 @@ export class ListComponent implements OnInit {
       this.createSpinner = true;
       this.lifecycleService.create(
         this.currentOrganisation?.name,
-        { name: this.createForm.value.name,
-          description: this.createForm.value.description}
+        {
+          name: this.createForm.value.name,
+          description: this.createForm.value.description,
+          "allow-per-workspace-vcs": false
+        }
       ).then(() => {
         // Refresh environment list
         this.getLifecycleList();

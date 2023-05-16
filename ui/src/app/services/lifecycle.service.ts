@@ -48,15 +48,15 @@ export class LifecycleService {
     });
   }
 
-  updateAttributes(lifecycleId: string, attributes: {[key: string]: string}): Promise<any> {
+  updateAttributes(lifecycleId: string, attributes: LifecycleAttributes): Promise<ResponseObject<LifecycleAttributes>> {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
         `/api/v2/lifecycles/${lifecycleId}`,
-        { data: { type: 'lifecycles', 'attributes': attributes } },
+        { data: { id: lifecycleId, type: 'lifecycles', 'attributes': attributes } },
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
-        next: (data: any) => {
-          resolve(data);
+        next: (data: DataItem<ResponseObject<LifecycleAttributes>>) => {
+          resolve(data.data);
         },
         error: (err) => {
           reject(err);

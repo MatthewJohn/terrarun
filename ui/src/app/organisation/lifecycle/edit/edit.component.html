@@ -5,6 +5,37 @@
       <nb-card-header>Lifecycle: {{ lifecycleData?.attributes?.name || '' }}</nb-card-header>
       <nb-card-body>
 
+        <nb-accordion>
+          <nb-accordion-item expanded="true">
+            <nb-accordion-item-header>Edit Lifecycle Details</nb-accordion-item-header>
+            <nb-accordion-item-body>
+
+              <span>Name</span><br />
+              <input nbInput [(ngModel)]="lifecycleEditData.attributes.name" />
+              <br /><br />
+
+              <span>Description</span><br />
+              <input nbInput [(ngModel)]="lifecycleEditData.attributes.description" />
+              <br /><br />
+
+              <nb-toggle [(checked)]="lifecycleEditData.attributes['allow-per-workspace-vcs']">
+                Allow per-workspace VCS configurations
+              </nb-toggle>
+              <br /><br />
+              <span>
+                When a workspace is configured with a VCS configuration, environment progression<br />
+                rules are ignored, as the VCS commits cannot be tracked between environments.
+              </span>
+              
+              <br />
+              <br />
+
+
+              <button nbButton (click)="onLifecycleUpdate()">Update</button>
+            </nb-accordion-item-body>
+          </nb-accordion-item>
+        </nb-accordion>
+
         <table [nbTreeGrid]="rowData">
 
           <tr nbTreeGridHeaderRow *nbTreeGridHeaderRowDef="allColumns"></tr>

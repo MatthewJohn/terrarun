@@ -41,6 +41,9 @@ export class EditComponent implements OnInit {
 
   availableEnvironments: ResponseObject<EnvironmentAttributes>[] = [];
   lifecycleData: ResponseObject<LifecycleAttributes> | null = null;
+  lifecycleEditData: ResponseObject<LifecycleAttributes> = {
+    id: "", type: "lifecycles", attributes: {name: "", description: "", "allow-per-workspace-vcs": false}
+  }
 
   stateServiceLifecycleSubscription: Subscription | null = null;
   stateServiceOrganisationSubscription: Subscription | null = null;
@@ -120,6 +123,8 @@ export class EditComponent implements OnInit {
             this.currentLifecycle.name
           ).then((lifecycleData) => {
             this.lifecycleData = lifecycleData;
+            // Create copy of data for edit form
+            this.lifecycleEditData = JSON.parse(JSON.stringify(lifecycleData));;
 
             // Reset row data and new environment data to handle reloads
             this.rowData = [];
@@ -180,6 +185,17 @@ export class EditComponent implements OnInit {
         }
 
       });
+    }
+  }
+
+  onLifecycleUpdate() {
+    if (this.lifecycleEditData.id) {
+      this.lifecycleService.updateAttributes(
+        this.lifecycleEditData.id,
+        this.lifecycleEditData.attributes
+      ).then((lifecycleData) => {
+        this.lifecycleData = lifecycleData;
+      })
     }
   }
 

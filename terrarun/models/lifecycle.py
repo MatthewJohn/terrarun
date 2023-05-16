@@ -26,6 +26,10 @@ class Lifecycle(Base, BaseObject):
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     description = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
+
+    # Whether to allow per-workspace VCS configurations
+    allow_per_workspace_vcs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, nullable=False)
+
     organisation_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("organisation.id", name="fk_lifecycle_organisation_id_organisation_id"),
         nullable=False)
@@ -86,7 +90,8 @@ class Lifecycle(Base, BaseObject):
             "type": "lifecycles",
             "attributes": {
                 "name": self.name,
-                "description": self.description
+                "description": self.description,
+                "allow-per-workspace-vcs": self.allow_per_workspace_vcs
             },
             "relationships": {
                 "organization": {
