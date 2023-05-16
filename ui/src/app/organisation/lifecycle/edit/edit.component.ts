@@ -184,7 +184,6 @@ export class EditComponent implements OnInit {
   }
 
   onCreateLifecycleEnvironmentGroup() {
-    console.log("Creating lifecycle environment");
     if (this.currentLifecycle?.id) {
       this.lifecycleService.createLifecycleEnvironmentGroup(this.currentLifecycle.id).then(() => {
         this.getLifecycleData();
@@ -193,8 +192,6 @@ export class EditComponent implements OnInit {
   }
 
   onLifecycleEnvironmentGroupSettingsSave(lifecycleEnvironmentGroup: ResponseObjectWithRelationships<LifecycleEnvironmentGroupAttributesForm, LifecycleEnvironmentGroupRelationships>) {
-    console.log("Saving");
-    console.log(lifecycleEnvironmentGroup);
     this.lifecycleEnvironmentGroupService.update(
       lifecycleEnvironmentGroup.id,
       {
@@ -221,14 +218,12 @@ export class EditComponent implements OnInit {
   }
 
   onLifecycleEnvironmentGroupDelete(lifecycleEnvironmentGroupId: string) {
-    console.log('deleting ' + lifecycleEnvironmentGroupId)
     this.lifecycleEnvironmentGroupService.delete(lifecycleEnvironmentGroupId).then(() => {
       this.getLifecycleData();
     })
   }
 
   onLifecycleEnvironmentCreate(lifecycleEnvironmentGroupId: string) {
-    console.log('creating environment in ' + lifecycleEnvironmentGroupId)
     this.lifecycleEnvironmentGroupService.createLifecycleEnvironment(
       lifecycleEnvironmentGroupId,
       this.newEnvironmentData[lifecycleEnvironmentGroupId]
