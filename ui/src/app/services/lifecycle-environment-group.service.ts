@@ -37,7 +37,7 @@ export class LifecycleEnvironmentGroupService {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
         `/api/v2/lifecycle-environment-groups/${lifecycleEnvironmentGroupId}`,
-        { type: "lifecycle-environment-groups", id: lifecycleEnvironmentGroupId, "attributes": attributes },
+        { data: { type: "lifecycle-environment-groups", id: lifecycleEnvironmentGroupId, "attributes": attributes } },
         {
           headers: this.accountService.getAuthHeader()
         }).subscribe({
@@ -72,7 +72,7 @@ export class LifecycleEnvironmentGroupService {
     return new Promise((resolve, reject) => {
       this.http.post<any>(
         `/api/v2/lifecycle-environment-groups/${lifecycleEnvironmentGroupId}/lifecycle-environments`,
-        { "type": "lifecycle-environment", relationships: { "environment": { data: { "type": "environments", "id": environmentId } } } },
+        { data: { "type": "lifecycle-environments", relationships: { "environment": { data: { "type": "environments", "id": environmentId } } } } },
         {
           headers: this.accountService.getAuthHeader()
         }).subscribe({
