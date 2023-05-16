@@ -19,3 +19,7 @@ class ApiError:
                 "pointer": self._pointer
             } if self._pointer else {}
         }
+
+
+def api_error_response(api_error):
+    return api_error.get_api_details(), api_error._status

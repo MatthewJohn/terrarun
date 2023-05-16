@@ -7,6 +7,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 from terrarun.database import Base, Database
+from terrarun.errors import LifecycleEnvironmentGroupHasLifecycleEnvironmentsError
 from terrarun.models.base_object import BaseObject
 import terrarun.models.environment
 import terrarun.models.lifecycle
@@ -61,6 +62,17 @@ class LifecycleEnvironmentGroup(Base, BaseObject):
         session.add(lifecycle_environment_group)
         session.commit()
         return lifecycle_environment_group
+
+    def delete(self):
+        """Delete lifecycle environment group"""
+        if self.lifecycle_environments:
+            raise LifecycleEnvironmentGroupHasLifecycleEnvironmentsError(
+                "Lifecycle environment group cannot be deleted as it has lifecycle environments associated with it"
+            )
+
+        session = Database.get_session()
+        session.delete(self)
+        session.commit()
 
     def associate_environment(self, environment):
         """Associate environment with lifecycle"""

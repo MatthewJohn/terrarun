@@ -5,7 +5,8 @@
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base
+from terrarun.database import Base, Database
+from terrarun.errors import OrganisationMixError
 from terrarun.models.base_object import BaseObject
 import terrarun.models.environment
 import terrarun.models.lifecycle
@@ -34,6 +35,24 @@ class LifecycleEnvironment(Base, BaseObject):
     __table_args__ = (
         sqlalchemy.UniqueConstraint('lifecycle_environment_group_id', 'environment_id', name='_lifecycle_environment_group_id_environment_id_uc'),
     )
+
+    @classmethod
+    def create(cls, lifecycle_environment_group, environment):
+        """Create lifecycle environment"""
+        if lifecycle_environment_group.lifecycle.organisation != environment.organisation:
+            raise OrganisationMixError("Cannot assign an environment and lifecycle environment group from different organisations")#
+
+        lifecycle_environment = cls(lifecycle_environment_group=lifecycle_environment_group, environment=environment)
+        session = Database.get_session()
+        session.add(lifecycle_environment)
+        session.commit()
+        return lifecycle_environment
+
+    def delete(self):
+        """Delete lifecycle environment"""
+        session = Database.get_session()
+        session.delete(self)
+        session.commit()
 
     def get_api_details(self):
         """Return API details for lifecycle environment"""
