@@ -48,11 +48,12 @@ class StateVersionOutput(Base, BaseObject):
             name=name,
             sensitive=data.get("sensitive", False),
             output_type=type_,
-            detailed_type=detailed_type
+            detailed_type=json.dumps(detailed_type)
         )
         session = Database.get_session()
         session.add(state_output)
         session.commit()
+        state_output.value = data.get("value")
         return state_output
 
     @property
@@ -76,7 +77,7 @@ class StateVersionOutput(Base, BaseObject):
         value_blob.data = bytes(json.dumps(value), 'utf-8')
 
         session.add(value_blob)
-        self._value_blob = value_blob
+        self._value = value_blob
         session.add(self)
         session.commit()
 
