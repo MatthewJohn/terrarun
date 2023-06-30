@@ -182,18 +182,8 @@ class StateVersion(Base, BaseObject):
                 },
                 "outputs": {
                     "data": [
-                        # {
-                        #     "id": "wsout-V22qbeM92xb5mw9n",
-                        #     "type": "state-version-outputs"
-                        # },
-                        # {
-                        #     "id": "wsout-ymkuRnrNFeU5wGpV",
-                        #     "type": "state-version-outputs"
-                        # },
-                        # {
-                        #     "id": "wsout-v82BjkZnFEcscipg",
-                        #     "type": "state-version-outputs"
-                        # }
+                        state_version_output.get_relationship()
+                        for state_version_output in self.state_version_outputs
                     ]
                 }
             },

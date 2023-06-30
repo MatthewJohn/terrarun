@@ -41,7 +41,7 @@ class StateVersionOutput(Base, BaseObject):
         elif type(detailed_type) == list and len(detailed_type) and detailed_type[0] == "tuple":
             type_ = "array"
         else:
-            type_ = "map"
+            type_ = "object"
 
         state_output = cls(
             state_version=state_version,
@@ -81,8 +81,37 @@ class StateVersionOutput(Base, BaseObject):
         session.add(self)
         session.commit()
 
+    def get_relationship(self):
+        """Get API relationship output"""
+        return {
+            "id": self.api_id,
+            "type": "state-version-outputs"
+        }
+
+    def get_workspace_details(self):
+        """Return API details for workspace API response"""
+        return {
+            "id": self.api_id,
+            "type": "workspace-outputs",
+            "attributes": {
+                "name": self.name,
+                "sensitive": self.sensitive,
+                "output-type": self.output_type,
+                "value": self.value if not self.sensitive else None,
+                "detailed-type": json.loads(self.detailed_type),
+                "workspace-attributes": {
+                    "id": self.state_version.workspace.api_id,
+                    "name": self.state_version.workspace.name
+                },
+                "organization-attributes": {
+                    "id": self.state_version.workspace.organisation.api_id,
+                    "name": self.state_version.workspace.organisation.name
+                }
+            }
+        }
+
     def get_api_details(self):
-        """Obtain API repsonse for state version output endpoint"""
+        """Obtain API response for state version output endpoint"""
         return {
             "id": self.api_id,
             "type": "state-version-outputs",
@@ -90,8 +119,8 @@ class StateVersionOutput(Base, BaseObject):
                 "name": self.name,
                 "sensitive": self.sensitive,
                 "type": self.output_type,
-                "value": self.value,
-                "detailed_type": self.detailed_type
+                "value": self.value if not self.sensitive else None,
+                "detailed-type": json.loads(self.detailed_type)
             },
             "links": {
                 "self": "/api/v2/state-version-outputs/wsout-xFAmCR3VkBGepcee"

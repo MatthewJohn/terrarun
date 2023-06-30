@@ -1779,7 +1779,9 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        return {"data": workspace.get_api_details(effective_user=current_user)}
+        includes = request.args.get("include", "").split(",")
+
+        return {"data": workspace.get_api_details(effective_user=current_user, includes=includes)}
 
     def check_permissions_patch(self, current_user, current_job,
                                 organisation_name=None, workspace_name=None, workspace_id=None):
