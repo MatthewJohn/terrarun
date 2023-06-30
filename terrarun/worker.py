@@ -70,7 +70,11 @@ class Worker:
         # Check status of pre-apply tasks
         elif run.status is RunStatus.PRE_APPLY_RUNNING:
             run.handle_pre_apply_running()
-        
+
+        # Check status for completed applies
+        elif run.status is RunStatus.APPLIED:
+            run.handle_applied()
+
         else:
             print(f'Unknown job status for worker: {run.status}')
 

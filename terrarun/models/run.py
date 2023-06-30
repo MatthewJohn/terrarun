@@ -354,6 +354,11 @@ class Run(Base, BaseObject):
         else:
             self.update_status(RunStatus.APPLIED)
 
+    def handle_applied(self):
+        """Handle applied status"""
+        # Process state resources
+        self.plan.apply.state_version.process_resources()
+
     def execute_next_step(self):
         """Execute terraform command"""
         # Handle plan job
