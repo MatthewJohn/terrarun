@@ -904,7 +904,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
 
         return {
             "data": [
-                workspace.get_api_details(effective_user=current_user)
+                workspace.get_api_details(effective_user=current_user)[0]
                 for workspace in workspaces
             ]
         }
@@ -936,7 +936,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         workspace = Workspace.create(organisation=organisation, name=name)
 
         return {
-            "data": workspace.get_api_details(effective_user=current_user)
+            "data": workspace.get_api_details(effective_user=current_user)[0]
         }
 
 
@@ -1781,7 +1781,12 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
 
         includes = request.args.get("include", "").split(",")
 
-        return {"data": workspace.get_api_details(effective_user=current_user, includes=includes)}
+        data, include_response = workspace.get_api_details(effective_user=current_user, includes=includes)
+        api_response = {"data": data}
+        if includes is not None:
+            api_response["included"] = include_response
+        return api_response
+
 
     def check_permissions_patch(self, current_user, current_job,
                                 organisation_name=None, workspace_name=None, workspace_id=None):
@@ -2524,7 +2529,7 @@ class ApiTerraformWorkspaceActionsLock(AuthenticatedEndpoint):
                 ]
             }, 409
 
-        return {'data': workspace.get_api_details(effective_user=current_user)}
+        return {'data': workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
@@ -2555,7 +2560,7 @@ class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
                 )]
             }, 422
 
-        return {'data': workspace.get_api_details(effective_user=current_user)}
+        return {'data': workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceActionsForceUnlock(AuthenticatedEndpoint):
@@ -2580,7 +2585,7 @@ class ApiTerraformWorkspaceActionsForceUnlock(AuthenticatedEndpoint):
 
         workspace.unlock(force=True)
 
-        return {'data': workspace.get_api_details(effective_user=current_user)}
+        return {'data': workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):

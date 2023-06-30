@@ -733,13 +733,14 @@ class Workspace(Base, BaseObject):
 
         # Include outputs included in repsonse, add each
         # WS output to the includes
+        include_details = None
         if includes:
-            api_details['included'] = []
-        if 'outputs' in includes:
-            api_details['included'] += [
-                output.get_workspace_details()
-                for output in (self.latest_state.state_version_outputs if self.latest_state else [])
-            ]
+            include_details = []
+            if 'outputs' in includes:
+                include_details += [
+                    output.get_workspace_details()
+                    for output in (self.latest_state.state_version_outputs if self.latest_state else [])
+                ]
 
         if self.locked_by_run:
             api_details["relationships"]["locked-by"] = {
@@ -762,4 +763,4 @@ class Workspace(Base, BaseObject):
                 }
             }
 
-        return api_details
+        return api_details, include_details
