@@ -76,6 +76,12 @@ class StateVersion(Base, BaseObject):
 
         return sv
 
+    @classmethod
+    def get_state_version_to_process(cls):
+        """Obtain first unprocessed state version"""
+        session = Database.get_session()
+        return session.query(cls).where(cls.resources_processed!=True).first()
+
     @property
     def resources(self):
         """Return resources"""

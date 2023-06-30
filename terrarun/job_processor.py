@@ -154,8 +154,6 @@ class JobProcessor:
 
         elif apply_status is TerraformCommandState.FINISHED:
             run.update_status(RunStatus.APPLIED)
-            # Queue worker job to process state
-            run.queue_worker_job()
 
         else:
             raise Exception(f"Unhandled apply status: {apply_status}")
