@@ -2655,7 +2655,7 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
     def check_permissions_get(self, current_user, current_job, state_version_id):
         """Check permissions to view run"""
         state_version = StateVersion.get_by_api_id(state_version_id)
-        if not state_version_id:
+        if not state_version:
             return False
 
         if current_job and current_job.run.configuration_version.workspace == state_version.workspace:
