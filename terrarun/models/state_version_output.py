@@ -110,7 +110,7 @@ class StateVersionOutput(Base, BaseObject):
             }
         }
 
-    def get_api_details(self):
+    def get_api_details(self, include_sensitive=False):
         """Obtain API response for state version output endpoint"""
         return {
             "id": self.api_id,
@@ -119,7 +119,7 @@ class StateVersionOutput(Base, BaseObject):
                 "name": self.name,
                 "sensitive": self.sensitive,
                 "type": self.output_type,
-                "value": self.value if not self.sensitive else None,
+                "value": self.value if not self.sensitive or include_sensitive else None,
                 "detailed-type": json.loads(self.detailed_type)
             },
             "links": {

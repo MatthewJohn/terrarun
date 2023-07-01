@@ -41,6 +41,7 @@ from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
+from terrarun.models.state_version_output import StateVersionOutput
 from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
@@ -260,6 +261,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformStateVersionDownload,
             '/api/v2/state-versions/<string:state_version_id>/download'
+        )
+        self._api.add_resource(
+            ApiTerraformStateVersionOutput,
+            '/api/v2/state-version-outputs/<string:state_version_output_id>'
         )
         self._api.add_resource(
             ApiTerraformApplyRun,
@@ -2667,6 +2672,28 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
         if not state_version_id:
             return {}, 404
         return state_version.state_json
+
+
+class ApiTerraformStateVersionOutput(AuthenticatedEndpoint):
+    """Interface to read state version outputs"""
+
+    def check_permissions_get(self, current_user, current_job, state_version_output_id):
+        """Check permissions to view run"""
+        state_version_output = StateVersionOutput.get_by_api_id(state_version_output_id)
+        if not state_version_output:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=state_version_output.state_version.workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
+
+    def _get(self, current_user, current_job, state_version_output_id):
+        """Return state version json"""
+        state_version_output = StateVersionOutput.get_by_api_id(state_version_output_id)
+        if not state_version_output:
+            return {}, 404
+        return {"data": state_version_output.get_api_details(include_sensitive=True)}
 
 
 class ApiTerraformApplyRun(AuthenticatedEndpoint):
