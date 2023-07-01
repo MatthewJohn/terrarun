@@ -584,8 +584,11 @@ class Workspace(Base, BaseObject):
         """Return whether workspace is locked"""
         return bool(self.locked_by_user or self.locked_by_run)
 
-    def get_api_details(self, effective_user: terrarun.models.user.User):
+    def get_api_details(self, effective_user: terrarun.models.user.User, includes=None):
         """Return details for workspace."""
+        if includes is None:
+            includes = []
+
         workspace_permissions = WorkspacePermissions(current_user=effective_user, workspace=self)
         api_details = {
             "attributes": {
@@ -699,7 +702,16 @@ class Workspace(Base, BaseObject):
                     }
                 },
                 "outputs": {
-                    "data": []
+                    "data": [
+                        {
+                            "id": output.api_id,
+                            # Different type based on whether
+                            # being referenced by workspace or state version
+                            "type": "workspace-outputs"
+                        }
+                        for output in self.latest_state.state_version_outputs
+                    ]
+                    if self.latest_state else []
                 },
                 "tags": {
                     "data": [tag.get_relationship() for tag in self.tags]
@@ -718,6 +730,17 @@ class Workspace(Base, BaseObject):
             },
             "type": "workspaces"
         }
+
+        # Include outputs included in repsonse, add each
+        # WS output to the includes
+        include_details = None
+        if includes:
+            include_details = []
+            if 'outputs' in includes:
+                include_details += [
+                    output.get_workspace_details()
+                    for output in (self.latest_state.state_version_outputs if self.latest_state else [])
+                ]
 
         if self.locked_by_run:
             api_details["relationships"]["locked-by"] = {
@@ -740,4 +763,4 @@ class Workspace(Base, BaseObject):
                 }
             }
 
-        return api_details
+        return api_details, include_details

@@ -7,6 +7,7 @@ from terrarun.models.blob import Blob
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.models.run import Run
 from terrarun.models.state_version import StateVersion
+from terrarun.models.state_version_output import StateVersionOutput
 from terrarun.models.plan import Plan
 from terrarun.models.apply import Apply
 from terrarun.models.run_queue import RunQueue

@@ -121,8 +121,6 @@ class JobProcessor:
         else:
             raise Exception(f"Unhandled plan status: {plan_status}")
 
-
-
     @classmethod
     def handle_apply_status_update(cls, job_status):
         """Handle status update for apply"""
