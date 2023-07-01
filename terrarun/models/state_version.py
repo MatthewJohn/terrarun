@@ -10,6 +10,7 @@ from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
 from terrarun.models.blob import Blob
+from terrarun.models.state_version_output import StateVersionOutput
 
 
 class StateVersion(Base, BaseObject):
@@ -30,6 +31,9 @@ class StateVersion(Base, BaseObject):
     # Optional references to either plan that generated state or apply
     apply = sqlalchemy.orm.relation("Apply", back_populates="state_version")
     plan = sqlalchemy.orm.relation("Plan", back_populates="state_version")
+
+    resources_processed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+    state_version_outputs = sqlalchemy.orm.relation("StateVersionOutput", back_populates="state_version")
 
     state_json_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     _state_json = sqlalchemy.orm.relation("Blob", foreign_keys=[state_json_id])
@@ -71,6 +75,12 @@ class StateVersion(Base, BaseObject):
         sv.state_json=state_json
 
         return sv
+
+    @classmethod
+    def get_state_version_to_process(cls):
+        """Obtain first unprocessed state version"""
+        session = Database.get_session()
+        return session.query(cls).where(cls.resources_processed!=True).first()
 
     @property
     def resources(self):
@@ -118,6 +128,16 @@ class StateVersion(Base, BaseObject):
     def terraform_version(self):
         return self.state_json['terraform_version']
 
+    def process_resources(self):
+        """Process resources"""
+        # Create state version outputs for each output
+        # in state
+        for output_name, output_data in self.state_json.get("outputs").items():
+            StateVersionOutput.create_from_state_output(state_version=self, name=output_name, data=output_data)
+
+        # Set resources_processed to True
+        self.update_attributes(resources_processed=True)
+
     def get_api_details(self):
         """Return API details."""
         return {
@@ -130,7 +150,7 @@ class StateVersion(Base, BaseObject):
                 "modules": self.modules,
                 "providers": self.providers,
                 "resources": self.resources,
-                "resources-processed": False,
+                "resources-processed": bool(self.resources_processed),
                 "serial": self.serial,
                 "state-version": self.version,
                 "terraform-version": self.terraform_version,
@@ -162,18 +182,8 @@ class StateVersion(Base, BaseObject):
                 },
                 "outputs": {
                     "data": [
-                        # {
-                        #     "id": "wsout-V22qbeM92xb5mw9n",
-                        #     "type": "state-version-outputs"
-                        # },
-                        # {
-                        #     "id": "wsout-ymkuRnrNFeU5wGpV",
-                        #     "type": "state-version-outputs"
-                        # },
-                        # {
-                        #     "id": "wsout-v82BjkZnFEcscipg",
-                        #     "type": "state-version-outputs"
-                        # }
+                        state_version_output.get_relationship()
+                        for state_version_output in self.state_version_outputs
                     ]
                 }
             },

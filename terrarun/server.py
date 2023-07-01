@@ -41,6 +41,7 @@ from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
+from terrarun.models.state_version_output import StateVersionOutput
 from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
@@ -260,6 +261,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformStateVersionDownload,
             '/api/v2/state-versions/<string:state_version_id>/download'
+        )
+        self._api.add_resource(
+            ApiTerraformStateVersionOutput,
+            '/api/v2/state-version-outputs/<string:state_version_output_id>'
         )
         self._api.add_resource(
             ApiTerraformApplyRun,
@@ -904,7 +909,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
 
         return {
             "data": [
-                workspace.get_api_details(effective_user=current_user)
+                workspace.get_api_details(effective_user=current_user)[0]
                 for workspace in workspaces
             ]
         }
@@ -936,7 +941,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         workspace = Workspace.create(organisation=organisation, name=name)
 
         return {
-            "data": workspace.get_api_details(effective_user=current_user)
+            "data": workspace.get_api_details(effective_user=current_user)[0]
         }
 
 
@@ -1779,7 +1784,14 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        return {"data": workspace.get_api_details(effective_user=current_user)}
+        includes = request.args.get("include", "").split(",")
+
+        data, include_response = workspace.get_api_details(effective_user=current_user, includes=includes)
+        api_response = {"data": data}
+        if includes is not None:
+            api_response["included"] = include_response
+        return api_response
+
 
     def check_permissions_patch(self, current_user, current_job,
                                 organisation_name=None, workspace_name=None, workspace_id=None):
@@ -2522,7 +2534,7 @@ class ApiTerraformWorkspaceActionsLock(AuthenticatedEndpoint):
                 ]
             }, 409
 
-        return {'data': workspace.get_api_details(effective_user=current_user)}
+        return {'data': workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
@@ -2553,7 +2565,7 @@ class ApiTerraformWorkspaceActionsUnlock(AuthenticatedEndpoint):
                 )]
             }, 422
 
-        return {'data': workspace.get_api_details(effective_user=current_user)}
+        return {'data': workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceActionsForceUnlock(AuthenticatedEndpoint):
@@ -2578,7 +2590,7 @@ class ApiTerraformWorkspaceActionsForceUnlock(AuthenticatedEndpoint):
 
         workspace.unlock(force=True)
 
-        return {'data': workspace.get_api_details(effective_user=current_user)}
+        return {'data': workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
@@ -2643,7 +2655,7 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
     def check_permissions_get(self, current_user, current_job, state_version_id):
         """Check permissions to view run"""
         state_version = StateVersion.get_by_api_id(state_version_id)
-        if not state_version_id:
+        if not state_version:
             return False
 
         if current_job and current_job.run.configuration_version.workspace == state_version.workspace:
@@ -2660,6 +2672,28 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
         if not state_version_id:
             return {}, 404
         return state_version.state_json
+
+
+class ApiTerraformStateVersionOutput(AuthenticatedEndpoint):
+    """Interface to read state version outputs"""
+
+    def check_permissions_get(self, current_user, current_job, state_version_output_id):
+        """Check permissions to view run"""
+        state_version_output = StateVersionOutput.get_by_api_id(state_version_output_id)
+        if not state_version_output:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=state_version_output.state_version.workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
+
+    def _get(self, current_user, current_job, state_version_output_id):
+        """Return state version json"""
+        state_version_output = StateVersionOutput.get_by_api_id(state_version_output_id)
+        if not state_version_output:
+            return {}, 404
+        return {"data": state_version_output.get_api_details(include_sensitive=True)}
 
 
 class ApiTerraformApplyRun(AuthenticatedEndpoint):
