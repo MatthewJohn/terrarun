@@ -72,13 +72,15 @@ class ConfigurationVersion(Base, BaseObject):
         return cv
 
     @classmethod
-    def generate_from_vcs(cls, workspace, speculative, commit_ref=None):
+    def generate_from_vcs(cls, workspace, speculative, commit_ref=None, branch=None, user=None, tag=None):
         """Create configuration version from VCS"""
         service_provider = workspace.authorised_repo.oauth_token.oauth_client.service_provider_instance
 
         if commit_ref is None:
-            # Obtain branch from workspace
-            branch = workspace.get_branch()
+            # Obtain branch from workspace,
+            # if not specified
+            if branch is None:
+                branch = workspace.get_branch()
             if not branch:
                 return None
 
@@ -94,6 +96,18 @@ class ConfigurationVersion(Base, BaseObject):
             commit_sha=commit_ref
         )
 
+        if not ingress_attributes:
+            ingress_attributes = IngressAttribute.create(
+                authorised_repo=workspace.authorised_repo,
+                commit_sha=commit_ref,
+                branch=branch,
+                creator=user,
+                tag=tag,
+                # @TODO Provide this whislt implementing
+                # PR triggers
+                pull_request_id=None
+            )
+
         archive_data = service_provider.get_targz_by_commit_ref(
             authorised_repo=workspace.authorised_repo, commit_ref=commit_ref
         )
@@ -104,7 +118,7 @@ class ConfigurationVersion(Base, BaseObject):
             workspace=workspace,
             auto_queue_runs=True,
             speculative=speculative,
-            ingress_attributes=ingress_attributes
+            ingress_attribute=ingress_attributes
         )
         configuration_version.process_upload(archive_data)
         return configuration_version
@@ -113,9 +127,11 @@ class ConfigurationVersion(Base, BaseObject):
     def get_configuration_version_by_git_commit_sha(cls, workspace, git_commit_sha):
         """Return configuration versions by workspace and git commit sha"""
         session = Database.get_session()
-        return session.query(cls).filter(
+        return session.query(cls).join(
+            IngressAttribute
+        ).filter(
             cls.workspace==workspace,
-            cls.git_commit_sha==git_commit_sha
+            IngressAttribute.commit_sha==git_commit_sha
         ).all()
 
     @property

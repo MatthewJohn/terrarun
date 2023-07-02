@@ -48,7 +48,7 @@ class IngressAttribute(Base, BaseObject):
     configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="ingress_attribute")
 
     @classmethod
-    def create(cls, authorised_repo, commit_sha, branch, pull_request_id, creator):
+    def create(cls, authorised_repo, commit_sha, branch, pull_request_id, creator, tag):
         """Create new ingress attributes"""
         sender_username = authorised_repo.oauth_token.oauth_client.service_provider_instance.get_sender_username_for_commit(commit_sha)
 
@@ -61,6 +61,7 @@ class IngressAttribute(Base, BaseObject):
             authorised_repo=authorised_repo,
             commit_sha=commit_sha,
             branch=branch,
+            tag=tag,
             creator=creator,
             # Obtain additional attributes from authorised repo
             sender_username=sender_username,
@@ -79,7 +80,7 @@ class IngressAttribute(Base, BaseObject):
     def get_by_authorised_repo_and_commit_sha(cls, authorised_repo, commit_sha):
         """Get instance by authorised repo and commit sha"""
         session = Database.get_session()
-        return session.query(cls).filter(cls.authorised_repo==authorised_repo, commit_sha=commit_sha).first()
+        return session.query(cls).filter(cls.authorised_repo==authorised_repo, cls.commit_sha==commit_sha).first()
 
     @property
     def clone_url(self):

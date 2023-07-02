@@ -38,6 +38,8 @@ class CronTasks:
         service_provider = authorised_repo.oauth_token.oauth_client.service_provider_instance
 
         commit_sha = None
+        workspace_branch = None
+        workspace_tag = None
 
         # Handle workspaces with git tag regex
         if workspace.vcs_repo_tags_regex:
@@ -56,6 +58,7 @@ class CronTasks:
                             git_commit_sha=tags[tag]):
                         # If there wasn't, perform a run with the commit sha
                         commit_sha = tags[tag]
+                        workspace_tag = tag
                         print(f"Using tag commit {tags[tag]}")
                     else:
                         print(f"Run already exists for commit {tags[tag]}")
@@ -135,7 +138,9 @@ class CronTasks:
                 workspace=workspace,
                 commit_ref=commit_sha,
                 # Allow all runs to be queued to be applied
-                speculative=False
+                speculative=False,
+                branch=workspace_branch,
+                tag=workspace_tag
             )
             if not cv:
                 print('Unable to create configuration version')
