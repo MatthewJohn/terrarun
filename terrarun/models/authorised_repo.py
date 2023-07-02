@@ -49,6 +49,8 @@ class AuthorisedRepo(Base, BaseObject):
     projects = sqlalchemy.orm.relation("Project", back_populates="authorised_repo")
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="workspace_authorised_repo")
 
+    ingress_attributes = sqlalchemy.orm.relation("IngressAttribute", back_populates="authorised_repo")
+
     @classmethod
     def create(cls, oauth_token, provider_id, external_id, display_identifier, name, http_url, session=None):
         """Create authorised repo"""
