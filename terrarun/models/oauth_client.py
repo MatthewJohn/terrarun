@@ -85,6 +85,10 @@ class BaseOauthServiceProvider:
         """Get list of changed files between two commits"""
         raise NotImplementedError
 
+    def get_commit_ingress_data(self, authorised_repo, commit_sha):
+        """"Return details of commit for ingress data for given sha"""
+        raise NotImplementedError
+
 
 class OauthServiceGithub(BaseOauthServiceProvider):
     """Oauth service for Github hosted"""
@@ -275,6 +279,33 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             for file in data.get("files")
             if file.get("previous_filename")
         ]
+
+    def get_commit_ingress_data(self, authorised_repo, commit_sha):
+        """Return commit user details for given commit"""
+        res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f'{self._get_base_repo_endpoint(authorised_repo)}/commits/{commit_sha}',
+            params={
+                "sha": commit_sha,
+                "page": 1,
+                "per_page": 1
+            }
+        )
+        if res.status_code != 200:
+            return None
+
+        data = res.json()
+
+        # No commits found
+        if not data:
+            return None
+
+        return {
+            "sender_username": data.get("author", {}).get("login"),
+            "sender_avatar_url": data.get("author", {}).get("avatar_url"),
+            "commit_message": data.get("commit", {}).get("message")
+        }
 
     def update_repos(self, oauth_token):
         """Update stored repos"""

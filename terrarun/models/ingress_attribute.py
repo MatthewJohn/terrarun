@@ -50,12 +50,16 @@ class IngressAttribute(Base, BaseObject):
     @classmethod
     def create(cls, authorised_repo, commit_sha, branch, pull_request_id, creator, tag):
         """Create new ingress attributes"""
-        sender_username = authorised_repo.oauth_token.oauth_client.service_provider_instance.get_sender_username_for_commit(commit_sha)
+        service_provider_instance = authorised_repo.oauth_token.oauth_client.service_provider_instance
+        commit_details = service_provider_instance.get_commit_ingress_data(
+            authorised_repo, commit_sha)
 
         pull_request_title = None
         pull_request_body = None
-        if pull_request_id:
-            pull_request_title, pull_request_body = authorised_repo.oauth_token.oauth_client.service_provider_instance.get_pull_request_details(pull_request_id)
+        # Not currently supported
+        # if pull_request_id:
+        #     pull_request_title, pull_request_body = service_provider_instance.get_pull_request_details(
+        #         authorised_repo, pull_request_id)
 
         ingress_attribute = cls(
             authorised_repo=authorised_repo,
@@ -64,11 +68,10 @@ class IngressAttribute(Base, BaseObject):
             tag=tag,
             creator=creator,
             # Obtain additional attributes from authorised repo
-            sender_username=sender_username,
-            sender_avatar=authorised_repo.oauth_token.oauth_client.service_provider_instance.get_avatar_url_for_sender(sender_username),
             pull_request_id=pull_request_id,
             pull_request_title=pull_request_title,
-            pull_request_body=pull_request_body
+            pull_request_body=pull_request_body,
+            **commit_details
         )
 
         session = Database.get_session()
