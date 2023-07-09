@@ -89,6 +89,22 @@ class BaseOauthServiceProvider:
         """"Return details of commit for ingress data for given sha"""
         raise NotImplementedError
 
+    def get_clone_url(self, authorised_repo):
+        """Return clone URL for repo"""
+        raise NotImplementedError
+
+    def get_commit_url(self, authorised_repo, commit_sha):
+        """Return HTTP URL for commit"""
+        raise NotImplementedError
+
+    def get_commit_compare_url(self, authorised_repo, commit_sha, parent_commit_sha):
+        """Return HTTP URL for commit compare"""
+        raise NotImplementedError
+
+    def sender_html_url_from_username(self, authorised_repo, username):
+        """Return HTML URL to profile for user"""
+        raise NotImplementedError
+
 
 class OauthServiceGithub(BaseOauthServiceProvider):
     """Oauth service for Github hosted"""
@@ -437,6 +453,22 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             token=access_token,
             service_provider_user=github_username
         )
+
+    def get_clone_url(self, authorised_repo):
+        """Return clone URL for repo"""
+        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}"
+
+    def get_commit_url(self, authorised_repo, commit_sha):
+        """Return HTTP URL for commit"""
+        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}/commits/{commit_sha}"
+
+    def get_commit_compare_url(self, authorised_repo, commit_sha, parent_commit_sha):
+        """Return HTTP URL for commit compare"""
+        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}/compare/{parent_commit_sha}..{commit_sha}"
+
+    def sender_html_url_from_username(self, authorised_repo, username):
+        """Return HTML URL to profile for user"""
+        return f"{self._oauth_client.http_url}/{username}"
 
 
 class ServiceProviderFactory:

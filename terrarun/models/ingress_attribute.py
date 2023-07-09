@@ -93,13 +93,14 @@ class IngressAttribute(Base, BaseObject):
     @property
     def commit_url(self):
         """Return commit URL"""
-        return self.authorised_repo.oauth_token.oauth_client.service_provider_instance.commit_url_template.format(commit_sha=self.commit_sha)
+        return self.authorised_repo.oauth_token.oauth_client.service_provider_instance.get_commit_url(
+            authorised_repo=self.authorised_repo, commit_sha=self.commit_sha)
 
     @property
     def compare_url(self):
         """Return compare URL"""
-        return self.authorised_repo.oauth_token.oauth_client.service_provider_instance.compare_url_template.format(
-            commit_sha=self.commit_sha, parent_commit_sha=self.parent_commit_sha)
+        return self.authorised_repo.oauth_token.oauth_client.service_provider_instance.get_commit_compare_url(
+            authorised_repo=self.authorised_repo, commit_sha=self.commit_sha, parent_commit_sha=self.parent_commit_sha)
 
     @property
     def pull_request_url(self):
@@ -113,7 +114,9 @@ class IngressAttribute(Base, BaseObject):
     def sender_html_url(self):
         """Return HTML URL for sender"""
         return self.authorised_repo.oauth_token.oauth_client.service_provider_instance.sender_html_url_from_username(
-            self.sender_username)
+            self.authorised_repo,
+            self.sender_username
+        )
 
     def get_api_details(self):
         """Return API details"""
@@ -148,7 +151,7 @@ class IngressAttribute(Base, BaseObject):
                     "links": {
                         "related": f"/api/v2/ingress-attributes/{self.api_id}/created-by"
                     }
-                }
+                } if self.creator else {}
             },
             "links": {
                 "self": f"/api/v2/ingress-attributes/{self.api_id}"

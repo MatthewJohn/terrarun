@@ -100,6 +100,11 @@ class AuthorisedRepo(Base, BaseObject):
             return json.loads(self._vendor_configuration.data.decode('utf-8'))
         return {}
 
+    @property
+    def clone_url(self):
+        """Return clone URL for repo"""
+        return self.oauth_token.oauth_client.service_provider_instance.get_clone_url(authorised_repo=self)
+
     def set_vendor_configuration(self, value, session=None):
         """Set vendor configuration"""
         should_commit = False
