@@ -10,6 +10,7 @@ import datetime
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
+from terrarun.api_request import ApiRequest
 from terrarun.models.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
@@ -446,7 +447,7 @@ class Run(Base, BaseObject):
             return self.plans[-1]
         return None
 
-    def get_api_details(self):
+    def get_api_details(self, api_request: ApiRequest=None):
         """Return API details."""
         # Get status change audit events
         session = Database.get_session()
@@ -457,6 +458,10 @@ class Run(Base, BaseObject):
                 AuditEvent.object_type==self.ID_PREFIX,
                 AuditEvent.event_type==AuditEventType.STATUS_CHANGE)
         }
+
+        # @TODO Remove check for api_request object once all APIs use this methodology
+        if api_request and api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION) and self.configuration_version:
+            api_request.add_included(self.configuration_version.get_api_details(api_request))
 
         return {
             "id": self.api_id,

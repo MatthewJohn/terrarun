@@ -19,6 +19,7 @@ import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
+from terrarun.api_request import ApiRequest
 from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, UnableToDownloadToolArchiveError, UnableToDownloadToolChecksumFileError
 
 from terrarun.job_processor import JobProcessor
@@ -2196,7 +2197,12 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        return {"data": [run.get_api_details() for run in workspace.runs]}
+        api_request = ApiRequest(request, list_data=True)
+        
+        for run in workspace.runs:
+            api_request.set_data(run.get_api_details(api_request))
+
+        return api_request.get_response()
 
     def check_permissions_post(self, current_user, current_job, workspace_id):
         """Check permissions for run creation"""

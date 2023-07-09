@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.api_request import ApiRequest
 
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
@@ -225,8 +226,14 @@ terraform {
         """Return URL for terraform to upload configuration."""
         return f'/api/v2/upload-configuration/{self.api_id}'
 
-    def get_api_details(self):
+    def get_api_details(self, api_request: ApiRequest=None):
         """Return API details."""
+
+        if api_request and \
+                api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION_INGRESS_ATTRIBUTES) and \
+                self.ingress_attribute:
+            api_request.add_included(self.ingress_attribute.get_api_details())
+
         return {
             "data": {
                 "id": self.api_id,
