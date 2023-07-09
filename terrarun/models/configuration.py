@@ -244,14 +244,14 @@ terraform {
                 "relationships": {
                     "ingress-attributes": {
                         "data": {
-                            "id": "ia-i4MrTxmQXYxH2nYD",
+                            "id": self.ingress_attribute.api_id,
                             "type": "ingress-attributes"
                         },
                         "links": {
                             "related":
                             f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
                         }
-                    }
+                    } if self.ingress_attribute else {}
                 },
                 "links": {
                     "self": f"/api/v2/configuration-versions/{self.api_id}",
