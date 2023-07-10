@@ -49,6 +49,8 @@ class AuthorisedRepo(Base, BaseObject):
     projects = sqlalchemy.orm.relation("Project", back_populates="authorised_repo")
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="workspace_authorised_repo")
 
+    ingress_attributes = sqlalchemy.orm.relation("IngressAttribute", back_populates="authorised_repo")
+
     @classmethod
     def create(cls, oauth_token, provider_id, external_id, display_identifier, name, http_url, session=None):
         """Create authorised repo"""
@@ -97,6 +99,11 @@ class AuthorisedRepo(Base, BaseObject):
         if self._vendor_configuration and self._vendor_configuration.data:
             return json.loads(self._vendor_configuration.data.decode('utf-8'))
         return {}
+
+    @property
+    def clone_url(self):
+        """Return clone URL for repo"""
+        return self.oauth_token.oauth_client.service_provider_instance.get_clone_url(authorised_repo=self)
 
     def set_vendor_configuration(self, value, session=None):
         """Set vendor configuration"""

@@ -10,10 +10,12 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.api_request import ApiRequest
 
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.models.blob import Blob
+from terrarun.models.ingress_attribute import IngressAttribute
 from terrarun.object_storage import ObjectStorage
 
 
@@ -49,16 +51,17 @@ class ConfigurationVersion(Base, BaseObject):
     auto_queue_runs = sqlalchemy.Column(sqlalchemy.Boolean)
     status = sqlalchemy.Column(sqlalchemy.Enum(ConfigurationVersionStatus))
 
-    git_commit_sha = sqlalchemy.Column(Database.GeneralString, nullable=True)
+    ingress_attribute_id = sqlalchemy.Column(sqlalchemy.ForeignKey("ingress_attribute.id", name="configuration_version_ingress_attribute_id"), nullable=True)
+    ingress_attribute = sqlalchemy.orm.relationship("IngressAttribute", back_populates="configuration_versions", foreign_keys=[ingress_attribute_id])
 
     @classmethod
-    def create(cls, workspace, auto_queue_runs=True, speculative=False, git_commit_sha=None):
+    def create(cls, workspace, auto_queue_runs=True, speculative=False, ingress_attribute=None):
         """Create configuration and return instance."""
         cv = ConfigurationVersion(
             workspace=workspace,
             speculative=speculative,
             auto_queue_runs=auto_queue_runs,
-            git_commit_sha=git_commit_sha,
+            ingress_attribute=ingress_attribute,
             status=ConfigurationVersionStatus.PENDING
         )
         session = Database.get_session()
@@ -70,13 +73,15 @@ class ConfigurationVersion(Base, BaseObject):
         return cv
 
     @classmethod
-    def generate_from_vcs(cls, workspace, speculative, commit_ref=None):
+    def generate_from_vcs(cls, workspace, speculative, commit_ref=None, branch=None, user=None, tag=None):
         """Create configuration version from VCS"""
         service_provider = workspace.authorised_repo.oauth_token.oauth_client.service_provider_instance
 
         if commit_ref is None:
-            # Obtain branch from workspace
-            branch = workspace.get_branch()
+            # Obtain branch from workspace,
+            # if not specified
+            if branch is None:
+                branch = workspace.get_branch()
             if not branch:
                 return None
 
@@ -85,6 +90,24 @@ class ConfigurationVersion(Base, BaseObject):
             )
         if commit_ref is None:
             return None
+
+        # Determine if an ingress attributes object exists, if not, create one
+        ingress_attributes = IngressAttribute.get_by_authorised_repo_and_commit_sha(
+            authorised_repo=workspace.authorised_repo,
+            commit_sha=commit_ref
+        )
+
+        if not ingress_attributes:
+            ingress_attributes = IngressAttribute.create(
+                authorised_repo=workspace.authorised_repo,
+                commit_sha=commit_ref,
+                branch=branch,
+                creator=user,
+                tag=tag,
+                # @TODO Provide this whislt implementing
+                # PR triggers
+                pull_request_id=None
+            )
 
         archive_data = service_provider.get_targz_by_commit_ref(
             authorised_repo=workspace.authorised_repo, commit_ref=commit_ref
@@ -96,7 +119,7 @@ class ConfigurationVersion(Base, BaseObject):
             workspace=workspace,
             auto_queue_runs=True,
             speculative=speculative,
-            git_commit_sha=commit_ref
+            ingress_attribute=ingress_attributes
         )
         configuration_version.process_upload(archive_data)
         return configuration_version
@@ -105,9 +128,11 @@ class ConfigurationVersion(Base, BaseObject):
     def get_configuration_version_by_git_commit_sha(cls, workspace, git_commit_sha):
         """Return configuration versions by workspace and git commit sha"""
         session = Database.get_session()
-        return session.query(cls).filter(
+        return session.query(cls).join(
+            IngressAttribute
+        ).filter(
             cls.workspace==workspace,
-            cls.git_commit_sha==git_commit_sha
+            IngressAttribute.commit_sha==git_commit_sha
         ).all()
 
     @property
@@ -201,37 +226,41 @@ terraform {
         """Return URL for terraform to upload configuration."""
         return f'/api/v2/upload-configuration/{self.api_id}'
 
-    def get_api_details(self):
+    def get_api_details(self, api_request: ApiRequest=None):
         """Return API details."""
+
+        if api_request and \
+                api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION_INGRESS_ATTRIBUTES) and \
+                self.ingress_attribute:
+            api_request.add_included(self.ingress_attribute.get_api_details())
+
         return {
-            "data": {
-                "id": self.api_id,
-                "type": "configuration-versions",
-                "attributes": {
-                    "auto-queue-runs": True,
-                    "error": None,
-                    "error-message": None,
-                    "source": "tfe-api",
-                    "speculative": self.speculative,
-                    "status": self.status.value,
-                    "status-timestamps": {},
-                    "upload-url": self.get_upload_url()
-                },
-                "relationships": {
-                    "ingress-attributes": {
-                        "data": {
-                            "id": "ia-i4MrTxmQXYxH2nYD",
-                            "type": "ingress-attributes"
-                        },
-                        "links": {
-                            "related":
-                            f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
-                        }
+            "id": self.api_id,
+            "type": "configuration-versions",
+            "attributes": {
+                "auto-queue-runs": True,
+                "error": None,
+                "error-message": None,
+                "source": "tfe-api",
+                "speculative": self.speculative,
+                "status": self.status.value,
+                "status-timestamps": {},
+                "upload-url": self.get_upload_url()
+            },
+            "relationships": {
+                "ingress-attributes": {
+                    "data": {
+                        "id": self.ingress_attribute.api_id,
+                        "type": "ingress-attributes"
+                    },
+                    "links": {
+                        "related":
+                        f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
                     }
-                },
-                "links": {
-                    "self": f"/api/v2/configuration-versions/{self.api_id}",
-                    "download": f"/api/v2/configuration-versions/{self.api_id}/download"
-                }
+                } if self.ingress_attribute else {}
+            },
+            "links": {
+                "self": f"/api/v2/configuration-versions/{self.api_id}",
+                "download": f"/api/v2/configuration-versions/{self.api_id}/download"
             }
         }

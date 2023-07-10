@@ -5,6 +5,7 @@ from terrarun.models.organisation import Organisation
 from terrarun.models.workspace import Workspace
 from terrarun.models.blob import Blob
 from terrarun.models.configuration import ConfigurationVersion
+from terrarun.models.ingress_attribute import IngressAttribute
 from terrarun.models.run import Run
 from terrarun.models.state_version import StateVersion
 from terrarun.models.state_version_output import StateVersionOutput
