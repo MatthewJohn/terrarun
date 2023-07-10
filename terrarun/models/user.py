@@ -54,6 +54,7 @@ class User(Base, BaseObject):
     user_type = sqlalchemy.Column(sqlalchemy.Enum(UserType, default=UserType.NORMAL))
 
     user_tokens = sqlalchemy.orm.relation("UserToken", back_populates="user")
+    ingress_attributes = sqlalchemy.orm.relation("IngressAttribute", back_populates="creator")
 
     teams = sqlalchemy.orm.relationship("TeamUserMembership", back_populates="user")
 

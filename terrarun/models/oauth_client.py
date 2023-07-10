@@ -85,6 +85,26 @@ class BaseOauthServiceProvider:
         """Get list of changed files between two commits"""
         raise NotImplementedError
 
+    def get_commit_ingress_data(self, authorised_repo, commit_sha):
+        """"Return details of commit for ingress data for given sha"""
+        raise NotImplementedError
+
+    def get_clone_url(self, authorised_repo):
+        """Return clone URL for repo"""
+        raise NotImplementedError
+
+    def get_commit_url(self, authorised_repo, commit_sha):
+        """Return HTTP URL for commit"""
+        raise NotImplementedError
+
+    def get_commit_compare_url(self, authorised_repo, commit_sha, parent_commit_sha):
+        """Return HTTP URL for commit compare"""
+        raise NotImplementedError
+
+    def sender_html_url_from_username(self, authorised_repo, username):
+        """Return HTML URL to profile for user"""
+        raise NotImplementedError
+
 
 class OauthServiceGithub(BaseOauthServiceProvider):
     """Oauth service for Github hosted"""
@@ -276,6 +296,33 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             if file.get("previous_filename")
         ]
 
+    def get_commit_ingress_data(self, authorised_repo, commit_sha):
+        """Return commit user details for given commit"""
+        res = self._make_github_api_request(
+            oauth_token=authorised_repo.oauth_token,
+            method=requests.get,
+            endpoint=f'{self._get_base_repo_endpoint(authorised_repo)}/commits/{commit_sha}',
+            params={
+                "sha": commit_sha,
+                "page": 1,
+                "per_page": 1
+            }
+        )
+        if res.status_code != 200:
+            return None
+
+        data = res.json()
+
+        # No commits found
+        if not data:
+            return None
+
+        return {
+            "sender_username": data.get("author", {}).get("login"),
+            "sender_avatar_url": data.get("author", {}).get("avatar_url"),
+            "commit_message": data.get("commit", {}).get("message")
+        }
+
     def update_repos(self, oauth_token):
         """Update stored repos"""
 
@@ -406,6 +453,22 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             token=access_token,
             service_provider_user=github_username
         )
+
+    def get_clone_url(self, authorised_repo):
+        """Return clone URL for repo"""
+        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}"
+
+    def get_commit_url(self, authorised_repo, commit_sha):
+        """Return HTTP URL for commit"""
+        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}/commit/{commit_sha}"
+
+    def get_commit_compare_url(self, authorised_repo, commit_sha, parent_commit_sha):
+        """Return HTTP URL for commit compare"""
+        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}/compare/{parent_commit_sha}..{commit_sha}"
+
+    def sender_html_url_from_username(self, authorised_repo, username):
+        """Return HTML URL to profile for user"""
+        return f"{self._oauth_client.http_url}/{username}"
 
 
 class ServiceProviderFactory:

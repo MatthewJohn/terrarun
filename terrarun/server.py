@@ -19,6 +19,7 @@ import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
 from ansi2html import Ansi2HTMLConverter
+from terrarun.api_request import ApiRequest
 from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, UnableToDownloadToolArchiveError, UnableToDownloadToolChecksumFileError
 
 from terrarun.job_processor import JobProcessor
@@ -34,6 +35,7 @@ from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
+from terrarun.models.ingress_attribute import IngressAttribute
 from terrarun.models.lifecycle import Lifecycle
 from terrarun.models.lifecycle_environment import LifecycleEnvironment
 from terrarun.models.lifecycle_environment_group import LifecycleEnvironmentGroup
@@ -265,6 +267,10 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformStateVersionOutput,
             '/api/v2/state-version-outputs/<string:state_version_output_id>'
+        )
+        self._api.add_resource(
+            ApiTerraformIngressAttribute,
+            '/api/v2/ingress-attributes/<string:ingress_attribute_id>'
         )
         self._api.add_resource(
             ApiTerraformApplyRun,
@@ -2191,7 +2197,12 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        return {"data": [run.get_api_details() for run in workspace.runs]}
+        api_request = ApiRequest(request, list_data=True)
+        
+        for run in workspace.runs:
+            api_request.set_data(run.get_api_details(api_request))
+
+        return api_request.get_response()
 
     def check_permissions_post(self, current_user, current_job, workspace_id):
         """Check permissions for run creation"""
@@ -2206,7 +2217,7 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
 
     def _post(self, workspace_id, current_user, current_job):
         """Handle run creation"""
-        pass
+        raise Exception("create run was called via workspace/runs")
 
 
 class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
@@ -2678,7 +2689,7 @@ class ApiTerraformStateVersionOutput(AuthenticatedEndpoint):
     """Interface to read state version outputs"""
 
     def check_permissions_get(self, current_user, current_job, state_version_output_id):
-        """Check permissions to view run"""
+        """Check permissions to view state version output"""
         state_version_output = StateVersionOutput.get_by_api_id(state_version_output_id)
         if not state_version_output:
             return False
@@ -2694,6 +2705,28 @@ class ApiTerraformStateVersionOutput(AuthenticatedEndpoint):
         if not state_version_output:
             return {}, 404
         return {"data": state_version_output.get_api_details(include_sensitive=True)}
+
+
+class ApiTerraformIngressAttribute(AuthenticatedEndpoint):
+    """Interface to interact with ingress attributes"""
+
+    def check_permissions_get(self, current_user, current_job, ingress_attribute_id):
+        """Check permissions to view ingress attribute"""
+        ingress_attribute = IngressAttribute.get_by_api_id(ingress_attribute_id)
+        if not ingress_attribute:
+            return False
+
+        return OrganisationPermissions(
+            current_user=current_user,
+            organisation=ingress_attribute.authorised_repo.oauth_token.oauth_client.organisation
+        ).check_permission(OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, current_user, current_job, ingress_attribute_id):
+        """Return state version json"""
+        ingress_attribute = IngressAttribute.get_by_api_id(ingress_attribute_id)
+        if not ingress_attribute:
+            return {}, 404
+        return {"data": ingress_attribute.get_api_details()}
 
 
 class ApiTerraformApplyRun(AuthenticatedEndpoint):
