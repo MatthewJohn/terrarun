@@ -235,34 +235,32 @@ terraform {
             api_request.add_included(self.ingress_attribute.get_api_details())
 
         return {
-            "data": {
-                "id": self.api_id,
-                "type": "configuration-versions",
-                "attributes": {
-                    "auto-queue-runs": True,
-                    "error": None,
-                    "error-message": None,
-                    "source": "tfe-api",
-                    "speculative": self.speculative,
-                    "status": self.status.value,
-                    "status-timestamps": {},
-                    "upload-url": self.get_upload_url()
-                },
-                "relationships": {
-                    "ingress-attributes": {
-                        "data": {
-                            "id": self.ingress_attribute.api_id,
-                            "type": "ingress-attributes"
-                        },
-                        "links": {
-                            "related":
-                            f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
-                        }
-                    } if self.ingress_attribute else {}
-                },
-                "links": {
-                    "self": f"/api/v2/configuration-versions/{self.api_id}",
-                    "download": f"/api/v2/configuration-versions/{self.api_id}/download"
-                }
+            "id": self.api_id,
+            "type": "configuration-versions",
+            "attributes": {
+                "auto-queue-runs": True,
+                "error": None,
+                "error-message": None,
+                "source": "tfe-api",
+                "speculative": self.speculative,
+                "status": self.status.value,
+                "status-timestamps": {},
+                "upload-url": self.get_upload_url()
+            },
+            "relationships": {
+                "ingress-attributes": {
+                    "data": {
+                        "id": self.ingress_attribute.api_id,
+                        "type": "ingress-attributes"
+                    },
+                    "links": {
+                        "related":
+                        f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
+                    }
+                } if self.ingress_attribute else {}
+            },
+            "links": {
+                "self": f"/api/v2/configuration-versions/{self.api_id}",
+                "download": f"/api/v2/configuration-versions/{self.api_id}/download"
             }
         }
