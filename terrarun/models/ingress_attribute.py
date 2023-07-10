@@ -6,6 +6,7 @@ import sqlalchemy.orm
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
 import terrarun.database
+from terrarun.models.blob import Blob
 from terrarun.utils import datetime_to_json
 
 
@@ -22,12 +23,13 @@ class IngressAttribute(Base, BaseObject):
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
-    commit_message = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
+    commit_message_blob_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="ingress_attribute_commit_message_blob_id_blob_id"), nullable=True)
+    commit_message_blob = sqlalchemy.orm.relation("Blob", foreign_keys=[commit_message_blob_id])
     commit_sha = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     parent_commit_sha = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     on_default_branch = sqlalchemy.Column(sqlalchemy.Boolean)
     pull_request_id = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
-    pull_request_title = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
+    pull_request_title = sqlalchemy.Column(terrarun.database.Database.LargeString, nullable=True)
     pull_request_body = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     tag = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     sender_username = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
@@ -53,6 +55,9 @@ class IngressAttribute(Base, BaseObject):
         service_provider_instance = authorised_repo.oauth_token.oauth_client.service_provider_instance
         commit_details = service_provider_instance.get_commit_ingress_data(
             authorised_repo, commit_sha)
+        commit_message = commit_details.get("commit_message")
+        if "commit_message" in commit_details:
+            del commit_details["commit_message"]
 
         pull_request_title = None
         pull_request_body = None
@@ -77,7 +82,34 @@ class IngressAttribute(Base, BaseObject):
         session = Database.get_session()
         session.add(ingress_attribute)
         session.commit()
+        ingress_attribute.commit_message = commit_message
         return ingress_attribute
+
+    @property
+    def commit_message(self):
+        """Return commit message blob"""
+        if self.commit_message_blob and self.commit_message_blob.data:
+            return self.commit_message_blob.data.decode('utf-8')
+        return None
+
+    @commit_message.setter
+    def commit_message(self, value):
+        """Set commit message"""
+        session = Database.get_session()
+
+        if self.commit_message_blob:
+            commit_message_blob = self.commit_message_blob
+            session.refresh(commit_message_blob)
+        else:
+            commit_message_blob = Blob()
+
+        commit_message_blob.data = bytes(value, 'utf-8')
+
+        session.add(commit_message_blob)
+        session.refresh(self)
+        self.commit_message_blob = commit_message_blob
+        session.add(self)
+        session.commit()
 
     @classmethod
     def get_by_authorised_repo_and_commit_sha(cls, authorised_repo, commit_sha):
