@@ -20,7 +20,10 @@
                                 </div>
                                 <div *ngSwitchCase="column == 'commit-message'">
                                     <ng-container *ngIf="row.data.ingressAttribute?.attributes['commit-sha']">
-                                        <a href="{{ row.data.ingressAttribute?.attributes['commit-url'] }}">{{ row.data.ingressAttribute?.attributes['commit-sha']?.substring(0, 8) }}: {{row.data.ingressAttribute?.attributes['commit-message']}}</a>
+                                        <a href="{{ row.data.ingressAttribute?.attributes['commit-url'] }}">
+                                            {{ row.data.ingressAttribute?.attributes['commit-sha']?.substring(0, 8) }}:
+                                            {{ row.data.ingressAttribute?.attributes['commit-message']?.length >= 50 ? row.data.ingressAttribute?.attributes['commit-message']?.substring(0, 50) + '...' : row.data.ingressAttribute?.attributes['commit-message'] }}
+                                        </a>
                                     </ng-container>
                                 </div>
                                 <div *ngSwitchCase="column == 'runStatus'">
