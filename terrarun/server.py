@@ -2217,7 +2217,7 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
 
     def _post(self, workspace_id, current_user, current_job):
         """Handle run creation"""
-        pass
+        raise Exception("create run was called via workspace/runs")
 
 
 class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
