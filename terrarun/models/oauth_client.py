@@ -460,7 +460,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
 
     def get_commit_url(self, authorised_repo, commit_sha):
         """Return HTTP URL for commit"""
-        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}/commits/{commit_sha}"
+        return f"{self._oauth_client.http_url}/{authorised_repo.external_id}/commit/{commit_sha}"
 
     def get_commit_compare_url(self, authorised_repo, commit_sha, parent_commit_sha):
         """Return HTTP URL for commit compare"""
