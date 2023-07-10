@@ -62,7 +62,7 @@ export class WorkspaceService {
 
   getRuns(workspaceId: string): Observable<any> {
     return this.http.get<any>(
-        `/api/v2/workspaces/${workspaceId}/runs`,
+        `/api/v2/workspaces/${workspaceId}/runs?include=configuration_version,configuration_version.ingress_attributes`,
         { headers: this.accountService.getAuthHeader() }
       );
   }

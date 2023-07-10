@@ -18,7 +18,7 @@ import { WorkspaceService } from 'src/app/workspace.service';
 export class RunListComponent implements OnInit {
 
   runs$: Observable<any> | null = null;
-  tableColumns: string[] = ['icon', 'id', 'runStatus', 'created-at'];
+  tableColumns: string[] = ['icon', 'id', 'commit-message', 'runStatus', 'created-at'];
   workspaceName: string | null = null;
   organisationName: string | null = null;
   _updateInterval: any;
@@ -65,11 +65,24 @@ export class RunListComponent implements OnInit {
   updateRuns(): void {
     this.runs$ = this.workspaceService.getRuns(this.currentWorkspace?.id || '').pipe(
       map((data) => {
+        // Filter includes into configuration versions and ingress attributes
+        let configurationVersions = Object.fromEntries(data.included.filter((val: any) => {
+          return val['type'] == 'configuration-versions'}
+        ).map((val: any) => [val['id'], val]));
+        let ingressAttributes = Object.fromEntries(data.included.filter((val: any) => {
+          return val['type'] == 'ingress-attributes'}
+        ).map((val: any) => [val['id'], val]));
+
         return Array.from({length: data.data.length},
           (_, n) => ({'data': {
             id: data.data[n].id,
             runStatus: this.runStatusFactory.getStatusByValue(data.data[n].attributes.status),
-            ...data.data[n].attributes}}))
+            // Obtain related configuration version and ingress attribute for run
+            configurationVersion: configurationVersions[data.data[n].relationships['configuration-version']?.data?.id],
+            ingressAttribute: ingressAttributes[configurationVersions[data.data[n].relationships['configuration-version']?.data?.id]?.relationships['ingress-attributes']?.data?.id],
+            ...data.data[n].attributes
+          }})
+        )
       })
     );
   }
