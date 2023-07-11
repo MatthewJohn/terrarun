@@ -314,6 +314,7 @@ class Server(object):
             ApiTerraformEnvironmentLifecycleEnvironments,
             '/api/v2/environments/<string:environment_id>/lifecycle-environments'
         )
+        # Custom Terrarun endpoint
         self._api.add_resource(
             ApiTerraformOrganisationProjects,
             '/api/v2/organizations/<string:organisation_name>/projects',
@@ -322,6 +323,11 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformProject,
             '/api/v2/projects/<string:project_id>'
+        )
+        # Custom Terrarun endpoint
+        self._api.add_resource(
+            ApiTerrarunProjectIngressAttributes,
+            '/api/v2/projects/<string:project_id>/ingress-attributes'
         )
         self._api.add_resource(
             ApiTerraformOrganisationLifecycles,
@@ -1211,6 +1217,34 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
         return {
             "data": project.get_api_details()
         }
+
+
+class ApiTerrarunProjectIngressAttributes(AuthenticatedEndpoint):
+    """Interface to view ingress attributes for a given project"""
+
+    def check_permissions_get(self, project_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return False
+        return OrganisationPermissions(organisation=project.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, project_id, current_user, current_job):
+        """Return list of environments for organisation"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return {}, 404
+
+        api_request = ApiRequest(request, list_data=True)
+
+        # Obtain ingress attributes 
+        ingress_attributes = project.get_ingress_attributes(api_request)
+
+        for ingress_attribute in ingress_attributes:
+            api_request.set_data(ingress_attribute.get_api_details())
+
+        return api_request.get_response()
 
 
 class ApiTerraformProject(AuthenticatedEndpoint):

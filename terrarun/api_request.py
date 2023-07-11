@@ -28,6 +28,9 @@ class ApiRequest:
         self._list_data = list_data
         self._data = None if not list_data else []
 
+        self._page_size = int(current_request.args.get("page[size]", 20))
+        self._page_number = int(current_request.args.get("page[number]", 0))
+
     def set_data(self, data):
         """Set data for response"""
         if self._list_data:
@@ -67,3 +70,7 @@ class ApiRequest:
             response_data["included"] = self._included
         
         return response_data, status_code
+
+    def limit_query(self, query):
+        """Limit/paginate query from API request"""
+        return query.limit(self._page_size).offset(self._page_size * self._page_number)

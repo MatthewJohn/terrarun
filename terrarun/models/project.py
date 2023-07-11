@@ -6,13 +6,17 @@ import json
 import re
 import sqlalchemy
 import sqlalchemy.orm
+from sqlalchemy import func
 from terrarun.api_error import ApiError
 from terrarun.models.authorised_repo import AuthorisedRepo
 
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
+from terrarun.models.configuration import ConfigurationVersion
+from terrarun.models.ingress_attribute import IngressAttribute
 from terrarun.models.oauth_token import OauthToken
+from terrarun.models.run import Run
 from terrarun.models.tool import Tool, ToolType
 from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
@@ -182,6 +186,28 @@ class Project(Base, BaseObject):
                 environment=new_environment
             )
 
+    def get_ingress_attributes(self, api_request):
+        """Obtain all ingress attributes, with filter API query"""
+        session = Database.get_session()
+        # Investigate filtering by configuration versions that
+        # have at least 1 run associated
+        query = session.query(
+            IngressAttribute,
+        ).join(
+            ConfigurationVersion
+        ).join(
+            Workspace
+        ).join(
+            Project
+        ).outerjoin(
+            Run,
+            ConfigurationVersion.id==Run.configuration_version_id
+        ).filter(
+            Project.id==self.id
+        )
+        query = api_request.limit_query(query)
+        return query.all()
+
     def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
         """Update VCS repo from request"""
         # Check if VCS is defined in project
@@ -292,8 +318,9 @@ class Project(Base, BaseObject):
         )
         return []
 
-    def get_api_details(self):
+    def get_api_details(self, api_request=None):
         """Return details for workspace."""
+
         return {
             "attributes": {
                 "allow-destroy-plan": self.allow_destroy_plan,
