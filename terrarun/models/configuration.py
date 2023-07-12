@@ -109,6 +109,9 @@ class ConfigurationVersion(Base, BaseObject):
                 pull_request_id=None
             )
 
+        # Check rules for environment to ensure that environment can create a run
+        
+
         archive_data = service_provider.get_targz_by_commit_ref(
             authorised_repo=workspace.authorised_repo, commit_ref=commit_ref
         )

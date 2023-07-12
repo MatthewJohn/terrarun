@@ -376,6 +376,12 @@ class Project(Base, BaseObject):
                         }
                         for workspace in self.workspaces
                     ]
+                },
+                "lifecycle": {
+                    "data": {
+                        "id": self.lifecycle.api_id,
+                        "type": "lifecycles"
+                    } if self.lifecycle else {}
                 }
             },
             "type": "projects"

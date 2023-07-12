@@ -16,6 +16,7 @@ class ApiRequest:
         CONFIGURATION_VERSION = "configuration_version"
         CONFIGURATION_VERSION_INGRESS_ATTRIBUTES = "configuration_version.ingress_attributes"
         CREATED_BY = "created_by"
+        WORKSPACE = "workspace"
 
     def __init__(self, current_request, list_data=False):
         """Initial request"""
