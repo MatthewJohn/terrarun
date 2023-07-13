@@ -1,7 +1,29 @@
 <nb-layout>
   <nb-layout-column>
+
     <nb-card>
-        <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
+      <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
+    </nb-card>
+
+    <nb-card>
+      <nb-card-header>Runs</nb-card-header>
+      <nb-card-body>
+        <table id="runsTable" style="border: 1px solid black;">
+          <tr>
+            <th></th>
+            <th *ngFor="let workspaceId of workspaceList">
+              {{(workspaces.get(workspaceId) | async)?.data.attributes.environment}}
+            </th>
+          </tr>
+          <tr *ngFor="let ingressAttribute of ingressAttributes | keyvalue">
+            <td>{{ ingressAttribute.value.attributes['commit-sha'] }}</td>
+          </tr>
+        </table>
+      </nb-card-body>
+  </nb-card>
+
+    <nb-card>
+        <nb-card-header>Environment Workspaces</nb-card-header>
         <nb-card-body>
             <nb-card size="tiny">
                 <nb-card-header>

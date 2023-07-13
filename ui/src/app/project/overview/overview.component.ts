@@ -1,11 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { map, Observable, concat } from 'rxjs';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
+import { ConfigurationVersionAttributes, ConfigurationVersionRelationships } from 'src/app/interfaces/configuration-version';
+import { IngressAttributeAttribues } from 'src/app/interfaces/ingress-attribute';
 import { OauthClient } from 'src/app/interfaces/oauth-client';
 import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
-import { ResponseObject, ResponseObjectWithRelationships } from 'src/app/interfaces/response';
+import { ResponseObject, ResponseObjectWithRelationships, TypedResponseObject, TypedResponseObjectWithRelationships } from 'src/app/interfaces/response';
+import { RunAttributes, RunRelationships } from 'src/app/interfaces/run';
 import { OrganisationService } from 'src/app/organisation.service';
 import { ProjectService } from 'src/app/project.service';
 import { OauthTokenService } from 'src/app/services/oauth-token.service';
@@ -26,6 +29,10 @@ export class OverviewComponent implements OnInit {
   organisationDetails: any;
   projectDetails: any;
 
+  ingressAttributes: {[index: string]: ResponseObject<IngressAttributeAttribues>};
+  workspaceRuns: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>};
+  configurationVersionIngressAttributes: {[index: string]: string};
+
   generalSettingsForm = this.formBuilder.group({
     executionMode: ''
   });
@@ -45,6 +52,9 @@ export class OverviewComponent implements OnInit {
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
     this.generalSettingsTerraformVersion = "";
+    this.ingressAttributes = {};
+    this.workspaceRuns = {};
+    this.configurationVersionIngressAttributes = {};
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -113,10 +123,33 @@ export class OverviewComponent implements OnInit {
               //   this.workspaces.set(workspaceDetails.data.id, workspaceDetails);
               // });
             }
+
+            // Obtain runs and related ingress attributes for workspaces
+            this.updateRunList();
           })
         }
       })
     })
   }
 
+  async updateRunList(): Promise<void> {
+    let runObservables = this.workspaceList.map((workspaceId) => {return this.workspaceService.getRuns(workspaceId)});
+    let runs: ResponseObjectWithRelationships<RunAttributes, RunRelationships>[] = [];
+    let ingressAttributes: TypedResponseObject<"ingress-attributes", IngressAttributeAttribues>[] = [];
+    let configurationVersions: TypedResponseObjectWithRelationships<"configuration-versions", ConfigurationVersionAttributes, ConfigurationVersionRelationships>[] = [];
+
+    var observable = concat(...runObservables);
+    observable.subscribe((value) => {
+      value.data.forEach((run) => {this.workspaceRuns[run.relationships.workspace.data.id]});
+      value.included.forEach((include) => {if (include.type == "ingress-attributes") ingressAttributes.push(include)});
+      value.included.forEach((include) => {if (include.type == "configuration-versions") configurationVersions.push(include)});
+
+      value.included.forEach((include) => {
+        if (include.type == "ingress-attributes") {
+          this.ingressAttributes[include.id] = include;
+        }
+      });
+
+    });
+  }
 }
