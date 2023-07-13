@@ -17,6 +17,11 @@
           </tr>
           <tr *ngFor="let ingressAttribute of ingressAttributes | keyvalue">
             <td>{{ ingressAttribute.value.attributes['commit-sha'] }}</td>
+            <td *ngFor="let workspaceId of workspaceList">
+              <ng-container *ngIf="ingressAttributesRuns[ingressAttribute.key] && ingressAttributesRuns[ingressAttribute.key][workspaceId]">
+                {{ingressAttributesRuns[ingressAttribute.key][workspaceId].attributes.status}}
+              </ng-container>
+            </td>
           </tr>
         </table>
       </nb-card-body>

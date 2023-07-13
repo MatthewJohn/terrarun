@@ -15,5 +15,5 @@ export interface ConfigurationVersionAttributes {
 };
 
 export interface ConfigurationVersionRelationships {
-    "ingress-attributes": DataItem<Relationship> | {};
+    "ingress-attributes": DataItem<Relationship | undefined>;
 };

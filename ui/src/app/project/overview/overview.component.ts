@@ -32,6 +32,7 @@ export class OverviewComponent implements OnInit {
   ingressAttributes: {[index: string]: ResponseObject<IngressAttributeAttribues>};
   workspaceRuns: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>};
   configurationVersionIngressAttributes: {[index: string]: string};
+  ingressAttributesRuns: {[index: string]: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>}};
 
   generalSettingsForm = this.formBuilder.group({
     executionMode: ''
@@ -55,6 +56,7 @@ export class OverviewComponent implements OnInit {
     this.ingressAttributes = {};
     this.workspaceRuns = {};
     this.configurationVersionIngressAttributes = {};
+    this.ingressAttributesRuns = {};
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -134,22 +136,31 @@ export class OverviewComponent implements OnInit {
 
   async updateRunList(): Promise<void> {
     let runObservables = this.workspaceList.map((workspaceId) => {return this.workspaceService.getRuns(workspaceId)});
-    let runs: ResponseObjectWithRelationships<RunAttributes, RunRelationships>[] = [];
-    let ingressAttributes: TypedResponseObject<"ingress-attributes", IngressAttributeAttribues>[] = [];
-    let configurationVersions: TypedResponseObjectWithRelationships<"configuration-versions", ConfigurationVersionAttributes, ConfigurationVersionRelationships>[] = [];
 
     var observable = concat(...runObservables);
     observable.subscribe((value) => {
-      value.data.forEach((run) => {this.workspaceRuns[run.relationships.workspace.data.id]});
-      value.included.forEach((include) => {if (include.type == "ingress-attributes") ingressAttributes.push(include)});
-      value.included.forEach((include) => {if (include.type == "configuration-versions") configurationVersions.push(include)});
-
       value.included.forEach((include) => {
         if (include.type == "ingress-attributes") {
           this.ingressAttributes[include.id] = include;
         }
       });
 
+      value.included.forEach((include) => {
+        if (include.type == "configuration-versions" && include.relationships['ingress-attributes'].data) {
+          this.configurationVersionIngressAttributes[include.id] = include.relationships['ingress-attributes'].data.id
+        }
+      })
+
+      value.data.forEach((run) => {
+        let configurationVersionId = run.relationships['configuration-version'].data.id;
+        let ingressAttributesId = this.configurationVersionIngressAttributes[configurationVersionId];
+        if (ingressAttributesId) {
+          if (this.ingressAttributesRuns[ingressAttributesId] === undefined) {
+            this.ingressAttributesRuns[ingressAttributesId] = {};
+          }
+          this.ingressAttributesRuns[ingressAttributesId][run.relationships.workspace.data.id] = run;
+        }
+      });
     });
   }
 }
