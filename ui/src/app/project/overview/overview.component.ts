@@ -144,8 +144,11 @@ export class OverviewComponent implements OnInit {
     return this.runStatusFactory.getStatusByValue(status).getName()
   }
 
-  getRunStatusClass(status: string): string {
-    return `run-status-${this.runStatusFactory.getStatusByValue(status).getColor()}`;
+  getRunClass(ingressAttributeId: string, workspaceId: string): string {
+    if (this.ingressAttributesRuns[ingressAttributeId] && this.ingressAttributesRuns[ingressAttributeId][workspaceId]) {
+      return `run-status-${this.runStatusFactory.getStatusByValue(this.ingressAttributesRuns[ingressAttributeId][workspaceId].attributes.status).getColor()}`;
+    }
+    return 'not-run';
   }
 
   async updateRunList(): Promise<void> {
