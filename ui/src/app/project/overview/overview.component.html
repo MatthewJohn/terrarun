@@ -2,13 +2,13 @@
   <nb-layout-column>
 
     <nb-card>
-      <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
+      <nb-card-header>Project: {{(currentProjectObv | async)?.name}}</nb-card-header>
     </nb-card>
 
     <nb-card>
       <nb-card-header>Runs</nb-card-header>
       <nb-card-body>
-        <table id="runsTable" style="border: 1px solid black;">
+        <table id="runsTable">
           <tr>
             <th></th>
             <th *ngFor="let workspaceId of workspaceList">
@@ -21,7 +21,8 @@
               <br />
               {{ ingressAttribute.value.attributes['commit-message'].substr(0, 100) }}{{ingressAttribute.value.attributes['commit-message'].length > 100 ? '...' : ''}}
             </td>
-            <td *ngFor="let workspaceId of workspaceList" [class]="getRunClass(ingressAttribute.key, workspaceId)">
+            <td class="runsTableRowTd" *ngFor="let workspaceId of workspaceList" [class]="getRunClass(ingressAttribute.key, workspaceId)" (click)="onRunClick(ingressAttribute.key, workspaceId)">
+
               <ng-container *ngIf="ingressAttributesRuns[ingressAttribute.key] && ingressAttributesRuns[ingressAttribute.key][workspaceId]; else notRunTd">
                 {{ingressAttributesRuns[ingressAttribute.key][workspaceId].attributes['created-at']}}
                 <br />

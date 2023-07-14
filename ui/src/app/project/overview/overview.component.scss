@@ -6,14 +6,17 @@
     color: #dddddd;
 }
 
-#runsTable, tr {
+#runsTable tr {
     margin: 0px;
     padding: 0px;
 }
-#runsTable, td {
+#runsTable td {
     border: 1px solid #999999;
     padding: 15px;
     margin: 0px;
+}
+.runsTableRowTd {
+    cursor: pointer;
 }
 
 .run-status-danger {

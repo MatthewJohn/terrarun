@@ -23,8 +23,9 @@ import { WorkspaceService } from 'src/app/workspace.service';
 })
 export class OverviewComponent implements OnInit {
 
-  currentOrganisation: Observable<any>;
-  currentProject: Observable<any>;
+  currentProjectObv: Observable<any>;
+  currentOrganisationObv: Observable<any>;
+  currentOrganisation: OrganisationStateType;
   workspaceList: string[];
   workspaces: Map<string, Observable<any>>;
   organisationDetails: any;
@@ -49,8 +50,9 @@ export class OverviewComponent implements OnInit {
     private formBuilder: FormBuilder,
     private runStatusFactory: RunStatusFactory
   ) {
-    this.currentProject = new Observable();
-    this.currentOrganisation = new Observable();
+    this.currentProjectObv = new Observable();
+    this.currentOrganisationObv = new Observable();
+    this.currentOrganisation = {name: null, id: null};
     this.projectDetails = null;
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
@@ -92,8 +94,8 @@ export class OverviewComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.currentOrganisation = this.stateService.currentOrganisation;
-    this.currentProject = this.stateService.currentProject;
+    this.currentOrganisationObv = this.stateService.currentOrganisation;
+    this.currentProjectObv = this.stateService.currentProject;
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
 
@@ -102,6 +104,7 @@ export class OverviewComponent implements OnInit {
       this.stateService.currentProject.subscribe((currentProject: ProjectStateType) => {
         // Get list of environments from project details
         if (currentOrganisation.name && currentProject.name) {
+          this.currentOrganisation = currentOrganisation;
           this.projectService.getDetailsByName(currentOrganisation.name, currentProject.name).subscribe((projectDetails) => {
 
             this.projectDetails = projectDetails;
@@ -149,6 +152,15 @@ export class OverviewComponent implements OnInit {
       return `run-status-${this.runStatusFactory.getStatusByValue(this.ingressAttributesRuns[ingressAttributeId][workspaceId].attributes.status).getColor()}`;
     }
     return 'not-run';
+  }
+
+  onRunClick(ingressAttributeId: string, workspaceId: string): void {
+    if (this.ingressAttributesRuns[ingressAttributeId] && this.ingressAttributesRuns[ingressAttributeId][workspaceId]) {
+      let run = this.ingressAttributesRuns[ingressAttributeId][workspaceId];
+      this.workspaces.get(run.relationships.workspace.data.id)?.subscribe((workspace) => {
+        this.router.navigateByUrl(`/${this.currentOrganisation?.id}/${workspace.data.attributes.name}/runs/${run.id}`)
+      });
+    }
   }
 
   async updateRunList(): Promise<void> {
