@@ -11,6 +11,7 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
 from terrarun.api_request import ApiRequest
+from terrarun.errors import FailedToUnlockWorkspaceError, RunCannotBeDiscardedError
 from terrarun.models.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
@@ -184,6 +185,14 @@ class Run(Base, BaseObject):
     def cancel(self, user):
         """Cancel run"""
         self.update_status(RunStatus.CANCELED, current_user=user)
+
+    def discard(self, user):
+        """Discard run"""
+        if self.status is not RunStatus.POST_PLAN_COMPLETED:
+            raise RunCannotBeDiscardedError("Run is not in a state that can be discarded")
+        if not self.configuration_version.workspace.unlock(run=self):
+            raise FailedToUnlockWorkspaceError("Failed to unlock run")
+        self.update_status(RunStatus.DISCARDED)
 
     @property
     def pre_plan_workspace_tasks(self):

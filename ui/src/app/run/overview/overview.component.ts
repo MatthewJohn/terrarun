@@ -225,4 +225,29 @@ export class OverviewComponent implements OnInit {
       });
     }
   }
+  discardActionAvailable(): boolean {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.DISCARD_RUN) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  discardRun() {
+    if (this._runId) {
+      this.runService.discardRun(this._runId).subscribe((data) => {
+      });
+    }
+  }
+  retryActionAvailable(): boolean {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.RETRY_RUN) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  retryRun() {
+    if (this._runId) {
+      // @TODO
+      // this.runService.retryRun(this._runId).subscribe((data) => {
+      // });
+    }
+  }
 }

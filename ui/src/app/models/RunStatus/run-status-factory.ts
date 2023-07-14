@@ -45,7 +45,6 @@ abstract class RunStatusBaseClass implements IRunStatus {
     shouldCheckApply(): boolean {
         return this._shouldCheckApply;
     }
-
 }
 
 class RunStatusApplied extends RunStatusBaseClass {
@@ -53,6 +52,7 @@ class RunStatusApplied extends RunStatusBaseClass {
     _labelColour = "success";
     _icon = "done-all-outline";
     public override _isFinal = true;
+    public override _availableActions = [RunAction.RETRY_RUN];
 }
 class RunStatusApplying extends RunStatusBaseClass {
     _nameString = "Applying";
@@ -93,12 +93,14 @@ class RunStatusDiscarded extends RunStatusBaseClass {
     _labelColour = "danger";
     _icon = "alert-circle-outline";
     public override _isFinal = true;
+    public override _availableActions = [RunAction.RETRY_RUN];
 }
 class RunStatusErrored extends RunStatusBaseClass {
     _nameString = "Errored";
     _labelColour = "danger";
     _icon = "alert-circle-outline";
     public override _isFinal = true;
+    public override _availableActions = [RunAction.RETRY_RUN];
 }
 class RunStatusFetching extends RunStatusBaseClass {
     _nameString = "Fetching";
@@ -109,6 +111,7 @@ class RunStatusForceCancelled extends RunStatusBaseClass {
     _nameString = "Force cancelled";
     _labelColour = "warning";
     _icon = "radio-button-on-outline";
+    public override _availableActions = [RunAction.RETRY_RUN];
 }
 class RunStatusPending extends RunStatusBaseClass {
     _nameString = "Pending";
@@ -125,6 +128,7 @@ class RunStatusPlannedAndFinished extends RunStatusBaseClass {
     _labelColour = "success";
     _icon = "checkmark-outline";
     public override _isFinal = true;
+    public override _availableActions = [RunAction.RETRY_RUN];
 }
 class RunStatusPlanning extends RunStatusBaseClass {
     _nameString = "Planning";
@@ -163,7 +167,7 @@ class RunStatusPostPlanCompleted extends RunStatusBaseClass {
     _nameString = "Post-plan completed";
     _labelColour = "warning";
     _icon = "radio-button-on-outline";
-    public override _availableActions = [RunAction.CONFIRM_AND_APPLY];
+    public override _availableActions = [RunAction.CONFIRM_AND_APPLY, RunAction.DISCARD_RUN];
 }
 class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _nameString = "Post-plan running";

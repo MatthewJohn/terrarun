@@ -228,6 +228,10 @@ class Server(object):
             '/api/v2/runs/<string:run_id>/actions/cancel'
         )
         self._api.add_resource(
+            ApiTerraformRunActionsDiscard,
+            '/api/v2/runs/<string:run_id>/actions/discard'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
         )
@@ -2120,7 +2124,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         if cv.workspace.id != workspace.id:
             print('Configuration version ID and workspace ID mismatch')
             # Hide error to prevent workspace ID/configuration ID enumeration
-            return {}, 404
+            return {}, 400
 
         tool = None
         if request_terraform_version := request_attributes.get('terraform-version'):
@@ -2209,6 +2213,27 @@ class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
             return {}, 404
 
         run.cancel(user=current_user)
+
+
+class ApiTerraformRunActionsDiscard(AuthenticatedEndpoint):
+    """Interface to discard runs"""
+
+    def check_permissions_post(self, run_id, current_user, current_job):
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.APPLY)
+
+    def _post(self, run_id, current_user, current_job):
+        """Cancel run"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        run.discard(user=current_user)
 
 
 class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):

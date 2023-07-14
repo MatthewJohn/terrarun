@@ -22,11 +22,17 @@
             <tr>
                 <td>Actions</td>
                 <td>
-                    <button nbButton (click)="applyRun()" *ngIf="applyActionAvailable()">
+                    <button nbButton size="small" (click)="applyRun()" *ngIf="applyActionAvailable()">
                         Apply
                     </button>
-                    <button nbButton (click)="cancelRun()" *ngIf="cancelActionAvailable()">
+                    <button nbButton size="small" (click)="cancelRun()" *ngIf="cancelActionAvailable()">
                         Cancel
+                    </button>
+                    <button nbButton size="small" (click)="discardRun()" *ngIf="discardActionAvailable()">
+                        Discard
+                    </button>
+                    <button nbButton size="small" (click)="retryRun()" *ngIf="retryActionAvailable()">
+                        Rerun
                     </button>
                 </td>
             </tr>
