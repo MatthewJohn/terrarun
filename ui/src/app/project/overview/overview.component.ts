@@ -41,6 +41,7 @@ export class OverviewComponent implements OnInit {
   });
 
   generalSettingsTerraformVersion: string;
+  _runUpdateInterval: any;
 
   constructor(
     private stateService: StateService,
@@ -61,6 +62,7 @@ export class OverviewComponent implements OnInit {
     this.workspaceRuns = {};
     this.configurationVersionIngressAttributes = {};
     this.ingressAttributesRuns = {};
+    this._runUpdateInterval = null;
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -132,11 +134,19 @@ export class OverviewComponent implements OnInit {
             }
 
             // Obtain runs and related ingress attributes for workspaces
-            this.updateRunList();
+            this._runUpdateInterval = setInterval(() => {
+              this.updateRunList();
+            }, 5000);
           })
         }
       })
     })
+  }
+
+  ngOnDestroy() {
+    if (this._runUpdateInterval) {
+      window.clearTimeout(this._runUpdateInterval);
+    }
   }
 
   timestampToRelative(timestamp: string): string {
