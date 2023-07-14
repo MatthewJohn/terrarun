@@ -23,10 +23,20 @@
     background-color: #FFD1D1;
 }
 
+.run-status-danger:hover {
+    background-color: #EFC1C1;
+}
+
 .run-status-warning {
     background-color: #FFEDD1;
+}
+.run-status-warning:hover {
+    background-color: #EFDDC1;
 }
 
 .run-status-success {
     background-color: #D2FFD1;
+}
+.run-status-success:hover {
+    background-color: #C2EFC1;
 }
