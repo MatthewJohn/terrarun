@@ -5,14 +5,14 @@
       <nb-card-header>Project: {{(currentProjectObv | async)?.name}}</nb-card-header>
     </nb-card>
 
-    <nb-card>
+    <nb-card *ngIf="projectDetails?.data.attributes['vcs-repo-identifier']">
       <nb-card-header>Runs</nb-card-header>
       <nb-card-body>
         <table id="runsTable">
           <tr>
-            <th></th>
+            <th>Git Commit</th>
             <th *ngFor="let workspaceId of workspaceList">
-              {{(workspaces.get(workspaceId) | async)?.data.attributes.environment}}
+              Environment: {{(workspaces.get(workspaceId) | async)?.data.attributes.environment}}
             </th>
           </tr>
           <tr *ngFor="let ingressAttribute of ingressAttributes | keyvalue">
