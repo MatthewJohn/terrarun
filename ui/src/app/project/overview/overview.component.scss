@@ -6,22 +6,24 @@
     color: #dddddd;
 }
 
-#runsTable {
-    border: 1px solid black;
+#runsTable, tr {
+    margin: 0px;
+    padding: 0px;
 }
 #runsTable, td {
-    border: 1px solid black;
+    border: 1px solid #999999;
     padding: 15px;
+    margin: 0px;
 }
 
 .run-status-danger {
-    background-color: red;
+    background-color: #FFD1D1;
 }
 
 .run-status-warning {
-    background-color: orange;
+    background-color: #FFEDD1;
 }
 
 .run-status-success {
-    background-color: green;
+    background-color: #D2FFD1;
 }
