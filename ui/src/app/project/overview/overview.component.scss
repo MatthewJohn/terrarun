@@ -13,3 +13,15 @@
     border: 1px solid black;
     padding: 15px;
 }
+
+.run-status-danger {
+    background-color: red;
+}
+
+.run-status-warning {
+    background-color: orange;
+}
+
+.run-status-success {
+    background-color: green;
+}

@@ -9,6 +9,7 @@ import { OauthClient } from 'src/app/interfaces/oauth-client';
 import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
 import { ResponseObject, ResponseObjectWithRelationships, TypedResponseObject, TypedResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { RunAttributes, RunRelationships } from 'src/app/interfaces/run';
+import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { OrganisationService } from 'src/app/organisation.service';
 import { ProjectService } from 'src/app/project.service';
 import { OauthTokenService } from 'src/app/services/oauth-token.service';
@@ -45,7 +46,8 @@ export class OverviewComponent implements OnInit {
     private projectService: ProjectService,
     private workspaceService: WorkspaceService,
     private router: Router,
-    private formBuilder: FormBuilder
+    private formBuilder: FormBuilder,
+    private runStatusFactory: RunStatusFactory
   ) {
     this.currentProject = new Observable();
     this.currentOrganisation = new Observable();
@@ -132,6 +134,18 @@ export class OverviewComponent implements OnInit {
         }
       })
     })
+  }
+
+  getRunStatusIcon(status: string): string {
+    return this.runStatusFactory.getStatusByValue(status).getIcon()
+  }
+
+  getRunStatusName(status: string): string {
+    return this.runStatusFactory.getStatusByValue(status).getName()
+  }
+
+  getRunStatusClass(status: string): string {
+    return `run-status-${this.runStatusFactory.getStatusByValue(status).getColor()}`;
   }
 
   async updateRunList(): Promise<void> {

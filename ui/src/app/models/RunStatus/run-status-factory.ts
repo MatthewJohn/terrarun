@@ -232,12 +232,11 @@ const RunStatusMap: Record<RunStatusEnum, new (...args: any[]) => IRunStatus> = 
 
 @Injectable({
     providedIn: 'root'
-  })
+})
 export class RunStatusFactory {
 
     // @TODO Update signure to match instance of 'new (...args: any[]) => IRunStatus)'
     getStatusByValue(statusEnumValue: string): any {
-        console.log(statusEnumValue);
         return new (RunStatusMap[statusEnumValue as RunStatusEnum])();
     }
 }

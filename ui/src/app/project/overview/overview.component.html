@@ -16,10 +16,18 @@
             </th>
           </tr>
           <tr *ngFor="let ingressAttribute of ingressAttributes | keyvalue">
-            <td>{{ ingressAttribute.value.attributes['commit-sha'] }}</td>
-            <td *ngFor="let workspaceId of workspaceList">
-              <ng-container *ngIf="ingressAttributesRuns[ingressAttribute.key] && ingressAttributesRuns[ingressAttribute.key][workspaceId]">
-                {{ingressAttributesRuns[ingressAttribute.key][workspaceId].attributes.status}}
+            <td style="max-width: 500px">
+              {{ ingressAttribute.value.attributes['commit-sha'].substr(0, 12) }}
+              <br />
+              {{ ingressAttribute.value.attributes['commit-message'].substr(0, 100) }}{{ingressAttribute.value.attributes['commit-message'].length > 100 ? '...' : ''}}
+            </td>
+            <td *ngFor="let workspaceId of workspaceList" [class]="getRunStatusClass(ingressAttributesRuns[ingressAttribute.key][workspaceId].attributes.status)">
+              <ng-container *ngIf="ingressAttributesRuns[ingressAttribute.key] && ingressAttributesRuns[ingressAttribute.key]">
+                {{ingressAttributesRuns[ingressAttribute.key][workspaceId].attributes['created-at']}}
+                <br />
+
+                <nb-icon [icon]="getRunStatusIcon(ingressAttributesRuns[ingressAttribute.key][workspaceId].attributes.status)"></nb-icon>
+                {{getRunStatusName(ingressAttributesRuns[ingressAttribute.key][workspaceId].attributes.status)}}
               </ng-container>
             </td>
           </tr>

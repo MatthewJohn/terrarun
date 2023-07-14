@@ -1,6 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NbButtonModule, NbFormFieldModule, NbLayoutModule, NbListModule, NbSelectModule } from '@nebular/theme';
+import { NbButtonModule, NbFormFieldModule, NbIconModule, NbLayoutModule, NbListModule, NbSelectModule } from '@nebular/theme';
 
 
 import { ProjectRoutingModule } from './project-routing.module';
@@ -18,6 +18,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     NbCardModule,
     NbButtonModule,
     NbListModule,
+    NbIconModule,
 
     ComponentsModule,
     NbSelectModule,
