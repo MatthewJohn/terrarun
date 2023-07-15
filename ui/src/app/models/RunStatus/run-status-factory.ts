@@ -56,14 +56,14 @@ class RunStatusApplied extends RunStatusBaseClass {
 }
 class RunStatusApplying extends RunStatusBaseClass {
     _nameString = "Applying";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "activity-outline";
     public override _availableActions = [RunAction.CANCEL_RUN];
     public override _shouldCheckApply = true;
 }
 class RunStatusApplyQueued extends RunStatusBaseClass {
     _nameString = "Apply queued";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusCancelled extends RunStatusBaseClass {
@@ -80,17 +80,17 @@ class RunStatusConfirmed extends RunStatusBaseClass {
 }
 class RunStatusCostEstimated extends RunStatusBaseClass {
     _nameString = "Cost estimated";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusCostEstimating extends RunStatusBaseClass {
     _nameString = "Cost estimating";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusDiscarded extends RunStatusBaseClass {
     _nameString = "Discarded";
-    _labelColour = "danger";
+    _labelColour = "info";
     _icon = "alert-circle-outline";
     public override _isFinal = true;
     public override _availableActions = [RunAction.RETRY_RUN];
@@ -104,7 +104,7 @@ class RunStatusErrored extends RunStatusBaseClass {
 }
 class RunStatusFetching extends RunStatusBaseClass {
     _nameString = "Fetching";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusForceCancelled extends RunStatusBaseClass {
@@ -132,24 +132,24 @@ class RunStatusPlannedAndFinished extends RunStatusBaseClass {
 }
 class RunStatusPlanning extends RunStatusBaseClass {
     _nameString = "Planning";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "activity-outline";
     public override _availableActions = [RunAction.CANCEL_RUN];
     public override _shouldCheckPlan = true;
 }
 class RunStatusPlanQueued extends RunStatusBaseClass {
     _nameString = "Plan queued";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPolicyChecked extends RunStatusBaseClass {
     _nameString = "Policy checked";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPolicyChecking extends RunStatusBaseClass {
     _nameString = "Policy checking";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 class RunStatusPolicyOverride extends RunStatusBaseClass {
@@ -171,7 +171,7 @@ class RunStatusPostPlanCompleted extends RunStatusBaseClass {
 }
 class RunStatusPostPlanRunning extends RunStatusBaseClass {
     _nameString = "Post-plan running";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
     public override _shouldCheckPostPlan = true;
 }
@@ -182,7 +182,7 @@ class RunStatusPrePlanCompleted extends RunStatusBaseClass {
 }
 class RunStatusPrePlanRunning extends RunStatusBaseClass {
     _nameString = "Pre-plan running";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
     public override _shouldCheckPrePlan = true;
 }
@@ -193,13 +193,13 @@ class RunStatusPreApplyCompleted extends RunStatusBaseClass {
 }
 class RunStatusPreApplyRunning extends RunStatusBaseClass {
     _nameString = "Pre-apply running";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
     public override _shouldCheckPreApply = true;
 }
 class RunStatusQueuing extends RunStatusBaseClass {
     _nameString = "Queuing";
-    _labelColour = "info";
+    _labelColour = "basic";
     _icon = "radio-button-on-outline";
 }
 
