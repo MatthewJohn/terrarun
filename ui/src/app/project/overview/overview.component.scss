@@ -50,8 +50,15 @@
 }
 
 .run-status-info {
-    background-color: #dddddd;
+    background-color: #eeeeee;
 }
 .run-status-info:hover {
-    background-color: #cccccc;
+    background-color: #dddddd;
+}
+
+.run-status-not-run {
+    background-color: #E9DBFF;
+}
+.run-status-not-run:hover {
+    background-color: #D9CBEF;
 }

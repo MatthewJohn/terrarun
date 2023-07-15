@@ -219,7 +219,7 @@ export class OverviewComponent implements OnInit {
     if (this.ingressAttributesRuns[ingressAttributeId] && this.ingressAttributesRuns[ingressAttributeId][workspaceId]) {
       return `run-status-${this.runStatusFactory.getStatusByValue(this.ingressAttributesRuns[ingressAttributeId][workspaceId].attributes.status).getColor()}`;
     }
-    return 'not-run';
+    return 'run-status-not-run';
   }
 
   onRunClick(ingressAttributeId: string, workspaceId: string): void {
