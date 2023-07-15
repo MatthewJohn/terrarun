@@ -18,6 +18,7 @@ from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
 import terrarun.models.configuration
+import terrarun.models.ingress_attribute
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.models.workspace_task
 import terrarun.models.user
@@ -143,6 +144,22 @@ class Workspace(Base, BaseObject):
             session = Database.get_session()
             session.add(self)
             session.commit()
+
+    def get_runs_by_ingress_attribute(self, ingress_attribute):
+        """Return all runs for workspace by the ingress attribute"""
+        session = Database.get_session()
+        return session.query(
+            terrarun.models.run.Run
+        ).join(
+            Workspace
+        ).join(
+            terrarun.models.configuration.ConfigurationVersion
+        ).join(
+            terrarun.models.ingress_attribute.IngressAttribute
+        ).filter(
+            Workspace.id==self.id,
+            terrarun.models.ingress_attribute.IngressAttribute.id==ingress_attribute.id
+        ).all()
 
     @property
     def runs(self):

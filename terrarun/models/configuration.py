@@ -11,11 +11,13 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 import sqlalchemy
 import sqlalchemy.orm
 from terrarun.api_request import ApiRequest
+from terrarun.logger import get_logger
 
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 from terrarun.models.blob import Blob
 from terrarun.models.ingress_attribute import IngressAttribute
+import terrarun.models.run
 from terrarun.object_storage import ObjectStorage
 
 
@@ -108,9 +110,6 @@ class ConfigurationVersion(Base, BaseObject):
                 # PR triggers
                 pull_request_id=None
             )
-
-        # Check rules for environment to ensure that environment can create a run
-        
 
         archive_data = service_provider.get_targz_by_commit_ref(
             authorised_repo=workspace.authorised_repo, commit_ref=commit_ref
@@ -224,6 +223,101 @@ terraform {
         finally:
             os.unlink(tar_gz_file)
         return extract_dir
+
+    def can_create_run(self):
+        """Whether a run can be created for the configuration version"""
+        logger = get_logger(obj=self)
+
+        # Check if configuration version doesn't contain ingress attributes
+        if self.ingress_attribute is None:
+            logger.debug("Allowing run - configuration version does not contain ingress attributes.")
+            return True
+
+        if self.speculative:
+            logger.debug("Allowing run - configuration version is speculative")
+
+        # Get environment group
+        lifecycle = self.workspace.project.lifecycle
+        environment = self.workspace.environment
+        lifecycle_environment_group = None
+
+        # @TODO Consider switching to iterating through lifecycle's environment groups and lifecycle_environments
+        for lifecycle_environment in environment.lifecycle_environments:
+            if lifecycle_environment.lifecycle_environment_group.lifecycle.id == lifecycle.id:
+                lifecycle_environment_group = lifecycle_environment.lifecycle_environment_group
+                break
+        if lifecycle_environment_group is None:
+            raise Exception("Could not find lifecycle group for workspace environment")
+        
+        # Check if lifecycle group order is 0 and allow
+        if lifecycle_environment_group.order == 0:
+            logger.debug("Allowing run - lifecycle_environment_group order is 0.")
+            return True
+        
+        # Get parent lifecycle group
+        parent_environment_lifecycle_group = None
+        for lifecycle_environment_group_itx in lifecycle.lifecycle_environment_groups:
+            if lifecycle_environment_group_itx.order == (lifecycle_environment_group.order - 1):
+                parent_environment_lifecycle_group = lifecycle_environment_group_itx
+        if parent_environment_lifecycle_group is None:
+            raise Exception("Could not find parent lifecycle environment group for workspace lifecycle")
+
+        # Get all runs in parent lifecycle group and
+        # determine success counts per environment.
+        run_count = 0
+        successful_plan_count = 0
+        successful_apply_count = 0
+        parent_environment_count = 0
+        for parent_lifecycle_environment in parent_environment_lifecycle_group.lifecycle_environments:
+            parent_environment_count += 1
+
+            # Get all runs in enviroment relating to the ingress attribute
+            runs = parent_lifecycle_environment.workspace.get_runs_by_ingress_attribute(self.ingress_attribute)
+
+            # Aggregate information for all runs for the workspace against
+            # this ingress attribute
+            run_found = False
+            successful_plan_found = False
+            successful_apply_found = False
+            for run in runs:
+                run_found = True
+                # Check for any statuses that indicate that plan has completed successfully
+                if run.status in [
+                        terrarun.models.run.RunStatus.PLANNED_AND_FINISHED, terrarun.models.run.RunStatus.PLANNED,
+                        terrarun.models.run.RunStatus.APPLY_QUEUED, terrarun.models.run.RunStatus.APPLYING,
+                        terrarun.models.run.RunStatus.PRE_APPLY_RUNNING, terrarun.models.run.RunStatus.PRE_APPLY_COMPLETED,
+                        terrarun.models.run.RunStatus.POST_PLAN_RUNNING, terrarun.models.run.RunStatus.POST_PLAN_COMPLETED]:
+                    successful_plan_found = True
+                # Check for states that indicate that apply has completed successfully
+                if run.status in [terrarun.models.run.RunStatus.APPLIED]:
+                    successful_apply_found = True
+
+            # Add count and successes to overalls for the environment group
+            if run_found:
+                run_count += 1
+            if successful_plan_found:
+                successful_plan_count += 1
+            if successful_apply_found:
+                successful_apply_count += 1
+
+        # Check minimum runs, plans and applies against lifecyle group rules
+        minimum_runs = parent_environment_lifecycle_group.minimum_runs if parent_environment_lifecycle_group.minimum_runs is not None else parent_environment_count
+        if minimum_runs > run_count:
+            logger.debug(f"Disallowing run - required runs in parent required: {minimum_runs}. Found: {run_count}")
+            return False
+
+        minimum_successful_plans = parent_environment_lifecycle_group.minimum_successful_plans if parent_environment_lifecycle_group.minimum_successful_plans is not None else parent_environment_count
+        if minimum_successful_plans > successful_plan_found:
+            logger.debug(f"Disallowing run - successful plans in parent required: {minimum_successful_plans}. Found: {successful_plan_found}")
+            return False
+
+        minimum_successful_applies = parent_environment_lifecycle_group.minimum_successful_applies if parent_environment_lifecycle_group.minimum_successful_applies is not None else parent_environment_count
+        if minimum_successful_applies > successful_apply_count:
+            logger.debug(f"Disallowing run - successful applies in parent required: {minimum_successful_applies}. Found: {successful_apply_count}")
+            return False
+
+        # Allow run
+        return True
 
     def get_upload_url(self):
         """Return URL for terraform to upload configuration."""

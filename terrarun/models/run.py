@@ -149,6 +149,11 @@ class Run(Base, BaseObject):
                 not attributes.get('plan_only')):
             raise Exception('Custom Terraform version cannot be used for non-refresh-only runs')
 
+
+        # Check rules for environment to ensure that environment can create a run
+        if not configuration_version.can_create_run():
+            raise Exception("Run cannot be created due to lifecycle rules")
+
         run = Run(
             configuration_version=configuration_version,
             created_by=created_by,
