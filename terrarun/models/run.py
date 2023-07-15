@@ -11,6 +11,7 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
 from terrarun.api_request import ApiRequest
+from terrarun.errors import FailedToUnlockWorkspaceError, RunCannotBeDiscardedError
 from terrarun.models.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
@@ -148,6 +149,16 @@ class Run(Base, BaseObject):
                 not attributes.get('plan_only')):
             raise Exception('Custom Terraform version cannot be used for non-refresh-only runs')
 
+        # If configuration version is speculative, the run must
+        # be plan only
+        if configuration_version.speculative:
+            attributes['plan_only'] = True
+
+        # Check rules for environment to ensure that environment can create a run
+        can_create_run = configuration_version.can_create_run(attributes.get("plan_only", False))
+        if can_create_run is not True:
+            raise can_create_run
+
         run = Run(
             configuration_version=configuration_version,
             created_by=created_by,
@@ -173,10 +184,6 @@ class Run(Base, BaseObject):
             stage=WorkspaceTaskStage.PRE_APPLY,
             workspace_tasks=run.pre_apply_workspace_tasks)
 
-        # if not configuration_version.workspace.lock(reason=message, run=run, session=session):
-        #     session.rollback()
-        #     raise Exception("Workspace is already locked")
-
         # Queue to be processed
         run.queue_worker_job()
         return run
@@ -184,6 +191,14 @@ class Run(Base, BaseObject):
     def cancel(self, user):
         """Cancel run"""
         self.update_status(RunStatus.CANCELED, current_user=user)
+
+    def discard(self, user):
+        """Discard run"""
+        if self.status is not RunStatus.POST_PLAN_COMPLETED:
+            raise RunCannotBeDiscardedError("Run is not in a state that can be discarded")
+        if not self.configuration_version.workspace.unlock(run=self):
+            raise FailedToUnlockWorkspaceError("Failed to unlock run")
+        self.update_status(RunStatus.DISCARDED)
 
     @property
     def pre_plan_workspace_tasks(self):
@@ -214,6 +229,12 @@ class Run(Base, BaseObject):
 
     def handling_pending(self):
         """Create plan and setup pre-plan tasks"""
+        # Attempt to lock workspace
+        if not self.configuration_version.workspace.lock(run=self, reason="Locked for run"):
+            # If locking failed, just requeue worker job
+            self.queue_worker_job()
+            return
+
         # Create plan, as the terraform client expects this
         # to immediately exist
         terrarun.models.plan.Plan.create(run=self)
@@ -405,6 +426,11 @@ class Run(Base, BaseObject):
         if should_commit:
             session.commit()
 
+    def unlock_workspace(self):
+        """Unlock workspace after run completes/errors"""
+        if not self.configuration_version.workspace.unlock(run=self):
+            raise Exception("Failed to unlock workspace")
+
     def queue_plan(self):
         """Queue for plan"""
         self.update_status(RunStatus.QUEUING)
@@ -415,6 +441,8 @@ class Run(Base, BaseObject):
 
     def confirm(self, comment, user):
         """Queue apply job"""
+        # @TODO Set status instead and provide user and comment
+        # to change
         # Mark job as confirmed
         self.update_attributes(confirmed=True)
         # If the job has already eached POST_PLAN_COMPLETED,

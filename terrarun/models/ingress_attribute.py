@@ -35,6 +35,8 @@ class IngressAttribute(Base, BaseObject):
     sender_username = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     sender_avatar_url = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
+
     authorised_repo_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
         "authorised_repo.id", name="fk_ingress_attributes_authorised_repo_authorised_repo"),
         nullable=False
@@ -172,7 +174,10 @@ class IngressAttribute(Base, BaseObject):
                 "tag": self.tag,
                 "sender-username": self.sender_username,
                 "sender-avatar-url": self.sender_avatar_url,
-                "sender-html-url": self.sender_html_url
+                "sender-html-url": self.sender_html_url,
+
+                # Custom attribute(s)
+                "created-at": datetime_to_json(self.created_at)
             },
             "relationships": {
                 "created-by": {

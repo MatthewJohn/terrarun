@@ -1,6 +1,8 @@
 
+from terrarun.errors import TerrarunError
 
-class ApiError:
+
+class ApiError(TerrarunError):
 
     def __init__(self, title, details, pointer=None, status=None):
         """Store member variables"""
@@ -8,6 +10,8 @@ class ApiError:
         self._details = details
         self._pointer = pointer
         self._status = status if status else 422
+
+        super(ApiError, self).__init__(details)
 
     def get_api_details(self):
         """Return API details for error"""

@@ -50,3 +50,15 @@ class OrganisationMixError(TerrarunError):
     """Mixing organisationn in entities is not allowed"""
     
     pass
+
+
+class RunCannotBeDiscardedError(TerrarunError):
+    """Run cannot be discarded as it's in the wrong state"""
+
+    pass
+
+
+class FailedToUnlockWorkspaceError(TerrarunError):
+    """failed to unlocked workspace due to an error"""
+
+    pass

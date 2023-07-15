@@ -1,134 +1,143 @@
-
-<nb-card [accent]="_runStatus ? _runStatus.getColor() : ''">
-    <nb-card-header>Run: {{_runDetails ? _runDetails.id : ''}}</nb-card-header>
-    <nb-card-body>
-        <table id="runDetailsTable">
-            <tr>
-                <td>Status: </td>
-                <td>{{_runStatus ? _runStatus.getName() : ""}}</td>
-            </tr>
-            <tr>
-                <td>Started at: </td>
-                <td>{{_runDetails ? _runDetails.attributes["created-at"] : ""}}</td>
-            </tr>
-            <tr>
-                <td>Started by: </td>
-                <td>{{_createdByDetails ? (_createdByDetails.attributes.username || 'Unknown') : ''}}</td>
-            </tr>
-            <tr>
-                <td>Has changes: </td>
-                <td>{{_runDetails ? (_runDetails.attributes["has-changes"] ? 'Yes' : 'No') : ''}}</td>
-            </tr>
-            <tr>
-                <td>Actions</td>
-                <td>
-                    <button nbButton (click)="applyRun()" *ngIf="applyActionAvailable()">
-                        Apply
-                    </button>
-                    <button nbButton (click)="cancelRun()" *ngIf="cancelActionAvailable()">
-                        Cancel
-                    </button>
-                </td>
-            </tr>
-        </table>
-    </nb-card-body>
-</nb-card>
-
-
-<nb-accordion>
-
-    <nb-accordion-item>
-        <nb-accordion-item-header>
-            Events
-        </nb-accordion-item-header>
-        <nb-accordion-item-body>
-            <table id="runEventTable">
-                <tr *ngFor="let event of _auditEvents">
-                    <td>{{ event.timestamp }}</td>
-                    <td>{{ event.description }}</td>
-                    <td>{{ event.user }}</td>
-                </tr>
-            </table>
-        </nb-accordion-item-body>
-    </nb-accordion-item>
-
-    <nb-accordion-item *ngIf="_prePlanTaskStage && _prePlanTaskStage.show">
-        <nb-accordion-item-header style="padding: 0;">
-            <nb-alert style="width: 100%; height: 100%" [accent]="_prePlanTaskStage.color">Pre-plan tasks</nb-alert>
-        </nb-accordion-item-header>
-        <nb-accordion-item-body>
-
-            <nb-accordion>
-                <nb-accordion-item *ngFor="let preplanTask of _prePlanTaskStage.taskResults">
-                    <nb-accordion-item-header style="padding: 0;">
-                        <nb-alert style="width: 100%; height: 100%" [accent]="preplanTask.color">Task: {{preplanTask.name}}</nb-alert>
-                    </nb-accordion-item-header>
-                    <nb-accordion-item-body>
-                        <div [innerHTML]="preplanTask.message">
-                        </div>
-                    </nb-accordion-item-body>
-                </nb-accordion-item>
-            </nb-accordion>
-        </nb-accordion-item-body>
-    </nb-accordion-item>
-
-    <nb-accordion-item *ngIf="_planDetails">
-        <nb-accordion-item-header style="padding: 0;">
-            <nb-alert style="width: 100%; height: 100%" [accent]="_planStatus.getColor()">Plan: {{_planDetails.id}}</nb-alert>
-        </nb-accordion-item-header>
-        <nb-accordion-item-body>
-            <div [innerHTML]="_planLog">
-            </div>
-        </nb-accordion-item-body>
-    </nb-accordion-item>
-
-    <nb-accordion-item *ngIf="_postPlanTaskStage && _postPlanTaskStage.show">
-        <nb-accordion-item-header style="padding: 0;">
-            <nb-alert style="width: 100%; height: 100%" [accent]="_postPlanTaskStage.color">Post-plan tasks</nb-alert>
-        </nb-accordion-item-header>
-        <nb-accordion-item-body>
-
-            <nb-accordion>
-                <nb-accordion-item *ngFor="let postPlanTask of _postPlanTaskStage.taskResults">
-                    <nb-accordion-item-header style="padding: 0;">
-                        <nb-alert style="width: 100%; height: 100%" [accent]="postPlanTask.color">Task: {{postPlanTask.name}}</nb-alert>
-                    </nb-accordion-item-header>
-                    <nb-accordion-item-body>
-                        <div [innerHTML]="postPlanTask.message">
-                        </div>
-                    </nb-accordion-item-body>
-                </nb-accordion-item>
-            </nb-accordion>
-        </nb-accordion-item-body>
-    </nb-accordion-item>
+<nb-layout>
+    <nb-layout-column>
+        <nb-card [accent]="_runStatus ? _runStatus.getColor() : ''">
+            <nb-card-header>Run: {{_runDetails ? _runDetails.id : ''}}</nb-card-header>
+            <nb-card-body>
+                <table id="runDetailsTable">
+                    <tr>
+                        <td>Status: </td>
+                        <td>{{_runStatus ? _runStatus.getName() : ""}}</td>
+                    </tr>
+                    <tr>
+                        <td>Started at: </td>
+                        <td>{{_runDetails ? _runDetails.attributes["created-at"] : ""}}</td>
+                    </tr>
+                    <tr>
+                        <td>Started by: </td>
+                        <td>{{_createdByDetails ? (_createdByDetails.attributes.username || 'Unknown') : ''}}</td>
+                    </tr>
+                    <tr>
+                        <td>Has changes: </td>
+                        <td>{{_runDetails ? (_runDetails.attributes["has-changes"] ? 'Yes' : 'No') : ''}}</td>
+                    </tr>
+                    <tr>
+                        <td>Actions</td>
+                        <td>
+                            <button nbButton size="small" (click)="applyRun()" *ngIf="applyActionAvailable()">
+                                Apply
+                            </button>
+                            <button nbButton size="small" (click)="cancelRun()" *ngIf="cancelActionAvailable()">
+                                Cancel
+                            </button>
+                            <button nbButton size="small" (click)="discardRun()" *ngIf="discardActionAvailable()">
+                                Discard
+                            </button>
+                            <button nbButton size="small" (click)="retryRun()" *ngIf="retryActionAvailable()">
+                                Rerun
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+            </nb-card-body>
+        </nb-card>
 
 
-    <nb-accordion-item *ngIf="_preApplyTaskStage && _preApplyTaskStage.show">
-        <nb-accordion-item-header style="padding: 0;">
-            <nb-alert style="width: 100%; height: 100%" [accent]="_preApplyTaskStage.color">Pre-apply tasks</nb-alert>
-        </nb-accordion-item-header>
-        <nb-accordion-item-body>
+        <nb-accordion>
 
-            <nb-accordion>
-                <nb-accordion-item *ngFor="let preApplyTask of _preApplyTaskStage.taskResults">
-                    <nb-accordion-item-header style="padding: 0;">
-                        <nb-alert style="width: 100%; height: 100%" [accent]="preApplyTask.color">Task: {{preApplyTask.name}}</nb-alert>
-                    </nb-accordion-item-header>
-                    <nb-accordion-item-body>
-                        <div [innerHTML]="preApplyTask.message">
-                        </div>
-                    </nb-accordion-item-body>
-                </nb-accordion-item>
-            </nb-accordion>
-        </nb-accordion-item-body>
-    </nb-accordion-item>
+            <nb-accordion-item>
+                <nb-accordion-item-header>
+                    Events
+                </nb-accordion-item-header>
+                <nb-accordion-item-body>
+                    <table id="runEventTable">
+                        <tr *ngFor="let event of _auditEvents">
+                            <td>{{ event.timestamp }}</td>
+                            <td>{{ event.description }}</td>
+                            <td>{{ event.user }}</td>
+                        </tr>
+                    </table>
+                </nb-accordion-item-body>
+            </nb-accordion-item>
 
-    <nb-accordion-item *ngIf="_applyDetails">
-        <nb-accordion-item-header style="padding: 0;">
-            <nb-alert style="width: 100%; height: 100%" [accent]="_applyStatus.getColor()">Apply: {{_applyDetails.id}}</nb-alert>
-        </nb-accordion-item-header>
-        <nb-accordion-item-body>
-            <div [innerHTML]="_applyLog"></div>
-        </nb-accordion-item-body>
-    </nb-accordion-item>
-</nb-accordion>
+            <nb-accordion-item *ngIf="_prePlanTaskStage && _prePlanTaskStage.show">
+                <nb-accordion-item-header style="padding: 0;">
+                    <nb-alert style="width: 100%; height: 100%" [accent]="_prePlanTaskStage.color">Pre-plan tasks</nb-alert>
+                </nb-accordion-item-header>
+                <nb-accordion-item-body>
+
+                    <nb-accordion>
+                        <nb-accordion-item *ngFor="let preplanTask of _prePlanTaskStage.taskResults">
+                            <nb-accordion-item-header style="padding: 0;">
+                                <nb-alert style="width: 100%; height: 100%" [accent]="preplanTask.color">Task: {{preplanTask.name}}</nb-alert>
+                            </nb-accordion-item-header>
+                            <nb-accordion-item-body>
+                                <div [innerHTML]="preplanTask.message">
+                                </div>
+                            </nb-accordion-item-body>
+                        </nb-accordion-item>
+                    </nb-accordion>
+                </nb-accordion-item-body>
+            </nb-accordion-item>
+
+            <nb-accordion-item *ngIf="_planDetails">
+                <nb-accordion-item-header style="padding: 0;">
+                    <nb-alert style="width: 100%; height: 100%" [accent]="_planStatus.getColor()">Plan: {{_planDetails.id}}</nb-alert>
+                </nb-accordion-item-header>
+                <nb-accordion-item-body>
+                    <div [innerHTML]="_planLog">
+                    </div>
+                </nb-accordion-item-body>
+            </nb-accordion-item>
+
+            <nb-accordion-item *ngIf="_postPlanTaskStage && _postPlanTaskStage.show">
+                <nb-accordion-item-header style="padding: 0;">
+                    <nb-alert style="width: 100%; height: 100%" [accent]="_postPlanTaskStage.color">Post-plan tasks</nb-alert>
+                </nb-accordion-item-header>
+                <nb-accordion-item-body>
+
+                    <nb-accordion>
+                        <nb-accordion-item *ngFor="let postPlanTask of _postPlanTaskStage.taskResults">
+                            <nb-accordion-item-header style="padding: 0;">
+                                <nb-alert style="width: 100%; height: 100%" [accent]="postPlanTask.color">Task: {{postPlanTask.name}}</nb-alert>
+                            </nb-accordion-item-header>
+                            <nb-accordion-item-body>
+                                <div [innerHTML]="postPlanTask.message">
+                                </div>
+                            </nb-accordion-item-body>
+                        </nb-accordion-item>
+                    </nb-accordion>
+                </nb-accordion-item-body>
+            </nb-accordion-item>
+
+
+            <nb-accordion-item *ngIf="_preApplyTaskStage && _preApplyTaskStage.show">
+                <nb-accordion-item-header style="padding: 0;">
+                    <nb-alert style="width: 100%; height: 100%" [accent]="_preApplyTaskStage.color">Pre-apply tasks</nb-alert>
+                </nb-accordion-item-header>
+                <nb-accordion-item-body>
+
+                    <nb-accordion>
+                        <nb-accordion-item *ngFor="let preApplyTask of _preApplyTaskStage.taskResults">
+                            <nb-accordion-item-header style="padding: 0;">
+                                <nb-alert style="width: 100%; height: 100%" [accent]="preApplyTask.color">Task: {{preApplyTask.name}}</nb-alert>
+                            </nb-accordion-item-header>
+                            <nb-accordion-item-body>
+                                <div [innerHTML]="preApplyTask.message">
+                                </div>
+                            </nb-accordion-item-body>
+                        </nb-accordion-item>
+                    </nb-accordion>
+                </nb-accordion-item-body>
+            </nb-accordion-item>
+
+            <nb-accordion-item *ngIf="_applyDetails">
+                <nb-accordion-item-header style="padding: 0;">
+                    <nb-alert style="width: 100%; height: 100%" [accent]="_applyStatus.getColor()">Apply: {{_applyDetails.id}}</nb-alert>
+                </nb-accordion-item-header>
+                <nb-accordion-item-body>
+                    <div [innerHTML]="_applyLog"></div>
+                </nb-accordion-item-body>
+            </nb-accordion-item>
+        </nb-accordion>
+    </nb-layout-column>
+</nb-layout>

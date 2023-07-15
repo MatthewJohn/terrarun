@@ -16,17 +16,29 @@ class ApiRequest:
         CONFIGURATION_VERSION = "configuration_version"
         CONFIGURATION_VERSION_INGRESS_ATTRIBUTES = "configuration_version.ingress_attributes"
         CREATED_BY = "created_by"
+        WORKSPACE = "workspace"
 
-    def __init__(self, current_request, list_data=False):
+    def __init__(self, current_request, list_data=False, query_map=None):
         """Initial request"""
         self.includes = []
         for include_string in current_request.args.get("include", "").split(","):
             if include_string:
                 self.includes.append(ApiRequest.Includes(include_string))
+
+        self._query_map = query_map if query_map else {}
+        self.queries = {
+            self._query_map[query_arg]: current_request.args.get(query_arg).split(",")
+            for query_arg in self._query_map
+            if current_request.args.get(query_arg)
+        }
+
         self._errors = []
         self._included = []
         self._list_data = list_data
         self._data = None if not list_data else []
+
+        self._page_size = int(current_request.args.get("page[size]", 20))
+        self._page_number = int(current_request.args.get("page[number]", 0))
 
     def set_data(self, data):
         """Set data for response"""
@@ -67,3 +79,7 @@ class ApiRequest:
             response_data["included"] = self._included
         
         return response_data, status_code
+
+    def limit_query(self, query):
+        """Limit/paginate query from API request"""
+        return query.limit(self._page_size).offset(self._page_size * self._page_number)

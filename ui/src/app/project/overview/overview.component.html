@@ -1,7 +1,47 @@
 <nb-layout>
   <nb-layout-column>
+
     <nb-card>
-        <nb-card-header>Project: {{(currentProject | async)?.name}}</nb-card-header>
+      <nb-card-header>Project: {{(currentProjectObv | async)?.name}}</nb-card-header>
+    </nb-card>
+
+    <nb-card *ngIf="projectDetails?.data.attributes['vcs-repo-identifier']">
+      <nb-card-header>Runs</nb-card-header>
+      <nb-card-body>
+        <table id="runsTable">
+          <tr>
+            <th>Git Commit</th>
+            <th *ngFor="let workspaceId of workspaceList">
+              Environment: {{(workspaces.get(workspaceId) | async)?.data.attributes.environment}}
+            </th>
+          </tr>
+          <tr *ngFor="let ingressAttributeId of getIngressAttributesIds()">
+            <td style="max-width: 500px">
+              {{ ingressAttributes[ingressAttributeId].attributes['commit-sha'].substr(0, 12) }}
+              <br />
+              {{ ingressAttributes[ingressAttributeId].attributes['commit-message'].substr(0, 100) }}{{ingressAttributes[ingressAttributeId].attributes['commit-message'].length > 100 ? '...' : ''}}
+            </td>
+            <td class="runsTableRowTd" *ngFor="let workspaceId of workspaceList" [class]="getRunClass(ingressAttributeId, workspaceId)" (click)="onRunClick(ingressAttributeId, workspaceId)">
+
+              <ng-container *ngIf="ingressAttributesRuns[ingressAttributeId] && ingressAttributesRuns[ingressAttributeId][workspaceId]; else notRunTd">
+                {{ingressAttributesRuns[ingressAttributeId][workspaceId].id}}
+                <br />
+                <nb-icon [icon]="getRunStatusIcon(ingressAttributesRuns[ingressAttributeId][workspaceId].attributes.status)"></nb-icon>
+                {{getRunStatusName(ingressAttributesRuns[ingressAttributeId][workspaceId].attributes.status)}}
+                <br />
+                {{timestampToRelative(ingressAttributesRuns[ingressAttributeId][workspaceId].attributes['created-at'])}}
+              </ng-container>
+              <ng-template #notRunTd>
+                No run<br />Click to create
+              </ng-template>
+            </td>
+          </tr>
+        </table>
+      </nb-card-body>
+  </nb-card>
+
+    <nb-card>
+        <nb-card-header>Environment Workspaces</nb-card-header>
         <nb-card-body>
             <nb-card size="tiny">
                 <nb-card-header>

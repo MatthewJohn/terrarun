@@ -1,13 +1,18 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
-import { ActivatedRoute, Route, RouterModule } from '@angular/router';
+import { ActivatedRoute, Route, Router, RouterModule } from '@angular/router';
+import { NbDialogService } from '@nebular/theme';
 import { Observable, Subscription } from 'rxjs';
 import { ApplyService } from 'src/app/apply.service';
+import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
+import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
+import { RunCreateAttributes } from 'src/app/interfaces/run-create-attributes';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
 import { RunAction } from 'src/app/models/RunAction/run-action-enum';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { TaskStage } from 'src/app/models/TaskStage/task-stage';
 import { PlanService } from 'src/app/plan.service';
 import { RunService } from 'src/app/run.service';
+import { OrganisationStateType, StateService, WorkspaceStateType } from 'src/app/state.service';
 import { TaskResultService } from 'src/app/task-result.service';
 import { TaskStageService } from 'src/app/task-stage.service';
 import { UserService } from 'src/app/user.service';
@@ -44,6 +49,8 @@ export class OverviewComponent implements OnInit {
   _createdByDetails: any;
   _updateInterval: any;
   _prePlanTaskResults$: Observable<any>;
+  _currentOrganistaion: OrganisationStateType | null;
+  _currentWorkspace: WorkspaceStateType | null;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -53,7 +60,10 @@ export class OverviewComponent implements OnInit {
               private runStatusFactory: RunStatusFactory,
               private planApplyStatusFactory: PlanApplyStatusFactory,
               private taskStageService: TaskStageService,
-              private taskResultService: TaskResultService) {
+              private taskResultService: TaskResultService,
+              private dialogService: NbDialogService,
+              private router: Router,
+              private stateService: StateService) {
     this._planLog = "";
     this._applyLog = "";
     this._prePlanTaskStage = undefined;
@@ -62,6 +72,8 @@ export class OverviewComponent implements OnInit {
     this._prePlanTaskResults$ = new Observable();
     this._stateChanged = true;
     this._previousRunStatus = null;
+    this._currentOrganistaion = null;
+    this._currentWorkspace = null;
   }
 
   ngOnInit(): void {
@@ -70,7 +82,7 @@ export class OverviewComponent implements OnInit {
       this._runId = runId;
       this._updateInterval = setInterval(() => {
         this.getRunStatus();
-      }, 1000);
+      }, 3000);
       this.getRunStatus();
     });
   }
@@ -81,6 +93,13 @@ export class OverviewComponent implements OnInit {
   }
 
   getRunStatus() {
+    this.stateService.currentOrganisation.subscribe((currentOrganisation) => {
+      this._currentOrganistaion = currentOrganisation;
+    });
+    this.stateService.currentWorkspace.subscribe((currentWorkspace) => {
+      this._currentWorkspace = currentWorkspace;
+    });
+
     if (this._runId) {
       let runSubscription = this.runService.getDetailsById(this._runId).subscribe((runData) => {
         runSubscription.unsubscribe();
@@ -222,6 +241,49 @@ export class OverviewComponent implements OnInit {
   cancelRun() {
     if (this._runId) {
       this.runService.cancelRun(this._runId).subscribe((data) => {
+      });
+    }
+  }
+  discardActionAvailable(): boolean {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.DISCARD_RUN) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  discardRun() {
+    if (this._runId) {
+      this.runService.discardRun(this._runId).subscribe((data) => {
+      });
+    }
+  }
+  retryActionAvailable(): boolean {
+    if (this._runStatus && this._runStatus.getAvailableActions().indexOf(RunAction.RETRY_RUN) !== -1) {
+      return true;
+    }
+    return false;
+  }
+  retryRun() {
+    if (this._runId) {
+      this.dialogService.open(TriggerRunPopupComponent, {
+        context: {canDestroy: true}
+      }).onClose.subscribe((runAttributes: RunCreateAttributes | null) => {
+        if (runAttributes && this._runDetails) {
+          console.log(this._runDetails);
+          this.runService.create(
+            this._runDetails?.relationships.workspace.data.id,
+            runAttributes,
+            this._runDetails.relationships['configuration-version'].data.id
+          ).then((data) => {
+            // Redirect user to new run
+            if (this._currentOrganistaion && this._currentWorkspace) {
+              this.router.navigateByUrl(`/${this._currentOrganistaion.id}/${this._currentWorkspace.name}/runs/${data.data.id}`)
+            }
+          }).catch((err) => {
+            this.dialogService.open(ErrorDialogueComponent, {
+              context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+            });
+          });
+        }
       });
     }
   }

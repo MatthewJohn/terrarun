@@ -5,3 +5,64 @@
     background-color: #444444;
     color: #dddddd;
 }
+#runsTable {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+#runsTable tr {
+    margin: 0px;
+    padding: 0px;
+}
+#runsTable td {
+    border: 1px solid #eeeeee;
+    padding: 15px;
+    margin: 0px;
+}
+.runsTableRowTd {
+    cursor: pointer;
+}
+
+.run-status-danger {
+    background-color: #FFD1D1;
+}
+
+.run-status-danger:hover {
+    background-color: #EFC1C1;
+}
+
+.run-status-basic {
+    background-color: #93D2FF;
+}
+
+.run-status-basic:hover {
+    background-color: #83C2EF;
+}
+
+.run-status-warning {
+    background-color: #FFEDD1;
+}
+.run-status-warning:hover {
+    background-color: #EFDDC1;
+}
+
+.run-status-success {
+    background-color: #D2FFD1;
+}
+.run-status-success:hover {
+    background-color: #C2EFC1;
+}
+
+.run-status-info {
+    background-color: #eeeeee;
+}
+.run-status-info:hover {
+    background-color: #dddddd;
+}
+
+.run-status-not-run {
+    background-color: #D6EBFF;
+}
+.run-status-not-run:hover {
+    background-color: #C6DBEF;
+}
