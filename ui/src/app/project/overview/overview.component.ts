@@ -152,6 +152,9 @@ export class OverviewComponent implements OnInit {
             }
 
             // Obtain runs and related ingress attributes for workspaces
+            if (this._runUpdateInterval) {
+              window.clearInterval(this._runUpdateInterval);
+            }
             this._runUpdateInterval = setInterval(() => {
               this.updateRunList();
             }, 5000);
@@ -162,14 +165,14 @@ export class OverviewComponent implements OnInit {
   }
 
   ngOnDestroy() {
-    if (this._runUpdateInterval) {
-      window.clearTimeout(this._runUpdateInterval);
-    }
     if (this._currentOrganisationSubscription) {
       this._currentOrganisationSubscription.unsubscribe();
     }
     if (this._currentWorkspaceSubscription) {
       this._currentWorkspaceSubscription.unsubscribe();
+    }
+    if (this._runUpdateInterval) {
+      window.clearInterval(this._runUpdateInterval);
     }
   }
 
