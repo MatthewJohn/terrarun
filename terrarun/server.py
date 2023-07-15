@@ -2152,7 +2152,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'replace_addrs': request_attributes.get('replace-addrs'),
             'target_addrs': request_attributes.get('target-addrs'),
             'variables': request_attributes.get('variables', []),
-            'plan_only': request_attributes.get('plan-only', cv.plan_only),
+            'plan_only': cv.plan_only if cv.plan_only else request_attributes.get('plan-only', cv.plan_only),
             'tool': tool,
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }

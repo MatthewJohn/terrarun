@@ -140,7 +140,7 @@ class ConfigurationVersion(Base, BaseObject):
     @property
     def plan_only(self):
         """Return whether only a plan."""
-        return False
+        return self.speculative
 
     @property
     def storage_key(self):
