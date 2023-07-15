@@ -42,7 +42,6 @@ export class OverviewComponent implements OnInit {
   workspaceRuns: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>};
   configurationVersionIngressAttributes: {[index: string]: string};
   ingressAttributesRuns: {[index: string]: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>}};
-  ingressAttributeWorkspaceConfigurationVersion: {[index: string]: {[index: string]: string}};
 
   generalSettingsForm = this.formBuilder.group({
     executionMode: ''
@@ -73,7 +72,6 @@ export class OverviewComponent implements OnInit {
     this.configurationVersionIngressAttributes = {};
     this.ingressAttributesRuns = {};
     this._runUpdateInterval = null;
-    this.ingressAttributeWorkspaceConfigurationVersion = {}
     this._currentOrganisationSubscription = null;
     this._currentWorkspaceSubscription = null;
   }
@@ -266,13 +264,6 @@ export class OverviewComponent implements OnInit {
       value.included.forEach((include) => {
         if (include.type == "configuration-versions" && include.relationships['ingress-attributes'].data) {
           this.configurationVersionIngressAttributes[include.id] = include.relationships['ingress-attributes'].data.id;
-
-          // Add mapping of workspace's configuration version ID for the ingress attribute, used
-          // for starting runs for the workspace for this ingress attribute
-          if (this.ingressAttributeWorkspaceConfigurationVersion[include.relationships.workspace.data.id] === undefined) {
-            this.ingressAttributeWorkspaceConfigurationVersion[include.relationships.workspace.data.id] = {};
-          }
-          this.ingressAttributeWorkspaceConfigurationVersion[include.relationships.workspace.data.id][include.relationships['ingress-attributes'].data.id] = include.id;
         }
       })
 
@@ -296,26 +287,43 @@ export class OverviewComponent implements OnInit {
       context: {canDestroy: true}
     }).onClose.subscribe((runAttributes: RunCreateAttributes | null) => {
 
-      // If the user has triggered the run and a configuration version exists for the workspace for this ingress attribute...
-      console.log(this.ingressAttributeWorkspaceConfigurationVersion);
-      if (runAttributes && this.ingressAttributeWorkspaceConfigurationVersion[workspaceId] && this.ingressAttributeWorkspaceConfigurationVersion[workspaceId][ingressAttributeId]) {
-        // Create a run for the workspace and configuration version
-        this.runService.create(
-          workspaceId,
-          runAttributes,
-          this.ingressAttributeWorkspaceConfigurationVersion[workspaceId][ingressAttributeId]
-        ).then((runData) => {
-          // Redirect user to new run
-          if (this.currentOrganisation) {
-            let workspaceSubscription = this.workspaces.get(workspaceId)?.subscribe((workspaceData) => {
-              if (workspaceData) {
-                workspaceSubscription?.unsubscribe();
-                this.router.navigateByUrl(`/${this.currentOrganisation.id}/${workspaceData.data.attributes.name}/runs/${runData.data.id}`)
-              }
-            })
-          }
-        });
+      // Obtain configuration version based on commit sha
+      let commitSha = this.ingressAttributes[ingressAttributeId]?.attributes['commit-sha'];
+
+      if (!commitSha) {
+        // Notify user that ingress attributes does not exist
+        return;
       }
+
+      // Obtain configuration version using commit sha
+      let configurationVersionSubscription = this.workspaceService.getConfigurationVersionByCommit(workspaceId, commitSha).subscribe((configurationVersionResponse) => {
+        configurationVersionSubscription.unsubscribe();
+
+        if (configurationVersionResponse.data.length == 0) {
+          // Notify user that configuration version could not be found for commit
+          return;
+        }
+
+        // If the user has triggered the run and a configuration version exists for the workspace for this ingress attribute...
+        if (runAttributes) {
+          // Create a run for the workspace and configuration version
+          this.runService.create(
+            workspaceId,
+            runAttributes,
+            configurationVersionResponse.data[0].id
+          ).then((runData) => {
+            // Redirect user to new run
+            if (this.currentOrganisation) {
+              let workspaceSubscription = this.workspaces.get(workspaceId)?.subscribe((workspaceData) => {
+                if (workspaceData) {
+                  workspaceSubscription?.unsubscribe();
+                  this.router.navigateByUrl(`/${this.currentOrganisation.id}/${workspaceData.data.attributes.name}/runs/${runData.data.id}`)
+                }
+              })
+            }
+          });
+        }
+      })
     });
   }
 }

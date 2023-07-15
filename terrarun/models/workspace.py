@@ -8,6 +8,7 @@ import re
 import sqlalchemy
 import sqlalchemy.orm
 from terrarun.api_error import ApiError
+from terrarun.api_request import ApiRequest
 from terrarun.models.authorised_repo import AuthorisedRepo
 
 from terrarun.models.base_object import BaseObject
@@ -600,6 +601,26 @@ class Workspace(Base, BaseObject):
     def locked(self):
         """Return whether workspace is locked"""
         return bool(self.locked_by_user or self.locked_by_run)
+
+    def get_configuration_versions(self, api_request: ApiRequest):
+        """Return configuration versions for API Request"""
+        session = Database.get_session()
+        query = session.query(
+            terrarun.models.configuration.ConfigurationVersion
+        ).join(
+            self.__class__
+        ).join(
+            terrarun.models.ingress_attribute.IngressAttribute,
+            isouter=True
+        ).filter(
+            self.__class__.id==self.id,
+        )
+
+        for request_query in api_request.queries:
+            query = query.filter(request_query.in_(api_request.queries[request_query]))
+
+        query = api_request.limit_query(query)
+        return query.all()
 
     def get_api_details(self, effective_user: terrarun.models.user.User, includes=None):
         """Return details for workspace."""

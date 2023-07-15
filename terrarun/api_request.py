@@ -18,12 +18,20 @@ class ApiRequest:
         CREATED_BY = "created_by"
         WORKSPACE = "workspace"
 
-    def __init__(self, current_request, list_data=False):
+    def __init__(self, current_request, list_data=False, query_map=None):
         """Initial request"""
         self.includes = []
         for include_string in current_request.args.get("include", "").split(","):
             if include_string:
                 self.includes.append(ApiRequest.Includes(include_string))
+
+        self._query_map = query_map if query_map else {}
+        self.queries = {
+            self._query_map[query_arg]: current_request.args.get(query_arg).split(",")
+            for query_arg in self._query_map
+            if current_request.args.get(query_arg)
+        }
+
         self._errors = []
         self._included = []
         self._list_data = list_data

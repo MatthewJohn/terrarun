@@ -1884,6 +1884,36 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
+    def check_permissions_get(self, current_user, current_job, workspace_id):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, workspace_id, current_user, current_job):
+        """Return configuration versions for a workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        api_request = ApiRequest(
+            request,
+            list_data=True,
+            query_map={
+                "filter[commit]": IngressAttribute.commit_sha
+            }
+        )
+
+        for configuration_version in workspace.get_configuration_versions(api_request):
+            api_request.set_data(configuration_version.get_api_details(api_request))
+
+        return api_request.get_response()
+
     def check_permissions_post(self, workspace_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)

@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AccountService } from './account.service';
 import { ConfigurationVersionAttributes, ConfigurationVersionRelationships } from './interfaces/configuration-version';
-import { DataListWithIncluded } from './interfaces/data';
+import { DataList, DataListWithIncluded } from './interfaces/data';
 import { IngressAttributeAttribues } from './interfaces/ingress-attribute';
 import { ResponseObject, ResponseObjectWithRelationships, TypedResponseObject, TypedResponseObjectWithRelationships } from './interfaces/response';
 import { RunAttributes, RunRelationships } from './interfaces/run';
@@ -64,12 +64,19 @@ export class WorkspaceService {
     );
   }
 
+  getConfigurationVersionByCommit(workspaceId: string, commitSha: string): Observable<DataList<ResponseObjectWithRelationships<ConfigurationVersionAttributes, ConfigurationVersionRelationships>>> {
+    return this.http.get<DataList<ResponseObjectWithRelationships<ConfigurationVersionAttributes, ConfigurationVersionRelationships>>>(
+      `/api/v2/workspaces/${workspaceId}/configuration-versions?filter[commit]=${commitSha}&page[size]=1`,
+      { headers: this.accountService.getAuthHeader() }
+    );
+  }
+
 
   getRuns(workspaceId: string): Observable<DataListWithIncluded<ResponseObjectWithRelationships<RunAttributes, RunRelationships>, TypedResponseObject<"ingress-attributes", IngressAttributeAttribues>|TypedResponseObjectWithRelationships<"configuration-versions", ConfigurationVersionAttributes, ConfigurationVersionRelationships>>> {
     return this.http.get<DataListWithIncluded<ResponseObjectWithRelationships<RunAttributes, RunRelationships>, TypedResponseObject<"ingress-attributes", IngressAttributeAttribues>|TypedResponseObjectWithRelationships<"configuration-versions", ConfigurationVersionAttributes, ConfigurationVersionRelationships>>>(
-        `/api/v2/workspaces/${workspaceId}/runs?include=configuration_version,configuration_version.ingress_attributes`,
-        { headers: this.accountService.getAuthHeader() }
-      );
+      `/api/v2/workspaces/${workspaceId}/runs?include=configuration_version,configuration_version.ingress_attributes`,
+      { headers: this.accountService.getAuthHeader() }
+    );
   }
 
   update(workspaceId: string, attributes: any): Promise<any> {
