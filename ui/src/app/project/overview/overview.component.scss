@@ -5,13 +5,17 @@
     background-color: #444444;
     color: #dddddd;
 }
+#runsTable {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
 
 #runsTable tr {
     margin: 0px;
     padding: 0px;
 }
 #runsTable td {
-    border: 1px solid #999999;
+    border: 1px solid #eeeeee;
     padding: 15px;
     margin: 0px;
 }
