@@ -272,7 +272,10 @@ terraform {
             parent_environment_count += 1
 
             # Get all runs in enviroment relating to the ingress attribute
-            runs = parent_lifecycle_environment.workspace.get_runs_by_ingress_attribute(self.ingress_attribute)
+            workspace_itx = self.workspace.project.get_workspace_for_environment(parent_lifecycle_environment.environment)
+            if not workspace_itx:
+                raise Exception(f"Could not find workspace in project ({self.workspace.project.name}) for environment ({parent_lifecycle_environment.environment.name})")
+            runs = workspace_itx.get_runs_by_ingress_attribute(self.ingress_attribute)
 
             # Aggregate information for all runs for the workspace against
             # this ingress attribute

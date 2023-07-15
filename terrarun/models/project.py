@@ -186,6 +186,12 @@ class Project(Base, BaseObject):
                 environment=new_environment
             )
 
+    def get_workspace_for_environment(self, environment):
+        """Return child workspace for given environment"""
+        for workspace in filter(lambda x: x.environment.id == environment.id, self.workspaces):
+            return workspace
+        return None
+
     def get_ingress_attributes(self, api_request):
         """Obtain all ingress attributes, with filter API query"""
         session = Database.get_session()
