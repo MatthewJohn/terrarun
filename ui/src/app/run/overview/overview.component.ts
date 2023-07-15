@@ -30,16 +30,16 @@ export class OverviewComponent implements OnInit {
   _runStatus: any;
 
   _planDetails: any;
-  _planLog: string;
+  _planLog: string = "";
   _planStatus: any;
   _applyDetails: any;
-  _applyLog: string;
+  _applyLog: string = "";
   _applyStatus: any;
   _auditEvents: any;
 
   // Whether the state has changed between
-  _stateChanged: boolean;
-  _previousRunStatus: string | null;
+  _stateChanged: boolean = true;
+  _previousRunStatus: string | null = null;
   _knownTaskStages: string[] = [];
 
   _prePlanTaskStage: any;
@@ -48,9 +48,9 @@ export class OverviewComponent implements OnInit {
     
   _createdByDetails: any;
   _updateInterval: any;
-  _prePlanTaskResults$: Observable<any>;
-  _currentOrganistaion: OrganisationStateType | null;
-  _currentWorkspace: WorkspaceStateType | null;
+  _prePlanTaskResults$: Observable<any> = new Observable();
+  _currentOrganistaion: OrganisationStateType | null = null;
+  _currentWorkspace: WorkspaceStateType | null = null;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -64,6 +64,9 @@ export class OverviewComponent implements OnInit {
               private dialogService: NbDialogService,
               private router: Router,
               private stateService: StateService) {
+  }
+
+  ngOnInit(): void {
     this._planLog = "";
     this._applyLog = "";
     this._prePlanTaskStage = undefined;
@@ -74,9 +77,7 @@ export class OverviewComponent implements OnInit {
     this._previousRunStatus = null;
     this._currentOrganistaion = null;
     this._currentWorkspace = null;
-  }
 
-  ngOnInit(): void {
     this.route.paramMap.subscribe((routeParams) => {
       let runId = routeParams.get('runId');
       this._runId = runId;
