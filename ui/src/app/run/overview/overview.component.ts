@@ -81,7 +81,7 @@ export class OverviewComponent implements OnInit {
       this._runId = runId;
       this._updateInterval = setInterval(() => {
         this.getRunStatus();
-      }, 1000);
+      }, 3000);
       this.getRunStatus();
     });
   }
