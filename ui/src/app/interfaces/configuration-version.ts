@@ -1,4 +1,4 @@
-"attributes"
+
 import { DataItem } from "./data"
 import { Relationship } from "./response"
 
@@ -16,4 +16,5 @@ export interface ConfigurationVersionAttributes {
 
 export interface ConfigurationVersionRelationships {
     "ingress-attributes": DataItem<Relationship | undefined>;
+    "workspace": DataItem<Relationship>;
 };

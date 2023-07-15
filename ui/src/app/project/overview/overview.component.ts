@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
-import { map, Observable, concat } from 'rxjs';
+import { NbDialogService } from '@nebular/theme';
+import { map, Observable, concat, Subscription } from 'rxjs';
+import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
 import { ConfigurationVersionAttributes, ConfigurationVersionRelationships } from 'src/app/interfaces/configuration-version';
 import { IngressAttributeAttribues } from 'src/app/interfaces/ingress-attribute';
@@ -9,9 +11,11 @@ import { OauthClient } from 'src/app/interfaces/oauth-client';
 import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
 import { ResponseObject, ResponseObjectWithRelationships, TypedResponseObject, TypedResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { RunAttributes, RunRelationships } from 'src/app/interfaces/run';
+import { RunCreateAttributes } from 'src/app/interfaces/run-create-attributes';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { OrganisationService } from 'src/app/organisation.service';
 import { ProjectService } from 'src/app/project.service';
+import { RunService } from 'src/app/run.service';
 import { OauthTokenService } from 'src/app/services/oauth-token.service';
 import { OrganisationStateType, ProjectStateType, StateService } from 'src/app/state.service';
 import { WorkspaceService } from 'src/app/workspace.service';
@@ -35,6 +39,7 @@ export class OverviewComponent implements OnInit {
   workspaceRuns: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>};
   configurationVersionIngressAttributes: {[index: string]: string};
   ingressAttributesRuns: {[index: string]: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>}};
+  ingressAttributeWorkspaceConfigurationVersion: {[index: string]: {[index: string]: string}};
 
   generalSettingsForm = this.formBuilder.group({
     executionMode: ''
@@ -49,7 +54,9 @@ export class OverviewComponent implements OnInit {
     private workspaceService: WorkspaceService,
     private router: Router,
     private formBuilder: FormBuilder,
-    private runStatusFactory: RunStatusFactory
+    private runStatusFactory: RunStatusFactory,
+    private dialogService: NbDialogService,
+    private runService: RunService,
   ) {
     this.currentProjectObv = new Observable();
     this.currentOrganisationObv = new Observable();
@@ -63,6 +70,7 @@ export class OverviewComponent implements OnInit {
     this.configurationVersionIngressAttributes = {};
     this.ingressAttributesRuns = {};
     this._runUpdateInterval = null;
+    this.ingressAttributeWorkspaceConfigurationVersion = {}
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -207,6 +215,17 @@ export class OverviewComponent implements OnInit {
   }
 
   onRunClick(ingressAttributeId: string, workspaceId: string): void {
+    // Check if a run exists
+    if (this.ingressAttributesRuns[ingressAttributeId] && this.ingressAttributesRuns[ingressAttributeId][workspaceId]) {
+      // If so, navigate to run
+      this.navigateToRun(ingressAttributeId, workspaceId);
+    } else {
+      // Otherwise, attempt to create a run
+      this.createRunForIngressAttributeAndWorkspace(ingressAttributeId, workspaceId);
+    }
+  }
+
+  navigateToRun(ingressAttributeId: string, workspaceId: string): void {
     if (this.ingressAttributesRuns[ingressAttributeId] && this.ingressAttributesRuns[ingressAttributeId][workspaceId]) {
       let run = this.ingressAttributesRuns[ingressAttributeId][workspaceId];
       this.workspaces.get(run.relationships.workspace.data.id)?.subscribe((workspace) => {
@@ -228,7 +247,14 @@ export class OverviewComponent implements OnInit {
 
       value.included.forEach((include) => {
         if (include.type == "configuration-versions" && include.relationships['ingress-attributes'].data) {
-          this.configurationVersionIngressAttributes[include.id] = include.relationships['ingress-attributes'].data.id
+          this.configurationVersionIngressAttributes[include.id] = include.relationships['ingress-attributes'].data.id;
+
+          // Add mapping of workspace's configuration version ID for the ingress attribute, used
+          // for starting runs for the workspace for this ingress attribute
+          if (this.ingressAttributeWorkspaceConfigurationVersion[include.relationships.workspace.data.id] === undefined) {
+            this.ingressAttributeWorkspaceConfigurationVersion[include.relationships.workspace.data.id] = {};
+          }
+          this.ingressAttributeWorkspaceConfigurationVersion[include.relationships.workspace.data.id][include.relationships['ingress-attributes'].data.id] = include.id;
         }
       })
 
@@ -236,12 +262,42 @@ export class OverviewComponent implements OnInit {
         let configurationVersionId = run.relationships['configuration-version'].data.id;
         let ingressAttributesId = this.configurationVersionIngressAttributes[configurationVersionId];
         if (ingressAttributesId) {
+          // Create mapping for run data based on ingress attribute ID and workspace ID
           if (this.ingressAttributesRuns[ingressAttributesId] === undefined) {
             this.ingressAttributesRuns[ingressAttributesId] = {};
           }
           this.ingressAttributesRuns[ingressAttributesId][run.relationships.workspace.data.id] = run;
         }
       });
+    });
+  }
+
+  createRunForIngressAttributeAndWorkspace(ingressAttributeId: string, workspaceId: string) {
+    // Create pop-up for new run.
+    this.dialogService.open(TriggerRunPopupComponent, {
+      context: {canDestroy: true}
+    }).onClose.subscribe((runAttributes: RunCreateAttributes | null) => {
+
+      // If the user has triggered the run and a configuration version exists for the workspace for this ingress attribute...
+      console.log(this.ingressAttributeWorkspaceConfigurationVersion);
+      if (runAttributes && this.ingressAttributeWorkspaceConfigurationVersion[workspaceId] && this.ingressAttributeWorkspaceConfigurationVersion[workspaceId][ingressAttributeId]) {
+        // Create a run for the workspace and configuration version
+        this.runService.create(
+          workspaceId,
+          runAttributes,
+          this.ingressAttributeWorkspaceConfigurationVersion[workspaceId][ingressAttributeId]
+        ).then((runData) => {
+          // Redirect user to new run
+          if (this.currentOrganisation) {
+            let workspaceSubscription = this.workspaces.get(workspaceId)?.subscribe((workspaceData) => {
+              if (workspaceData) {
+                workspaceSubscription?.unsubscribe();
+                this.router.navigateByUrl(`/${this.currentOrganisation.id}/${workspaceData.data.attributes.name}/runs/${runData.data.id}`)
+              }
+            })
+          }
+        });
+      }
     });
   }
 }

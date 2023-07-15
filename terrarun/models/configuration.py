@@ -357,7 +357,15 @@ terraform {
                         "related":
                         f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
                     }
-                } if self.ingress_attribute else {}
+                } if self.ingress_attribute else {},
+
+                # Custom relationship
+                "workspace": {
+                    "data": {
+                        "id": self.workspace.api_id,
+                        "type": "workspaces"
+                    }
+                }
             },
             "links": {
                 "self": f"/api/v2/configuration-versions/{self.api_id}",
