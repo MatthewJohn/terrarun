@@ -152,12 +152,7 @@ export class OverviewComponent implements OnInit {
             }
 
             // Obtain runs and related ingress attributes for workspaces
-            if (this._runUpdateInterval) {
-              window.clearInterval(this._runUpdateInterval);
-            }
-            this._runUpdateInterval = setInterval(() => {
-              this.updateRunList();
-            }, 5000);
+            this.updateRunList();
           })
         }
       })
@@ -172,8 +167,11 @@ export class OverviewComponent implements OnInit {
       this._currentWorkspaceSubscription.unsubscribe();
     }
     if (this._runUpdateInterval) {
-      window.clearInterval(this._runUpdateInterval);
+      window.clearTimeout(this._runUpdateInterval);
     }
+    // Set to false to indicate that runUpdate shouldn't scheduled a new
+    // run
+    this._runUpdateInterval = false;
   }
 
   timestampToRelative(timestamp: string): string {
@@ -283,6 +281,10 @@ export class OverviewComponent implements OnInit {
         }
       });
     });
+
+    if (this._runUpdateInterval !== false) {
+      this._runUpdateInterval = setTimeout(() => {this.updateRunList();}, 5000);
+    }
   }
 
   createRunForIngressAttributeAndWorkspace(ingressAttributeId: string, workspaceId: string) {
