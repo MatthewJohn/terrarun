@@ -40,14 +40,14 @@ class Project(Base, BaseObject):
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
         "organisation.id", name="fk_project_organisation_id_organisation_id"),
         nullable=False)
-    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="projects")
+    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="projects", lazy='select')
 
-    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="project")
+    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="project", lazy='select')
 
     lifecycle_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("lifecycle.id", name="fk_project_lifecycle_id_lifecycle_id"),
         nullable=False)
-    lifecycle = sqlalchemy.orm.relationship("Lifecycle", back_populates="projects")
+    lifecycle = sqlalchemy.orm.relationship("Lifecycle", back_populates="projects", lazy='select')
 
     allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
@@ -58,7 +58,7 @@ class Project(Base, BaseObject):
     queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="queue_all_runs")
     speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="speculative_enabled")
     tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
-    tool = sqlalchemy.orm.relationship("Tool")
+    tool = sqlalchemy.orm.relationship("Tool", lazy='select')
     _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
 
@@ -66,15 +66,15 @@ class Project(Base, BaseObject):
         sqlalchemy.ForeignKey("authorised_repo.id", name="fk_project_authorised_repo_id_authorised_repo_id"),
         nullable=True
     )
-    authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="projects")
+    authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="projects", lazy='select')
     vcs_repo_branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_branch")
     vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="vcs_repo_ingress_submodules")
     vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
     working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
 
-    agent_pool_permissions = sqlalchemy.orm.relation("AgentPoolProjectPermission", back_populates="project")
-    agent_pool_associations = sqlalchemy.orm.relation("AgentPoolProjectAssociation", back_populates="project")
+    agent_pool_permissions = sqlalchemy.orm.relation("AgentPoolProjectPermission", back_populates="project", lazy='select')
+    agent_pool_associations = sqlalchemy.orm.relation("AgentPoolProjectAssociation", back_populates="project", lazy='select')
 
     @classmethod
     def get_by_name(cls, organisation, name):
