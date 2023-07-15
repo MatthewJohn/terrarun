@@ -3,6 +3,7 @@ import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NbDialogService } from '@nebular/theme';
 import { map, Observable } from 'rxjs';
+import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
 import { RunCreateAttributes } from 'src/app/interfaces/run-create-attributes';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
@@ -57,7 +58,11 @@ export class RunListComponent implements OnInit {
       context: {canDestroy: true}
     }).onClose.subscribe((runAttributes: RunCreateAttributes | null) => {
       if (runAttributes && this.currentWorkspace?.id) {
-        this.runService.create(this.currentWorkspace.id, runAttributes);
+        this.runService.create(this.currentWorkspace.id, runAttributes).catch((err) => {
+          this.dialogService.open(ErrorDialogueComponent, {
+            context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+          });
+        });
       }
     });
   }
@@ -72,6 +77,10 @@ export class RunListComponent implements OnInit {
         let ingressAttributes = Object.fromEntries(data.included.filter((val: any) => {
           return val['type'] == 'ingress-attributes'}
         ).map((val: any) => [val['id'], val]));
+
+        data.data = data.data.sort((a, b) => {
+          return new Date(b.attributes['created-at']).getTime() - new Date(a.attributes['created-at']).getTime()
+        })
 
         return Array.from({length: data.data.length},
           (_, n) => ({'data': {
@@ -90,9 +99,7 @@ export class RunListComponent implements OnInit {
   ngOnInit(): void {
   }
 
-
   onWorkspaceClick(target: any) {
     this.router.navigateByUrl(`/${this.currentOrganisation?.id}/${this.currentWorkspace?.name}/runs/${target.data.id}`)
   }
-
 }

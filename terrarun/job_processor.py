@@ -104,11 +104,15 @@ class JobProcessor:
 
         elif plan_status is TerraformCommandState.ERRORED:
             run.update_status(RunStatus.ERRORED)
+            # Unlock workspace
+            run.unlock_workspace()
             return
 
         elif plan_status is TerraformCommandState.FINISHED:
             if run.plan_only or run.configuration_version.speculative or not run.plan.has_changes:
                 run.update_status(RunStatus.PLANNED_AND_FINISHED)
+                # Unlock workspace
+                run.unlock_workspace()
                 return
 
             else:
@@ -141,6 +145,10 @@ class JobProcessor:
         # Update run status
         ## Do not update run status if is has been cancelled
         if run.status == RunStatus.CANCELED:
+            # Unlock workspace
+            # @TODO Should this be performed when the cancel request
+            # is provided, or when when the job is stopped on the agent after cancelling?
+            #run.unlock_workspace()
             return
 
         elif apply_status is TerraformCommandState.RUNNING:
@@ -148,10 +156,14 @@ class JobProcessor:
 
         elif apply_status is TerraformCommandState.ERRORED:
             run.update_status(RunStatus.ERRORED)
+            # Unlock workspace
+            run.unlock_workspace()
             return
 
         elif apply_status is TerraformCommandState.FINISHED:
             run.update_status(RunStatus.APPLIED)
+            # Unlock workspace
+            run.unlock_workspace()
 
         else:
             raise Exception(f"Unhandled apply status: {apply_status}")

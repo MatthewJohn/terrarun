@@ -228,6 +228,10 @@ class Server(object):
             '/api/v2/runs/<string:run_id>/actions/cancel'
         )
         self._api.add_resource(
+            ApiTerraformRunActionsDiscard,
+            '/api/v2/runs/<string:run_id>/actions/discard'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspaceRuns,
             '/api/v2/workspaces/<string:workspace_id>/runs'
         )
@@ -314,6 +318,7 @@ class Server(object):
             ApiTerraformEnvironmentLifecycleEnvironments,
             '/api/v2/environments/<string:environment_id>/lifecycle-environments'
         )
+        # Custom Terrarun endpoint
         self._api.add_resource(
             ApiTerraformOrganisationProjects,
             '/api/v2/organizations/<string:organisation_name>/projects',
@@ -322,6 +327,11 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformProject,
             '/api/v2/projects/<string:project_id>'
+        )
+        # Custom Terrarun endpoint
+        self._api.add_resource(
+            ApiTerrarunProjectIngressAttributes,
+            '/api/v2/projects/<string:project_id>/ingress-attributes'
         )
         self._api.add_resource(
             ApiTerraformOrganisationLifecycles,
@@ -1213,6 +1223,34 @@ class ApiTerraformOrganisationProjects(AuthenticatedEndpoint):
         }
 
 
+class ApiTerrarunProjectIngressAttributes(AuthenticatedEndpoint):
+    """Interface to view ingress attributes for a given project"""
+
+    def check_permissions_get(self, project_id, current_user, current_job, *args, **kwargs):
+        """Check permissions"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return False
+        return OrganisationPermissions(organisation=project.organisation, current_user=current_user).check_permission(
+            OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS)
+
+    def _get(self, project_id, current_user, current_job):
+        """Return list of environments for organisation"""
+        project = Project.get_by_api_id(project_id)
+        if not project:
+            return {}, 404
+
+        api_request = ApiRequest(request, list_data=True)
+
+        # Obtain ingress attributes 
+        ingress_attributes = project.get_ingress_attributes(api_request)
+
+        for ingress_attribute in ingress_attributes:
+            api_request.set_data(ingress_attribute.get_api_details())
+
+        return api_request.get_response()
+
+
 class ApiTerraformProject(AuthenticatedEndpoint):
     """Interface to show/update projects"""
 
@@ -1846,6 +1884,36 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
     """Workspace configuration version interface"""
 
+    def check_permissions_get(self, current_user, current_job, workspace_id):
+        """Check permissions"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, workspace_id, current_user, current_job):
+        """Return configuration versions for a workspace."""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        api_request = ApiRequest(
+            request,
+            list_data=True,
+            query_map={
+                "filter[commit]": IngressAttribute.commit_sha
+            }
+        )
+
+        for configuration_version in workspace.get_configuration_versions(api_request):
+            api_request.set_data(configuration_version.get_api_details(api_request))
+
+        return api_request.get_response()
+
     def check_permissions_post(self, workspace_id, current_user, current_job, *args, **kwargs):
         """Check permissions"""
         workspace = Workspace.get_by_api_id(workspace_id)
@@ -2057,6 +2125,8 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         data = flask.request.get_json().get('data', {})
         request_attributes = data.get('attributes', {})
 
+        api_request = ApiRequest(request)
+
         workspace_id = data.get('relationships', {}).get('workspace', {}).get('data', {}).get('id', None)
         if not workspace_id:
             return {}, 422
@@ -2086,7 +2156,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         if cv.workspace.id != workspace.id:
             print('Configuration version ID and workspace ID mismatch')
             # Hide error to prevent workspace ID/configuration ID enumeration
-            return {}, 404
+            return {}, 400
 
         tool = None
         if request_terraform_version := request_attributes.get('terraform-version'):
@@ -2114,12 +2184,17 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'replace_addrs': request_attributes.get('replace-addrs'),
             'target_addrs': request_attributes.get('target-addrs'),
             'variables': request_attributes.get('variables', []),
-            'plan_only': request_attributes.get('plan-only', cv.plan_only),
+            'plan_only': cv.plan_only if cv.plan_only else request_attributes.get('plan-only', cv.plan_only),
             'tool': tool,
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }
 
-        run = Run.create(configuration_version=cv, created_by=current_user, **create_attributes)
+        try:
+            run = Run.create(configuration_version=cv, created_by=current_user, **create_attributes)
+        except ApiError as exc:
+            api_request.add_error(exc)
+            return api_request.get_response()
+
         return {"data": run.get_api_details()}
 
 
@@ -2175,6 +2250,27 @@ class ApiTerraformRunActionsCancel(AuthenticatedEndpoint):
             return {}, 404
 
         run.cancel(user=current_user)
+
+
+class ApiTerraformRunActionsDiscard(AuthenticatedEndpoint):
+    """Interface to discard runs"""
+
+    def check_permissions_post(self, run_id, current_user, current_job):
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return False
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.APPLY)
+
+    def _post(self, run_id, current_user, current_job):
+        """Cancel run"""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        run.discard(user=current_user)
 
 
 class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):

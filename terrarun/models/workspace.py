@@ -8,6 +8,7 @@ import re
 import sqlalchemy
 import sqlalchemy.orm
 from terrarun.api_error import ApiError
+from terrarun.api_request import ApiRequest
 from terrarun.models.authorised_repo import AuthorisedRepo
 
 from terrarun.models.base_object import BaseObject
@@ -18,6 +19,7 @@ from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
 import terrarun.models.configuration
+import terrarun.models.ingress_attribute
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.models.workspace_task
 import terrarun.models.user
@@ -42,34 +44,34 @@ class Workspace(Base, BaseObject):
     _description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="description")
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
-    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces")
+    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces", lazy='select')
 
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, nullable=False)
 
     project_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("project.id", name="workspace_project_id_project_id"),
         nullable=False)
-    project = sqlalchemy.orm.relationship("Project", back_populates="workspaces")
+    project = sqlalchemy.orm.relationship("Project", back_populates="workspaces", lazy='select')
 
     environment_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("environment.id", name="fk_workspace_environment_id_environment_id"),
         nullable=False)
-    environment = sqlalchemy.orm.relationship("Environment", back_populates="workspaces")
+    environment = sqlalchemy.orm.relationship("Environment", back_populates="workspaces", lazy='select')
 
     state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
     configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
 
-    team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace")
+    team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace", lazy='select')
 
-    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag", back_populates="workspaces")
+    tags = sqlalchemy.orm.relationship("Tag", secondary="workspace_tag", back_populates="workspaces", lazy='select')
 
-    workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace")
+    workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace", lazy='select')
 
     locked_by_user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="fk_workspace_locked_by_user_id_user_id"), nullable=True)
-    locked_by_user = sqlalchemy.orm.relation("User", foreign_keys=[locked_by_user_id])
+    locked_by_user = sqlalchemy.orm.relation("User", foreign_keys=[locked_by_user_id], lazy='select')
 
     locked_by_run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id", name="fk_workspace_locked_by_run_id_run_id"), nullable=True)
-    locked_by_run = sqlalchemy.orm.relation("Run", foreign_keys=[locked_by_run_id])
+    locked_by_run = sqlalchemy.orm.relation("Run", foreign_keys=[locked_by_run_id], lazy='select')
 
     _allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="allow_destroy_plan")
     _auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="auto_apply")
@@ -88,7 +90,7 @@ class Workspace(Base, BaseObject):
         sqlalchemy.ForeignKey("authorised_repo.id", name="fk_workspace_authorised_repo_id_authorised_repo_id"),
         nullable=True
     )
-    workspace_authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="workspaces")
+    workspace_authorised_repo = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="workspaces", lazy='select')
     _vcs_repo_branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_branch")
     _vcs_repo_ingress_submodules = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="vcs_repo_ingress_submodules")
     _vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
@@ -143,6 +145,22 @@ class Workspace(Base, BaseObject):
             session = Database.get_session()
             session.add(self)
             session.commit()
+
+    def get_runs_by_ingress_attribute(self, ingress_attribute):
+        """Return all runs for workspace by the ingress attribute"""
+        session = Database.get_session()
+        return session.query(
+            terrarun.models.run.Run
+        ).join(
+            terrarun.models.configuration.ConfigurationVersion
+        ).join(
+            Workspace
+        ).join(
+            terrarun.models.ingress_attribute.IngressAttribute
+        ).filter(
+            Workspace.id==self.id,
+            terrarun.models.ingress_attribute.IngressAttribute.id==ingress_attribute.id
+        ).all()
 
     @property
     def runs(self):
@@ -583,6 +601,26 @@ class Workspace(Base, BaseObject):
     def locked(self):
         """Return whether workspace is locked"""
         return bool(self.locked_by_user or self.locked_by_run)
+
+    def get_configuration_versions(self, api_request: ApiRequest):
+        """Return configuration versions for API Request"""
+        session = Database.get_session()
+        query = session.query(
+            terrarun.models.configuration.ConfigurationVersion
+        ).join(
+            self.__class__
+        ).join(
+            terrarun.models.ingress_attribute.IngressAttribute,
+            isouter=True
+        ).filter(
+            self.__class__.id==self.id,
+        )
+
+        for request_query in api_request.queries:
+            query = query.filter(request_query.in_(api_request.queries[request_query]))
+
+        query = api_request.limit_query(query)
+        return query.all()
 
     def get_api_details(self, effective_user: terrarun.models.user.User, includes=None):
         """Return details for workspace."""
