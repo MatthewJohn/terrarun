@@ -436,6 +436,8 @@ class Run(Base, BaseObject):
 
     def confirm(self, comment, user):
         """Queue apply job"""
+        # @TODO Set status instead and provide user and comment
+        # to change
         # Mark job as confirmed
         self.update_attributes(confirmed=True)
         # If the job has already eached POST_PLAN_COMPLETED,
