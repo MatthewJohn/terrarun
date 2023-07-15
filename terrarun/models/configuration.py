@@ -275,6 +275,7 @@ terraform {
             workspace_itx = self.workspace.project.get_workspace_for_environment(parent_lifecycle_environment.environment)
             if not workspace_itx:
                 raise Exception(f"Could not find workspace in project ({self.workspace.project.name}) for environment ({parent_lifecycle_environment.environment.name})")
+
             runs = workspace_itx.get_runs_by_ingress_attribute(self.ingress_attribute)
 
             # Aggregate information for all runs for the workspace against
@@ -291,8 +292,10 @@ terraform {
                         terrarun.models.run.RunStatus.PRE_APPLY_RUNNING, terrarun.models.run.RunStatus.PRE_APPLY_COMPLETED,
                         terrarun.models.run.RunStatus.POST_PLAN_RUNNING, terrarun.models.run.RunStatus.POST_PLAN_COMPLETED]:
                     successful_plan_found = True
+
                 # Check for states that indicate that apply has completed successfully
                 if run.status in [terrarun.models.run.RunStatus.APPLIED]:
+                    successful_plan_found = True
                     successful_apply_found = True
 
             # Add count and successes to overalls for the environment group
