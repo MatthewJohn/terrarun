@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 
 import { RunRoutingModule } from './run-routing.module';
 import { OverviewComponent } from './overview/overview.component';
-import { NbAccordionModule, NbAlertModule, NbButtonModule, NbCardModule } from '@nebular/theme';
+import { NbAccordionModule, NbAlertModule, NbButtonModule, NbCardModule, NbLayoutModule } from '@nebular/theme';
 import { ComponentsModule } from '../components/components.module';
 
 
@@ -19,6 +19,7 @@ import { ComponentsModule } from '../components/components.module';
     NbCardModule,
     NbAlertModule,
     NbButtonModule,
+    NbLayoutModule,
 
     ComponentsModule,
   ]
