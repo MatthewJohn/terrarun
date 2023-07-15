@@ -125,7 +125,8 @@ export class OverviewComponent implements OnInit {
         // Get list of environments from project details
         if (currentOrganisation.name && currentProject.name) {
           this.currentOrganisation = currentOrganisation;
-          this.projectService.getDetailsByName(currentOrganisation.name, currentProject.name).subscribe((projectDetails) => {
+          let projectSubscription = this.projectService.getDetailsByName(currentOrganisation.name, currentProject.name).subscribe((projectDetails) => {
+            projectSubscription.unsubscribe();
 
             this.projectDetails = projectDetails;
 
@@ -238,7 +239,8 @@ export class OverviewComponent implements OnInit {
   navigateToRun(ingressAttributeId: string, workspaceId: string): void {
     if (this.ingressAttributesRuns[ingressAttributeId] && this.ingressAttributesRuns[ingressAttributeId][workspaceId]) {
       let run = this.ingressAttributesRuns[ingressAttributeId][workspaceId];
-      this.workspaces.get(run.relationships.workspace.data.id)?.subscribe((workspace) => {
+      let workspaceSubscription = this.workspaces.get(run.relationships.workspace.data.id)?.subscribe((workspace) => {
+        workspaceSubscription?.unsubscribe();
         this.router.navigateByUrl(`/${this.currentOrganisation?.id}/${workspace.data.attributes.name}/runs/${run.id}`)
       });
     }
