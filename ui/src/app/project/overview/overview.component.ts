@@ -169,8 +169,7 @@ export class OverviewComponent implements OnInit {
     if (this._runUpdateInterval) {
       window.clearTimeout(this._runUpdateInterval);
     }
-    // Set to false to indicate that runUpdate shouldn't scheduled a new
-    // run
+    // Set to false to indicate that runUpdate shouldn't scheduled a new run
     this._runUpdateInterval = false;
   }
 
@@ -331,7 +330,7 @@ export class OverviewComponent implements OnInit {
             this.dialogService.open(ErrorDialogueComponent, {
               context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
             });
-          });;;
+          });
         }
       })
     });

@@ -3,6 +3,7 @@ import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NbDialogService } from '@nebular/theme';
 import { map, Observable } from 'rxjs';
+import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
 import { RunCreateAttributes } from 'src/app/interfaces/run-create-attributes';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
@@ -57,7 +58,11 @@ export class RunListComponent implements OnInit {
       context: {canDestroy: true}
     }).onClose.subscribe((runAttributes: RunCreateAttributes | null) => {
       if (runAttributes && this.currentWorkspace?.id) {
-        this.runService.create(this.currentWorkspace.id, runAttributes);
+        this.runService.create(this.currentWorkspace.id, runAttributes).catch((err) => {
+          this.dialogService.open(ErrorDialogueComponent, {
+            context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+          });
+        });
       }
     });
   }
@@ -97,5 +102,4 @@ export class RunListComponent implements OnInit {
   onWorkspaceClick(target: any) {
     this.router.navigateByUrl(`/${this.currentOrganisation?.id}/${this.currentWorkspace?.name}/runs/${target.data.id}`)
   }
-
 }

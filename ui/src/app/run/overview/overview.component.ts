@@ -3,6 +3,7 @@ import { ActivatedRoute, Route, Router, RouterModule } from '@angular/router';
 import { NbDialogService } from '@nebular/theme';
 import { Observable, Subscription } from 'rxjs';
 import { ApplyService } from 'src/app/apply.service';
+import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
 import { RunCreateAttributes } from 'src/app/interfaces/run-create-attributes';
 import { PlanApplyStatusFactory } from 'src/app/models/PlanApplyStatus/plan-apply-status-factory';
@@ -277,6 +278,10 @@ export class OverviewComponent implements OnInit {
             if (this._currentOrganistaion && this._currentWorkspace) {
               this.router.navigateByUrl(`/${this._currentOrganistaion.id}/${this._currentWorkspace.name}/runs/${data.data.id}`)
             }
+          }).catch((err) => {
+            this.dialogService.open(ErrorDialogueComponent, {
+              context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+            });
           });
         }
       });
