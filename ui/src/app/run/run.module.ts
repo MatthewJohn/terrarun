@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { RunRoutingModule } from './run-routing.module';
 import { OverviewComponent } from './overview/overview.component';
 import { NbAccordionModule, NbAlertModule, NbButtonModule, NbCardModule } from '@nebular/theme';
+import { ComponentsModule } from '../components/components.module';
 
 
 @NgModule({
@@ -17,7 +18,9 @@ import { NbAccordionModule, NbAlertModule, NbButtonModule, NbCardModule } from '
     NbAccordionModule,
     NbCardModule,
     NbAlertModule,
-    NbButtonModule
+    NbButtonModule,
+
+    ComponentsModule,
   ]
 })
 export class RunModule { }
