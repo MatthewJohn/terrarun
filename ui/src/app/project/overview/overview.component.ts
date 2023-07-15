@@ -3,6 +3,7 @@ import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NbDialogService } from '@nebular/theme';
 import { map, Observable, concat, Subscription } from 'rxjs';
+import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
 import { ConfigurationVersionAttributes, ConfigurationVersionRelationships } from 'src/app/interfaces/configuration-version';
@@ -321,7 +322,11 @@ export class OverviewComponent implements OnInit {
                 }
               })
             }
-          });
+          }).catch((err) => {
+            this.dialogService.open(ErrorDialogueComponent, {
+              context: {title: err.error.errors?.[0].title, data: err.error.errors?.[0].detail}
+            });
+          });;;
         }
       })
     });

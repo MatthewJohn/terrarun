@@ -10,6 +10,7 @@ from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 
 import sqlalchemy
 import sqlalchemy.orm
+from terrarun.api_error import ApiError
 from terrarun.api_request import ApiRequest
 from terrarun.logger import get_logger
 
@@ -311,17 +312,29 @@ terraform {
         minimum_runs = parent_environment_lifecycle_group.minimum_runs if parent_environment_lifecycle_group.minimum_runs is not None else parent_environment_count
         if minimum_runs > run_count:
             logger.debug(f"Disallowing run - required runs in parent required: {minimum_runs}. Found: {run_count}")
-            return False
+            return ApiError(
+                "Run could not be created",
+                f"Lifecycle Environment Group ({', '.join([le.environment.name for le in parent_environment_lifecycle_group.lifecycle_environments])}) does not have enough runs for this version (required: {minimum_runs}, actual: {run_count})",
+                pointer="/relationships/configuration-versions/data/id"
+            )
 
         minimum_successful_plans = parent_environment_lifecycle_group.minimum_successful_plans if parent_environment_lifecycle_group.minimum_successful_plans is not None else parent_environment_count
-        if minimum_successful_plans > successful_plan_found:
-            logger.debug(f"Disallowing run - successful plans in parent required: {minimum_successful_plans}. Found: {successful_plan_found}")
-            return False
+        if minimum_successful_plans > successful_plan_count:
+            logger.debug(f"Disallowing run - successful plans in parent required: {minimum_successful_plans}. Found: {successful_plan_count}")
+            return ApiError(
+                "Run could not be created",
+                f"Lifecycle Environment Group ({', '.join([le.environment.name for le in parent_environment_lifecycle_group.lifecycle_environments])}) does not have enough successful plans for this version (required: {minimum_successful_plans}, actual: {successful_plan_count})",
+                pointer="/relationships/configuration-versions/data/id"
+            )
 
         minimum_successful_applies = parent_environment_lifecycle_group.minimum_successful_applies if parent_environment_lifecycle_group.minimum_successful_applies is not None else parent_environment_count
         if minimum_successful_applies > successful_apply_count:
             logger.debug(f"Disallowing run - successful applies in parent required: {minimum_successful_applies}. Found: {successful_apply_count}")
-            return False
+            return ApiError(
+                "Run could not be created",
+                f"Lifecycle Environment Group ({', '.join([le.environment.name for le in parent_environment_lifecycle_group.lifecycle_environments])}) does not have enough successful applies for this version (required: {minimum_successful_applies}, actual: {successful_apply_count})",
+                pointer="/relationships/configuration-versions/data/id"
+            )
 
         # Allow run
         return True

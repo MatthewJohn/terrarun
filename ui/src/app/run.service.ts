@@ -51,8 +51,8 @@ export class RunService {
         next: (data: any) => {
           resolve(data);
         },
-        error: () => {
-          reject();
+        error: (err) => {
+          reject(err);
         }
       });
     })

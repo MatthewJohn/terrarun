@@ -155,8 +155,9 @@ class Run(Base, BaseObject):
             attributes['plan_only'] = True
 
         # Check rules for environment to ensure that environment can create a run
-        if not configuration_version.can_create_run(attributes.get("plan_only", False)):
-            raise Exception("Run cannot be created due to lifecycle rules")
+        can_create_run = configuration_version.can_create_run(attributes.get("plan_only", False))
+        if can_create_run is not True:
+            raise can_create_run
 
         run = Run(
             configuration_version=configuration_version,

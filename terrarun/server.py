@@ -2125,6 +2125,8 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         data = flask.request.get_json().get('data', {})
         request_attributes = data.get('attributes', {})
 
+        api_request = ApiRequest(request)
+
         workspace_id = data.get('relationships', {}).get('workspace', {}).get('data', {}).get('id', None)
         if not workspace_id:
             return {}, 422
@@ -2187,7 +2189,12 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             'allow_empty_apply': request_attributes.get('allow-empty-apply')
         }
 
-        run = Run.create(configuration_version=cv, created_by=current_user, **create_attributes)
+        try:
+            run = Run.create(configuration_version=cv, created_by=current_user, **create_attributes)
+        except ApiError as exc:
+            api_request.add_error(exc)
+            return api_request.get_response()
+
         return {"data": run.get_api_details()}
 
 
