@@ -152,9 +152,9 @@ class Workspace(Base, BaseObject):
         return session.query(
             terrarun.models.run.Run
         ).join(
-            Workspace
-        ).join(
             terrarun.models.configuration.ConfigurationVersion
+        ).join(
+            Workspace
         ).join(
             terrarun.models.ingress_attribute.IngressAttribute
         ).filter(
