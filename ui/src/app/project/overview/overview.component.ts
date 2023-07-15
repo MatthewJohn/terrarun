@@ -35,6 +35,9 @@ export class OverviewComponent implements OnInit {
   organisationDetails: any;
   projectDetails: any;
 
+  _currentOrganisationSubscription: Subscription | null;
+  _currentWorkspaceSubscription: Subscription | null;
+
   ingressAttributes: {[index: string]: ResponseObject<IngressAttributeAttribues>};
   workspaceRuns: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>};
   configurationVersionIngressAttributes: {[index: string]: string};
@@ -71,6 +74,8 @@ export class OverviewComponent implements OnInit {
     this.ingressAttributesRuns = {};
     this._runUpdateInterval = null;
     this.ingressAttributeWorkspaceConfigurationVersion = {}
+    this._currentOrganisationSubscription = null;
+    this._currentWorkspaceSubscription = null;
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -115,9 +120,9 @@ export class OverviewComponent implements OnInit {
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
 
-    this.stateService.currentOrganisation.subscribe((currentOrganisation: OrganisationStateType) => {
+    this._currentOrganisationSubscription = this.stateService.currentOrganisation.subscribe((currentOrganisation: OrganisationStateType) => {
 
-      this.stateService.currentProject.subscribe((currentProject: ProjectStateType) => {
+      this._currentWorkspaceSubscription = this.stateService.currentProject.subscribe((currentProject: ProjectStateType) => {
         // Get list of environments from project details
         if (currentOrganisation.name && currentProject.name) {
           this.currentOrganisation = currentOrganisation;
@@ -160,6 +165,12 @@ export class OverviewComponent implements OnInit {
   ngOnDestroy() {
     if (this._runUpdateInterval) {
       window.clearTimeout(this._runUpdateInterval);
+    }
+    if (this._currentOrganisationSubscription) {
+      this._currentOrganisationSubscription.unsubscribe();
+    }
+    if (this._currentWorkspaceSubscription) {
+      this._currentWorkspaceSubscription.unsubscribe();
     }
   }
 
@@ -238,7 +249,14 @@ export class OverviewComponent implements OnInit {
     let runObservables = this.workspaceList.map((workspaceId) => {return this.workspaceService.getRuns(workspaceId)});
 
     var observable = concat(...runObservables);
-    observable.subscribe((value) => {
+    let subscriptionCount = 0;
+    let observableSubscription = observable.subscribe((value) => {
+      // Unsubscribe from subscription once all subscriptions have been handled.
+      subscriptionCount ++;
+      if (subscriptionCount == runObservables.length) {
+        observableSubscription.unsubscribe();
+      }
+
       value.included.forEach((include) => {
         if (include.type == "ingress-attributes") {
           this.ingressAttributes[include.id] = include;
