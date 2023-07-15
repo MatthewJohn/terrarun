@@ -73,6 +73,10 @@ export class RunListComponent implements OnInit {
           return val['type'] == 'ingress-attributes'}
         ).map((val: any) => [val['id'], val]));
 
+        data.data = data.data.sort((a, b) => {
+          return new Date(b.attributes['created-at']).getTime() - new Date(a.attributes['created-at']).getTime()
+        })
+
         return Array.from({length: data.data.length},
           (_, n) => ({'data': {
             id: data.data[n].id,
