@@ -179,10 +179,6 @@ class Run(Base, BaseObject):
             stage=WorkspaceTaskStage.PRE_APPLY,
             workspace_tasks=run.pre_apply_workspace_tasks)
 
-        # if not configuration_version.workspace.lock(reason=message, run=run, session=session):
-        #     session.rollback()
-        #     raise Exception("Workspace is already locked")
-
         # Queue to be processed
         run.queue_worker_job()
         return run
@@ -228,6 +224,12 @@ class Run(Base, BaseObject):
 
     def handling_pending(self):
         """Create plan and setup pre-plan tasks"""
+        # Attempt to lock workspace
+        if not self.configuration_version.workspace.lock(run=self):
+            # If locking failed, just requeue worker job
+            self.queue_worker_job()
+            return
+
         # Create plan, as the terraform client expects this
         # to immediately exist
         terrarun.models.plan.Plan.create(run=self)
@@ -418,6 +420,11 @@ class Run(Base, BaseObject):
         session.add(audit_event)
         if should_commit:
             session.commit()
+
+    def unlock_workspace(self):
+        """Unlock workspace after run completes/errors"""
+        if not self.configuration_version.workspace.unlock(run=self):
+            raise Exception("Failed to unlock workspace")
 
     def queue_plan(self):
         """Queue for plan"""
