@@ -149,9 +149,13 @@ class Run(Base, BaseObject):
                 not attributes.get('plan_only')):
             raise Exception('Custom Terraform version cannot be used for non-refresh-only runs')
 
+        # If configuration version is speculative, the run must
+        # be plan only
+        if configuration_version.speculative:
+            attributes['plan_only'] = True
 
         # Check rules for environment to ensure that environment can create a run
-        if not configuration_version.can_create_run():
+        if not configuration_version.can_create_run(attributes.get("plan_only", False)):
             raise Exception("Run cannot be created due to lifecycle rules")
 
         run = Run(

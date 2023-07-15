@@ -224,7 +224,7 @@ terraform {
             os.unlink(tar_gz_file)
         return extract_dir
 
-    def can_create_run(self):
+    def can_create_run(self, speculative):
         """Whether a run can be created for the configuration version"""
         logger = get_logger(obj=self)
 
@@ -233,8 +233,9 @@ terraform {
             logger.debug("Allowing run - configuration version does not contain ingress attributes.")
             return True
 
-        if self.speculative:
+        if self.speculative or speculative:
             logger.debug("Allowing run - configuration version is speculative")
+            return True
 
         # Get environment group
         lifecycle = self.workspace.project.lifecycle
