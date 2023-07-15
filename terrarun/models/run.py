@@ -225,7 +225,7 @@ class Run(Base, BaseObject):
     def handling_pending(self):
         """Create plan and setup pre-plan tasks"""
         # Attempt to lock workspace
-        if not self.configuration_version.workspace.lock(run=self):
+        if not self.configuration_version.workspace.lock(run=self, reason="Locked for run"):
             # If locking failed, just requeue worker job
             self.queue_worker_job()
             return
