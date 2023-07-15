@@ -17,4 +17,5 @@ export interface IngressAttributeAttribues {
     "sender-username": string;
     "sender-avatar-url": string;
     "sender-html-url": string;
+    "created-at": string;
 }

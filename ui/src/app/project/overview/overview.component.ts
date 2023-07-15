@@ -95,6 +95,12 @@ export class OverviewComponent implements OnInit {
     }
   }
 
+  getIngressAttributesIds(): string[] {
+    return Object.keys(this.ingressAttributes).sort((a, b) => 
+      (new Date(this.ingressAttributes[b].attributes['created-at']).getTime()) - (new Date(this.ingressAttributes[a].attributes['created-at']).getTime())
+    )
+  }
+
   ngOnInit(): void {
     this.currentOrganisationObv = this.stateService.currentOrganisation;
     this.currentProjectObv = this.stateService.currentProject;
