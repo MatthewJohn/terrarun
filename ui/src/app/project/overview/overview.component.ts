@@ -147,9 +147,6 @@ export class OverviewComponent implements OnInit {
             for (let workspace of workspaces) {
               this.workspaceList.push(workspace.id);
               this.workspaces.set(workspace.id, this.workspaceService.getDetailsById(workspace.id));
-              // this.workspaceService.getDetailsById(workspace.id).subscribe((workspaceDetails) => {
-              //   this.workspaces.set(workspaceDetails.data.id, workspaceDetails);
-              // });
             }
 
             // Obtain runs and related ingress attributes for workspaces
