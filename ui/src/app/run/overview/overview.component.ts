@@ -113,8 +113,17 @@ export class OverviewComponent implements OnInit {
   }
 
   resetCacheValues(): void {
+    this._runDetails = null;
+    this._runStatus = null;
+
+    this._planDetails = null;
     this._planLog = "";
+    this._planStatus = null;
+    this._applyDetails = null;
     this._applyLog = "";
+    this._applyStatus = null;
+    this._auditEvents = [];
+
     this._prePlanTaskStage = undefined;
     this._postPlanTaskStage = undefined;
     this._preApplyTaskStage = undefined;
