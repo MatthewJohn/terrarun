@@ -122,8 +122,6 @@ export class OverviewComponent implements OnInit {
     this._stateChanged = true;
     this._knownTaskStages = [];
     this._previousRunStatus = null;
-    this._currentOrganistaion = null;
-    this._currentWorkspace = null;
   }
 
   refreshRunData() {
