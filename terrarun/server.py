@@ -15,6 +15,7 @@ import os
 from flask import Flask, make_response, request, session
 from sqlalchemy import desc
 from sqlalchemy.orm import scoped_session
+from flask.signals import request_finished
 import flask
 from flask_cors import CORS
 from flask_restful import Api, Resource, marshal_with, reqparse, fields
@@ -443,6 +444,12 @@ class Server(object):
             ApiAgentFilesystem,
             "/api/agent/filesystem"
         )
+
+        def expire_session(sender, response, **extra):
+            """Expire all DB objects when connection is closed"""
+            session = Database.get_session()
+            session.expire_all()
+        request_finished.connect(expire_session, self._app)
 
     def run(self, debug=None):
         """Run flask server."""
