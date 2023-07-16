@@ -47,10 +47,12 @@ export class OverviewComponent implements OnInit {
   _preApplyTaskStage: any;
     
   _createdByDetails: any;
-  _updateInterval: any;
+  _updateTimeout: any;
   _prePlanTaskResults$: Observable<any> = new Observable();
   _currentOrganistaion: OrganisationStateType | null = null;
   _currentWorkspace: WorkspaceStateType | null = null;
+  _currentOrganisationSubscription: Subscription | null = null;
+  _currentWorkspaceSubscription: Subscription | null = null;
 
   constructor(private route: ActivatedRoute,
               private runService: RunService,
@@ -69,6 +71,14 @@ export class OverviewComponent implements OnInit {
 
   ngOnInit(): void {
     this.resetCacheValues();
+    this._updateTimeout = null;
+
+    this._currentOrganisationSubscription = this.stateService.currentOrganisation.subscribe((currentOrganisation) => {
+      this._currentOrganistaion = currentOrganisation;
+    });
+    this._currentWorkspaceSubscription = this.stateService.currentWorkspace.subscribe((currentWorkspace) => {
+      this._currentWorkspace = currentWorkspace;
+    });
 
     this.route.paramMap.subscribe((routeParams) => {
       let runId = routeParams.get('runId');
@@ -76,15 +86,29 @@ export class OverviewComponent implements OnInit {
       // Reset run data on run ID change
       this.resetCacheValues();
 
-      this._updateInterval = setInterval(() => {
-        this.getRunStatus();
-      }, 3000);
-      this.getRunStatus();
+      if (this._updateTimeout) {
+        window.clearTimeout(this._updateTimeout);
+      }
+
+      if (this._updateTimeout == null) {
+        this.refreshRunData();
+      }
     });
   }
   ngOnDestroy() {
-    if (this._updateInterval) {
-      window.clearTimeout(this._updateInterval);
+    if (this._updateTimeout) {
+      window.clearTimeout(this._updateTimeout);
+    }
+    // Set uptime timout to false to ensure that if
+    // getRunStatus is currently running that it won't
+    // trigger another run
+    this._updateTimeout = false;
+
+    if (this._currentOrganisationSubscription) {
+      this._currentOrganisationSubscription.unsubscribe();
+    }
+    if (this._currentWorkspaceSubscription) {
+      this._currentWorkspaceSubscription.unsubscribe();
     }
   }
 
@@ -102,15 +126,170 @@ export class OverviewComponent implements OnInit {
     this._currentWorkspace = null;
   }
 
-  getRunStatus() {
-    this.stateService.currentOrganisation.subscribe((currentOrganisation) => {
-      this._currentOrganistaion = currentOrganisation;
+  refreshRunData() {
+    this.getRunData().then((shouldScheduleRun: boolean) => {
+      if (shouldScheduleRun && this._updateTimeout !== false) {
+        this._updateTimeout = setTimeout(() => {
+          this.refreshRunData();
+        }, 3000);
+      }
     });
-    this.stateService.currentWorkspace.subscribe((currentWorkspace) => {
-      this._currentWorkspace = currentWorkspace;
-    });
+  }
 
-    if (this._runId) {
+  updateCreatedUser(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Obtain "created by" user details, if not already obtained
+      if (this._runDetails.relationships["created-by"]?.data && ! this._createdByDetails) {
+        let userSubscription = this.userService.getUserDetailsById(this._runDetails.relationships["created-by"].data.id).subscribe((userDetails) => {
+          userSubscription.unsubscribe();
+          this._createdByDetails = userDetails.data;
+          resolve();
+        })
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  updatePlanData(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Obtain plan details
+      if (this._runDetails.relationships.plan && (this._runStatus.shouldCheckPlan() || this._stateChanged)) {
+        let planSubscription = this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
+          planSubscription.unsubscribe();
+          this._planDetails = planData.data;
+          this._planStatus = this.planApplyStatusFactory.getStatusByValue(this._planDetails.attributes.status);
+          this.planService.getLog(this._planDetails.attributes['log-read-url']).subscribe((planLog) => {
+            this._planLog = planLog;
+            resolve();
+          })
+        })
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  updateApplyData(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Obtain apply details
+      if (this._runDetails.relationships.apply.data !== undefined && (this._runStatus.shouldCheckApply() || this._stateChanged)) {
+        let applySubscription = this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
+          applySubscription.unsubscribe();
+          this._applyDetails = applyData.data;
+          this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
+          this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {
+            this._applyLog = applyLog;
+            resolve();
+          })
+        })
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  updateTaskStageData(): Promise<void> {
+    // @TODO Wait until all task stage information has been
+    // asyncronously obtained before resolving.
+    return new Promise((resolve, reject) => {
+      // Iterate over plan stages, obtain details and populate in
+      // appropriate member variables
+      for (let taskStageRelationship of this._runDetails.relationships['task-stages'].data) {
+
+        let taskStageId = taskStageRelationship.id;
+
+        if (
+            this._knownTaskStages.indexOf(taskStageId) !== -1 &&
+            !this._runStatus.shouldCheckPrePlan() &&
+            !this._runStatus.shouldCheckPostPlan() &&
+            !this._runStatus.shouldCheckPreApply() &&
+            !this._stateChanged) {
+          break;
+        }
+
+        if (taskStageId) {
+          let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
+          let taskStateSubscribe = ts.details$.subscribe((taskStageData) => {
+            this._knownTaskStages.push(taskStageId);
+            taskStateSubscribe.unsubscribe();
+            if (taskStageData.data.attributes.stage == 'pre_plan') {
+              if (this._prePlanTaskStage === undefined) {
+                this._prePlanTaskStage = new TaskStage(
+                  taskStageData.data.id,
+                  this.taskStageService,
+                  this.taskResultService);
+                } else if (this._runStatus.shouldCheckPrePlan() || this._stateChanged) {
+                  this._prePlanTaskStage.update();
+                }
+              // this._prePlanTaskStage = ts;
+            } else if (taskStageData.data.attributes.stage == 'post_plan') {
+              if (this._postPlanTaskStage === undefined) {
+                this._postPlanTaskStage = new TaskStage(
+                  taskStageData.data.id,
+                  this.taskStageService,
+                  this.taskResultService);
+              } else if (this._runStatus.shouldCheckPostPlan() || this._stateChanged) {
+                this._postPlanTaskStage.update();
+              }
+            } else if (taskStageData.data.attributes.stage == 'pre_apply') {
+              if (this._preApplyTaskStage === undefined) {
+                this._preApplyTaskStage = new TaskStage(
+                  taskStageData.data.id,
+                  this.taskStageService,
+                  this.taskResultService);
+              } else if (this._runStatus.shouldCheckPreApply() || this._stateChanged) {
+                this._preApplyTaskStage.update();
+              }
+            }
+          })
+        }
+      }
+      resolve();
+    });
+  }
+
+  updateAuditData(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this._runId) {
+        // Obtain plan audit events
+        let auditDataSub = this.runService.getAuditEventsByRunId(this._runId).subscribe(async (auditEvents) => {
+          auditDataSub.unsubscribe();
+          let auditEventsArray: object[] = [];
+
+          for (const event of auditEvents.data) {
+            if (event.attributes.type == 'status_change') {
+              let description = 'Status changed: ' + this.runStatusFactory.getStatusByValue(event.attributes['new-value']).getName();
+              let user = 'system';
+              if (event.relationships.user.data.id !== undefined) {
+                user = (await this.userService.getUserDetailsByIdSync(event.relationships.user.data.id)).data.attributes.username;
+              }
+              auditEventsArray.push({
+                description: description,
+                timestamp: new Date(event.attributes.timestamp).toLocaleString(),
+                date: new Date(event.attributes.timestamp),
+                user: user
+              })
+            }
+          }
+          this._auditEvents = auditEventsArray;
+          resolve();
+        });
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  getRunData(): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      if (! this._runId) {
+        resolve(true);
+        return;
+      }
+
+      let scheduleUpdate = true;
+
       let runSubscription = this.runService.getDetailsById(this._runId).subscribe((runData) => {
         runSubscription.unsubscribe();
         this._runDetails = runData.data;
@@ -121,113 +300,23 @@ export class OverviewComponent implements OnInit {
         // Obtain run status model
         this._runStatus = this.runStatusFactory.getStatusByValue(this._runDetails.attributes.status);
         if (this._runStatus.isFinal()) {
-          window.clearTimeout(this._updateInterval);
+          scheduleUpdate = false;
         }
 
-        // Obtain "created by" user details, if not already obtained
-        if (this._runDetails.relationships["created-by"]?.data && ! this._createdByDetails) {
-          let userSubscription = this.userService.getUserDetailsById(this._runDetails.relationships["created-by"].data.id).subscribe((userDetails) => {
-            userSubscription.unsubscribe();
-            this._createdByDetails = userDetails.data;
-          })
-        }
+        let promises = [
+          this.updateCreatedUser(),
+          this.updatePlanData(),
+          this.updateApplyData(),
+          this.updateTaskStageData(),
+          this.updateAuditData(),
+        ];
 
-        // Obtain plan details
-        if (this._runDetails.relationships.plan && (this._runStatus.shouldCheckPlan() || this._stateChanged)) {
-          let planSubscription = this.planService.getDetailsById(this._runDetails.relationships.plan.data.id).subscribe((planData) => {
-            planSubscription.unsubscribe();
-            this._planDetails = planData.data;
-            this._planStatus = this.planApplyStatusFactory.getStatusByValue(this._planDetails.attributes.status);
-            this.planService.getLog(this._planDetails.attributes['log-read-url']).subscribe((planLog) => {this._planLog = planLog;})
-          })
-        }
-
-        // Obtain apply details
-        if (this._runDetails.relationships.apply.data !== undefined && (this._runStatus.shouldCheckApply() || this._stateChanged)) {
-          let applySubscription = this.applyService.getDetailsById(this._runDetails.relationships.apply.data.id).subscribe((applyData) => {
-            applySubscription.unsubscribe();
-            this._applyDetails = applyData.data;
-            this._applyStatus = this.planApplyStatusFactory.getStatusByValue(this._applyDetails.attributes.status);
-            this.applyService.getLog(this._applyDetails.attributes['log-read-url']).subscribe((applyLog) => {this._applyLog = applyLog;})
-          })
-        }
-
-        // Iterate over plan stages, obtain details and populate in
-        // appropriate member variables
-        for (let taskStageRelationship of this._runDetails.relationships['task-stages'].data) {
-
-          let taskStageId = taskStageRelationship.id;
-
-          if (
-              this._knownTaskStages.indexOf(taskStageId) !== -1 &&
-              !this._runStatus.shouldCheckPrePlan() &&
-              !this._runStatus.shouldCheckPostPlan() &&
-              !this._runStatus.shouldCheckPreApply() &&
-              !this._stateChanged) {
-            break;
-          }
-
-          if (taskStageId) {
-            let ts = new TaskStage(taskStageId, this.taskStageService, this.taskResultService);
-            let taskStateSubscribe = ts.details$.subscribe((taskStageData) => {
-              this._knownTaskStages.push(taskStageId);
-              taskStateSubscribe.unsubscribe();
-              if (taskStageData.data.attributes.stage == 'pre_plan') {
-                if (this._prePlanTaskStage === undefined) {
-                  this._prePlanTaskStage = new TaskStage(
-                    taskStageData.data.id,
-                    this.taskStageService,
-                    this.taskResultService);
-                  } else if (this._runStatus.shouldCheckPrePlan() || this._stateChanged) {
-                    this._prePlanTaskStage.update();
-                  }
-                // this._prePlanTaskStage = ts;
-              } else if (taskStageData.data.attributes.stage == 'post_plan') {
-                if (this._postPlanTaskStage === undefined) {
-                  this._postPlanTaskStage = new TaskStage(
-                    taskStageData.data.id,
-                    this.taskStageService,
-                    this.taskResultService);
-                } else if (this._runStatus.shouldCheckPostPlan() || this._stateChanged) {
-                  this._postPlanTaskStage.update();
-                }
-              } else if (taskStageData.data.attributes.stage == 'pre_apply') {
-                if (this._preApplyTaskStage === undefined) {
-                  this._preApplyTaskStage = new TaskStage(
-                    taskStageData.data.id,
-                    this.taskStageService,
-                    this.taskResultService);
-                } else if (this._runStatus.shouldCheckPreApply() || this._stateChanged) {
-                  this._preApplyTaskStage.update();
-                }
-              }
-            })
-          }
-        }
+        // Once all data has been updated, schedule new update
+        Promise.all(promises).finally(() => {
+          resolve(scheduleUpdate);
+        });
       });
-
-      // Obtain plan audit events
-      this.runService.getAuditEventsByRunId(this._runId).subscribe(async (auditEvents) => {
-        let auditEventsArray: object[] = [];
-
-        for (const event of auditEvents.data) {
-          if (event.attributes.type == 'status_change') {
-            let description = 'Status changed: ' + this.runStatusFactory.getStatusByValue(event.attributes['new-value']).getName();
-            let user = 'system';
-            if (event.relationships.user.data.id !== undefined) {
-              user = (await this.userService.getUserDetailsByIdSync(event.relationships.user.data.id)).data.attributes.username;
-            }
-            auditEventsArray.push({
-              description: description,
-              timestamp: new Date(event.attributes.timestamp).toLocaleString(),
-              date: new Date(event.attributes.timestamp),
-              user: user
-            })
-          }
-        }
-        this._auditEvents = auditEventsArray;
-      });
-    }
+    });
   }
 
   applyActionAvailable(): boolean {
@@ -278,7 +367,6 @@ export class OverviewComponent implements OnInit {
         context: {canDestroy: true}
       }).onClose.subscribe((runAttributes: RunCreateAttributes | null) => {
         if (runAttributes && this._runDetails) {
-          console.log(this._runDetails);
           this.runService.create(
             this._runDetails?.relationships.workspace.data.id,
             runAttributes,
