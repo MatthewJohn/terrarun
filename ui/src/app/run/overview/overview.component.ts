@@ -64,23 +64,18 @@ export class OverviewComponent implements OnInit {
               private dialogService: NbDialogService,
               private router: Router,
               private stateService: StateService) {
+    this.resetCacheValues();
   }
 
   ngOnInit(): void {
-    this._planLog = "";
-    this._applyLog = "";
-    this._prePlanTaskStage = undefined;
-    this._postPlanTaskStage = undefined;
-    this._preApplyTaskStage = undefined;
-    this._prePlanTaskResults$ = new Observable();
-    this._stateChanged = true;
-    this._previousRunStatus = null;
-    this._currentOrganistaion = null;
-    this._currentWorkspace = null;
+    this.resetCacheValues();
 
     this.route.paramMap.subscribe((routeParams) => {
       let runId = routeParams.get('runId');
       this._runId = runId;
+      // Reset run data on run ID change
+      this.resetCacheValues();
+
       this._updateInterval = setInterval(() => {
         this.getRunStatus();
       }, 3000);
@@ -91,6 +86,20 @@ export class OverviewComponent implements OnInit {
     if (this._updateInterval) {
       window.clearTimeout(this._updateInterval);
     }
+  }
+
+  resetCacheValues(): void {
+    this._planLog = "";
+    this._applyLog = "";
+    this._prePlanTaskStage = undefined;
+    this._postPlanTaskStage = undefined;
+    this._preApplyTaskStage = undefined;
+    this._prePlanTaskResults$ = new Observable();
+    this._stateChanged = true;
+    this._knownTaskStages = [];
+    this._previousRunStatus = null;
+    this._currentOrganistaion = null;
+    this._currentWorkspace = null;
   }
 
   getRunStatus() {
