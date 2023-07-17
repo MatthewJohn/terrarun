@@ -1,0 +1,8 @@
+<nb-toggle [ngModel]="attributes && attributes['queue-all-runs']" (ngModelChange)="onQueueAllRunsChange($event)" >
+    Queue all runs
+</nb-toggle>
+<br />
+Whether VCS changes will automatically trigger a run.<br />
+If disabled, runs will need to be manually triggered after a VCS change has been detected.
+<br />
+<br />

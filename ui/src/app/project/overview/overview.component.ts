@@ -9,6 +9,7 @@ import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/
 import { ConfigurationVersionAttributes, ConfigurationVersionRelationships } from 'src/app/interfaces/configuration-version';
 import { IngressAttributeAttribues } from 'src/app/interfaces/ingress-attribute';
 import { OauthClient } from 'src/app/interfaces/oauth-client';
+import { ProjectAttributes } from 'src/app/interfaces/project';
 import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
 import { ResponseObject, ResponseObjectWithRelationships, TypedResponseObject, TypedResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { RunAttributes, RunRelationships } from 'src/app/interfaces/run';
@@ -88,7 +89,15 @@ export class OverviewComponent implements OnInit {
     })
   }
 
+  onAttributesChange(attributes: ProjectAttributes) {
+    if (this.projectDetails) {
+      console.log(attributes);
+      this.projectDetails.data.attributes = attributes;
+    }
+  }
+
   onGeneralSettingsSubmit() {
+    console.log(this.projectDetails);
     if (this.projectDetails?.data.id) {
       this.projectService.update(
         this.projectDetails.data.id,
