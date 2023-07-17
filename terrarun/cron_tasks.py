@@ -146,23 +146,24 @@ class CronTasks:
                 print('Unable to create configuration version')
                 return branch_shas
 
-            print(f"Creating run")
             # Create run
-            try:
-                Run.create(
-                    configuration_version=cv,
-                    created_by=None,
-                    is_destroy=False,
-                    refresh=True,
-                    refresh_only=False,
-                    auto_apply=workspace.auto_apply,
-                    plan_only=False,
-                    message="Initiated from SCM change"
-                )
-            # @TODO Limit to legitimate errors, such as environment progression
-            # errors
-            except Exception as exc:
-                print(f"failed to start run: {exc}")
+            if workspace.queue_all_runs:
+                print(f"Creating run")
+                try:
+                    Run.create(
+                        configuration_version=cv,
+                        created_by=None,
+                        is_destroy=False,
+                        refresh=True,
+                        refresh_only=False,
+                        auto_apply=workspace.auto_apply,
+                        plan_only=False,
+                        message="Initiated from SCM change"
+                    )
+                # @TODO Limit to legitimate errors, such as environment progression
+                # errors
+                except Exception as exc:
+                    print(f"failed to start run: {exc}")
         return branch_shas
 
     def check_for_vcs_commits(self):
