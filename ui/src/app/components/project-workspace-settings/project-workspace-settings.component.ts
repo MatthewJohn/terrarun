@@ -12,9 +12,6 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
   @Input()
   attributes: WorkspaceAttributes | ProjectAttributes | null = null;
 
-  @Output()
-  attributesChange = new EventEmitter();
-
   constructor() { }
 
   ngOnInit(): void {
@@ -23,7 +20,6 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
   onQueueAllRunsChange(value: boolean) {
     if (this.attributes) {
       this.attributes['queue-all-runs'] = value;
-      this.attributesChange.emit(this.attributes);
     }
   }
 }

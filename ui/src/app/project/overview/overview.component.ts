@@ -89,19 +89,12 @@ export class OverviewComponent implements OnInit {
     })
   }
 
-  onAttributesChange(attributes: ProjectAttributes) {
-    if (this.projectDetails) {
-      console.log(attributes);
-      this.projectDetails.data.attributes = attributes;
-    }
-  }
-
   onGeneralSettingsSubmit() {
-    console.log(this.projectDetails);
     if (this.projectDetails?.data.id) {
       this.projectService.update(
         this.projectDetails.data.id,
         {
+          ...this.projectDetails.data.attributes,
           "execution-mode": this.generalSettingsForm.value.executionMode,
           "terraform-version": this.generalSettingsTerraformVersion
         }
