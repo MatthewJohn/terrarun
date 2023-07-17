@@ -296,6 +296,9 @@ export class OverviewComponent implements OnInit {
 
       if (!commitSha) {
         // Notify user that ingress attributes does not exist
+        this.dialogService.open(ErrorDialogueComponent, {
+          context: {title: "Error creating run", data: "Could not find git commit for this ingress attribute."}
+        });
         return;
       }
 
@@ -305,6 +308,9 @@ export class OverviewComponent implements OnInit {
 
         if (configurationVersionResponse.data.length == 0) {
           // Notify user that configuration version could not be found for commit
+          this.dialogService.open(ErrorDialogueComponent, {
+            context: {title: "Error creating run", data: "A configuration version for this ingress attribute could not be found for the workspace."}
+          });
           return;
         }
 
