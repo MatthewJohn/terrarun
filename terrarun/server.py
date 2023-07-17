@@ -1885,7 +1885,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
                     for error in errors
                 ]
             }, 422
-        return {"data": workspace.get_api_details(effective_user=current_user)}
+        return {"data": workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
