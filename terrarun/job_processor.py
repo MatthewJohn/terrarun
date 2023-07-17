@@ -35,7 +35,7 @@ class JobProcessor:
         query = session.query(RunQueue).join(Run).join(ConfigurationVersion).join(Workspace).join(Project).outerjoin(AgentPoolProjectAssociation)
 
         # Filter jobs that are being handled by an agent
-        query = query.filter(RunQueue.agent==None)
+        query = query.filter(RunQueue.agent_type==JobQueueAgentType.AGENT, RunQueue.agent==None)
 
         # If agent pool is tied to an organisation, limit to just the organisation
         if agent.agent_pool.organisation:
