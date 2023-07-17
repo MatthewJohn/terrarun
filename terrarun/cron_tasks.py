@@ -6,6 +6,7 @@ import fnmatch
 
 import schedule
 from terrarun.database import Database
+from terrarun.logger import get_logger
 
 from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.configuration import ConfigurationVersion
@@ -34,7 +35,9 @@ class CronTasks:
 
     def _process_authorised_repo_workspace(self, authorised_repo, workspace, branch_shas):
         """Handle checking workspace for new commits to create run for"""
-        print(f'Handling workspace: {workspace.name}')
+        log = get_logger(workspace)
+
+        log.debug(f'Handling workspace: {workspace.name}')
         service_provider = authorised_repo.oauth_token.oauth_client.service_provider_instance
 
         commit_sha = None
@@ -43,15 +46,15 @@ class CronTasks:
 
         # Handle workspaces with git tag regex
         if workspace.vcs_repo_tags_regex:
-            print("Handling tag-based search")
+            log.debug("Handling tag-based search")
             tag_re = re.compile(workspace.vcs_repo_tags_regex)
             tags = service_provider.get_tags(
                 authorised_repo=workspace.authorised_repo
             )
             for tag in tags:
-                print(f"Checking tag: {tag}")
+                log.debug(f"Checking tag: {tag}")
                 if tag_re.match(tag):
-                    print("Tag matches regex")
+                    log.debug("Tag matches regex")
                     # Once a match tag is found, check if there is a run for it
                     if not ConfigurationVersion.get_configuration_version_by_git_commit_sha(
                             workspace=workspace,
@@ -59,15 +62,15 @@ class CronTasks:
                         # If there wasn't, perform a run with the commit sha
                         commit_sha = tags[tag]
                         workspace_tag = tag
-                        print(f"Using tag commit {tags[tag]}")
+                        log.debug(f"Using tag commit {tags[tag]}")
                     else:
-                        print(f"Run already exists for commit {tags[tag]}")
+                        log.debug(f"Run already exists for commit {tags[tag]}")
 
                     # Otherwise, the commit sha is not set, but exit
                     # as all other tags are older
                     break
                 else:
-                    print("Tag does not match regex")
+                    log.debug("Tag does not match regex")
 
         else:
             workspace_branch = workspace.get_branch()
@@ -79,7 +82,7 @@ class CronTasks:
                 )
 
             if not branch_shas[workspace_branch]:
-                print(f'Could not find latest commit for branch: {workspace_branch}')
+                log.warning(f'Could not find latest commit for branch: {workspace_branch}')
                 return branch_shas
 
             if not ConfigurationVersion.get_configuration_version_by_git_commit_sha(
@@ -89,7 +92,7 @@ class CronTasks:
 
                 # Check if filters match
                 if workspace.trigger_patterns or workspace.trigger_prefixes:
-                    print("Trigger pattern/prefixes enabled")
+                    log.debug("Trigger pattern/prefixes enabled")
                     latest_configuration_version = workspace.latest_configuration_version
                     # If there is a configuration version and it contains a git sha...
                     if latest_configuration_version and latest_configuration_version.git_commit_sha:
@@ -99,39 +102,39 @@ class CronTasks:
                             base=latest_configuration_version.git_commit_sha,
                             head=commit_sha
                         )
-                        print(f"Found file changes: {file_changes}")
+                        log.debug(f"Found file changes: {file_changes}")
                         if workspace.trigger_patterns:
-                            print("Checking trigger patterns")
+                            log.debug("Checking trigger patterns")
                             for trigger_pattern in workspace.trigger_patterns:
-                                print(f"Checking pattern: {trigger_pattern}")
+                                log.debug(f"Checking pattern: {trigger_pattern}")
                                 # If any of the filters match, break
                                 if fnmatch.filter(file_changes, trigger_pattern):
-                                    print("Pattern matched")
+                                    log.debug("Pattern matched")
                                     break
                             else:
                                 # If no match was found, unset commit sha to avoid build
-                                print('No patterns matched')
+                                log.debug('No patterns matched')
                                 commit_sha = None
 
                         elif workspace.trigger_prefixes:
-                            print("Checking trigger prefixes")
+                            log.debug("Checking trigger prefixes")
 
                             for trigger_prefix in workspace.trigger_prefixes:
-                                print(f"Checking prefix: {trigger_prefix}")
+                                log.debug(f"Checking prefix: {trigger_prefix}")
 
                                 if filter(lambda x: x.startswith(trigger_prefix), file_changes):
-                                    print("Prefix matched")
+                                    log.debug("Prefix matched")
                                     break
                             else:
-                                print('No prefixes matched')
+                                log.debug('No prefixes matched')
                                 commit_sha = None
 
                     else:
-                        print("No latest configuration version found or "
-                            "latest configuration version has no commit ID")
+                        log.warning("No latest configuration version found or "
+                                    "latest configuration version has no commit ID")
 
         if commit_sha is not None:
-            print(f"Creating configuration version for commit {commit_sha}")
+            log.info(f"Creating configuration version for commit {commit_sha}")
             # If there is not a configuration version for the git commit,
             # create one
             cv = ConfigurationVersion.generate_from_vcs(
@@ -143,12 +146,12 @@ class CronTasks:
                 tag=workspace_tag
             )
             if not cv:
-                print('Unable to create configuration version')
+                log.info('Unable to create configuration version')
                 return branch_shas
 
             # Create run
             if workspace.queue_all_runs:
-                print(f"Creating run")
+                log.info(f"Creating run")
                 try:
                     Run.create(
                         configuration_version=cv,
@@ -163,18 +166,24 @@ class CronTasks:
                 # @TODO Limit to legitimate errors, such as environment progression
                 # errors
                 except Exception as exc:
-                    print(f"failed to start run: {exc}")
+                    log.error(f"failed to start run: {exc}")
+            else:
+                log.info("Skipping run creation as workspace not configured with queue_all_runs")
         return branch_shas
 
     def check_for_vcs_commits(self):
         """Check for new commits on VCS repositories"""
+        log = get_logger(self)
+
+        log.info("Checking for VCS commits")
+
         # Iterate over all authorised repos that have one workspace or project defined
         for authorised_repo in AuthorisedRepo.get_all_utilised_repos():
-            print(f'Handling repo: {authorised_repo.name}')
+            log.debug(f'Handling repo: {authorised_repo.name}')
             branch_shas = {}
 
             for project in authorised_repo.projects:
-                print(f'Handling project: {project.name}')
+                log.debug(f'Handling project: {project.name}')
 
                 for workspace in project.workspaces:
                     branch_shas = self._process_authorised_repo_workspace(
@@ -193,5 +202,3 @@ class CronTasks:
 
         # Clear database session to avoid cached queries
         Database.get_session().remove()
-
-        print("Checking for VCS commits")
