@@ -86,10 +86,6 @@ export class OverviewComponent implements OnInit {
       // Reset run data on run ID change
       this.resetCacheValues();
 
-      if (this._updateTimeout) {
-        window.clearTimeout(this._updateTimeout);
-      }
-
       if (this._updateTimeout == null) {
         this.refreshRunData();
       }
@@ -139,6 +135,11 @@ export class OverviewComponent implements OnInit {
         this._updateTimeout = setTimeout(() => {
           this.refreshRunData();
         }, 3000);
+      } else {
+        // Otherwise, set _updateTimeout to null,
+        // so that the param map subscription knows
+        // that there isn't a scheduled refreshData
+        this._updateTimeout = null;
       }
     });
   }
