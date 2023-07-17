@@ -281,6 +281,9 @@ class Project(Base, BaseObject):
                     ))
             update_kwargs["tool"] = tool
 
+        if "queue-all-runs" in attributes:
+            update_kwargs["queue_all_runs"] = attributes["queue-all-runs"]
+
         if "vcs-repo" in attributes:
             vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
                 vcs_repo_attributes=attributes["vcs-repo"]
