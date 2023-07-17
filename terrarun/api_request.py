@@ -75,7 +75,7 @@ class ApiRequest:
         }
         # If includes were requests, added to response, even
         # if no data was found
-        if self._included:
+        if self.includes:
             response_data["included"] = self._included
         
         return response_data, status_code

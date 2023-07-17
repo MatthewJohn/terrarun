@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NbDialogService } from '@nebular/theme';
-import { map, Observable, concat, Subscription } from 'rxjs';
+import { Observable, concat, filter, takeWhile } from 'rxjs';
 import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
@@ -35,9 +35,6 @@ export class OverviewComponent implements OnInit {
   workspaces: Map<string, Observable<any>>;
   organisationDetails: any;
   projectDetails: any;
-
-  _currentOrganisationSubscription: Subscription | null;
-  _currentWorkspaceSubscription: Subscription | null;
 
   ingressAttributes: {[index: string]: ResponseObject<IngressAttributeAttribues>};
   workspaceRuns: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>};
@@ -73,8 +70,6 @@ export class OverviewComponent implements OnInit {
     this.configurationVersionIngressAttributes = {};
     this.ingressAttributesRuns = {};
     this._runUpdateInterval = null;
-    this._currentOrganisationSubscription = null;
-    this._currentWorkspaceSubscription = null;
   }
 
   onWorkspaceClick(workspaceId: string): void {
@@ -119,9 +114,16 @@ export class OverviewComponent implements OnInit {
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
 
-    this._currentOrganisationSubscription = this.stateService.currentOrganisation.subscribe((currentOrganisation: OrganisationStateType) => {
+    this.stateService.currentOrganisation.pipe(filter(v => v.id !== null)).pipe(takeWhile(v => v.id === null, true)).subscribe((currentOrganisation: OrganisationStateType) => {
+      if (!currentOrganisation.id) {
+        return;
+      }
 
-      this._currentWorkspaceSubscription = this.stateService.currentProject.subscribe((currentProject: ProjectStateType) => {
+      this.stateService.currentProject.pipe(filter(v => v.id !== null)).pipe(takeWhile(v => v.id === null, true)).subscribe((currentProject: ProjectStateType) => {
+        if (!currentProject.name) {
+          return;
+        }
+
         // Get list of environments from project details
         if (currentOrganisation.name && currentProject.name) {
           this.currentOrganisation = currentOrganisation;
@@ -151,19 +153,13 @@ export class OverviewComponent implements OnInit {
 
             // Obtain runs and related ingress attributes for workspaces
             this.updateRunList();
-          })
+          });
         }
-      })
-    })
+      }).unsubscribe();
+    }).unsubscribe();
   }
 
   ngOnDestroy() {
-    if (this._currentOrganisationSubscription) {
-      this._currentOrganisationSubscription.unsubscribe();
-    }
-    if (this._currentWorkspaceSubscription) {
-      this._currentWorkspaceSubscription.unsubscribe();
-    }
     if (this._runUpdateInterval) {
       window.clearTimeout(this._runUpdateInterval);
     }
@@ -296,6 +292,9 @@ export class OverviewComponent implements OnInit {
 
       if (!commitSha) {
         // Notify user that ingress attributes does not exist
+        this.dialogService.open(ErrorDialogueComponent, {
+          context: {title: "Error creating run", data: "Could not find git commit for this ingress attribute."}
+        });
         return;
       }
 
@@ -305,6 +304,9 @@ export class OverviewComponent implements OnInit {
 
         if (configurationVersionResponse.data.length == 0) {
           // Notify user that configuration version could not be found for commit
+          this.dialogService.open(ErrorDialogueComponent, {
+            context: {title: "Error creating run", data: "A configuration version for this ingress attribute could not be found for the workspace."}
+          });
           return;
         }
 
