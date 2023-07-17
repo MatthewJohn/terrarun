@@ -210,6 +210,8 @@ class Project(Base, BaseObject):
             ConfigurationVersion.id==Run.configuration_version_id
         ).filter(
             Project.id==self.id
+        ).order_by(
+            IngressAttribute.id.desc()
         )
         query = api_request.limit_query(query)
         return query.all()

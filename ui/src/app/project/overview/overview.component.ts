@@ -278,6 +278,18 @@ export class OverviewComponent implements OnInit {
       });
     });
 
+    // Obtain ingress attributes for project, for any ingress attributes that don't have
+    // a run associated to a workspace
+    if (this.projectDetails) {
+      let ingressAttributeSubscription = this.projectService.getIngressAttributes(this.projectDetails.data.id).subscribe((ingressAttributes) => {
+        ingressAttributeSubscription.unsubscribe();
+
+        ingressAttributes.data.forEach((ingressAttribute) => {
+          this.ingressAttributes[ingressAttribute.id] = ingressAttribute;
+        })
+      });
+    }
+
     if (this._runUpdateInterval !== false) {
       this._runUpdateInterval = setTimeout(() => {this.updateRunList();}, 5000);
     }
