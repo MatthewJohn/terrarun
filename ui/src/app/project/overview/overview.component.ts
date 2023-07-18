@@ -89,6 +89,12 @@ export class OverviewComponent implements OnInit {
     })
   }
 
+  onProjectAttributesChange(value: ProjectAttributes): void {
+    if (this.projectDetails) {
+      this.projectDetails.data.attributes = value;
+    }
+  }
+
   onGeneralSettingsSubmit() {
     if (this.projectDetails?.data.id) {
       this.projectService.update(

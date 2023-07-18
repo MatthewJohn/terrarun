@@ -77,7 +77,7 @@
           </terraform-version-select>
           <br /><br />
 
-          <project-workspace-settings [attributes]="projectDetails?.data.attributes"></project-workspace-settings>
+          <project-workspace-settings [attributes]="projectDetails?.data.attributes" (attributesChange)="onProjectAttributesChange($event)"></project-workspace-settings>
 
           <button nbButton type="submit">Update</button>
         </form>

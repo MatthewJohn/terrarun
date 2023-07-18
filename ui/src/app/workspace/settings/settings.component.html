@@ -1,7 +1,21 @@
+<nb-layout>
+    <nb-layout-column>
+        <app-vcs-selection
+            (onChangeVcs)="onChangeVcs($event)"
+            [vcsConfig]="workspaceDetails?.data.attributes"
+            [parentVcsConfig]="projectDetails?.data.attributes"
+            >
+        </app-vcs-selection>
 
-<app-vcs-selection
-    (onChangeVcs)="onChangeVcs($event)"
-    [vcsConfig]="workspaceDetails?.data.attributes"
-    [parentVcsConfig]="projectDetails?.data.attributes"
-    >
-</app-vcs-selection>
+        <nb-card>
+            <nb-card-header>
+                Settings
+            </nb-card-header>
+            <nb-card-body>
+                <project-workspace-settings [projectAttributes]="projectDetails?.data.attributes" [(attributes)]="workspaceDetails?.data.attributes"></project-workspace-settings>
+
+                <button nbButton size="small" (click)="onChangeSettings()">Save</button>
+            </nb-card-body>
+        </nb-card>
+    </nb-layout-column>
+</nb-layout>
