@@ -12,9 +12,9 @@
                 Settings
             </nb-card-header>
             <nb-card-body>
-                <project-workspace-settings [projectAttributes]="projectDetails?.data.attributes" [(attributes)]="workspaceDetails?.data.attributes"></project-workspace-settings>
+                <project-workspace-settings [projectAttributes]="projectDetails?.data.attributes" [attributes]="workspaceDetails?.data.attributes" (attributesChange)="onSettingsChange($event)"></project-workspace-settings>
 
-                <button nbButton size="small" (click)="onChangeSettings()">Save</button>
+                <button nbButton size="small" (click)="onSettingsSave()">Save</button>
             </nb-card-body>
         </nb-card>
     </nb-layout-column>

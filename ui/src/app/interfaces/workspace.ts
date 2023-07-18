@@ -1,3 +1,5 @@
+import { ProjectWorkspaceVcsConfigVcsChild } from "./project-workspace-vcs-config";
+
 export interface WorkspaceAttributes {
     "actions": {
         "is-destroyable": boolean;
@@ -78,8 +80,13 @@ export interface WorkspaceAttributes {
 // Interface for workspace attributes when updating
 // a workspace, allowing attributes to be nulled to revert
 // them back to the project configuration
-export interface WorkspaceUpdateAttributes extends Omit<WorkspaceAttributes, "queue-all-runs"> {
-    "queue-all-runs": boolean | null;
+export interface WorkspaceUpdateAttributes {
+    "vcs-repo": ProjectWorkspaceVcsConfigVcsChild | null | undefined;
+    "file-triggers-enabled": boolean | undefined;
+    "trigger-prefixes": string[] | undefined;
+    "trigger-patterns": string[] | undefined;
+
+    "queue-all-runs": boolean | null | undefined;
 }
 
 export interface WorkspaceRelationships {

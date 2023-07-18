@@ -10,13 +10,13 @@ import { WorkspaceAttributes, WorkspaceUpdateAttributes } from 'src/app/interfac
 export class ProjectWorkspaceSettingsComponent implements OnInit {
 
   @Input()
-  set attributes(value: WorkspaceUpdateAttributes | ProjectAttributes | null) {
+  set attributes(value: WorkspaceAttributes | ProjectAttributes | null) {
     this.inputAttributes = value;
     if (value && "overrides" in value) {
       this.overrides['queue-all-runs'] = value.overrides["queue-all-runs"];
     }
   }
-  inputAttributes: WorkspaceUpdateAttributes | ProjectAttributes | null = null;
+  inputAttributes: WorkspaceAttributes | ProjectAttributes | null = null;
 
   @Output()
   attributesChange = new EventEmitter();
@@ -39,8 +39,10 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
     if (this.inputAttributes) {
       this.inputAttributes['queue-all-runs'] = value;
 
-      if ("overrides" in this.inputAttributes && this.overrides['queue-all-runs'] !== undefined) {
-        this.inputAttributes.overrides['queue-all-runs'] = this.overrides['queue-all-runs'];
+      // If overrides are present and overrides were present,
+      // update the overrides value, to be used to emitted as update.
+      if (this.overrides['queue-all-runs'] !== undefined && this.overrides['queue-all-runs'] !== null) {
+        this.overrides['queue-all-runs'] = this.inputAttributes['queue-all-runs'];
       }
 
       this.emitChange();
@@ -48,17 +50,36 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
   }
 
   emitChange(): void {
-    this.attributesChange.emit(this.inputAttributes);
+    if (this.inputAttributes) {
+      if ("overrides" in this.inputAttributes) {
+        // Emit override changes
+        let updates: WorkspaceUpdateAttributes = {
+          "queue-all-runs": this.overrides['queue-all-runs'],
+          "vcs-repo": undefined,
+          "file-triggers-enabled": undefined,
+          "trigger-patterns": undefined,
+          "trigger-prefixes": undefined
+        };
+        this.attributesChange.emit(updates);
+      } else {
+        this.attributesChange.emit(this.inputAttributes);
+      }
+    }
   }
 
   overrideQueueAllRuns() {
     if (this.inputAttributes && "overrides" in this.inputAttributes) {
       this.overrides['queue-all-runs'] = this.inputAttributes['queue-all-runs'];
+      this.emitChange();
     }
   }
   unOverrideQueueAllRuns() {
     if (this.inputAttributes && "overrides" in this.inputAttributes) {
+      // Emit update change to set override back to null
       this.overrides['queue-all-runs'] = null;
+      this.emitChange();
+
+      // Revert value to project value
       if (this.projectAttributes) {
         this.inputAttributes['queue-all-runs'] = this.projectAttributes['queue-all-runs'];
       }

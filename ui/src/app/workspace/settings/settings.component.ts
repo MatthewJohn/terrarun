@@ -4,6 +4,7 @@ import { filter, Observable, takeWhile } from 'rxjs';
 import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/authorised-repo';
 import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
 import { ResponseObjectWithRelationships } from 'src/app/interfaces/response';
+import { WorkspaceUpdateAttributes } from 'src/app/interfaces/workspace';
 import { ProjectService } from 'src/app/project.service';
 import { OrganisationStateType, StateService, WorkspaceStateType } from 'src/app/state.service';
 import { WorkspaceService } from 'src/app/workspace.service';
@@ -20,6 +21,7 @@ export class SettingsComponent implements OnInit {
   organisationDetails: any;
   workspaceDetails: any;
   projectDetails: any;
+  settingChanges: WorkspaceUpdateAttributes;
 
   constructor(
     private stateService: StateService,
@@ -31,15 +33,26 @@ export class SettingsComponent implements OnInit {
     this.currentOrganisation = new Observable();
     this.workspaceDetails = null;
     this.projectDetails = null;
+    this.settingChanges = {
+      "file-triggers-enabled": undefined,
+      "trigger-patterns": undefined,
+      "trigger-prefixes": undefined,
+      "vcs-repo": undefined,
+      "queue-all-runs": undefined
+    };
   }
 
-  onChangeSettings() {
+  onSettingsChange(updates: WorkspaceUpdateAttributes) {
+    this.settingChanges = updates;
+  }
+
+  onSettingsSave() {
     if (this.workspaceDetails) {
       this.workspaceService.update(
         this.workspaceDetails.data.id,
-        this.workspaceDetails.data.attributes
+        this.settingChanges
       ).then((workspaceDetails) => {
-        // Update project details from response
+        // Update workspace details from response
         this.workspaceDetails = workspaceDetails;
       });
     }
@@ -50,7 +63,7 @@ export class SettingsComponent implements OnInit {
       this.workspaceDetails.data.id,
       vcsConfig
     ).then((workspaceDetails) => {
-      // Update project details from response
+      // Update workspace details from response
       this.workspaceDetails = workspaceDetails;
     });
   }

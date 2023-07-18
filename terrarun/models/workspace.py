@@ -481,6 +481,9 @@ class Workspace(Base, BaseObject):
             errors += vcs_repo_errors
             update_kwargs.update(vcs_repo_kwargs)
 
+        if "queue-all-runs" in attributes:
+            update_kwargs["queue_all_runs"] = attributes["queue-all-runs"]
+
         if "terraform-version" in attributes:
             tool = None
             if attributes["terraform-version"]:
