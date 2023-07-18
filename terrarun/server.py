@@ -1885,7 +1885,7 @@ class ApiTerraformWorkspace(AuthenticatedEndpoint):
                     for error in errors
                 ]
             }, 422
-        return {"data": workspace.get_api_details(effective_user=current_user)}
+        return {"data": workspace.get_api_details(effective_user=current_user)[0]}
 
 
 class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
@@ -3498,7 +3498,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 # has been assigned to an agent
                 pass
             else:
-                print(f'Job does not have a valid job_type: {job.job_type}')
+                print(f'Job does not have a valid job_type: {job.id}: {job.job_type}')
                 return {}, 204
 
             tool = job.run.tool if job.run.tool else job.run.configuration_version.workspace.tool

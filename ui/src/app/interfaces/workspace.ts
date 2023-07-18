@@ -1,3 +1,5 @@
+import { ProjectWorkspaceVcsConfigVcsChild } from "./project-workspace-vcs-config";
+
 export interface WorkspaceAttributes {
     "actions": {
         "is-destroyable": boolean;
@@ -62,6 +64,29 @@ export interface WorkspaceAttributes {
     "vcs-repo-identifier": string | null;
     "working-directory": string | null;
     "workspace-kpis-runs-count": number;
+
+    "overrides": {
+        "allow-destroy-plan": boolean | null;
+        "auto-apply": boolean | null;
+        "execution-mode": string | null;
+        "global-remote-state": boolean | null;
+        "operations": string | null;
+        "queue-all-runs": boolean | null;
+        "speculative-enabled": boolean | null;
+        "terraform-version": string | null;
+    };
+}
+
+// Interface for workspace attributes when updating
+// a workspace, allowing attributes to be nulled to revert
+// them back to the project configuration
+export interface WorkspaceUpdateAttributes {
+    "vcs-repo": ProjectWorkspaceVcsConfigVcsChild | null | undefined;
+    "file-triggers-enabled": boolean | undefined;
+    "trigger-prefixes": string[] | undefined;
+    "trigger-patterns": string[] | undefined;
+
+    "queue-all-runs": boolean | null | undefined;
 }
 
 export interface WorkspaceRelationships {

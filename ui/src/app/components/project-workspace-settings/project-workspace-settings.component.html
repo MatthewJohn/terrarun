@@ -1,0 +1,22 @@
+<nb-toggle [ngModel]="inputAttributes && inputAttributes['queue-all-runs']" (ngModelChange)="onQueueAllRunsChange($event)" [disabled]="overrides['queue-all-runs'] === null" >
+    Queue all runs
+</nb-toggle>
+<br />
+Whether VCS changes will automatically trigger a run.<br />
+If disabled, runs will need to be manually triggered after a VCS change has been detected.<br />
+<ng-container *ngIf="overrides['queue-all-runs'] === null; else ShowRemoveQueueAllRunsOverride">
+    This value is configured on the parent project.<br />
+    To change set a custom value on this workspace, it must be overriden.<br />
+    <button nbButton size="small" (click)="overrideQueueAllRuns()">Override</button>
+    <br />
+</ng-container>
+<ng-template #ShowRemoveQueueAllRunsOverride>
+    <ng-container *ngIf="overrides['queue-all-runs'] !== undefined">
+        This value has been overriden on this workspace.<br />
+        To revert back to the project value, the override can be removed.<br />
+        <button nbButton size="small" (click)="unOverrideQueueAllRuns()">Remove Override</button>
+        <br />
+    </ng-container>
+</ng-template>
+
+<br />
