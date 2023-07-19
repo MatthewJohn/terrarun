@@ -444,6 +444,11 @@ class Workspace(Base, BaseObject):
                 "invalid attribute", "VCS repo cannot be updated as it's managed in the parent project", "/data/attributes/vcs-repo"
             )]
 
+        if not self.project.lifecycle.allow_per_workspace_vcs:
+            return {}, [ApiError(
+                "invalid attribute", "Project lifecycle does not allow per-workspace VCS configurations", "/data/attributes/vcs-repo"
+            )]
+
         # Otherwise, attempt to get oauth token and authorised repo
         oauth_token = OauthToken.get_by_api_id(new_oauth_token_id)
         # If oauth token does not exist or is not associated to organisation, return error
