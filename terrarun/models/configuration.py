@@ -372,12 +372,11 @@ terraform {
                     "data": {
                         "id": self.ingress_attribute.api_id,
                         "type": "ingress-attributes"
-                    },
+                    } if self.ingress_attribute else None,
                     "links": {
-                        "related":
-                        f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
+                        "related": f"/api/v2/configuration-versions/{self.api_id}/ingress-attributes"
                     }
-                } if self.ingress_attribute else {},
+                },
 
                 # Custom relationship
                 "workspace": {
