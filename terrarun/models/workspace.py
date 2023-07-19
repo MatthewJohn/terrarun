@@ -466,13 +466,6 @@ class Workspace(Base, BaseObject):
         update_kwargs = {}
         errors = []
 
-        if 'vcs-repo' in attributes:
-            vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
-                vcs_repo_attributes=attributes["vcs-repo"]
-            )
-            errors += vcs_repo_errors
-            update_kwargs.update(vcs_repo_kwargs)
-
         if "queue-all-runs" in attributes:
             update_kwargs["queue_all_runs"] = attributes["queue-all-runs"]
 
@@ -487,6 +480,14 @@ class Workspace(Base, BaseObject):
                         pointer='/data/attributes/terraform-version'
                     ))
             update_kwargs["tool"] = tool
+
+
+        if 'vcs-repo' in attributes:
+            vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(
+                vcs_repo_attributes=attributes["vcs-repo"]
+            )
+            errors += vcs_repo_errors
+            update_kwargs.update(vcs_repo_kwargs)
 
             if attributes["vcs-repo"] is not None:
                 if "tags-regex" in attributes["vcs-repo"]:
