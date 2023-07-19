@@ -52,7 +52,6 @@ class Project(Base, BaseObject):
     allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     execution_mode = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceExecutionMode), nullable=True, default=WorkspaceExecutionMode.REMOTE)
-    file_triggers_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="file_triggers_enabled")
     global_remote_state = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="global_remote_state")
     operations = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="operations")
     queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="queue_all_runs")
@@ -339,7 +338,7 @@ class Project(Base, BaseObject):
                 "created-at": "2021-06-03T17:50:20.307Z",
                 "description": self.description,
                 "execution-mode": self.execution_mode.value,
-                "file-triggers-enabled": self.file_triggers_enabled,
+                "file-triggers-enabled": bool(self.trigger_patterns) or bool(self.trigger_prefixes),
                 "global-remote-state": self.global_remote_state,
                 "latest-change-at": "2021-06-23T17:50:48.815Z",
                 "name": self.name,

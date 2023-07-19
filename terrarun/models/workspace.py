@@ -76,7 +76,6 @@ class Workspace(Base, BaseObject):
     _allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="allow_destroy_plan")
     _auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="auto_apply")
     _execution_mode = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceExecutionMode), nullable=True, default=None, name="execution_mode")
-    _file_triggers_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="file_triggers_enabled")
     _global_remote_state = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="global_remote_state")
     _operations = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="operations")
     _queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="queue_all_runs")
@@ -250,15 +249,8 @@ class Workspace(Base, BaseObject):
 
     @property
     def file_triggers_enabled(self):
-        """Return file_triggers_enabled"""
-        if self._file_triggers_enabled is not None:
-            return self._file_triggers_enabled
-        return self.project.file_triggers_enabled
-
-    @file_triggers_enabled.setter
-    def file_triggers_enabled(self, value):
-        """Set file_triggers_enabled"""
-        self._file_triggers_enabled = value
+        """Return if file_triggers_enabled"""
+        return bool(self.trigger_patterns) or bool(self.trigger_prefixes)
 
     @property
     def global_remote_state(self):
