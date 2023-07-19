@@ -1942,12 +1942,15 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
+        api_request = ApiRequest(request)
         cv = ConfigurationVersion.create(
             workspace=workspace,
             auto_queue_runs=attributes.get('auto-queue-runs', True),
             speculative=attributes.get('speculative', False)
         )
-        return cv.get_api_details()
+        api_request.set_data(cv.get_api_details())
+
+        return api_request.get_response()
 
 
 class ApiTerraformWorkspaceRelationshipsTags(AuthenticatedEndpoint):
@@ -2023,7 +2026,10 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
-        return cv.get_api_details()
+
+        api_request = ApiRequest(request)
+        api_request.set_data(cv.get_api_details())
+        return api_request.get_response()
 
 
 class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
