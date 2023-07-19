@@ -23,6 +23,9 @@ from terrarun.database import Base, Database
 from terrarun.utils import datetime_to_json
 
 
+logger = get_logger(__name__)
+
+
 class ToolType(Enum):
 
     TERRAFORM_VERSION = "terraform-versions"
@@ -281,7 +284,6 @@ class Tool(Base, BaseObject):
     def get_presigned_download_url(self, force_download=False):
         """Obtain pre-signed URL for terraform binary"""
         object_storage = ObjectStorage()
-        logger = get_logger(obj=self)
 
         # Generate keys in s3
         zip_file = self.ZIP_FORMAT.format(
@@ -337,7 +339,6 @@ class Tool(Base, BaseObject):
             type=self.tool_type.value,
             api_id=self.api_id
         )
-        logger = get_logger(obj=self)
         logger.debug(f'Getting checksum for {zip_file}')
 
         # Check if file exists in s3
