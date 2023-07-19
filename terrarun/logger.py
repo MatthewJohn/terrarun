@@ -11,28 +11,14 @@ log_levels = {
     if class_log_level and len(class_log_level.split(':')) == 2
 }
 
-def get_logger(obj):
-    name = "terrarun"
-    class_name = ""
-
-    if 'api_id' in dir(obj) and isinstance(obj.api_id, str):
-        name = obj.api_id
-        class_name = obj.__class__.__name__
-    else:
-        name = "Unknown"
-        if hasattr(obj, "__name__"):
-            name = obj.__name__
-        elif hasattr(obj, "__class__") and hasattr(obj.__class__, "__name__"):
-            name = obj.__class__.__name__
-        name = name
-        class_name = name
+def get_logger(name):
 
     logger = logging.getLogger(name)
-    logger.setLevel(log_levels.get(class_name, Config().LOG_LEVEL_DEFAULT).upper())
+    logger.setLevel(log_levels.get(name, Config().LOG_LEVEL_DEFAULT).upper())
 
     # Add handler to logger
     logHandler = logging.StreamHandler(sys.stdout)
-    logHandler.setLevel(log_levels.get(class_name, Config().LOG_LEVEL_DEFAULT).upper())
+    logHandler.setLevel(log_levels.get(name, Config().LOG_LEVEL_DEFAULT).upper())
     logger.addHandler(logHandler)
 
     # Set handler format

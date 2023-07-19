@@ -22,6 +22,9 @@ import terrarun.models.run
 from terrarun.object_storage import ObjectStorage
 
 
+logger = get_logger(__name__)
+
+
 class ConfigurationVersionStatus(Enum):
 
     PENDING = 'pending'
@@ -227,7 +230,7 @@ terraform {
 
     def can_create_run(self, speculative):
         """Whether a run can be created for the configuration version"""
-        logger = get_logger(obj=self)
+        logger.debug(self.api_id)
 
         # Check if configuration version doesn't contain ingress attributes
         if self.ingress_attribute is None:

@@ -13,6 +13,9 @@ from terrarun.models.configuration import ConfigurationVersion
 from terrarun.models.run import Run
 
 
+log = get_logger(__name__)
+
+
 class CronTasks:
     """Interface to start cron tasks."""
 
@@ -35,8 +38,6 @@ class CronTasks:
 
     def _process_authorised_repo_workspace(self, authorised_repo, workspace, branch_shas):
         """Handle checking workspace for new commits to create run for"""
-        log = get_logger(workspace)
-
         log.debug(f'Handling workspace: {workspace.name}')
         service_provider = authorised_repo.oauth_token.oauth_client.service_provider_instance
 
@@ -173,8 +174,6 @@ class CronTasks:
 
     def check_for_vcs_commits(self):
         """Check for new commits on VCS repositories"""
-        log = get_logger(self)
-
         log.info("Checking for VCS commits")
 
         # Iterate over all authorised repos that have one workspace or project defined
