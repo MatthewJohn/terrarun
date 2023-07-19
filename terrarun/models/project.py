@@ -210,6 +210,8 @@ class Project(Base, BaseObject):
             ConfigurationVersion.id==Run.configuration_version_id
         ).filter(
             Project.id==self.id
+        ).order_by(
+            IngressAttribute.id.desc()
         )
         query = api_request.limit_query(query)
         return query.all()
@@ -280,6 +282,9 @@ class Project(Base, BaseObject):
                         pointer='/data/attributes/terraform-version'
                     ))
             update_kwargs["tool"] = tool
+
+        if "queue-all-runs" in attributes:
+            update_kwargs["queue_all_runs"] = attributes["queue-all-runs"]
 
         if "vcs-repo" in attributes:
             vcs_repo_kwargs, vcs_repo_errors = self.check_vcs_repo_update_from_request(

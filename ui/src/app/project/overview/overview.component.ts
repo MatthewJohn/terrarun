@@ -9,6 +9,7 @@ import { AuthorisedRepo, AuthorisedRepoRelationships } from 'src/app/interfaces/
 import { ConfigurationVersionAttributes, ConfigurationVersionRelationships } from 'src/app/interfaces/configuration-version';
 import { IngressAttributeAttribues } from 'src/app/interfaces/ingress-attribute';
 import { OauthClient } from 'src/app/interfaces/oauth-client';
+import { ProjectAttributes } from 'src/app/interfaces/project';
 import { ProjectWorkspaceVcsConfig } from 'src/app/interfaces/project-workspace-vcs-config';
 import { ResponseObject, ResponseObjectWithRelationships, TypedResponseObject, TypedResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { RunAttributes, RunRelationships } from 'src/app/interfaces/run';
@@ -88,11 +89,18 @@ export class OverviewComponent implements OnInit {
     })
   }
 
+  onProjectAttributesChange(value: ProjectAttributes): void {
+    if (this.projectDetails) {
+      this.projectDetails.data.attributes = value;
+    }
+  }
+
   onGeneralSettingsSubmit() {
     if (this.projectDetails?.data.id) {
       this.projectService.update(
         this.projectDetails.data.id,
         {
+          ...this.projectDetails.data.attributes,
           "execution-mode": this.generalSettingsForm.value.executionMode,
           "terraform-version": this.generalSettingsTerraformVersion
         }
@@ -275,6 +283,18 @@ export class OverviewComponent implements OnInit {
         }
       });
     });
+
+    // Obtain ingress attributes for project, for any ingress attributes that don't have
+    // a run associated to a workspace
+    if (this.projectDetails) {
+      let ingressAttributeSubscription = this.projectService.getIngressAttributes(this.projectDetails.data.id).subscribe((ingressAttributes) => {
+        ingressAttributeSubscription.unsubscribe();
+
+        ingressAttributes.data.forEach((ingressAttribute) => {
+          this.ingressAttributes[ingressAttribute.id] = ingressAttribute;
+        })
+      });
+    }
 
     if (this._runUpdateInterval !== false) {
       this._runUpdateInterval = setTimeout(() => {this.updateRunList();}, 5000);

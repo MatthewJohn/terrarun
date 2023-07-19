@@ -19,9 +19,13 @@ def get_logger(obj):
         name = obj.api_id
         class_name = obj.__class__.__name__
     else:
-        name = obj.__name__
-        class_name = obj.__name__ 
-
+        name = "Unknown"
+        if hasattr(obj, "__name__"):
+            name = obj.__name__
+        elif hasattr(obj, "__class__") and hasattr(obj.__class__, "__name__"):
+            name = obj.__class__.__name__
+        name = name
+        class_name = name
 
     logger = logging.getLogger(name)
     logger.setLevel(log_levels.get(class_name, Config().LOG_LEVEL_DEFAULT).upper())

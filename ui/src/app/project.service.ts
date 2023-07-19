@@ -2,6 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AccountService } from './account.service';
+import { DataList } from './interfaces/data';
+import { IngressAttributeAttribues } from './interfaces/ingress-attribute';
+import { ResponseObject } from './interfaces/response';
 
 @Injectable({
   providedIn: 'root'
@@ -62,6 +65,13 @@ export class ProjectService {
   getDetailsByOrganisationNameAndWorkspaceName(organisationName: string, workspaceName: string): Observable<any> {
     return this.http.get<any>(
       `/api/v2/organizations/${organisationName}/workspaces/${workspaceName}/relationships/projects`,
+      { headers: this.accountService.getAuthHeader() }
+    );
+  }
+
+  getIngressAttributes(projectId: string): Observable<DataList<ResponseObject<IngressAttributeAttribues>>> {
+    return this.http.get<DataList<ResponseObject<IngressAttributeAttribues>>>(
+      `/api/v2/projects/${projectId}/ingress-attributes`,
       { headers: this.accountService.getAuthHeader() }
     );
   }

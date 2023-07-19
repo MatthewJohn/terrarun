@@ -70,13 +70,14 @@
           Remote/Agent will execute Terraform remotely in Terrarun, either on global workers or assigned agent pools.<br />
           Local execution will run Terraform locally on the workstation with only state being managed by Terrarun.<br />
           In local execution mode, all VCS integration is ignored.<br />
-        
+
           <br />
 
           <terraform-version-select [(value)]="generalSettingsTerraformVersion">
           </terraform-version-select>
           <br /><br />
 
+          <project-workspace-settings [attributes]="projectDetails?.data.attributes" (attributesChange)="onProjectAttributesChange($event)"></project-workspace-settings>
 
           <button nbButton type="submit">Update</button>
         </form>

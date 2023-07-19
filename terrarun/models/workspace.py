@@ -481,6 +481,9 @@ class Workspace(Base, BaseObject):
             errors += vcs_repo_errors
             update_kwargs.update(vcs_repo_kwargs)
 
+        if "queue-all-runs" in attributes:
+            update_kwargs["queue_all_runs"] = attributes["queue-all-runs"]
+
         if "terraform-version" in attributes:
             tool = None
             if attributes["terraform-version"]:
@@ -675,7 +678,20 @@ class Workspace(Base, BaseObject):
                 } if self.authorised_repo else None,
                 "vcs-repo-identifier": self.authorised_repo.display_identifier if self.authorised_repo else None,
                 "working-directory": self.working_directory,
-                "workspace-kpis-runs-count": 7
+                "workspace-kpis-runs-count": 7,
+
+                # Custom terrarun attribute with override values over the
+                # project configuration
+                "overrides": {
+                    "allow-destroy-plan": self._allow_destroy_plan,
+                    "auto-apply": self._auto_apply,
+                    "execution-mode": self._execution_mode.value if self._execution_mode else None,
+                    "global-remote-state": self._global_remote_state,
+                    "operations": self._operations,
+                    "queue-all-runs": self._queue_all_runs,
+                    "speculative-enabled": self._speculative_enabled,
+                    "terraform-version": self._tool.version if self._tool else None
+                }
             },
             "id": self.api_id,
             "links": {
