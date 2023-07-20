@@ -711,15 +711,16 @@ class Workspace(Base, BaseObject):
                         "related": f"/api/v2/configuration-versions/{self.latest_configuration_version.api_id}"
                     }
                 } if self.latest_configuration_version else {},
-                "current-run": {
-                    "data": {
-                        "id": "run-UyCw2TDCmxtfdjmy",
-                        "type": "runs"
-                    },
-                    "links": {
-                        "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
-                    }
-                },
+                # "current-run": {
+                #     # "data": None,{
+                #     #     "id": "run-UyCw2TDCmxtfdjmy",
+                #     #     "type": "runs"
+                #     # },
+                #     "links": {
+                #         "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
+                #     }
+                # },
+                "current-run": {},
                 "project": {
                     "data": {
                         "id": self.project.api_id,
