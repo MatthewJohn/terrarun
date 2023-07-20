@@ -62,3 +62,9 @@ class FailedToUnlockWorkspaceError(TerrarunError):
     """failed to unlocked workspace due to an error"""
 
     pass
+
+
+class RunCannotBeCancelledError(TerrarunError):
+    """Run is not in a state that can be cancelled"""
+
+    pass

@@ -5,7 +5,10 @@ import { NbDialogService } from '@nebular/theme';
 import { map, Observable } from 'rxjs';
 import { ErrorDialogueComponent } from 'src/app/components/error-dialogue/error-dialogue.component';
 import { TriggerRunPopupComponent } from 'src/app/components/trigger-run-popup/trigger-run-popup.component';
+import { DataItem } from 'src/app/interfaces/data';
+import { ResponseObjectWithRelationships } from 'src/app/interfaces/response';
 import { RunCreateAttributes } from 'src/app/interfaces/run-create-attributes';
+import { WorkspaceAttributes, WorkspaceRelationships } from 'src/app/interfaces/workspace';
 import { RunStatusFactory } from 'src/app/models/RunStatus/run-status-factory';
 import { RunService } from 'src/app/run.service';
 import { OrganisationStateType, StateService, WorkspaceStateType } from 'src/app/state.service';
@@ -22,6 +25,7 @@ export class RunListComponent implements OnInit {
   tableColumns: string[] = ['icon', 'id', 'commit-message', 'runStatus', 'created-at'];
   workspaceName: string | null = null;
   organisationName: string | null = null;
+  workspaceDetails: DataItem<ResponseObjectWithRelationships<WorkspaceAttributes, WorkspaceRelationships>> | null = null;
   _updateInterval: any;
 
 
@@ -67,7 +71,22 @@ export class RunListComponent implements OnInit {
     });
   }
 
+  isCurrentRun(row: any): string {
+    console.log(row.data.id)
+    console.log("vs: " + this.workspaceDetails?.data.relationships['current-run'].data?.id);
+    if (this.workspaceDetails?.data.relationships['current-run'].data?.id == row.data.id) {
+      return "active-run";
+    }
+    return "";
+  }
+
   updateRuns(): void {
+    if (this.currentWorkspace?.id) {
+      let workspaceDataSubscription = this.workspaceService.getDetailsById(this.currentWorkspace?.id).subscribe((data) => {
+        workspaceDataSubscription.unsubscribe();
+        this.workspaceDetails = data;
+      })
+    }
     this.runs$ = this.workspaceService.getRuns(this.currentWorkspace?.id || '').pipe(
       map((data) => {
         // Filter includes into configuration versions and ingress attributes

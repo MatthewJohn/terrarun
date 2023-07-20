@@ -73,6 +73,9 @@ class Worker:
         elif run.status is RunStatus.PRE_APPLY_RUNNING:
             run.handle_pre_apply_running()
 
+        elif run.status is RunStatus.CANCELED:
+            # Handle cancelled run
+            run.unlock_workspace()
         else:
             print(f'Unknown job status for worker: {run.status}')
 

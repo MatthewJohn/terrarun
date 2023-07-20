@@ -711,16 +711,31 @@ class Workspace(Base, BaseObject):
                         "related": f"/api/v2/configuration-versions/{self.latest_configuration_version.api_id}"
                     }
                 } if self.latest_configuration_version else {},
-                # "current-run": {
-                #     # "data": None,{
-                #     #     "id": "run-UyCw2TDCmxtfdjmy",
-                #     #     "type": "runs"
-                #     # },
-                #     "links": {
-                #         "related": "/api/v2/runs/run-UyCw2TDCmxtfdjmy"
-                #     }
-                # },
-                "current-run": {},
+                "locked-by": {
+                    "data": {
+                        "id": self.locked_by_run.api_id,
+                        "type": "runs"
+                    } if self.locked_by_run else {
+                        "id": self.locked_by_user.api_id,
+                        "type": "users"
+                    },
+                    "links": {
+                        "related": (
+                            f"/api/v2/runs/{self.locked_by_run.api_id}"
+                            if self.locked_by_run else
+                            f"/api/v2/users/{self.locked_by_user.api_id}"
+                        )
+                    }
+                } if self.locked_by_run or self.locked_by_user else {},
+                "current-run": {
+                    "data": {
+                        "id": self.locked_by_run.api_id,
+                        "type": "runs"
+                    },
+                    "links": {
+                        "related": f"/api/v2/runs/{self.locked_by_run.api_id}"
+                    }
+                } if self.locked_by_run else {},
                 "project": {
                     "data": {
                         "id": self.project.api_id,
