@@ -736,7 +736,6 @@ class Workspace(Base, BaseObject):
                         "related": f"/api/v2/runs/{self.locked_by_run.api_id}"
                     }
                 } if self.locked_by_run else {},
-                "current-run": {},
                 "project": {
                     "data": {
                         "id": self.project.api_id,
