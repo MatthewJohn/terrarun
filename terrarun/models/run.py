@@ -11,7 +11,7 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
 from terrarun.api_request import ApiRequest
-from terrarun.errors import FailedToUnlockWorkspaceError, RunCannotBeDiscardedError
+from terrarun.errors import FailedToUnlockWorkspaceError, RunCannotBeCancelledError, RunCannotBeDiscardedError
 from terrarun.models.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
@@ -168,6 +168,10 @@ class Run(Base, BaseObject):
 
         session.commit()
         session.refresh(run)
+        # Generate API ID, so that it can't be performed silently on multiple
+        # duplicate requests, causing the API ID to be generated twice and
+        # different values returned in different responses
+        run.api_id
         run.update_status(RunStatus.PENDING, current_user=created_by)
 
         # Create all task stages
@@ -190,12 +194,9 @@ class Run(Base, BaseObject):
 
     def cancel(self, user):
         """Cancel run"""
-        # @TODO Check status
-        # @TODO Should the workspace be immediately unlocked or once
-        # the job status has checked in and the run has _actually_ stopped?
+        if self.status in [RunStatus.APPLIED, RunStatus.PLANNED_AND_FINISHED, RunStatus.POST_PLAN_COMPLETED]:
+            raise RunCannotBeCancelledError("Run is not in a state that can be cancelled")
         self.update_status(RunStatus.CANCELED, current_user=user)
-        if not self.configuration_version.workspace.unlock(run=self):
-            raise FailedToUnlockWorkspaceError("Failed to unlock run")
 
     def discard(self, user):
         """Discard run"""

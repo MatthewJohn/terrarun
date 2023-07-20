@@ -97,6 +97,8 @@ class JobProcessor:
         # Update run status
         ## Do not update run status if is has been cancelled
         if run.status == RunStatus.CANCELED:
+            # Unlock workspace
+            run.unlock_workspace()
             return
 
         elif plan_status is TerraformCommandState.RUNNING:
@@ -146,9 +148,7 @@ class JobProcessor:
         ## Do not update run status if is has been cancelled
         if run.status == RunStatus.CANCELED:
             # Unlock workspace
-            # @TODO Should this be performed when the cancel request
-            # is provided, or when when the job is stopped on the agent after cancelling?
-            #run.unlock_workspace()
+            run.unlock_workspace()
             return
 
         elif apply_status is TerraformCommandState.RUNNING:

@@ -109,11 +109,11 @@ export interface WorkspaceRelationships {
         "data": {
             "id": string;
             "type": string;
-        },
+        } | undefined,
         "links": {
             "related": string;
-        }
-    } | {};
+        } | undefined;
+    };
     "project": {
         "data": {
             "id": string;

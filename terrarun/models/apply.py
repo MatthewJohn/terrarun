@@ -42,6 +42,10 @@ class Apply(TerraformCommand, Base):
         session = Database.get_session()
         session.add(apply)
         session.commit()
+        # Generate API ID, so that it can't be performed silently on multiple
+        # duplicate requests, causing the API ID to be generated twice and
+        # different values returned in different responses
+        apply.api_id
         apply.update_status(TerraformCommandState.PENDING)
         return apply
 

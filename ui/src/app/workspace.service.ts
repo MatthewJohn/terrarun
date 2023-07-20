@@ -3,10 +3,11 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AccountService } from './account.service';
 import { ConfigurationVersionAttributes, ConfigurationVersionRelationships } from './interfaces/configuration-version';
-import { DataList, DataListWithIncluded } from './interfaces/data';
+import { DataItem, DataList, DataListWithIncluded } from './interfaces/data';
 import { IngressAttributeAttribues } from './interfaces/ingress-attribute';
 import { ResponseObject, ResponseObjectWithRelationships, TypedResponseObject, TypedResponseObjectWithRelationships } from './interfaces/response';
 import { RunAttributes, RunRelationships } from './interfaces/run';
+import { WorkspaceAttributes, WorkspaceRelationships } from './interfaces/workspace';
 
 @Injectable({
   providedIn: 'root'
@@ -57,8 +58,8 @@ export class WorkspaceService {
     );
   }
 
-  getDetailsById(workspaceId: string): Observable<any> {
-    return this.http.get<any>(
+  getDetailsById(workspaceId: string): Observable<DataItem<ResponseObjectWithRelationships<WorkspaceAttributes, WorkspaceRelationships>>> {
+    return this.http.get<DataItem<ResponseObjectWithRelationships<WorkspaceAttributes, WorkspaceRelationships>>>(
       `/api/v2/workspaces/${workspaceId}`,
       { headers: this.accountService.getAuthHeader() }
     );
