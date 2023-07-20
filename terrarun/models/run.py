@@ -168,6 +168,10 @@ class Run(Base, BaseObject):
 
         session.commit()
         session.refresh(run)
+        # Generate API ID, so that it can't be performed silently on multiple
+        # duplicate requests, causing the API ID to be generated twice and
+        # different values returned in different responses
+        run.api_id
         run.update_status(RunStatus.PENDING, current_user=created_by)
 
         # Create all task stages

@@ -59,6 +59,11 @@ class Plan(TerraformCommand, Base):
         session = Database.get_session()
         session.add(plan)
         session.commit()
+
+        # Generate API ID, so that it can't be performed silently on multiple
+        # duplicate requests, causing the API ID to be generated twice and
+        # different values returned in different responses
+        plan.api_id
         plan.update_status(TerraformCommandState.PENDING)
         return plan
 
