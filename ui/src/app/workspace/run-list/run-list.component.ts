@@ -22,7 +22,7 @@ import { WorkspaceService } from 'src/app/workspace.service';
 export class RunListComponent implements OnInit {
 
   runs$: Observable<any> | null = null;
-  tableColumns: string[] = ['icon', 'id', 'commit-message', 'runStatus', 'created-at'];
+  tableColumns: string[] = ['icon', 'id', 'commit-message', 'run-type', 'runStatus', 'created-at'];
   workspaceName: string | null = null;
   organisationName: string | null = null;
   workspaceDetails: DataItem<ResponseObjectWithRelationships<WorkspaceAttributes, WorkspaceRelationships>> | null = null;
