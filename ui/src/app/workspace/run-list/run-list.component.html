@@ -19,12 +19,33 @@
                                     <nb-icon [icon]="row.data.runStatus.getIcon()"></nb-icon>
                                 </div>
                                 <div *ngSwitchCase="column == 'commit-message'">
-                                    <ng-container *ngIf="row.data.ingressAttribute?.attributes['commit-sha']">
+                                    <ng-container *ngIf="row.data.ingressAttribute?.attributes['commit-sha']; else noCommitMessage">
                                         <a href="{{ row.data.ingressAttribute?.attributes['commit-url'] }}">
                                             {{ row.data.ingressAttribute?.attributes['commit-sha']?.substring(0, 8) }}:
                                             {{ row.data.ingressAttribute?.attributes['commit-message']?.length >= 50 ? row.data.ingressAttribute?.attributes['commit-message']?.substring(0, 50) + '...' : row.data.ingressAttribute?.attributes['commit-message'] }}
                                         </a>
                                     </ng-container>
+                                    <ng-template #noCommitMessage>
+                                        Local run
+                                    </ng-template>
+                                </div>
+                                <div *ngSwitchCase="column == 'run-type'">
+                                    <ng-container *ngIf="row.data['refresh-only']; else typeNonRefresh">
+                                        Refresh-Only
+                                    </ng-container>
+                                    <ng-template #typeNonRefresh>
+                                        <ng-container *ngIf="row.data['is-destroy']; else typeNonDestroy">
+                                            Destroy
+                                        </ng-container>
+                                    </ng-template>
+                                    <ng-template #typeNonDestroy>
+                                        <ng-container *ngIf="row.data['plan-only']; else typeApply">
+                                            Plan
+                                        </ng-container>
+                                    </ng-template>
+                                    <ng-template #typeApply>
+                                        Apply
+                                    </ng-template>
                                 </div>
                                 <div *ngSwitchCase="column == 'runStatus'">
                                     <nb-tag size="small" [status]="row.data[column].getColor()" appearance="outline" [text]="row.data[column].getName()">
