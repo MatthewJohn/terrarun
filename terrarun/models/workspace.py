@@ -731,11 +731,11 @@ class Workspace(Base, BaseObject):
                     "data": {
                         "id": self.locked_by_run.api_id,
                         "type": "runs"
-                    } if self.locked_by_run else None,
+                    },
                     "links": {
                         "related": f"/api/v2/runs/{self.locked_by_run.api_id}"
                     }
-                },
+                } if self.locked_by_run else {},
                 "current-run": {},
                 "project": {
                     "data": {
