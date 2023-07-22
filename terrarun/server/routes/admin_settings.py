@@ -4,7 +4,7 @@ from flask import request
 
 from terrarun.api_request import ApiRequest
 from terrarun.permissions.user import UserPermissions
-from terrarun.saml import Saml
+from terrarun.models.saml_settings import SamlSettings
 from terrarun.server.route_registration import RouteRegistration
 from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 
@@ -17,9 +17,9 @@ class AdminSettingsSamlSettings(AuthenticatedEndpoint):
 
     def _get(self, current_user, current_job):
         """Obtain SAML settings"""
-        saml = Saml()
+        saml_settings = SamlSettings.get_instance()
         api_request = ApiRequest(request)
-        api_request.set_data(saml.get_api_details())
+        api_request.set_data(saml_settings.get_api_details())
         return api_request.get_response()
 
 

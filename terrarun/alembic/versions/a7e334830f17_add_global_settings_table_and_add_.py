@@ -26,28 +26,16 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
 
-    bind = op.get_bind()
-    for name, data_type, value in [
-                ("saml-enabled", "bool", ""),
-                ("saml-debug", "bool", ""),
-                ("saml-old-idp-cert", "string", None),
-                ("saml-idp-cert", "string", None),
-                ("saml-slo-endpoint-url", "string", None),
-                ("saml-sso-endpoint-url", "string", None),
-                ("saml-attr-username", "string", None),
-                ("saml-attr-groups", "string", None),
-                ("saml-attr-site-admin", "string", None),
-                ("saml-site-admin-role", "string", None),
-                ("saml-sso-api-token-session-timeout", "int", 1209600),
-                ("saml-acs-consumer-url", "string", None),
-                ("saml-metadata-url", "string", None),
-            ]:
-        bind.execute(
-            sa.sql.text("""INSERT INTO global_setting(name, data_type, value) VALUES(:name, :data_type, :value)"""),
-            name=name,
-            data_type=data_type,
-            value=value
-        )
+    # Example to add settings to global settings table
+    # bind = op.get_bind()
+    # for name, data_type, value in [
+    #         ]:
+    #     bind.execute(
+    #         sa.sql.text("""INSERT INTO global_setting(name, data_type, value) VALUES(:name, :data_type, :value)"""),
+    #         name=name,
+    #         data_type=data_type,
+    #         value=value
+    #     )
     # ### end Alembic commands ###
 
 
