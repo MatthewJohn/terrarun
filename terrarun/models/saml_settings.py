@@ -38,6 +38,11 @@ class SamlSettings(Base):
             session.commit()
         return res
 
+    def update_from_request_attributes(self, attributes, api_request):
+        """Update SAML attributes from request attributes"""
+        if "enabled" not in attributes:
+            pass
+
     def get_api_details(self):
         """Return API request details"""
         return {

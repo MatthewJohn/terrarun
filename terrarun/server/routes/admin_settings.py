@@ -1,6 +1,8 @@
 
 
 from flask import request
+from terrarun.api_entities.base_entity import ApiErrorView
+from terrarun.api_entities.saml_settings import SamlSettingsEntity, SamlSettingsView
 
 from terrarun.api_request import ApiRequest
 from terrarun.permissions.user import UserPermissions
@@ -18,9 +20,27 @@ class AdminSettingsSamlSettings(AuthenticatedEndpoint):
     def _get(self, current_user, current_job):
         """Obtain SAML settings"""
         saml_settings = SamlSettings.get_instance()
-        api_request = ApiRequest(request)
-        api_request.set_data(saml_settings.get_api_details())
-        return api_request.get_response()
+        view = SamlSettingsView.from_object(saml_settings)
+        return view.to_response()
+
+    def check_permissions_post(self, current_user, current_job):
+        """Check permissions to update SAML settings"""
+        return current_user.site_admin
+
+    def _post(self, current_user, current_job):
+        """Update SAML settings"""
+        saml_settings = SamlSettings.get_instance()
+
+        err, update_attributes = SamlSettingsEntity.from_request(request.json)
+        if err:
+            return ApiErrorView(error=err).to_response()
+        print(update_attributes)
+
+        saml_settings.update_attributes(**update_attributes)
+
+        view = SamlSettingsView.from_object(saml_settings)
+        return view.to_response()
+
 
 
 class AdminSettingsRouteRegistration(RouteRegistration):
