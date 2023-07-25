@@ -1,9 +1,29 @@
 
+from re import L
 import sqlalchemy
+from terrarun.api_error import ApiError
 
 from terrarun.database import Base, Database
 import terrarun.database
 from terrarun.models.global_setting import GlobalSetting
+
+
+class IdpCertificateMustBePresentError(ApiError):
+    """IDP Certificate not provided."""
+
+    pass
+
+
+class SsoEndpointUrlMustBePresentError(ApiError):
+    """SSO Endpoint URL not provided."""
+
+    pass
+
+
+class SloEndpointUrlMustBePresentError(ApiError):
+    """SLO endpoint URL not provided."""
+
+    pass
 
 
 class SamlSettings(Base):
@@ -14,7 +34,6 @@ class SamlSettings(Base):
 
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     debug = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-    debug = sqlalchemy.Column(terrarun.database.Database.LargeString, default=None)
     old_idp_cert = sqlalchemy.Column(terrarun.database.Database.LargeString, default=None)
     idp_cert = sqlalchemy.Column(terrarun.database.Database.LargeString, default=None)
     slo_endpoint_url = sqlalchemy.Column(terrarun.database.Database.LargeString, default=None)
@@ -38,30 +57,31 @@ class SamlSettings(Base):
             session.commit()
         return res
 
-    def update_from_request_attributes(self, attributes, api_request):
+    def update_attributes(self, entity):
         """Update SAML attributes from request attributes"""
-        if "enabled" not in attributes:
-            pass
+        for attribute, value in entity.get_set_object_attributes().items():
+            setattr(self, attribute, value)
 
-    def get_api_details(self):
-        """Return API request details"""
-        return {
-            "id": "saml",
-            "type": "saml-settings",
-            "attributes": {
-                "enabled": self.enabled,
-                "debug": self.debug,
-                "old-idp-cert": self.old_idp_cert,
-                "idp-cert": self.idp_cert,
-                "slo-endpoint-url": self.slo_endpoint_url,
-                "sso-endpoint-url": self.sso_endpoint_url,
-                "attr-username": self.attr_username,
-                "attr-groups": self.attr_groups,
-                "attr-site-admin": self.attr_site_admin,
-                "site-admin-role": self.site_admin_role,
-                "sso-api-token-session-timeout": self.sso_api_token_session_timeout,
-                "acs-consumer-url": self.acs_consumer_url,
-                "metadata-url": self.metadata_url
-            }
-        }
+        if self.enabled:
+            if not self.idp_cert:
+                raise IdpCertificateMustBePresentError(
+                    "IDP certificate is required to enable SAML",
+                    "An IDP certificate must be provided when enabling SAML",
+                    pointer="/data/attributes/idp-cert"
+                )
+            if not self.slo_endpoint_url:
+                raise SloEndpointUrlMustBePresentError(
+                    "SLO endpoint is required to enable SAML",
+                    "An SLO endpoint URL must be provided when enabling SAML",
+                    pointer="/data/attributes/slo-endpoint-url"
+                )
+            if not self.sso_endpoint_url:
+                raise SsoEndpointUrlMustBePresentError(
+                    "SSO endpoint is required to enable SAML",
+                    "An SSO endpoint URL must be provided when enabling SAML",
+                    pointer="/data/attributes/sso-endpoint-url"
+                )
 
+        session = Database.get_session()
+        session.add(self)
+        session.commit()

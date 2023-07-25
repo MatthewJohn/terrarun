@@ -4,9 +4,12 @@ from terrarun.models.saml_settings import SamlSettings as SamlSettingsModel
 from .base_entity import BaseEntity, EntityView, Attribute, ATTRIBUTED_REQUIRED
 
 
-class SamlSettingsEntity(BaseEntity):
+class BaseSamlSettingsEntity(BaseEntity):
 
     type = "saml-settings"
+
+
+class SamlSettingsUpdateEntity(BaseSamlSettingsEntity):
 
     attributes = (
         Attribute("enabled", "enabled", bool, False),
@@ -19,35 +22,16 @@ class SamlSettingsEntity(BaseEntity):
         Attribute("attr-groups", "attr_groups", str, "MemberOf"),
         Attribute("attr-site-admin", "attr_site_admin", str, "SiteAdmin"),
         Attribute("site-admin-role", "site_admin_role", str, "site-admins"),
-        Attribute("sso-api-token-session-timeout", "sso_api_token_session_timeout", int, 1209600),
-        Attribute("acs-consumer-url", "acs_consumer_url", str, ""),
-        Attribute("metadata-url", "metadata_url", str, "")
+        Attribute("sso-api-token-session-timeout", "sso_api_token_session_timeout", int, 1209600)
     )
 
-    def __init__(self, id,
-                 enabled, debug,
-                 old_idp_cert, idp_cert,
-                 slo_endpoint_url, sso_endpoint_url,
-                 attr_username, attr_groups,
-                 attr_site_admin, site_admin_role,
-                 sso_api_token_session_timeout,
-                 acs_consumer_url, metadata_url):
-        """Store member variables"""
-        super().__init__()
-        self.id = id
-        self.enabled = enabled
-        self.debug = debug
-        self.old_idp_cert = old_idp_cert
-        self.idp_cert = idp_cert
-        self.slo_endpoint_url = slo_endpoint_url
-        self.sso_endpoint_url = sso_endpoint_url
-        self.attr_username = attr_username
-        self.attr_groups = attr_groups
-        self.attr_site_admin = attr_site_admin
-        self.site_admin_role = site_admin_role
-        self.sso_api_token_session_timeout = sso_api_token_session_timeout
-        self.acs_consumer_url = acs_consumer_url
-        self.metadata_url = metadata_url
+
+class SamlSettingsEntity(BaseSamlSettingsEntity):
+
+    attributes = SamlSettingsUpdateEntity.attributes + (
+        Attribute(None, "acs_consumer_url", str, None),
+        Attribute(None, "metadata_url", str, None),
+    )
 
     def get_attributes(self):
         """Return saml provider attributes"""

@@ -21,7 +21,7 @@ def upgrade() -> None:
     op.create_table('saml_settings',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('enabled', sa.Boolean(), nullable=True),
-    sa.Column('debug', sa.String(length=1024), nullable=True),
+    sa.Column('debug', sa.Boolean(), nullable=True),
     sa.Column('old_idp_cert', sa.String(length=1024), nullable=True),
     sa.Column('idp_cert', sa.String(length=1024), nullable=True),
     sa.Column('slo_endpoint_url', sa.String(length=1024), nullable=True),

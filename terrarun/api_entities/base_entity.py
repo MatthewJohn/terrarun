@@ -20,6 +20,10 @@ class Attribute:
 
     def validate_request_data(self, request_attributes):
         """Validate request attributes and return key and value from request"""
+        # Ignore any attributes that don't have a request mapping
+        if self.req_attribute is None:
+            return None, None, None
+
         val = request_attributes.get(self.req_attribute, UNDEFINED)
 
         # If value is not present in request...
@@ -54,7 +58,6 @@ class Attribute:
             raise Exception("Unsupported attribute type")
 
         return None, self.obj_attribute, val
-            
 
 
 class BaseEntity:
@@ -65,10 +68,16 @@ class BaseEntity:
 
     attributes = tuple()
 
-    def __init__(self, **kwargs):
+    def __init__(self, id=None, **kwargs):
         """Assign attributes from kwargs to attributes"""
-        for kwarg in kwargs:
-            setattr(self, kwarg, kwargs[kwarg])
+        self.id = id
+
+        for attribute in self.attributes:
+            setattr(
+                self,
+                attribute.obj_attribute,
+                kwargs[attribute.obj_attribute] if attribute.obj_attribute in kwargs else UNDEFINED
+            )
 
     def get_type(self):
         """Return entity type"""
@@ -83,8 +92,16 @@ class BaseEntity:
         return self.id
 
     def get_attributes(self):
-        """Return attributes for entity"""
+        """Return API attributes for entity"""
         raise NotImplementedError
+
+    def get_set_object_attributes(self):
+        """Return all set object attributes"""
+        return {
+            attr.obj_attribute: getattr(self, attr.obj_attribute)
+            for attr in self.attributes
+            if getattr(self, attr.obj_attribute) is not UNDEFINED
+        }
 
     @classmethod
     def from_request(cls, request_args, create=False):
@@ -96,7 +113,6 @@ class BaseEntity:
 
         request_data = request_args.get("data", {})
         if request_data.get("type") != cls.type:
-            # @TODO Return error
             return ApiError(
                 "Invalid type",
                 f"The object type was either not provided or is not valid for this request",
@@ -119,7 +135,8 @@ class BaseEntity:
             err, key, value = attribute.validate_request_data(request_attributes)
             if err:
                 return err, None
-            obj_attributes[key] = value
+            if key is not None:
+                obj_attributes[key] = value
         
         return None, cls(**obj_attributes)
 
