@@ -1,8 +1,8 @@
 """Add tables for variables, variable version, variable sets and associations with workspaces and projects
 
-Revision ID: 0864e10e184e
+Revision ID: 5c4ea04c4f50
 Revises: 18a54e4fe8ad
-Create Date: 2023-07-26 04:49:05.529404
+Create Date: 2023-07-26 05:08:03.342687
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0864e10e184e'
+revision = '5c4ea04c4f50'
 down_revision = '18a54e4fe8ad'
 branch_labels = None
 depends_on = None
@@ -24,22 +24,18 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=128), nullable=False),
     sa.Column('description', sa.String(length=1024), nullable=True),
     sa.Column('workspace_id', sa.Integer(), nullable=True),
-    sa.Column('variable_set_id', sa.Integer(), nullable=True),
-    sa.Column('variable_version_id', sa.Integer(), nullable=True),
     sa.Column('category', sa.Enum('TERRAFORM', 'ENV', name='variablecategory'), nullable=False),
     sa.Column('hcl', sa.Boolean(), nullable=False),
     sa.Column('sensitive', sa.Boolean(), nullable=False),
-    sa.ForeignKeyConstraint(['api_id_fk'], ['api_id.id'], ),
-    sa.ForeignKeyConstraint(['variable_set_id'], ['workspace.id'], ),
-    sa.ForeignKeyConstraint(['variable_version_id'], ['variable_version.id'], ),
-    sa.ForeignKeyConstraint(['workspace_id'], ['workspace.id'], ),
+    sa.ForeignKeyConstraint(['api_id_fk'], ['api_id.id'], name='fk_variable_api_id_id'),
+    sa.ForeignKeyConstraint(['workspace_id'], ['workspace.id'], name='fk_variable_workspace_workspace_id'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('variable_version',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('variable_id', sa.Integer(), nullable=False),
     sa.Column('value', sa.String(length=1024), nullable=True),
-    sa.ForeignKeyConstraint(['variable_id'], ['variable.id'], ),
+    sa.ForeignKeyConstraint(['variable_id'], ['variable.id'], name='fk_variable_version_variable_id'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('variable_set',
@@ -49,22 +45,22 @@ def upgrade() -> None:
     sa.Column('description', sa.String(length=1024), nullable=True),
     sa.Column('is_global', sa.Boolean(), nullable=False),
     sa.Column('organisation_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['api_id_fk'], ['api_id.id'], ),
-    sa.ForeignKeyConstraint(['organisation_id'], ['organisation.id'], ),
+    sa.ForeignKeyConstraint(['api_id_fk'], ['api_id.id'], name='fk_variable_set_api_id_id'),
+    sa.ForeignKeyConstraint(['organisation_id'], ['organisation.id'], name='variable_set_organisation_organisation_id'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('variable_set_workspace',
     sa.Column('variable_set_id', sa.Integer(), nullable=False),
     sa.Column('workspace_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['variable_set_id'], ['variable_set.id'], ),
-    sa.ForeignKeyConstraint(['workspace_id'], ['workspace.id'], ),
+    sa.ForeignKeyConstraint(['variable_set_id'], ['variable_set.id'], name='fk_variable_set_workspace_variable_set_id'),
+    sa.ForeignKeyConstraint(['workspace_id'], ['workspace.id'], name='fk_variable_set_workspace_workspace_id'),
     sa.PrimaryKeyConstraint('variable_set_id', 'workspace_id')
     )
     op.create_table('variable_set_project',
     sa.Column('variable_set_id', sa.Integer(), nullable=False),
     sa.Column('project_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['project_id'], ['project.id'], ),
-    sa.ForeignKeyConstraint(['variable_set_id'], ['variable_set.id'], ),
+    sa.ForeignKeyConstraint(['project_id'], ['project.id'], name='fk_variable_project_set_project_id'),
+    sa.ForeignKeyConstraint(['variable_set_id'], ['variable_set.id'], name='fk_variable_project_set_variable_set_id'),
     sa.PrimaryKeyConstraint('variable_set_id', 'project_id')
     )
     # ### end Alembic commands ###

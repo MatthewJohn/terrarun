@@ -24,19 +24,19 @@ class Variable(Base, BaseObject):
 
     __tablename__ = "variable"
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
+    api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id", name="fk_variable_api_id_id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     description = sqlalchemy.Column(terrarun.database.Database.LargeString, default=None, name="description")
 
-    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=True)
+    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id", name="fk_variable_workspace_workspace_id"), nullable=True)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="variables", lazy='select')
 
-    variable_set_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=True)
+    variable_set_id = sqlalchemy.Column(sqlalchemy.ForeignKey("variable_set.id", name="fk_variable_variable_set_variable_set_id"), nullable=True)
     variable_set = sqlalchemy.orm.relationship("VariableSet", back_populates="variables", lazy='select')
 
-    variable_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("variable_version.id"), nullable=True)
+    variable_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("variable_version.id", name="fk_variable_variable_version_variable_version_id"), nullable=True)
     variable_version = sqlalchemy.orm.relationship("VariableVersion")
 
     category = sqlalchemy.Column(sqlalchemy.Enum(VariableCategory), nullable=False)

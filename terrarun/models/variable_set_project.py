@@ -13,7 +13,7 @@ class VariableSetProject(Base):
 
     __tablename__ = "variable_set_project"
 
-    variable_set_id = sqlalchemy.Column(sqlalchemy.ForeignKey("variable_set.id"), primary_key=True)
+    variable_set_id = sqlalchemy.Column(sqlalchemy.ForeignKey("variable_set.id", name="fk_variable_project_set_variable_set_id"), primary_key=True)
     variable_set = sqlalchemy.orm.relationship("VariableSet", back_populates="variable_set_projects", lazy='select')
-    project_id = sqlalchemy.Column(sqlalchemy.ForeignKey("project.id"), primary_key=True)
+    project_id = sqlalchemy.Column(sqlalchemy.ForeignKey("project.id", name="fk_variable_project_set_project_id"), primary_key=True)
     project = sqlalchemy.orm.relationship("Project", back_populates="variable_set_projects", lazy='select')
