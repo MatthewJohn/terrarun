@@ -44,3 +44,5 @@ from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.api_id import ApiId
 from terrarun.models.tool import Tool
+from terrarun.models.global_setting import GlobalSetting
+from terrarun.models.saml_settings import SamlSettings
