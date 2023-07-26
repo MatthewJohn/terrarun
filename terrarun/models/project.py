@@ -44,6 +44,8 @@ class Project(Base, BaseObject):
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="project", lazy='select')
 
+    variable_set_projects = sqlalchemy.orm.relation("VariableSetProject", back_populates="project", lazy='select')
+
     lifecycle_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("lifecycle.id", name="fk_project_lifecycle_id_lifecycle_id"),
         nullable=False)
