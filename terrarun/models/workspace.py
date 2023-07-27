@@ -68,6 +68,7 @@ class Workspace(Base, BaseObject):
     workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace", lazy='select')
 
     variable_set_workspaces = sqlalchemy.orm.relation("VariableSetWorkspace", back_populates="workspace", lazy='select')
+    variables = sqlalchemy.orm.relation("Variable", back_populates="workspace", lazy='select')
 
     locked_by_user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="fk_workspace_locked_by_user_id_user_id"), nullable=True)
     locked_by_user = sqlalchemy.orm.relation("User", foreign_keys=[locked_by_user_id], lazy='select')

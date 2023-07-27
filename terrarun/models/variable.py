@@ -37,7 +37,7 @@ class Variable(Base, BaseObject):
     variable_set = sqlalchemy.orm.relationship("VariableSet", back_populates="variables", lazy='select')
 
     variable_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("variable_version.id", name="fk_variable_variable_version_variable_version_id"), nullable=True)
-    variable_version = sqlalchemy.orm.relationship("VariableVersion")
+    variable_version = sqlalchemy.orm.relationship("VariableVersion", foreign_keys=[variable_version_id])
 
     category = sqlalchemy.Column(sqlalchemy.Enum(VariableCategory), nullable=False)
     hcl = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)

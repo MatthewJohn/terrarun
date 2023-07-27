@@ -15,6 +15,6 @@ class VariableVersion(Base):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     variable_id = sqlalchemy.Column(sqlalchemy.ForeignKey("variable.id", name="fk_variable_version_variable_id"), nullable=False)
-    variable = sqlalchemy.orm.relationship("Variable")
+    variable = sqlalchemy.orm.relationship("Variable", foreign_keys=[variable_id])
 
     value = sqlalchemy.Column(terrarun.database.Database.LargeString)

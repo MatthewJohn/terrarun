@@ -60,19 +60,144 @@ class Attribute:
         return None, self.obj_attribute, val
 
 
+class BaseRelationshipType:
+
+    TYPE = None
+
+    def __init__(self, id):
+        """Store member variables"""
+        self.id = id
+
+    @classmethod
+    def from_object(cls, obj):
+        """Return instance from obj"""
+        return cls(id=obj.api_id)
+
+    @property
+    def type(self):
+        """Return type"""
+        if self.TYPE is None:
+            raise Exception("Unset type of relationship object")
+        return self.TYPE
+
+    def to_dict(self):
+        """Return dictionary for view data"""
+        return {
+            "id": self.id,
+            "type": self.type
+        }
+    
+    @classmethod
+    def from_request(cls, relationship_data):
+        """Create instance from request data"""
+        if type(relationship_data) is not dict:
+            return ApiError(
+                "Invalid relationship data",
+                f"Relationship type should be an object with id and type, but {type(relationship_data)} was provided.",
+                pointer=f"@TODO"
+            ), None
+
+        type_ = relationship_data.get("type")
+        if type_ != cls.TYPE:
+            return ApiError(
+                "Invalid relationship type",
+                f"Relationship type value should expected {cls.TYPE}, but {type_} was provided.",
+                pointer=f"@TODO"
+            ), None
+
+        id = relationship_data.get("id")
+        if not id:
+            return ApiError(
+                "Invalid relationship id",
+                f"Relationship id was not provided.",
+                pointer=f"@TODO"
+            ), None
+
+        return None, cls(id=id)
+
+
+class BaseRelationshipHandler:
+
+    # Key in relationships dict
+    name = None
+    # Type of relationship
+    relationship_type = None
+
+    def to_dict(self):
+        """Return dictionary to provide to view"""
+        raise NotImplementedError
+
+    @classmethod
+    def from_request(cls, relationships_data):
+        """Create relationship from request"""
+        raise NotImplementedError
+
+
+class DirectRelationshipHandler(BaseRelationshipHandler):
+
+    def __init__(self, relationship):
+        """Handle relationship data"""
+        self.relationship = relationship
+
+    @classmethod
+    def from_request(cls, relationships_data):
+        """Create relationship from request"""
+        relationship_data = relationships_data.get(cls.name, {}).get("data", {})
+        err, relationship = cls.relationship_type.from_request(relationship_data)
+        if err:
+            return err, None
+        return None, cls(relationship=relationship)
+
+    def to_dict(self):
+        """Return dictionary to provide to view"""
+        return {
+            "data": self.relationship.to_dict()
+        }
+
+
+class ListRelationshipHandler(BaseRelationshipHandler):
+
+    def __init__(self, relationships):
+        """Handle data list relationship"""
+        self.relationships = relationships
+
+    def to_dict(self):
+        """Return dictionary to provide to view"""
+        return {
+            "data": [
+                relationship.to_dict()
+                for relationship in self.relationships
+            ]
+        }
+
+    @classmethod
+    def from_request(cls, relationships_data):
+        """Create relationship from request"""
+        relationships = []
+        for relationship_data in relationships_data.get(cls.name, {}).get("data", []):
+            err, relationship = cls.relationship_type.from_request(relationship_data)
+            if err:
+                return err, None, None
+            relationships.append(relationship)
+        return None, cls.name, cls(relationships=relationships)
+
+
 class BaseEntity:
     """Base entity"""
 
     id = None
     type = None
+    ID_REQUIRED = True
 
-    attributes = tuple()
+    ATTRIBUTES = tuple()
+    RELATIONSHIP_TYPES = tuple()
 
-    def __init__(self, id=None, **kwargs):
+    def __init__(self, relationships, id=None, **kwargs):
         """Assign attributes from kwargs to attributes"""
         self.id = id
+        self.relationships = relationships
 
-        for attribute in self.attributes:
+        for attribute in self.ATTRIBUTES:
             setattr(
                 self,
                 attribute.obj_attribute,
@@ -95,13 +220,25 @@ class BaseEntity:
         """Return API attributes for entity"""
         raise NotImplementedError
 
+    def get_relationships(self):
+        """Return view relationships"""
+        return {
+            relationship: self.relationships[relationship].to_dict()
+            for relationship in self.relationships
+        }
+
     def get_set_object_attributes(self):
         """Return all set object attributes"""
         return {
             attr.obj_attribute: getattr(self, attr.obj_attribute)
-            for attr in self.attributes
+            for attr in self.ATTRIBUTES
             if getattr(self, attr.obj_attribute) is not UNDEFINED
         }
+
+    @classmethod
+    def from_object(cls, obj):
+        """Create entity from model object"""
+        raise NotImplementedError
 
     @classmethod
     def from_request(cls, request_args, create=False):
@@ -116,10 +253,10 @@ class BaseEntity:
             return ApiError(
                 "Invalid type",
                 f"The object type was either not provided or is not valid for this request",
-                pointer=f"/data/id"
+                pointer=f"/data/type"
             ), None
 
-        if not request_data.get("id"):
+        if not request_data.get("id") and cls.ID_REQUIRED:
             return ApiError(
                 "ID not provided",
                 f"The object ID not provided in the request",
@@ -127,18 +264,25 @@ class BaseEntity:
             ), None
         
         obj_attributes = {
-            "id": request_data.get("id")
+            "id": request_data.get("id") if cls.ID_REQUIRED else None
         }
 
         request_attributes = request_data.get("attributes")
-        for attribute in cls.attributes:
+        for attribute in cls.ATTRIBUTES:
             err, key, value = attribute.validate_request_data(request_attributes)
             if err:
                 return err, None
             if key is not None:
                 obj_attributes[key] = value
         
-        return None, cls(**obj_attributes)
+        relationships = {}
+        for relationship in cls.RELATIONSHIP_TYPES:
+            err, key, value = relationship.from_request(request_data.get("relationships", {}))
+            if err:
+                return err, None
+            relationships[key] = value
+
+        return None, cls(relationships=relationships, **obj_attributes)
 
 
 class BaseView:
@@ -154,18 +298,20 @@ class BaseView:
         return self.to_dict(), code if code is not None else self.response_code
 
 
-class EntityView(BaseEntity, BaseView):
+class EntityView(BaseView):
     """Return view for entity"""
 
     def to_dict(self):
         """Return view as dictionary"""
-        return {
-            "data": {
-                "type": self.get_type(),
-                "id": self.get_id(),
-                "attributes": self.get_attributes()
-            }
+        data = {
+            "type": self.get_type(),
+            "id": self.get_id(),
+            "attributes": self.get_attributes()
         }
+        if self.RELATIONSHIP_TYPES:
+            data["relationships"] = self.get_relationships()
+
+        return {"data": data}
 
 
 class ApiErrorView(BaseEntity, BaseView):
