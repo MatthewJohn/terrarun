@@ -2,6 +2,7 @@
 from flask import request
 
 from terrarun.api_error import ApiError
+from terrarun.errors import RelationshipDoesNotExistError
 
 
 UNDEFINED = object
@@ -187,7 +188,7 @@ class BaseEntity:
 
     id = None
     type = None
-    ID_REQUIRED = True
+    ID_EMPTY = False
 
     ATTRIBUTES = tuple()
     RELATIONSHIP_TYPES = tuple()
@@ -219,6 +220,13 @@ class BaseEntity:
     def get_attributes(self):
         """Return API attributes for entity"""
         raise NotImplementedError
+
+    def get_relationship(self, relationship) -> BaseRelationshipHandler:
+        """Get relationship by name"""
+        relationship_obj = self.relationships.get(relationship)
+        if not relationship_obj:
+            raise RelationshipDoesNotExistError("Relationship does not exist")
+        return relationship_obj
 
     def get_relationships(self):
         """Return view relationships"""
@@ -256,15 +264,22 @@ class BaseEntity:
                 pointer=f"/data/type"
             ), None
 
-        if not request_data.get("id") and cls.ID_REQUIRED:
+        id_ = request_data.get("id")
+        if not id_ and cls.ID_EMPTY:
             return ApiError(
                 "ID not provided",
                 f"The object ID not provided in the request",
                 pointer=f"/data/id"
             ), None
-        
+        elif id_ and not cls.ID_EMPTY:
+            return ApiError(
+                "ID should not be provided",
+                f"The object ID should not be present in this request",
+                pointer=f"/data/id"
+            ), None
+
         obj_attributes = {
-            "id": request_data.get("id") if cls.ID_REQUIRED else None
+            "id": id_ if not cls.ID_EMPTY else None
         }
 
         request_attributes = request_data.get("attributes")

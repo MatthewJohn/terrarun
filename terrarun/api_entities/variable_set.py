@@ -73,8 +73,3 @@ class VariableSetCreateEntity(VariableSetEntity):
 class VariableSetView(VariableSetEntity, EntityView):
     """View for variable set"""
     pass
-
-
-class VariableSetCreateView(VariableSetCreateEntity, EntityView):
-    """Not required TO DELETE"""
-    pass

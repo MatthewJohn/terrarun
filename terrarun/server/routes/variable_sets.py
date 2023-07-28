@@ -1,11 +1,14 @@
 
 
 from flask import request
+from terrarun import api_error
 from terrarun.api_entities.base_entity import ApiErrorView
-from terrarun.api_entities.variable_set import VariableSetCreateView
+from terrarun.api_entities.variable_set import VariableSetCreateEntity, VariableSetView
 from terrarun.api_error import ApiError
 
 from terrarun.api_request import ApiRequest
+from terrarun.commands.variable_set import validate_new_variable_set
+from terrarun.models.workspace import Workspace
 from terrarun.permissions.user import UserPermissions
 from terrarun.models.saml_settings import SamlSettings
 from terrarun.server.route_registration import RouteRegistration
@@ -23,11 +26,17 @@ class VariableSet(AuthenticatedEndpoint):
     def _post(self, organisation_id, current_user, current_job):
         """Update SAML settings"""
 
-        err, create_entity = VariableSetCreateView.from_request(request.json)
+        err, create_entity = VariableSetCreateEntity.from_request(request.json)
         if err:
             return ApiErrorView(error=err).to_response()
 
+        validate_new_variable_set(create_entity)
+
+        variable_set = create_entity.to_object()
+
         create_entity.id = "abcdefg"
+
+        view_entity = VariableSetView.from_object(variable_set)
         return create_entity.to_response()
 
 

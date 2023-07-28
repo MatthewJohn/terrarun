@@ -68,3 +68,9 @@ class RunCannotBeCancelledError(TerrarunError):
     """Run is not in a state that can be cancelled"""
 
     pass
+
+
+class RelationshipDoesNotExistError(TerrarunError):
+    """Entity relationship does not exist"""
+
+    pass
