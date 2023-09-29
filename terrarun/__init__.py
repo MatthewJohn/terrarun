@@ -46,3 +46,8 @@ from terrarun.models.api_id import ApiId
 from terrarun.models.tool import Tool
 from terrarun.models.global_setting import GlobalSetting
 from terrarun.models.saml_settings import SamlSettings
+from terrarun.models.variable_set import VariableSet
+from terrarun.models.variable import Variable
+from terrarun.models.variable_version import VariableVersion
+from terrarun.models.variable_set_project import VariableSetProject
+from terrarun.models.variable_set_workspace import VariableSetWorkspace

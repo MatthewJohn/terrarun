@@ -91,6 +91,7 @@ class Organisation(Base, BaseObject):
     lifecycles = sqlalchemy.orm.relation("Lifecycle", back_populates="organisation", foreign_keys=[Lifecycle.organisation_id])
     projects = sqlalchemy.orm.relation("Project", back_populates="organisation")
     oauth_clients = sqlalchemy.orm.relation("OauthClient", back_populates="organisation")
+    variable_sets = sqlalchemy.orm.relation("VariableSet", back_populates="organisation", lazy='select')
 
     default_lifecycle_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("lifecycle.id", name="fk_organisation_default_lifecycle_id_lifecycle_id"),
