@@ -1,8 +1,9 @@
 
 
 from terrarun.api_entities.base_entity import ApiErrorView
-from terrarun.api_entities.variable_set import VariableSetCreateView
+from terrarun.api_entities.variable_set import VariableSetCreateEntity
 from terrarun.api_error import ApiError
+from terrarun.database import Database
 from terrarun.models.workspace import Workspace
 from terrarun.models.user import User
 from terrarun.models.project import Project
@@ -10,7 +11,18 @@ from terrarun.models.organisation import Organisation
 from terrarun.models.variable_set import VariableSet
 
 
-def validate_new_variable_set(organisation: Organisation, current_user: User, variable_set_entity: VariableSetCreateView):
+def create_variable_set(organisation: Organisation, current_user: User, variable_set_entity: VariableSetCreateEntity):
+    """Create new variable set"""
+    if err := validate_new_variable_set(organisation=organisation, current_user=current_user, variable_set_entity=variable_set_entity):
+        return err
+
+    model = variable_set_entity.to_model()
+    session = Database.get_session()
+    session.add(model)
+    session.commit()
+    return model
+
+def validate_new_variable_set(organisation: Organisation, current_user: User, variable_set_entity: VariableSetCreateEntity):
     """Validate new variable set"""
 
     # Check relationships for workspaces
@@ -62,3 +74,4 @@ def validate_new_variable_set(organisation: Organisation, current_user: User, va
             "A variable set already exists wtih the provided name.",
             pointer="/data/attributes/name"
         )
+
