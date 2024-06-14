@@ -11,7 +11,11 @@ import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
 from terrarun.api_request import ApiRequest
-from terrarun.errors import FailedToUnlockWorkspaceError, RunCannotBeCancelledError, RunCannotBeDiscardedError
+from terrarun.errors import (
+    FailedToUnlockWorkspaceError, RunCannotBeCancelledError, RunCannotBeDiscardedError,
+    TerraformVersionNotSetError,
+    CustomTerraformVersionCannotBeUsedError
+)
 from terrarun.models.audit_event import AuditEvent, AuditEventType
 
 from terrarun.database import Base, Database
@@ -142,12 +146,18 @@ class Run(Base, BaseObject):
         session = Database.get_session()
 
         if configuration_version.workspace.tool is None:
-            raise Exception('Terraform version must be configured in project/workspace')
+            raise TerraformVersionNotSetError(
+                'Terraform version not configured',
+                'The Terraform version must be configured in project/workspace'
+            )
 
         if ((tool := attributes.get('tool')) and
                 tool != configuration_version.workspace.tool and
                 not attributes.get('plan_only')):
-            raise Exception('Custom Terraform version cannot be used for non-refresh-only runs')
+            raise CustomTerraformVersionCannotBeUsedError(
+                'Custom Terraform version cannot be used for non-refresh-only runs',
+                'The version of Terraform requested does not match the project and cannot be used in applies'
+            )
 
         # If configuration version is speculative, the run must
         # be plan only

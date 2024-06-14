@@ -218,7 +218,7 @@ class Project(Base, BaseObject):
     def check_vcs_repo_update_from_request(self, vcs_repo_attributes):
         """Update VCS repo from request"""
         # Check if VCS is defined in project
-        if 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
+        if not vcs_repo_attributes or 'oauth-token-id' not in vcs_repo_attributes or 'identifier' not in vcs_repo_attributes:
             return {}, []
 
         new_oauth_token_id = vcs_repo_attributes['oauth-token-id']
