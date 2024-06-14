@@ -216,6 +216,10 @@ class Server(object):
             '/api/v2/runs/<string:run_id>'
         )
         self._api.add_resource(
+            ApiTerraformRunRunEvents,
+            '/api/v2/runs/<string:run_id>/run-events'
+        )
+        self._api.add_resource(
             ApiTerraformRunAuditEvents,
             '/api/v2/runs/<string:run_id>/relationships/audit-events'
         )
@@ -2082,6 +2086,32 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             return api_request.get_response()
 
         return {"data": run.get_api_details()}
+
+
+class ApiTerraformRunRunEvents(AuthenticatedEndpoint):
+    """Interface to obtain run events for run"""
+
+    def check_permissions_get(self, current_user, current_job, run_id):
+        """Check permissions"""
+        run = Run.get_by_api_id(run_id)
+        if not workspace:
+            return False
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=run.configuration_version.workspace.organisation
+        ).check_access_type(runs=TeamWorkspaceRunsPermission.READ)
+
+    def _get(self, run_id, current_user, current_job):
+        """Return all audit events for run."""
+        run = Run.get_by_api_id(run_id)
+        if not run:
+            return {}, 404
+
+        return {"data": [
+            event.get_api_details()
+            for event in run.run_events
+        ]}
 
 
 class ApiTerraformRunAuditEvents(AuthenticatedEndpoint):

@@ -243,6 +243,12 @@ class Run(Base, BaseObject):
             if workspace_task.stage == WorkspaceTaskStage.PRE_APPLY and workspace_task.active
         ]
 
+    @property
+    def run_events(self):
+        """Return run events"""
+        # @TODO See https://gitlab.dockstudios.co.uk/pub/terra/terrarun/-/issues/123
+        return []
+
     def handling_pending(self):
         """Create plan and setup pre-plan tasks"""
         # Attempt to lock workspace
