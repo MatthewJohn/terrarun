@@ -107,10 +107,6 @@ class Worker:
         # Process state resources
         state_version.process_resources()
 
-    def stop(self):
-        """Mark as stopped, stopping any further jobs from executing"""
-        self.__running = False
-
     def wait_for_jobs(self):
         """Wait for any running jobs to complete"""
         self.__job_run_subprocess.join()
