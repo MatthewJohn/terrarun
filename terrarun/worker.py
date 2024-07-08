@@ -2,16 +2,18 @@
 # SPDX-License-Identifier: GPL-2.0
 
 
-import threading
 import signal
-from time import sleep
+import threading
 import traceback
+from time import sleep
+
 from terrarun.database import Database
 from terrarun.job_processor import JobProcessor
+from terrarun.logger import get_logger
 from terrarun.models.run import RunStatus
-
-from terrarun.models.run_queue import RunQueue, JobQueueAgentType
 from terrarun.models.state_version import StateVersion
+
+logger = get_logger(__name__)
 
 
 class Worker:
@@ -29,10 +31,8 @@ class Worker:
             try:
                 if not self._check_for_jobs():
                     sleep(5)
-            except Exception as exc:
-                print('An error occured whilst processing job')
-                print(exc)
-                traceback.print_exception(type(exc), exc, exc.__traceback__)
+            except Exception:
+                logger.exception('An error occured whilst checking for jobs.')
                 sleep(15)
 
             # Clear database session to avoid cached queries
@@ -40,13 +40,13 @@ class Worker:
 
     def _check_for_jobs(self):
         """Check for jobs to run"""
-        print('Checking for jobs...')
+        logger.debug('Checking for jobs...')
         run = JobProcessor.get_worker_job()
         if not run:
-            print('No run in queue')
+            logger.debug('No run in queue')
             return None
 
-        print(f'Handling run: {run.api_id}: {run.status}')
+        logger.info('Handling run. Id: %s. Status: %s', run.api_id, run.status)
 
         if run.status is RunStatus.PENDING:
             run.handling_pending()
@@ -80,7 +80,7 @@ class Worker:
             # Handle cancelled run
             run.unlock_workspace()
         else:
-            print(f'Unknown job status for worker: {run.status}')
+            logger.error('Unknown job status. Id: %s. Status: %s', run.api_id, run.status)
 
 
     def check_for_state_versions_loop(self):
@@ -89,10 +89,8 @@ class Worker:
             try:
                 if not self._check_for_state_version():
                     sleep(5)
-            except Exception as exc:
-                print('An error occured whilst processing job')
-                print(exc)
-                traceback.print_exception(type(exc), exc, exc.__traceback__)
+            except Exception:
+                logger.exception('An error occured whilst checking for state versions.')
                 sleep(15)
 
             # Clear database session to avoid cached queries
@@ -100,13 +98,13 @@ class Worker:
 
     def _check_for_state_version(self):
         """Check for unprocessed state versions to process"""
-        print('Checking for unprocessed state version...')
+        logger.debug('Checking for unprocessed state version...')
         state_version = StateVersion.get_state_version_to_process()
         if not state_version:
-            print('No unprocessed state versions')
+            logger.debug('No unprocessed state versions')
             return None
 
-        print(f'Handling state version: {state_version.api_id}')
+        logger.info('Handling state version: %s', state_version.api_id)
         # Process state resources
         state_version.process_resources()
 
@@ -124,6 +122,6 @@ class Worker:
 
     def stop(self, *args):
         """Stop agent"""
-        print('Stopping worker... waiting for remaining jobs to complete.')
+        logger.info('Stopping worker... waiting for remaining jobs to complete.')
         self.__running = False
         self.wait_for_jobs()

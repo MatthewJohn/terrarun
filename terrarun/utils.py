@@ -2,12 +2,14 @@
 # SPDX-License-Identifier: GPL-2.0
 
 import datetime
-import string
 import secrets
+import string
 
-from terrarun.database import Database
 import terrarun.models.audit_event
+from terrarun.database import Database
+from terrarun.logger import get_logger
 
+logger = get_logger(__name__)
 
 def generate_random_secret_string(length=64):
     """Generate random secret string"""
@@ -31,7 +33,7 @@ def datetime_from_json(datetime_str):
 
 def update_object_status(obj, new_status, current_user=None, session=None):
     """Update state of run."""
-    print(f"Updating {str(obj)} to from {str(obj.status)} to {str(new_status)}")
+    logger.debug("Updating %s to from %s to %s", obj, obj.status, new_status)
     should_commit = False
     if session is None:
         session = Database.get_session()

@@ -4,11 +4,14 @@
 
 import re
 
-from flask_restful import Resource
 from flask import request, session
+from flask_restful import Resource
 
 import terrarun.database
 import terrarun.models.user_token
+from terrarun.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class AuthenticatedEndpoint(Resource):
@@ -49,7 +52,7 @@ class AuthenticatedEndpoint(Resource):
         """Handle GET request"""
         current_user, job = self._get_current_user()
         if not current_user and not job:
-            print('No user')
+            logger.warning('Unauthenticated GET request.')
             return {}, 403
 
         if not self.check_permissions_get(*args, current_job=job, current_user=current_user, **kwargs):
@@ -71,6 +74,7 @@ class AuthenticatedEndpoint(Resource):
         """Handle POST request"""
         current_user, job = self._get_current_user()
         if not current_user and not job:
+            logger.warning('Unauthenticated POST request.')
             return {}, 403
 
         if not self.check_permissions_post(*args, current_job=job, current_user=current_user, **kwargs):
@@ -92,6 +96,7 @@ class AuthenticatedEndpoint(Resource):
         """Handle PATCH request"""
         current_user, job = self._get_current_user()
         if not current_user and not job:
+            logger.warning('Unauthenticated PATCH request.')
             return {}, 403
 
         if not self.check_permissions_patch(*args, current_job=job, current_user=current_user, **kwargs):
@@ -113,6 +118,7 @@ class AuthenticatedEndpoint(Resource):
         """Handle PUT request"""
         current_user, job = self._get_current_user()
         if not current_user and not job:
+            logger.warning('Unauthenticated PUT request.')
             return {}, 403
 
         if not self.check_permissions_put(*args, current_job=job, current_user=current_user, **kwargs):
@@ -134,6 +140,7 @@ class AuthenticatedEndpoint(Resource):
         """Handle PUT request"""
         current_user, job = self._get_current_user()
         if not current_user and not job:
+            logger.warning('Unauthenticated DELETE request.')
             return {}, 403
 
         if not self.check_permissions_delete(*args, current_job=job, current_user=current_user, **kwargs):
