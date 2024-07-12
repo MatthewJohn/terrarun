@@ -12,6 +12,7 @@ import sqlalchemy
 import sqlalchemy.orm
 from terrarun.api_error import ApiError
 from terrarun.api_request import ApiRequest
+import terrarun.config
 from terrarun.logger import get_logger
 
 from terrarun.models.base_object import BaseObject
@@ -344,7 +345,7 @@ terraform {
 
     def get_upload_url(self):
         """Return URL for terraform to upload configuration."""
-        return f'/api/v2/upload-configuration/{self.api_id}'
+        return f'{terrarun.config.Config().BASE_URL}/api/v2/upload-configuration/{self.api_id}'
 
     def get_api_details(self, api_request: ApiRequest=None):
         """Return API details."""

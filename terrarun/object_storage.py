@@ -14,7 +14,7 @@ class ObjectStorage:
     def __init__(self):
         """Create client"""
         s3_kwargs = {}
-        if endpoint := terrarun.config.Config.AWS_ENDPOINT:
+        if endpoint := terrarun.config.Config().AWS_ENDPOINT:
             s3_kwargs['endpoint_url'] = endpoint
             s3_kwargs['config'] = boto3.session.Config(signature_version='s3v4')
         self._s3_client = boto3.client('s3', **s3_kwargs)
@@ -23,7 +23,7 @@ class ObjectStorage:
     @property
     def bucket_name(self):
         """Return bucket name"""
-        return terrarun.config.Config.AWS_BUCKET_NAME
+        return terrarun.config.Config().AWS_BUCKET_NAME
 
     def _get_bucket(self):
         """Get bucket object"""
