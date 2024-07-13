@@ -21,6 +21,7 @@ from terrarun.models.team import Team
 from terrarun.utils import datetime_to_json
 import terrarun.models.workspace
 import terrarun.api_entities.organization
+import terrarun.workspace_execution_mode
 
 
 class CollaboratorAuthPolicyType(Enum):
@@ -74,6 +75,12 @@ class Organisation(Base, BaseObject):
     audit_logging_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     agents_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     sso_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+
+    default_execution_mode = sqlalchemy.Column(
+        sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
+        default=terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+        nullable=False
+    )
 
     fair_run_queuing_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     two_factor_conformant = sqlalchemy.Column(sqlalchemy.Boolean, default=False)

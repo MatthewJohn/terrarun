@@ -5,6 +5,7 @@ from typing import Tuple
 import terrarun.models.organisation
 import terrarun.models.user
 import terrarun.permissions.organisation
+import terrarun.workspace_execution_mode
 
 from .base_entity import BaseEntity, EntityView, Attribute, ATTRIBUTED_REQUIRED, UNDEFINED
 
@@ -23,7 +24,9 @@ class OrganizationUpdateEntity(BaseOrganizationEntity):
         return (
             Attribute("name", "name", str, UNDEFINED),
             Attribute("email", "email", str, UNDEFINED),
-            # Attribute("default-execution-mode", "default_execution_mode", str, "remote"),
+            Attribute("default-execution-mode", "default_execution_mode",
+                      terrarun.workspace_execution_mode.WorkspaceExecutionMode,
+                      terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE),
         )
 
 
@@ -36,7 +39,9 @@ class OrganizationEntity(BaseOrganizationEntity):
             Attribute("created-at", "created_at", datetime.datetime, None),
             Attribute("session-timeout", "session_timeout", int, 20160),
             Attribute("session-remember", "session_remember", int, 20160),
-            Attribute("collaborator-auth-policy", "collaborator_auth_policy", terrarun.models.organisation.CollaboratorAuthPolicyType, terrarun.models.organisation.CollaboratorAuthPolicyType.PASSWORD),
+            Attribute("collaborator-auth-policy", "collaborator_auth_policy",
+                      terrarun.models.organisation.CollaboratorAuthPolicyType,
+                      terrarun.models.organisation.CollaboratorAuthPolicyType.PASSWORD),
             Attribute("plan-expired", "plan_expired", bool, False),
             Attribute("plan-expires-at", "plan_expires_at", str, None),
             Attribute("plan-is-trial", "plan_is_trial", bool, False),
@@ -78,7 +83,8 @@ class OrganizationEntity(BaseOrganizationEntity):
             fair_run_queuing_enabled=obj.fair_run_queuing_enabled,
             saml_enabled=obj.saml_enabled,
             owners_team_saml_role_id=obj.owners_team_saml_role_id,
-            two_factor_conformant=obj.two_factor_conformant
+            two_factor_conformant=obj.two_factor_conformant,
+            default_execution_mode=obj.default_execution_mode,
         )
 
 

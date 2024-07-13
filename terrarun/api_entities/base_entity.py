@@ -2,7 +2,7 @@
 import abc
 from enum import EnumMeta
 from datetime import datetime
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 from flask import request
 
@@ -86,7 +86,7 @@ class Attribute:
 
         elif type(self.type) is EnumMeta:
             try:
-                val = self.type[val]
+                val = self.type(val)
             except ValueError:
                 return ApiError(
                     "Invalid value for attribute",
@@ -154,7 +154,7 @@ class BaseEntity:
         }
 
     def get_set_object_attributes(self):
-        """Return all set object attributes"""
+        """Return all set object attributes, used when updating models"""
         return {
             attr.obj_attribute: getattr(self, attr.obj_attribute)
             for attr in self.get_attributes()
@@ -230,9 +230,9 @@ class ApiErrorView(BaseEntity, BaseView):
 
     response_code = 409
 
-    def __init__(self, error=None, errors=None):
+    def __init__(self, error: Optional[ApiError]=None, errors: Optional[List[ApiError]]=None):
         """Return"""
-        self.errors = []
+        self.errors: List[ApiError] = []
         if error:
             self.errors.append(error)
         if errors:

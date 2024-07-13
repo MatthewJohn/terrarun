@@ -717,7 +717,8 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
-        return {"data": organisation.get_api_details(effective_user=current_user)}
+        view = OrganizationView.from_object(organisation, effective_user=current_user)
+        return view.to_response()
 
     def check_permissions_patch(self, organisation_name, current_user, current_job, *args, **kwargs):
         """Check permissions for updating organsation"""
