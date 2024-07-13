@@ -73,6 +73,8 @@ from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
 from terrarun.server.routes import *
 
+from terrarun.api_entities.organization import OrganizationUpdateEntity, OrganizationView
+
 
 class Server(object):
     """Manage web server and route requests"""
@@ -731,21 +733,17 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
-        json_data = flask.request.get_json().get('data', {})
-        if json_data.get('type', None) != "organizations":
-            return {}, 400
+        err, update_entity = OrganizationUpdateEntity.from_request(request.json)
+        if err:
+            return ApiErrorView(error=err).to_response()
 
-        attributes = json_data.get('attributes', {})
-        name = attributes.get('name', None)
-        email = attributes.get('email', None)
+        try:
+            organisation.update_attributes(update_entity)
+        except ApiError as exc:
+            return ApiErrorView(error=exc).to_response()
 
-        if not email or not email:
-            return {}, 400
-
-        if not organisation.update_attributes(name=name, email=email):
-            return {}, 400
-        return {"data": organisation.get_api_details(effective_user=current_user)}
-
+        view = OrganizationView.from_object(organisation, effective_user=current_user)
+        return view.to_response()
 
 
 class ApiTerraformOrganisationEntitlementSet(AuthenticatedEndpoint):

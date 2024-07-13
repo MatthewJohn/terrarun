@@ -1,4 +1,6 @@
 
+from typing import Tuple, Optional
+
 from flask import request
 
 from terrarun.api_error import ApiError
@@ -63,12 +65,13 @@ class Attribute:
 class BaseEntity:
     """Base entity"""
 
-    id = None
-    type = None
+    id: Optional[str] = None
+    require_id: bool = True
+    type: Optional[str] = None
 
-    attributes = tuple()
+    attributes: Tuple[Attribute] = tuple()
 
-    def __init__(self, id=None, **kwargs):
+    def __init__(self, id: str=None, **kwargs):
         """Assign attributes from kwargs to attributes"""
         self.id = id
 
@@ -93,7 +96,10 @@ class BaseEntity:
 
     def get_attributes(self):
         """Return API attributes for entity"""
-        raise NotImplementedError
+        return {
+            attribute.req_attribute: getattr(self, attribute.obj_attribute)
+            for attribute in self.attributes
+        }
 
     def get_set_object_attributes(self):
         """Return all set object attributes"""
@@ -119,16 +125,16 @@ class BaseEntity:
                 pointer=f"/data/id"
             ), None
 
-        if not request_data.get("id"):
+        obj_attributes = {}
+
+        if id_ := request_data.get("id"):
+            obj_attributes["id"] = id_
+        elif cls.require_id:
             return ApiError(
                 "ID not provided",
                 f"The object ID not provided in the request",
                 pointer=f"/data/id"
             ), None
-        
-        obj_attributes = {
-            "id": request_data.get("id")
-        }
 
         request_attributes = request_data.get("attributes")
         for attribute in cls.attributes:
