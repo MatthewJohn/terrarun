@@ -1,9 +1,13 @@
 
+import abc
+from enum import EnumMeta
+from datetime import datetime
 from typing import Tuple, Optional
 
 from flask import request
 
 from terrarun.api_error import ApiError
+from terrarun.utils import datetime_to_json, datetime_from_json
 
 
 UNDEFINED = object
@@ -20,6 +24,28 @@ class Attribute:
         self.default = default
         self.nullable = nullable
 
+    def convert_entity_data_to_api(self, value):
+        """Convert data to API type"""
+        if self.type in [str, bool, int]:
+            return value
+
+        # Handle None value
+        elif value is None:
+            return None
+
+        # Handle enum
+        elif type(self.type) is EnumMeta:
+            return value.value
+
+        elif self.type is datetime:
+            return datetime_to_json(value)
+
+        # @TODO Convert to entity type
+        elif self.type is dict:
+            return value
+
+        raise Exception(f"Unknown data type: {self.type}: {value}")
+
     def validate_request_data(self, request_attributes):
         """Validate request attributes and return key and value from request"""
         # Ignore any attributes that don't have a request mapping
@@ -33,6 +59,7 @@ class Attribute:
             # If it is not required, return the default attribute
             if self.default is not ATTRIBUTED_REQUIRED:
                 return None, self.obj_attribute, self.default
+
             # Otherwise, return an error
             return ApiError(
                 "Required attribute not provided",
@@ -56,6 +83,27 @@ class Attribute:
                     f"The attribute {self.req_attribute} must be type {self.type}.",
                     pointer=f"/data/attributes/{self.req_attribute}"
                 ), None, None
+
+        elif type(self.type) is EnumMeta:
+            try:
+                val = self.type[val]
+            except ValueError:
+                return ApiError(
+                    "Invalid value for attribute",
+                    f"The attribute '{self.req_attribute}' is set to an invalid value.",
+                    pointer=f"/data/attributes/{self.req_attribute}"
+                ), None, None
+
+        elif self.type is datetime:
+            try:
+                val = datetime_from_json(val)
+            except:
+                return ApiError(
+                    "Invalid datetime value for attribute",
+                    f"The attribute '{self.req_attribute}' is set to an invalid datetime.",
+                    pointer=f"/data/attributes/{self.req_attribute}"
+                ), None, None
+
         else:
             raise Exception("Unsupported attribute type")
 
@@ -69,13 +117,11 @@ class BaseEntity:
     require_id: bool = True
     type: Optional[str] = None
 
-    attributes: Tuple[Attribute] = tuple()
-
     def __init__(self, id: str=None, **kwargs):
         """Assign attributes from kwargs to attributes"""
         self.id = id
 
-        for attribute in self.attributes:
+        for attribute in self.get_attributes():
             setattr(
                 self,
                 attribute.obj_attribute,
@@ -94,18 +140,24 @@ class BaseEntity:
             raise NotImplementedError
         return self.id
 
-    def get_attributes(self):
+    @classmethod
+    @abc.abstractmethod
+    def get_attributes(cls) -> Tuple[Attribute]:
+        """Return attributes for entity"""
+        ...
+
+    def get_api_attributes(self):
         """Return API attributes for entity"""
         return {
-            attribute.req_attribute: getattr(self, attribute.obj_attribute)
-            for attribute in self.attributes
+            attribute.req_attribute: attribute.convert_entity_data_to_api(getattr(self, attribute.obj_attribute))
+            for attribute in self.get_attributes()
         }
 
     def get_set_object_attributes(self):
         """Return all set object attributes"""
         return {
             attr.obj_attribute: getattr(self, attr.obj_attribute)
-            for attr in self.attributes
+            for attr in self.get_attributes()
             if getattr(self, attr.obj_attribute) is not UNDEFINED
         }
 
@@ -137,7 +189,7 @@ class BaseEntity:
             ), None
 
         request_attributes = request_data.get("attributes")
-        for attribute in cls.attributes:
+        for attribute in cls.get_attributes():
             err, key, value = attribute.validate_request_data(request_attributes)
             if err:
                 return err, None
@@ -169,7 +221,7 @@ class EntityView(BaseEntity, BaseView):
             "data": {
                 "type": self.get_type(),
                 "id": self.get_id(),
-                "attributes": self.get_attributes()
+                "attributes": self.get_api_attributes()
             }
         }
 
