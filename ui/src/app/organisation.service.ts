@@ -44,7 +44,7 @@ export class OrganisationService {
     });
   }
 
-  update(organisationName: string, name: string, email: string, defaultExecutionMode: string): Promise<any> {
+  update(organisationName: string, name: string, email: string, defaultExecutionMode: string|null): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
         `/api/v2/organizations/${organisationName}`,

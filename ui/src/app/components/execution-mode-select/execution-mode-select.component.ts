@@ -8,7 +8,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 export class ExecutionModeSelectComponent implements OnInit {
 
   @Input()
-  value: string = "";
+  value: string | null = null;
 
   @Input()
   allowInheritanceFrom: string = "";
@@ -17,11 +17,19 @@ export class ExecutionModeSelectComponent implements OnInit {
   title: string = "Execution mode";
 
   @Output()
-  valueChange = new EventEmitter<string>();
+  valueChange = new EventEmitter<string|null>();
 
   constructor() { }
 
   ngOnInit(): void {
   }
 
+  onChange(value: string) {
+    let newValue: string|null = value;
+    // Convert "none" string value to null value
+    if (value == "none") {
+      newValue = null;
+    }
+    this.valueChange.emit(newValue);
+  }
 }

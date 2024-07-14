@@ -21,7 +21,7 @@ export class GeneralComponent implements OnInit {
     name: '',
     email: ''
   });
-  generalSettingsDefaultExecutionMode: string = "";
+  generalSettingsDefaultExecutionMode: string|null = null;
   _organisationName: string | null = null;
   _originalOrgSettings: any = {};
 

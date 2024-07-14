@@ -60,7 +60,7 @@
       <nb-card-header>Settings</nb-card-header>
       <nb-card-body>
         <form [formGroup]="generalSettingsForm" (ngSubmit)="onGeneralSettingsSubmit()">
-          <execution-mode-select [(value)]="generalSettingsExecutionMode"></execution-mode-select>
+          <execution-mode-select [(value)]="generalSettingsExecutionMode" allowInheritanceFrom="Organisation"></execution-mode-select>
 
           <terraform-version-select [(value)]="generalSettingsTerraformVersion">
           </terraform-version-select>

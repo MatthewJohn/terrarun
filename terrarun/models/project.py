@@ -380,7 +380,13 @@ class Project(Base, BaseObject):
                     "service-provider": self.authorised_repo.oauth_token.oauth_client.service_provider.value
                 } if self.authorised_repo else None,
                 "vcs-repo-identifier": self.authorised_repo.display_identifier if self.authorised_repo else None,
-                "working-directory": self.working_directory
+                "working-directory": self.working_directory,
+
+                # Custom terrarun attribute with override values over the
+                # organisation configuration
+                "overrides": {
+                    "execution-mode": self._execution_mode.value if self._execution_mode else None,
+                }
             },
             "id": self.api_id,
             "links": {

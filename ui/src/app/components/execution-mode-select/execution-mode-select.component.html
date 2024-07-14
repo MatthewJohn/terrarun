@@ -1,7 +1,7 @@
 <b>{{title}}</b>
 <br />
-<nb-select [selected]="value" (selectedChange)="valueChange.emit($event)">
-  <nb-option value="" *ngIf="allowInheritanceFrom !== ''">Inherit from {{ allowInheritanceFrom }}</nb-option>
+<nb-select [selected]="value || 'none'" (selectedChange)="onChange($event)">
+  <nb-option value="none" *ngIf="allowInheritanceFrom !== ''">Inherit from {{ allowInheritanceFrom }}</nb-option>
   <nb-option value="remote">Remote</nb-option>
   <nb-option value="agent">Agent</nb-option>
   <nb-option value="local">Local</nb-option>

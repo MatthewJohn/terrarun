@@ -43,7 +43,7 @@ export class OverviewComponent implements OnInit {
   ingressAttributesRuns: {[index: string]: {[index: string]: ResponseObjectWithRelationships<RunAttributes, RunRelationships>}};
 
   generalSettingsForm = this.formBuilder.group({});
-  generalSettingsExecutionMode: string;
+  generalSettingsExecutionMode: string|null;
   generalSettingsTerraformVersion: string;
   _runUpdateInterval: any;
 
@@ -64,7 +64,7 @@ export class OverviewComponent implements OnInit {
     this.workspaceList = [];
     this.workspaces = new Map<string, Observable<any>>();
     this.generalSettingsTerraformVersion = "";
-    this.generalSettingsExecutionMode = "";
+    this.generalSettingsExecutionMode = null;
     this.ingressAttributes = {};
     this.workspaceRuns = {};
     this.configurationVersionIngressAttributes = {};
@@ -142,7 +142,7 @@ export class OverviewComponent implements OnInit {
             let workspaces = projectDetails.data.relationships.workspaces.data;
 
             // Update general settings form
-            this.generalSettingsExecutionMode = this.projectDetails.data.attributes['execution-mode']
+            this.generalSettingsExecutionMode = this.projectDetails.data.attributes.overrides['execution-mode']
             this.generalSettingsTerraformVersion = this.projectDetails.data.attributes['terraform-version'];
 
             // Sort workspaces by order

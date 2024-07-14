@@ -85,7 +85,6 @@ export interface WorkspaceUpdateAttributes {
     "file-triggers-enabled": boolean | undefined;
     "trigger-prefixes": string[] | undefined;
     "trigger-patterns": string[] | undefined;
-
     "queue-all-runs": boolean | null | undefined;
 }
 
