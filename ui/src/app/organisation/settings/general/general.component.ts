@@ -21,6 +21,7 @@ export class GeneralComponent implements OnInit {
     name: '',
     email: ''
   });
+  generalSettingsDefaultExecutionMode: string = "";
   _organisationName: string | null = null;
   _originalOrgSettings: any = {};
 
@@ -37,6 +38,7 @@ export class GeneralComponent implements OnInit {
           name: orgDetails.attributes.name,
           email: orgDetails.attributes.email
         })
+        this.generalSettingsDefaultExecutionMode = orgDetails.attributes["default-execution-mode"];
       });
     });
   }
@@ -61,7 +63,8 @@ export class GeneralComponent implements OnInit {
     this.organisationService.update(
       this._organisationName || '',
       this.form.value.name,
-      this.form.value.email
+      this.form.value.email,
+      this.generalSettingsDefaultExecutionMode,
     ).then((orgData) => {
       console.log(orgData);
       if (orgData.data.id != this._organisationName) {
