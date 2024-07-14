@@ -2,7 +2,9 @@
 # Unauthorized copying of this file, via any medium is strictly prohibited
 # Proprietary and confidential
 
+from typing import Optional
 import json
+
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -11,6 +13,9 @@ from terrarun.database import Base, Database
 import terrarun.database
 from terrarun.models.blob import Blob
 from terrarun.models.state_version_output import StateVersionOutput
+import terrarun.models.user
+
+from terrarun.utils import datetime_to_json
 
 
 class StateVersion(Base, BaseObject):
@@ -37,6 +42,11 @@ class StateVersion(Base, BaseObject):
 
     state_json_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     _state_json = sqlalchemy.orm.relation("Blob", foreign_keys=[state_json_id])
+
+    created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
+
+    created_by_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=True)
+    created_by: 'terrarun.models.user.User' = sqlalchemy.orm.relationship("User")
 
     @property
     def state_json(self):
@@ -68,7 +78,7 @@ class StateVersion(Base, BaseObject):
     @classmethod
     def create_from_state_json(cls, run, workspace, state_json, session=None):
         """Create StateVersion from state_json."""
-        sv = cls(run=run, workspace=workspace)
+        sv = cls(run=run, workspace=workspace, created_by=run.created_by)
         session = Database.get_session()
         session.add(sv)
         session.commit()
@@ -144,7 +154,7 @@ class StateVersion(Base, BaseObject):
             "id": self.api_id,
             "type": "state-versions",
             "attributes": {
-                "created-at": "2021-06-08T01:22:03.794Z",
+                "created-at": datetime_to_json(self.created_at),
                 "size": 940,
                 "hosted-state-download-url": f"/api/v2/state-versions/{self.api_id}/download",
                 "modules": self.modules,
@@ -166,14 +176,14 @@ class StateVersion(Base, BaseObject):
                 } if self.run else {},
                 "created-by": {
                     "data": {
-                        "id": "user-onZs69ThPZjBK2wo",
+                        "id": self.created_by.api_id,
                         "type": "users"
                     },
                     "links": {
-                        "self": "/api/v2/users/user-onZs69ThPZjBK2wo",
-                        "related": "/api/v2/runs/run-YfmFLWpgTv31VZsP/created-by"
+                        "self": f"/api/v2/users/{self.created_by.api_id}",
+                        "related": f"/api/v2/runs/{self.api_id}/created-by"
                     }
-                },
+                } if self.created_by else {},
                 "workspace": {
                     "data": {
                         "id": self.workspace.api_id,
