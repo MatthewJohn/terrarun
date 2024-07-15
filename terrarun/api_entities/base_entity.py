@@ -135,7 +135,7 @@ class AttributeModifier:
             attribute.nullable = self._nullable
 
 
-class BaseEntity:
+class BaseEntity(abc.ABC):
     """Base entity"""
 
     id: Optional[str] = None
@@ -243,13 +243,14 @@ class BaseEntity:
         return None, cls(**obj_attributes)
 
 
-class BaseView:
+class BaseView(abc.ABC):
     
     response_code = 200
 
+    @abc.abstractmethod
     def to_dict(self):
         """Create response data"""
-        raise NotImplementedError
+        ...
 
     def to_response(self, code=None):
         """Create response"""
