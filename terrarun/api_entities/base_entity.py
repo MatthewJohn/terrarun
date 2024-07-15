@@ -2,7 +2,7 @@
 import abc
 from enum import EnumMeta
 from datetime import datetime
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Dict
 
 from flask import request
 
@@ -110,12 +110,39 @@ class Attribute:
         return None, self.obj_attribute, val
 
 
+
+class AttributeModifier:
+    """Provide encapulsation of modifications to be mae to Attribute"""
+
+    UNSET = object()
+
+    def __init__(self, req_attribute=UNSET, type=UNSET, default=UNSET, nullable=UNSET):
+        """Store modifications"""
+        self._req_attribute = req_attribute
+        self._type = type
+        self._default = default
+        self._nullable = nullable
+
+    def apply(self, attribute: Attribute):
+        """Apply modifications to attribute"""
+        if self._req_attribute is not self.UNSET:
+            attribute.req_attribute = self._req_attribute
+        if self._type is not self.UNSET:
+            attribute.type = self._type
+        if self._default is not self.UNSET:
+            attribute.default = self._default
+        if self._nullable is not self.UNSET:
+            attribute.nullable = self._nullable
+
+
 class BaseEntity:
     """Base entity"""
 
     id: Optional[str] = None
     require_id: bool = True
     type: Optional[str] = None
+    include_attributes: Optional[Tuple[str]] = None
+    attribute_modifiers: Dict[str, AttributeModifier] = {}
 
     def __init__(self, id: str=None, **kwargs):
         """Assign attributes from kwargs to attributes"""
@@ -142,9 +169,26 @@ class BaseEntity:
 
     @classmethod
     @abc.abstractmethod
-    def get_attributes(cls) -> Tuple[Attribute]:
+    def _get_attributes(cls) -> Tuple[Attribute]:
         """Return attributes for entity"""
         ...
+
+
+    @classmethod
+    def get_attributes(cls) -> List[Attribute]:
+        """Obtain all attributes, with filtering and modifications"""
+        attributes = []
+        for attribute in cls._get_attributes():
+            # If include_attributes has been set and attribute is not included, ignore it
+            if cls.include_attributes is not None and attribute.obj_attribute not in cls.include_attributes:
+                continue
+
+            # Apply modificiations if set
+            if attribute.obj_attribute in cls.attribute_modifiers:
+                cls.attribute_modifiers[attribute.obj_attribute].apply(attribute=attribute)
+
+            attributes.append(attribute)
+        return attributes
 
     def get_api_attributes(self):
         """Return API attributes for entity"""

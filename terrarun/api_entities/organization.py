@@ -7,34 +7,18 @@ import terrarun.models.user
 import terrarun.permissions.organisation
 import terrarun.workspace_execution_mode
 
-from .base_entity import BaseEntity, EntityView, Attribute, ATTRIBUTED_REQUIRED, UNDEFINED
+from .base_entity import BaseEntity, EntityView, Attribute, AttributeModifier, ATTRIBUTED_REQUIRED, UNDEFINED
 
 
-class BaseOrganizationEntity(BaseEntity):
+class OrganizationEntity(BaseEntity):
 
     type = "organizations"
 
-
-class OrganizationUpdateEntity(BaseOrganizationEntity):
-
-    require_id = False
-
     @classmethod
-    def get_attributes(cls) -> Tuple[Attribute]:
+    def _get_attributes(cls):
         return (
-            Attribute("name", "name", str, UNDEFINED),
-            Attribute("email", "email", str, UNDEFINED),
-            Attribute("default-execution-mode", "default_execution_mode",
-                      terrarun.workspace_execution_mode.WorkspaceExecutionMode,
-                      terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE),
-        )
-
-
-class OrganizationEntity(BaseOrganizationEntity):
-
-    @classmethod
-    def get_attributes(cls):
-        return OrganizationUpdateEntity.get_attributes() + (
+            Attribute("name", "name", str, ATTRIBUTED_REQUIRED),
+            Attribute("email", "email", str, ATTRIBUTED_REQUIRED),
             Attribute("external-id", "external_id", str, None),
             Attribute("created-at", "created_at", datetime.datetime, None),
             Attribute("session-timeout", "session_timeout", int, 20160),
@@ -54,6 +38,9 @@ class OrganizationEntity(BaseOrganizationEntity):
             Attribute("saml-enabled", "saml_enabled", bool, False),
             Attribute("owners-team-saml-role-id", "owners_team_saml_role_id", str, None),
             Attribute("two-factor-conformant", "two_factor_conformant", bool, False),
+            Attribute("default-execution-mode", "default_execution_mode",
+                      terrarun.workspace_execution_mode.WorkspaceExecutionMode,
+                      terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE),
         )
 
     @classmethod
@@ -86,6 +73,19 @@ class OrganizationEntity(BaseOrganizationEntity):
             two_factor_conformant=obj.two_factor_conformant,
             default_execution_mode=obj.default_execution_mode,
         )
+
+
+class OrganizationUpdateEntity(OrganizationEntity):
+
+    require_id = False
+    include_attributes = [
+        "name", "email", "default_execution_mode"
+    ]
+    attribute_modifiers = {
+        "name": AttributeModifier(default=UNDEFINED),
+        "email": AttributeModifier(default=UNDEFINED),
+        "default_execution_mode": AttributeModifier(default=UNDEFINED),
+    }
 
 
 class OrganizationView(OrganizationEntity, EntityView):

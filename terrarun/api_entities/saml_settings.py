@@ -13,7 +13,7 @@ class BaseSamlSettingsEntity(BaseEntity):
 class SamlSettingsUpdateEntity(BaseSamlSettingsEntity):
 
     @classmethod
-    def get_attributes(cls) -> Tuple[Attribute]:
+    def _get_attributes(cls) -> Tuple[Attribute]:
         return (
             Attribute("enabled", "enabled", bool, False),
             Attribute("debug", "debug", bool, False),
@@ -32,8 +32,8 @@ class SamlSettingsUpdateEntity(BaseSamlSettingsEntity):
 class SamlSettingsEntity(BaseSamlSettingsEntity):
 
     @classmethod
-    def get_attributes(cls) -> Tuple[Attribute]:
-        return SamlSettingsUpdateEntity.get_attributes() + (
+    def _get_attributes(cls) -> Tuple[Attribute]:
+        return SamlSettingsUpdateEntity._get_attributes() + (
             Attribute(None, "acs_consumer_url", str, None),
             Attribute(None, "metadata_url", str, None),
         )
