@@ -10,8 +10,8 @@ from terrarun.api_error import ApiError
 from terrarun.utils import datetime_to_json, datetime_from_json
 
 
-UNDEFINED = object
-ATTRIBUTED_REQUIRED = object
+UNDEFINED = object()
+ATTRIBUTED_REQUIRED = object()
 
 
 class Attribute:
