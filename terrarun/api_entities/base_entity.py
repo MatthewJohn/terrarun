@@ -2,7 +2,7 @@
 import abc
 from enum import EnumMeta
 from datetime import datetime
-from typing import Tuple, Optional, List, Dict
+from typing import Tuple, Optional, List, Dict, Any
 
 from flask import request
 
@@ -144,16 +144,20 @@ class BaseEntity(abc.ABC):
     include_attributes: Optional[Tuple[str]] = None
     attribute_modifiers: Dict[str, AttributeModifier] = {}
 
-    def __init__(self, id: str=None, **kwargs):
+    def __init__(self, id: str=None, attributes: Optional[Dict[str, Any]]=None, link=None):
         """Assign attributes from kwargs to attributes"""
         self.id = id
+        self._attribute_values = {}
 
+        attributes = attributes or {}
         for attribute in self.get_attributes():
-            setattr(
-                self,
-                attribute.obj_attribute,
-                kwargs[attribute.obj_attribute] if attribute.obj_attribute in kwargs else UNDEFINED
+            self._attribute_values[attribute.obj_attribute] = (
+                attributes[attribute.obj_attribute]
+                if attribute.obj_attribute in attributes
+                else UNDEFINED
             )
+
+        self._link = link
 
     def get_type(self):
         """Return entity type"""
@@ -193,17 +197,28 @@ class BaseEntity(abc.ABC):
     def get_api_attributes(self):
         """Return API attributes for entity"""
         return {
-            attribute.req_attribute: attribute.convert_entity_data_to_api(getattr(self, attribute.obj_attribute))
+            attribute.req_attribute: attribute.convert_entity_data_to_api(self._attribute_values[attribute.obj_attribute])
             for attribute in self.get_attributes()
         }
 
     def get_set_object_attributes(self):
         """Return all set object attributes, used when updating models"""
         return {
-            attr.obj_attribute: getattr(self, attr.obj_attribute)
+            attr.obj_attribute: self._attribute_values[attr.obj_attribute]
             for attr in self.get_attributes()
-            if getattr(self, attr.obj_attribute) is not UNDEFINED
+            if self._attribute_values[attr.obj_attribute] is not UNDEFINED
         }
+
+    @classmethod
+    @abc.abstractmethod
+    def from_object(cls, obj) -> 'BaseEntity':
+        """Return entity from object"""
+        ...
+
+    @staticmethod
+    def generate_link(obj: Any):
+        """Generate self link from given objects"""
+        return None
 
     @classmethod
     def from_request(cls, request_args, create=False):
@@ -262,13 +277,24 @@ class EntityView(BaseEntity, BaseView):
 
     def to_dict(self):
         """Return view as dictionary"""
-        return {
+        response = {
             "data": {
                 "type": self.get_type(),
                 "id": self.get_id(),
                 "attributes": self.get_api_attributes()
             }
         }
+        if self_link := self.get_self_link():
+            response["links"] = self_link
+        return response
+
+    def get_self_link(self):
+        """Get link for self"""
+        if self._link:
+            return {
+                "self": self._link
+            }
+        return None
 
 
 class ApiErrorView(BaseEntity, BaseView):

@@ -49,29 +49,32 @@ class OrganizationEntity(BaseEntity):
         permission = terrarun.permissions.organisation.OrganisationPermissions(current_user=effective_user, organisation=obj)
         return cls(
             id=obj.name_id,
-            external_id=obj.api_id,
-            created_at=obj.created_at,
-            email=obj.email,
-            session_timeout=obj.session_timeout,
-            session_remember=obj.session_remember,
-            collaborator_auth_policy=obj.collaborator_auth_policy,
+            attributes={
+                "external_id": obj.api_id,
+                "created_at": obj.created_at,
+                "email": obj.email,
+                "session_timeout": obj.session_timeout,
+                "session_remember": obj.session_remember,
+                "collaborator_auth_policy": obj.collaborator_auth_policy,
 
-            # Hard code plan, as this is not implemented
-            plan_expired=False,
-            plan_expires_at=None,
-            plan_is_trial=False,
-            plan_is_enterprise=True,
-            plan_identifier="developer",
+                # Hard code plan, as this is not implemented
+                "plan_expired": False,
+                "plan_expires_at": None,
+                "plan_is_trial": False,
+                "plan_is_enterprise": True,
+                "plan_identifier": "developer",
 
-            cost_estimation_enabled=obj.cost_estimation_enabled,
-            send_passing_statuses_for_untriggered_speculative_plans=obj.send_passing_statuses_for_untriggered_speculative_plans,
-            name=obj.name,
-            permissions=permission.get_api_permissions(),
-            fair_run_queuing_enabled=obj.fair_run_queuing_enabled,
-            saml_enabled=obj.saml_enabled,
-            owners_team_saml_role_id=obj.owners_team_saml_role_id,
-            two_factor_conformant=obj.two_factor_conformant,
-            default_execution_mode=obj.default_execution_mode,
+                "cost_estimation_enabled": obj.cost_estimation_enabled,
+                "send_passing_statuses_for_untriggered_speculative_plans": obj.send_passing_statuses_for_untriggered_speculative_plans,
+                "name": obj.name,
+                "permissions": permission.get_api_permissions(),
+                "fair_run_queuing_enabled": obj.fair_run_queuing_enabled,
+                "saml_enabled": obj.saml_enabled,
+                "owners_team_saml_role_id": obj.owners_team_saml_role_id,
+                "two_factor_conformant": obj.two_factor_conformant,
+                "default_execution_mode": obj.default_execution_mode,
+            },
+            link=cls.generate_link(obj)
         )
 
 
@@ -90,4 +93,8 @@ class OrganizationUpdateEntity(OrganizationEntity):
 
 class OrganizationView(OrganizationEntity, EntityView):
     """View for settings"""
-    pass
+
+    @staticmethod
+    def generate_link(organisation: 'terrarun.models.organisation.Organisation'):
+        """Generate self link from given objects"""
+        return f'/api/v2/organizations/{organisation.name}'
