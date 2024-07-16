@@ -144,7 +144,7 @@ class BaseEntity(abc.ABC):
     include_attributes: Optional[Tuple[str]] = None
     attribute_modifiers: Dict[str, AttributeModifier] = {}
 
-    def __init__(self, id: str=None, attributes: Optional[Dict[str, Any]]=None, link=None):
+    def __init__(self, id: str=None, attributes: Optional[Dict[str, Any]]=None, link: Optional[str]=None):
         """Assign attributes from kwargs to attributes"""
         self.id = id
         self._attribute_values = {}
@@ -176,7 +176,6 @@ class BaseEntity(abc.ABC):
     def _get_attributes(cls) -> Tuple[Attribute]:
         """Return attributes for entity"""
         ...
-
 
     @classmethod
     def get_attributes(cls) -> List[Attribute]:
@@ -275,6 +274,20 @@ class BaseView(abc.ABC):
 class EntityView(BaseEntity, BaseView):
     """Return view for entity"""
 
+    def __init__(
+            self,
+            id: str = None,
+            attributes: Optional[Dict[str, Any]]= None,
+            link: Optional[str]=None,
+            relationships: Dict[str, 'BaseRelationshipView']=None):
+        """Store member variables for relationships"""
+        super().__init__(id, attributes, link)
+        self._relationships: Dict[str, 'BaseRelationshipView'] = relationships or {}
+
+    def add_relationship(self, name: str, relationship: 'BaseRelationshipView'):
+        """Add relationship to entity"""
+        self._relationships[name] = relationship
+
     def to_dict(self):
         """Return view as dictionary"""
         response = {
@@ -286,6 +299,14 @@ class EntityView(BaseEntity, BaseView):
         }
         if self_link := self.get_self_link():
             response["links"] = self_link
+
+        relationships = {}
+        for relationship_name, relationship in self._relationships.items():
+            if relationship_data := relationship.to_dict():
+                relationships[relationship_name] = relationship_data
+        if relationships:
+            response['relationships'] = relationships
+
         return response
 
     def get_self_link(self):
@@ -317,3 +338,35 @@ class ApiErrorView(BaseEntity, BaseView):
                 for error in self.errors
             ]
         }
+
+
+class BaseRelationshipView(BaseView):
+    """Base relationship view"""
+    pass
+
+
+class RelatedRelationshipView(BaseRelationshipView):
+    """Base relationship for related"""
+
+    NAME: Optional[str] = None
+    CHILD_PATH: Optional[str] = None
+
+    def __init__(self, parent_view: 'EntityView'):
+        """Store member variables"""
+        if self.NAME is None:
+            raise NotImplementedError("Name not set on relationship")
+        if self.CHILD_PATH is None:
+            raise NotImplementedError("Name not set on relationship")
+        
+        self._parent_view = parent_view
+        self._parent_view.add_relationship(self)
+
+    def to_dict(self):
+        """Return API repsonse data"""
+        if self._parent_view._link:
+            return {
+                "links": {
+                    "related": f"{self._parent_view._link}/oauth-tokens"
+                }
+            }
+        return None
