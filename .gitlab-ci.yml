@@ -1,8 +1,24 @@
+image: python:3.10
+
+release:
+  stage: deploy
+  image: semantic-release:latest
+  cache:
+    paths:
+      - node_modules/
+  variables:
+    GITLAB_TOKEN: $GITLAB_TOKEN
+    GIT_STRATEGY: clone
+  script:
+    - semantic-release
+  rules:
+    - if: '$CI_COMMIT_REF_NAME != "main"'
+      when: never
+    - if: '$CI_COMMIT_MESSAGE =~ /chore\(release\)/'
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'push'
+      when: always
+    - when: never
 
 stages:
-  - build
-
-build-job:       # This job runs in the build stage, which runs first.
-  stage: build
-  script:
-    - echo Nothing to do... yet
+ - deploy
