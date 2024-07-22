@@ -1,0 +1,25 @@
+version: 2
+updates:
+
+  # Maintain dependencies for npm
+  - package-ecosystem: "npm"
+    directory: "/ui"
+    schedule:
+      interval: "weekly"
+    # Disable version updates, only creating pull requests for security updates
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Disable version updates, only creating pull requests for security updates
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
