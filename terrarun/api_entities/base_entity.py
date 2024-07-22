@@ -405,13 +405,13 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
             raise NotImplementedError("Name not set on relationship")
         self._parent_view = parent_view
 
-    def get_type(self):
+    def get_type(self) -> str:
         """Return entity type"""
         if self.TYPE is None:
             raise NotImplementedError
         return self.TYPE
 
-    def get_id(self):
+    def get_id(self) -> str:
         """Return ID"""
         if self.id is None:
             raise NotImplementedError
@@ -440,3 +440,43 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
             "type": self.get_type(),
         }
         return data
+
+
+class DataRelationshipView(BaseRelationshipView):
+    """Base relationship for related objects with data"""
+
+    TYPE: Optional[str] = None
+
+    def __init__(self, id: str):
+        """Store member variables"""
+        self.id = id
+
+    def get_type(self) -> str:
+        """Return entity type"""
+        if self.TYPE is None:
+            raise NotImplementedError
+        return self.TYPE
+
+    def get_id(self) -> Optional[str]:
+        """Return ID"""
+        return self.id
+
+    @classmethod
+    @abc.abstractmethod
+    def get_id_from_object(cls, obj: Any) -> Optional[str]:
+        """Obtain ID from object"""
+        ...
+
+    @classmethod
+    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
+        """Return entity from object"""
+        return cls(id=cls.get_id_from_object(obj=obj))
+
+    def to_dict(self) -> dict:
+        """Return API repsonse data"""
+        return {
+            "data": {
+                "id": self.get_id(),
+                "type": self.get_type()
+            } if self.get_id() else None
+        }

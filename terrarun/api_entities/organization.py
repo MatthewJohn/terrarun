@@ -3,7 +3,7 @@
 
 
 import datetime
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 import terrarun.models.organisation
 import terrarun.models.user
@@ -15,6 +15,7 @@ from .base_entity import (
     EntityView,
     RelatedRelationshipView,
     RelatedWithDataRelationshipView,
+    DataRelationshipView,
     Attribute,
     AttributeModifier,
     ATTRIBUTED_REQUIRED,
@@ -133,6 +134,18 @@ class EntitlementSetRelationship(RelatedWithDataRelationshipView):
         return obj.api_id
 
 
+class DefaultAgentPoolRelationship(DataRelationshipView):
+
+    TYPE = "agent-pools"
+
+    @classmethod
+    def get_id_from_object(cls, obj: 'terrarun.models.organisation.Organisation') -> Optional[str]:
+        """Get agent pool ID"""
+        if obj.default_agent_pool:
+            return obj.default_agent_pool.api_id
+        return None
+
+
 class OrganizationView(OrganizationEntity, EntityView):
     """View for settings"""
 
@@ -142,6 +155,7 @@ class OrganizationView(OrganizationEntity, EntityView):
         "authentication-token": AuthenticationTokenRelationship,
         "subscription": SubscriptionRelationship,
         "entitlement-set": EntitlementSetRelationship,
+        "default-agent-pool": DefaultAgentPoolRelationship,
     }
 
     @staticmethod
