@@ -61,10 +61,12 @@ class UserToken(Base, BaseObject):
         # If the job was started by a user,
         # generate a token against the user,
         # otherwise, generate one against the job
-        if job.run.created_by:
-            kwargs['user'] = job.run.created_by
-        else:
-            kwargs['job'] = job
+        # @TODO Investigate enabling this - a lot of places assume that the current
+        # job is available
+        # if job.run.created_by:
+        #     kwargs['user'] = job.run.created_by
+        # else:
+        kwargs['job'] = job
 
         token = cls(
             expiry=expiry,
