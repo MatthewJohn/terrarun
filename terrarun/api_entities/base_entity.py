@@ -333,6 +333,29 @@ class EntityView(BaseEntity, BaseView):
         return None
 
 
+class ListView(BaseView):
+    """View containing list of entities"""
+
+    def __init__(self, views: List['BaseView']):
+        """Member variables for list of views"""
+        self._views = views
+
+    def to_dict(self):
+        """Response dict"""
+        return {
+            "data": [
+                # Create nested list to allow inline conditional
+                # without running to_dict twice
+                view
+                for view in [
+                    view.to_dict().get("data")
+                    for view in self._views
+                ]
+                if view
+            ]
+        }
+
+
 class ApiErrorView(BaseEntity, BaseView):
 
     response_code = 409

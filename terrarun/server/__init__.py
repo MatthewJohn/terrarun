@@ -72,6 +72,7 @@ from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
 from terrarun.server.routes import *
 
+from terrarun.api_entities.base_entity import ListView
 from terrarun.api_entities.organization import OrganizationUpdateEntity, OrganizationView
 
 
@@ -665,12 +666,11 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
 
     def _get(self, current_user, current_job):
         """Obtain list of organisations"""
-        return {
-            'data': [
-                organisation.get_api_details(effective_user=current_user)
-                for organisation in current_user.organisations
-            ]
-        }
+        views = [
+            OrganizationView.from_object(organisation, effective_user=current_user)
+            for organisation in current_user.organisations
+        ]
+        return ListView(views=views).to_response()
 
     def check_permissions_post(self, current_user, current_job):
         """Check permissions"""
