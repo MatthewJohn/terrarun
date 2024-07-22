@@ -1,5 +1,19 @@
 # Changelog
 
+# [0.55.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.54.2...v0.55.0) (2024-07-22)
+
+
+### Bug Fixes
+
+* Set UNDEFINED and ATTRIBUTED_REQUIRED as instances of object to ensure that they are correctly identitied ([265a69b](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/265a69b7719a1a2858372e8548b3c3ce9365d3ce)), closes [#150](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/150)
+
+
+### Features
+
+* Add default execution mode attribute to organisation. ([5055090](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/50550901c84c26c7a5a3c6be2b19aeb15eefd131)), closes [#150](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/150)
+* Add selection of default execution mode to organisation settings in UI. ([65f8fc6](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/65f8fc6714a4d737cb0c0131f87c4d71dae46f67)), closes [#150](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/150)
+* Allow setting project execution mode to "inherit" ([bbe12c8](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/bbe12c8ca77d2b96527e1bbc2c079620918ed36f)), closes [#150](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/150)
+
 ## [0.54.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.54.0...v0.54.1) (2024-07-22)
 
 
