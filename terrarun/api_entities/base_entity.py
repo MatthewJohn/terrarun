@@ -387,3 +387,53 @@ class RelatedRelationshipView(BaseRelationshipView):
                 }
             }
         return None
+
+
+class RelatedWithDataRelationshipView(BaseRelationshipView):
+    """Base relationship for related"""
+
+    CHILD_PATH: Optional[str] = None
+    TYPE: Optional[str] = None
+
+    def __init__(self, id: str, parent_view: 'EntityView'):
+        """Store member variables"""
+        self.id = id
+        if self.CHILD_PATH is None:
+            raise NotImplementedError("Name not set on relationship")
+        self._parent_view = parent_view
+
+    def get_type(self):
+        """Return entity type"""
+        if self.TYPE is None:
+            raise NotImplementedError
+        return self.TYPE
+
+    def get_id(self):
+        """Return ID"""
+        if self.id is None:
+            raise NotImplementedError
+        return self.id
+
+    @classmethod
+    @abc.abstractmethod
+    def get_id_from_object(cls, obj: Any) -> str:
+        """Obtain ID from object"""
+        ...
+
+    @classmethod
+    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
+        """Return entity from object"""
+        return cls(parent_view=parent_view, id=cls.get_id_from_object(obj=obj))
+
+    def to_dict(self) -> dict:
+        """Return API repsonse data"""
+        data = {}
+        if self._parent_view.link:
+            data["links"] = {
+                "related": f"{self._parent_view.link}/{self.CHILD_PATH}"
+            }
+        data["data"] = {
+            "id": self.get_id(),
+            "type": self.get_type(),
+        }
+        return data

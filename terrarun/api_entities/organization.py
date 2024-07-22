@@ -1,6 +1,6 @@
 
 import datetime
-from typing import Tuple
+from typing import Any, Tuple
 
 import terrarun.models.organisation
 import terrarun.models.user
@@ -11,6 +11,7 @@ from .base_entity import (
     BaseEntity,
     EntityView,
     RelatedRelationshipView,
+    RelatedWithDataRelationshipView,
     Attribute,
     AttributeModifier,
     ATTRIBUTED_REQUIRED,
@@ -118,6 +119,17 @@ class SubscriptionRelationship(RelatedRelationshipView):
     CHILD_PATH = "subscription"
 
 
+class EntitlementSetRelationship(RelatedWithDataRelationshipView):
+
+    CHILD_PATH = "entitlement-set"
+    TYPE       = "entitlement-sets"
+
+    @classmethod
+    def get_id_from_object(cls, obj: 'terrarun.models.organisation.Organisation') -> str:
+        """Return ID"""
+        return obj.api_id
+
+
 class OrganizationView(OrganizationEntity, EntityView):
     """View for settings"""
 
@@ -126,6 +138,7 @@ class OrganizationView(OrganizationEntity, EntityView):
         "oauth-clients": OauthClientsRelationship,
         "authentication-token": AuthenticationTokenRelationship,
         "subscription": SubscriptionRelationship,
+        "entitlement-set": EntitlementSetRelationship,
     }
 
     @staticmethod
