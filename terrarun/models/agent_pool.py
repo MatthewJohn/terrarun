@@ -25,8 +25,8 @@ class AgentPool(Base, BaseObject):
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
-    organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=True)
-    organisation = sqlalchemy.orm.relationship("Organisation")
+    organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id", name="fk_agent_pool_organisation_id"), nullable=True)
+    organisation = sqlalchemy.orm.relationship("Organisation", foreign_keys=[organisation_id])
 
     agents = sqlalchemy.orm.relation("Agent", back_populates="agent_pool")
 

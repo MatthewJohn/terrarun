@@ -81,6 +81,9 @@ class Organisation(Base, BaseObject):
         nullable=False
     )
 
+    default_agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_organisation_default_agent_pool_id"), nullable=True)
+    default_agent_pool = sqlalchemy.orm.relation("AgentPool", foreign_keys=[default_agent_pool_id])
+
     fair_run_queuing_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     two_factor_conformant = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
