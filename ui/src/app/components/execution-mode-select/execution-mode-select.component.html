@@ -1,0 +1,14 @@
+<b>{{title}}</b>
+<br />
+<nb-select [selected]="value || 'none'" (selectedChange)="onChange($event)">
+  <nb-option value="none" *ngIf="allowInheritanceFrom !== ''">Inherit from {{ allowInheritanceFrom }}</nb-option>
+  <nb-option value="remote">Remote</nb-option>
+  <nb-option value="agent">Agent</nb-option>
+  <nb-option value="local">Local</nb-option>
+</nb-select>
+<br /><br />
+Remote/Agent will execute Terraform remotely in Terrarun, either on global workers or assigned agent pools.<br />
+Local execution will run Terraform locally on the workstation with only state being managed by Terrarun.<br />
+In local execution mode, all VCS integration is ignored.<br />
+
+<br />

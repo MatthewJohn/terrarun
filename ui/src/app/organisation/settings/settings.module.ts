@@ -5,6 +5,7 @@ import { SettingsRoutingModule } from './settings-routing.module';
 import { GeneralComponent } from './general/general.component';
 import { NbButtonModule, NbCardModule, NbFormFieldModule, NbIconModule, NbInputModule, NbLayoutModule } from '@nebular/theme';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { ComponentsModule } from 'src/app/components/components.module';
 
 
 @NgModule({
@@ -16,6 +17,8 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
     NbCardModule,
     NbLayoutModule,
+
+    ComponentsModule,
 
     // NbToggleModule,
     // NbTreeGridModule,

@@ -19,6 +19,9 @@
                         <input nbInput placeholder="admin@example.com" id="email" formControlName="email" type="text">
                     </nb-form-field>
                     <br />
+
+                    <execution-mode-select [(value)]="generalSettingsDefaultExecutionMode" title="Default execution mode"></execution-mode-select>
+
                     <button [disabled]="!nameValid.valid" nbButton>Update</button>
                 </form>
             </nb-card-body>

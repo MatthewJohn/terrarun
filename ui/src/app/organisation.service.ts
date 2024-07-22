@@ -44,11 +44,15 @@ export class OrganisationService {
     });
   }
 
-  update(organisationName: string, name: string, email: string): Promise<any> {
+  update(organisationName: string, name: string, email: string, defaultExecutionMode: string|null): Promise<any> {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
         `/api/v2/organizations/${organisationName}`,
-        { data: { type: 'organizations', attributes: {'name': name, 'email': email }}},
+        { data: { type: 'organizations', attributes: {
+          'name': name,
+          'email': email,
+          'default-execution-mode': defaultExecutionMode,
+        }}},
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data) => {

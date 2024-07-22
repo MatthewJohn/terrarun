@@ -8,6 +8,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { TerraformVersionFormComponent } from './terraform-version-form/terraform-version-form.component';
 import { TerraformVersionSelectComponent } from './terraform-version-select/terraform-version-select.component';
 import { ProjectWorkspaceSettingsComponent } from './project-workspace-settings/project-workspace-settings.component';
+import { ExecutionModeSelectComponent } from './execution-mode-select/execution-mode-select.component';
 
 
 
@@ -19,6 +20,7 @@ import { ProjectWorkspaceSettingsComponent } from './project-workspace-settings/
     TerraformVersionFormComponent,
     TerraformVersionSelectComponent,
     ProjectWorkspaceSettingsComponent,
+    ExecutionModeSelectComponent,
   ],
   imports: [
     CommonModule,
@@ -44,6 +46,7 @@ import { ProjectWorkspaceSettingsComponent } from './project-workspace-settings/
     TerraformVersionFormComponent,
     TerraformVersionSelectComponent,
     ProjectWorkspaceSettingsComponent,
+    ExecutionModeSelectComponent,
   ],
   exports: [
     VcsSelectionComponent,
@@ -51,6 +54,7 @@ import { ProjectWorkspaceSettingsComponent } from './project-workspace-settings/
     TerraformVersionFormComponent,
     TerraformVersionSelectComponent,
     ProjectWorkspaceSettingsComponent,
+    ExecutionModeSelectComponent,
   ]
 })
 export class ComponentsModule { }

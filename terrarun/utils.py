@@ -23,6 +23,13 @@ def datetime_to_json(datetime_obj):
     # Hacky method to convert timezone to zulu timezone
     return datetime_obj.replace(tzinfo=datetime.timezone.utc).isoformat().replace('+00:00', 'Z')
 
+def datetime_from_json(datetime_str):
+    """Convert datetime to format for JSON output"""
+    if datetime_str is None:
+        return None
+    # Hacky method to convert timezone from Zulu
+    return datetime.datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+
 def update_object_status(obj, new_status, current_user=None, session=None):
     """Update state of run."""
     print(f"Updating {str(obj)} to from {str(obj.status)} to {str(new_status)}")

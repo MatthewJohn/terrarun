@@ -12,7 +12,7 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
   @Input()
   set attributes(value: WorkspaceAttributes | ProjectAttributes | null) {
     this.inputAttributes = value;
-    if (value && "overrides" in value) {
+    if (value && "overrides" in value && "queue-all-runs" in value.overrides) {
       this.overrides['queue-all-runs'] = value.overrides["queue-all-runs"];
     }
   }

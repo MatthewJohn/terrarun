@@ -32,6 +32,9 @@ export interface ProjectAttributes {
     } | null;
     "vcs-repo-identifier": string | null;
     "working-directory": string | null;
+    "overrides": {
+        "execution-mode": string | null;
+    }
 }
 
 export interface ProjectRelationships {

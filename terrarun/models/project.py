@@ -20,6 +20,7 @@ from terrarun.models.run import Run
 from terrarun.models.tool import Tool, ToolType
 from terrarun.models.workspace import Workspace
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
+import terrarun.models.organisation
 import terrarun.config
 
 
@@ -40,7 +41,7 @@ class Project(Base, BaseObject):
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey(
         "organisation.id", name="fk_project_organisation_id_organisation_id"),
         nullable=False)
-    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="projects", lazy='select')
+    organisation: 'terrarun.models.organisation.Organisation' = sqlalchemy.orm.relationship("Organisation", back_populates="projects", lazy='select')
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="project", lazy='select')
 
@@ -51,7 +52,7 @@ class Project(Base, BaseObject):
 
     allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=True)
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-    execution_mode = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceExecutionMode), nullable=True, default=WorkspaceExecutionMode.REMOTE)
+    _execution_mode = sqlalchemy.Column(sqlalchemy.Enum(WorkspaceExecutionMode), nullable=True, default=None, name="execution_mode")
     global_remote_state = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="global_remote_state")
     operations = sqlalchemy.Column(sqlalchemy.Boolean, default=True, name="operations")
     queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="queue_all_runs")
@@ -145,6 +146,18 @@ class Project(Base, BaseObject):
             self._trigger_prefixes = None
             return
         self._trigger_prefixes = json.dumps(val)
+
+    @property
+    def execution_mode(self):
+        """Obtain execution mode from workspace, if set, otherwise default to organisation default execution mode"""
+        if self._execution_mode:
+            return self._execution_mode
+        return self.organisation.default_execution_mode
+
+    @execution_mode.setter
+    def execution_mode(self, val):
+        """Set execution mode"""
+        self._execution_mode = val
 
     def update_attributes(self, session=None, **kwargs):
         """Determine if lifecycle is being updated."""
@@ -308,7 +321,9 @@ class Project(Base, BaseObject):
         # Handle update of execution mode
         if "execution-mode" in attributes:
             try:
-                execution_mode = WorkspaceExecutionMode(attributes["execution-mode"])
+                execution_mode = None
+                if attributes["execution-mode"] is not None:
+                    execution_mode = WorkspaceExecutionMode(attributes["execution-mode"])
                 update_kwargs["execution_mode"] = execution_mode
             except ValueError:
                 errors.append(ApiError(
@@ -365,7 +380,13 @@ class Project(Base, BaseObject):
                     "service-provider": self.authorised_repo.oauth_token.oauth_client.service_provider.value
                 } if self.authorised_repo else None,
                 "vcs-repo-identifier": self.authorised_repo.display_identifier if self.authorised_repo else None,
-                "working-directory": self.working_directory
+                "working-directory": self.working_directory,
+
+                # Custom terrarun attribute with override values over the
+                # organisation configuration
+                "overrides": {
+                    "execution-mode": self._execution_mode.value if self._execution_mode else None,
+                }
             },
             "id": self.api_id,
             "links": {

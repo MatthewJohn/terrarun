@@ -3,6 +3,7 @@
 # Proprietary and confidential
 
 from enum import Enum
+from typing import Optional
 import re
 import sqlalchemy
 import sqlalchemy.orm
@@ -19,6 +20,8 @@ import terrarun.models.configuration
 from terrarun.models.team import Team
 from terrarun.utils import datetime_to_json
 import terrarun.models.workspace
+import terrarun.api_entities.organization
+import terrarun.workspace_execution_mode
 
 
 class CollaboratorAuthPolicyType(Enum):
@@ -73,6 +76,12 @@ class Organisation(Base, BaseObject):
     agents_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     sso_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
+    default_execution_mode = sqlalchemy.Column(
+        sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
+        default=terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+        nullable=False
+    )
+
     fair_run_queuing_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     two_factor_conformant = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
 
@@ -103,19 +112,19 @@ class Organisation(Base, BaseObject):
     tasks = sqlalchemy.orm.relation("Task", back_populates="organisation")
 
     @classmethod
-    def get_by_name_id(cls, name_id):
+    def get_by_name_id(cls, name_id: str) -> Optional['Organisation']:
         """Return organisation object by name of organisation"""
         session = Database.get_session()
         org = session.query(Organisation).filter(Organisation.name_id==name_id).first()
         return org
     
     @staticmethod
-    def name_to_name_id(name):
+    def name_to_name_id(name: str) -> str:
         """Convert organisation to a name ID"""
         return re.sub(r'[^0-9^a-z^A-Z]+', '-', name).replace('--', '-').lower()
 
     @classmethod
-    def validate_new_name_id(cls, name_id):
+    def validate_new_name_id(cls, name_id: str) -> bool:
         """Ensure organisation does not already exist and name isn't reserved"""
         session = Database.get_session()
         existing_org = session.query(cls).filter(cls.name_id == name_id).first()
@@ -128,7 +137,7 @@ class Organisation(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, name, email):
+    def create(cls, name: str, email: str) -> 'Organisation':
         """Create organisation"""
         name_id = cls.name_to_name_id(name)
 
@@ -161,10 +170,32 @@ class Organisation(Base, BaseObject):
             if new_name_id != self.name_id:
                 if not self.validate_new_name_id(name_id=new_name_id):
                     return False
-                kwargs['name_id'] = new_name_id
+            kwargs['name_id'] = new_name_id
 
         for attr in kwargs:
             setattr(self, attr, kwargs[attr])
+
+        session = Database.get_session()
+        session.add(self)
+        session.commit()
+        return True
+
+
+    def update_from_entity(self, update_entity: 'terrarun.api_entities.organization.OrganizationUpdateEntity'):
+        """Update organisation from entity"""
+
+        for attribute, value in update_entity.get_set_object_attributes().items():
+            if attribute == "name":
+                new_name_id = self.name_to_name_id(value)
+
+                # If the name ID differs from the current one,
+                # validate it
+                if new_name_id != self.name_id:
+                    if not self.validate_new_name_id(name_id=new_name_id):
+                        return False
+                    self.name_id = new_name_id
+
+            setattr(self, attribute, value)
 
         session = Database.get_session()
         session.add(self)
