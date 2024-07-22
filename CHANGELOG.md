@@ -1,5 +1,17 @@
 # Changelog
 
+# [0.56.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.55.0...v0.56.0) (2024-07-22)
+
+
+### Bug Fixes
+
+* Disable setting agent job tokens to user, as we assume that job is available in most APIs ([8ead2fb](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/8ead2fb0186f6f34d6da6ad7be740c664bc3a8d0)), closes [#162](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/162)
+
+
+### Features
+
+* Add created_by and created_at fields of state version and add to API response ([96a7d47](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/96a7d47080dd7e2cf37f69a67fa2535e926e437f)), closes [#162](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/162)
+
 # [0.55.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.54.2...v0.55.0) (2024-07-22)
 
 
