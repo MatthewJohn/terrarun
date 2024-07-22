@@ -739,7 +739,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
             return ApiErrorView(error=err).to_response()
 
         try:
-            organisation.update_attributes(update_entity)
+            organisation.update_from_entity(update_entity)
         except ApiError as exc:
             return ApiErrorView(error=exc).to_response()
 
