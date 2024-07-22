@@ -7,6 +7,7 @@ import json
 import sqlalchemy
 import sqlalchemy.orm
 
+import terrarun.config
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
@@ -149,13 +150,14 @@ class StateVersion(Base, BaseObject):
 
     def get_api_details(self):
         """Return API details."""
+        config = terrarun.config.Config()
         return {
             "id": self.api_id,
             "type": "state-versions",
             "attributes": {
                 "created-at": datetime_to_json(self.created_at),
                 "size": 940,
-                "hosted-state-download-url": f"/api/v2/state-versions/{self.api_id}/download",
+                "hosted-state-download-url": f"{config.BASE_URL}/api/v2/state-versions/{self.api_id}/download",
                 "modules": self.modules,
                 "providers": self.providers,
                 "resources": self.resources,
