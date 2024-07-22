@@ -1,28 +1,32 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
-from enum import Enum
 import datetime
 import hashlib
 import hmac
 import json
 import uuid
-from ansi2html import Ansi2HTMLConverter
+from enum import Enum
+
 import requests
 import sqlalchemy
 import sqlalchemy.orm
-from terrarun.models.audit_event import AuditEvent, AuditEventType
+from ansi2html import Ansi2HTMLConverter
 
-from terrarun.models.base_object import BaseObject
+import terrarun.config
 import terrarun.database
+import terrarun.utils
+from terrarun.database import Base, Database
+from terrarun.logger import get_logger
+from terrarun.models.audit_event import AuditEvent, AuditEventType
+from terrarun.models.base_object import BaseObject
+from terrarun.models.blob import Blob
 from terrarun.models.user import TaskExecutionUserAccess, User, UserType
 from terrarun.models.user_token import UserToken
-from terrarun.utils import datetime_to_json, update_object_status
-from terrarun.models.blob import Blob
-from terrarun.database import Base, Database
 from terrarun.models.workspace_task import WorkspaceTaskStage
-import terrarun.config
-import terrarun.utils
+from terrarun.utils import datetime_to_json, update_object_status
+
+logger = get_logger(__name__)
 
 
 class TaskResultStatus(Enum):
@@ -127,9 +131,9 @@ class TaskResult(Base, BaseObject):
                 if res.status_code == 200:
                     break
                 else:
-                    print(f"Got invalid response from task result: {res.status_code}")
-            except requests.exceptions.ConnectionError as exc:
-                print(f'Exception occurred whilst calling task result: {exc}')
+                    logger.error("Got invalid response from task result: %s". res.status_code)
+            except requests.exceptions.ConnectionError:
+                logger.exception('Exception occurred whilst calling task result.')
         else:
             # If unable to get 200 response from remote,
             # mark task result as failed

@@ -1,7 +1,6 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
-
 import datetime
 import signal
 import threading
@@ -9,11 +8,13 @@ from time import sleep
 
 import requests
 
+from terrarun.logger import get_logger
 from terrarun.models.agent import AgentStatus
+
+logger = get_logger(__name__)
 
 
 class AgentConfig:
-
     def __init__(self, address, token):
         """Store member variables"""
         self.__address = address
@@ -31,16 +32,13 @@ class AgentConfig:
 
 
 class AgentRuntimeConfig:
-
     @classmethod
     def create_from_registration_response(cls, registration_response):
         """Create runtime config from registration response"""
-        if not (id := registration_response.get("id")):
+        if not (id := registration_response.get('id')):
             raise Exception('Agent id not provided in registration response')
-        
-        return cls(
-            id=id
-        )
+
+        return cls(id=id)
 
     def __init__(self, id):
         """Store details about agent"""
@@ -88,7 +86,7 @@ class Agent:
             raise Exception(f'Invalid response from registration endpoint: {res.status_code}')
 
         self.__runtime_config = AgentRuntimeConfig.create_from_registration_response(res.json())
-        print(f'Agent registered with ID: {self.__runtime_config.id}')
+        logger.info('Registered agent with id: %s.', self.__runtime_config.id)
 
     def check_for_jobs_loop(self):
         """Enter loop to continue looking for jobs"""
@@ -98,7 +96,7 @@ class Agent:
 
     def _check_for_jobs(self):
         """Check for jobs to run"""
-        print('Checking for jobs...')
+        logger.debug('Checking for jobs...')
 
     def _push_agent_status(self):
         """Push agent status"""
@@ -107,7 +105,7 @@ class Agent:
                 AgentStatus.BUSY if self.__current_job else AgentStatus.IDLE
             )
         )
-        print(f"Pushing agent status: {status.value}")
+        logger.debug('Pushing agent status: %s', status.value)
         res = requests.put(
             f"{self.__agent_config.address}/api/agent/status",
             json={
@@ -121,7 +119,10 @@ class Agent:
             }
         )
         if res.status_code != 200:
-            print(f'Error: Failed to push metrics: {res.status_code}')
+            logger.error(
+                'Failed to push agent metrics. Response status code: %d.',
+                res.status_code,
+            )
 
     def push_agent_status_loop(self):
         """Push agent status"""
@@ -135,7 +136,6 @@ class Agent:
 
     def wait_for_jobs(self):
         """Wait for any running jobs to complete"""
-        pass
 
     def set_exited_status(self):
         """Set exited status"""
@@ -143,7 +143,6 @@ class Agent:
 
 
 class AgentProcessHandler:
-
     def __init__(self, agent: Agent):
         """Store member variables"""
         self.__agent = agent
@@ -160,7 +159,7 @@ class AgentProcessHandler:
 
     def stop(self, *args):
         """Stop agent"""
-        print('Stopping agent... waiting for remaining jobs to complete.')
+        logger.debug('Stopping agent... waiting for remaining jobs to complete.')
         self.__agent.stop()
         self.__agent.wait_for_jobs()
         self.__agent.set_exited_status()

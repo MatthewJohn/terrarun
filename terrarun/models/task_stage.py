@@ -1,19 +1,26 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
+import datetime
 from enum import Enum
+
 import sqlalchemy
 import sqlalchemy.orm
-import datetime
 
-from terrarun.models.base_object import BaseObject
-from terrarun.database import Base, Database
 import terrarun.models.run
-from terrarun.models.task_result import TaskResult, TaskResultStatus
-from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
-import terrarun.utils
 import terrarun.terraform_command
+import terrarun.utils
+from terrarun.database import Base, Database
+from terrarun.logger import get_logger
+from terrarun.models.base_object import BaseObject
+from terrarun.models.task_result import TaskResult, TaskResultStatus
+from terrarun.models.workspace_task import (
+    WorkspaceTaskEnforcementLevel,
+    WorkspaceTaskStage,
+)
 
+
+logger = get_logger(__name__)
 
 class TaskStageStatus(Enum):
     """Task stage statuses"""
@@ -136,7 +143,7 @@ class TaskStage(Base, BaseObject):
                 still_running += 1
             
             else:
-                print('task result combination that is not covered:', task_result.status, "Mandatory:", is_mandatory)
+                logger.error('task result combination that is not covered. Status: %s. Mandatory: %s', task_result.status, is_mandatory)
 
         # If no tasks are still running, update
         # state to completed

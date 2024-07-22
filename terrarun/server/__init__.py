@@ -3,21 +3,14 @@
 
 import base64
 import json
-import requests
-import queue
 import re
-import threading
 from time import sleep
-import traceback
-import os
 
 from flask import Flask, make_response, request, session
-from sqlalchemy import desc
-from sqlalchemy.orm import scoped_session
 from flask.signals import request_finished
 import flask
 from flask_cors import CORS
-from flask_restful import Api, Resource, marshal_with, reqparse, fields
+from flask_restful import Api, Resource, reqparse
 from ansi2html import Ansi2HTMLConverter
 from terrarun.api_request import ApiRequest
 from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, UnableToDownloadToolArchiveError, UnableToDownloadToolChecksumFileError
@@ -25,13 +18,11 @@ from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholde
 from terrarun.job_processor import JobProcessor
 import terrarun.config
 from terrarun.models import workspace
-from terrarun.models import project
 from terrarun.models.agent import Agent, AgentStatus
 from terrarun.models.agent_pool import AgentPool
 from terrarun.models.agent_token import AgentToken
 from terrarun.models.apply import Apply
 from terrarun.models.audit_event import AuditEvent
-from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.configuration import ConfigurationVersion
 from terrarun.database import Database
 from terrarun.models.github_app_oauth_token import GithubAppOauthToken
@@ -49,8 +40,8 @@ from terrarun.permissions.organisation import OrganisationPermissions
 from terrarun.permissions.user import UserPermissions
 from terrarun.permissions.workspace import WorkspacePermissions
 from terrarun.models.plan import Plan
-from terrarun.models.run import Run, RunStatus
-from terrarun.models.run_queue import JobQueueType, RunQueue, JobQueueAgentType
+from terrarun.models.run import Run
+from terrarun.models.run_queue import JobQueueType
 from terrarun.models.state_version import StateVersion
 from terrarun.models.tag import Tag
 from terrarun.models.task import Task
@@ -60,9 +51,7 @@ from terrarun.terraform_command import TerraformCommandState
 from terrarun.models.user_token import UserToken, UserTokenType
 from terrarun.models.workspace import Workspace
 from terrarun.models.user import User
-from terrarun.models.team_workspace_access import TeamWorkspaceAccess, TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
-from terrarun.models.team_user_membership import TeamUserMembership
-from terrarun.models.team import Team
+from terrarun.models.team_workspace_access import TeamWorkspaceRunsPermission, TeamWorkspaceStateVersionsPermissions
 from terrarun.models.workspace_task import WorkspaceTask, WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 from terrarun.models.environment import Environment
 from terrarun.agent_filesystem import AgentFilesystem
@@ -71,6 +60,9 @@ from terrarun.api_error import ApiError, api_error_response
 from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
 from terrarun.server.routes import *
+from terrarun.logger import get_logger
+
+logger = get_logger(__name__)
 
 from terrarun.api_entities.organization import OrganizationUpdateEntity, OrganizationView
 
@@ -816,7 +808,7 @@ class ApiTerraformOrganisationWorkspaces(AuthenticatedEndpoint):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
-            print('NOT ORG FOND')
+            logger.error('Organisation "%s" not found.', organisation_name)
             return False
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_CREATE_WORKSPACE)
@@ -871,7 +863,7 @@ class ApiTerraformOrganisationTasks(AuthenticatedEndpoint):
         """Check permissions"""
         organisation = Organisation.get_by_name_id(organisation_name)
         if not organisation:
-            print('NOT ORG FOND')
+            logger.error('Organization "%s" not found.', organisation_name)
             return False
         return OrganisationPermissions(organisation=organisation, current_user=current_user).check_permission(
             OrganisationPermissions.Permissions.CAN_MANAGE_RUN_TASKS)
@@ -1979,7 +1971,6 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
-        # print({"data": run.get_api_details()})
         return {"data": run.get_api_details()}
 
     def check_permissions_post(self, current_user, current_job, run_id=None,):
@@ -2038,11 +2029,11 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             if not cv:
                 return {}, 400
         else:
-            print("Cannot run VCS build and no configuration version provided!")
+            logger.error("Cannot run VCS build and no configuration version provided!")
             return {}, 400
 
         if cv.workspace.id != workspace.id:
-            print('Configuration version ID and workspace ID mismatch')
+            logger.error('Configuration version does not belong to this workspace.')
             # Hide error to prevent workspace ID/configuration ID enumeration
             return {}, 400
 
@@ -3361,7 +3352,7 @@ class ApiAgentStatus(Resource, AgentEndpoint):
             elif job_status.get("type") == "apply":
                 JobProcessor.handle_apply_status_update(job_status)
             else:
-                print(f"Unknown job type: {job_status.get('type')}")
+                logger.error("Unknown job type: %s", job_status.get('type'))
                 return {}, 500
 
         agent.update_status(
@@ -3379,9 +3370,6 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
     def get(self):
         """Get list of jobs to be run"""
-        print(request.headers)
-        print(request.data)
-
         accepted_job_types_raw = request.headers.get('Tfc-Agent-Accept', '').split(',')
         accepted_job_types = [
             JobQueueType(accepted_job_type_raw)
@@ -3405,7 +3393,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 # has been assigned to an agent
                 pass
             else:
-                print(f'Job does not have a valid job_type: {job.id}: {job.job_type}')
+                logger.error('Job (id: %s) does not have a valid job_type: %s', job.id, job.job_type)
                 return {}, 204
 
             tool = job.run.tool if job.run.tool else job.run.configuration_version.workspace.tool
@@ -3807,7 +3795,7 @@ class ApiAdminTerraformVersion(AuthenticatedEndpoint):
             }.items()
             if request_attribute in attributes
         }
-        print(update_kwargs)
+        logger.debug("Patching terraform version: %s", update_kwargs)
 
         error = None        
         try:

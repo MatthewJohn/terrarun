@@ -8,12 +8,15 @@ import subprocess
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.database import Base, Database
-from terrarun.terraform_command import TerraformCommand, TerraformCommandState
-from terrarun.models.blob import Blob
+import terrarun.config
 import terrarun.models.audit_event
 import terrarun.utils
-import terrarun.config
+from terrarun.database import Base, Database
+from terrarun.logger import get_logger
+from terrarun.models.blob import Blob
+from terrarun.terraform_command import TerraformCommand, TerraformCommandState
+
+logger = get_logger(__name__)
 
 
 class Plan(TerraformCommand, Base):
@@ -97,13 +100,13 @@ Executed remotely on terrarun server
                 environment_variables[f"TF_VAR_{var['Key']}"] = var['Value']
             
         terraform_version = self.run.terraform_version or '1.1.7'
-        environment_variables[f"TF_VERSION"] = terraform_version
+        environment_variables["TF_VERSION"] = terraform_version
 
         if self._run_command(['tfswitch'], work_dir=work_dir, environment_variables=environment_variables):
             self.update_status(TerraformCommandState.ERRORED)
             return
 
-        terraform_binary = f'terraform'
+        terraform_binary = 'terraform'
         command = [terraform_binary, action, '-input=false', '-out', self.PLAN_OUTPUT_FILE]
 
         if self.run.is_destroy:
@@ -111,7 +114,7 @@ Executed remotely on terrarun server
 
         if self.run.target_addrs:
             for target in self.run.target_addrs:
-                command.append(f'-target')
+                command.append('-target')
                 command.append(target)
 
         if self._run_command([terraform_binary, 'init', '-input=false'], work_dir=work_dir, environment_variables=environment_variables):
@@ -142,7 +145,7 @@ Executed remotely on terrarun server
         plan_out_file_path = os.path.join(work_dir, self.PLAN_OUTPUT_FILE)
 
         if not os.path.isfile(plan_out_file_path):
-            print("Cannot find plan out file")
+            logger.error("Cannot find plan out file: %s", plan_out_file_path)
             self.update_status(TerraformCommandState.ERRORED)
             return
 

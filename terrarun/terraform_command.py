@@ -1,21 +1,23 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
-from enum import Enum
 import json
 import os
 import subprocess
 import threading
+from enum import Enum
 from time import sleep
 
 import sqlalchemy.orm
 
+import terrarun.models.audit_event
+import terrarun.models.run
+from terrarun.database import Database
+from terrarun.logger import get_logger
 from terrarun.models.base_object import BaseObject
 from terrarun.models.blob import Blob
-from terrarun.database import Database
-import terrarun.models.run
-from terrarun.models.state_version import StateVersion
-import terrarun.models.audit_event
+
+logger = get_logger(__name__)
 
 
 class TerraformCommandState(Enum):
@@ -86,7 +88,7 @@ class TerraformCommand(BaseObject):
             environment_variables = os.environ.copy()
 
         try:
-            print(f'Running command: {command}')
+            logger.info('Running command: %s', command)
             command_proc = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,
@@ -129,7 +131,7 @@ class TerraformCommand(BaseObject):
 
     def update_status(self, new_status, session=None):
         """Update state of plan."""
-        print(f"Updating {self.ID_PREFIX} status to from {str(self.status)} to {str(new_status)}")
+        logger.info("Updating %s status to from %s to %s", self.ID_PREFIX, self.status, new_status)
         should_commit = False
         if session is None:
             session = Database.get_session()
