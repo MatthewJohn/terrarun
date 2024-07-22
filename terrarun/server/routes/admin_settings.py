@@ -21,7 +21,7 @@ class AdminSettingsSamlSettings(AuthenticatedEndpoint):
     def _get(self, current_user, current_job):
         """Obtain SAML settings"""
         saml_settings = SamlSettings.get_instance()
-        view = SamlSettingsView.from_object(saml_settings)
+        view = SamlSettingsView.from_object(saml_settings, current_user)
         return view.to_response()
 
     def check_permissions_post(self, current_user, current_job):
@@ -41,7 +41,7 @@ class AdminSettingsSamlSettings(AuthenticatedEndpoint):
         except ApiError as exc:
             return ApiErrorView(error=exc).to_response()
 
-        view = SamlSettingsView.from_object(saml_settings)
+        view = SamlSettingsView.from_object(saml_settings, effective_user=current_user)
         return view.to_response()
 
 

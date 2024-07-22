@@ -1,6 +1,7 @@
 
 from typing import Tuple
 from terrarun.models.saml_settings import SamlSettings as SamlSettingsModel
+import terrarun.models.user
 
 from .base_entity import BaseEntity, EntityView, Attribute, ATTRIBUTED_REQUIRED
 
@@ -57,7 +58,7 @@ class SamlSettingsEntity(BaseSamlSettingsEntity):
         }
 
     @classmethod
-    def from_object(cls, obj: SamlSettingsModel):
+    def _from_object(cls, obj: SamlSettingsModel, effective_user: 'terrarun.models.user.User'):
         """Convert object to saml settings entity"""
         return cls(
             id="saml",

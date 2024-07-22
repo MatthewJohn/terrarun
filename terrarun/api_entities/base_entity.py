@@ -7,6 +7,7 @@ from typing import Tuple, Optional, List, Dict, Any
 from flask import request
 
 from terrarun.api_error import ApiError
+import terrarun.models.user
 from terrarun.utils import datetime_to_json, datetime_from_json
 
 
@@ -144,7 +145,7 @@ class BaseEntity(abc.ABC):
     include_attributes: Optional[Tuple[str]] = None
     attribute_modifiers: Dict[str, AttributeModifier] = {}
 
-    def __init__(self, id: str=None, attributes: Optional[Dict[str, Any]]=None, link: Optional[str]=None):
+    def __init__(self, id: str=None, attributes: Optional[Dict[str, Any]]=None):
         """Assign attributes from kwargs to attributes"""
         self.id = id
         self._attribute_values = {}
@@ -156,8 +157,6 @@ class BaseEntity(abc.ABC):
                 if attribute.obj_attribute in attributes
                 else UNDEFINED
             )
-
-        self._link = link
 
     def get_type(self):
         """Return entity type"""
@@ -210,9 +209,14 @@ class BaseEntity(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def from_object(cls, obj) -> 'BaseEntity':
+    def _from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
         """Return entity from object"""
         ...
+
+    @classmethod
+    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+        """Return entity from object"""
+        return cls._from_object(obj=obj, effective_user=effective_user)
 
     @staticmethod
     def generate_link(obj: Any):
@@ -274,19 +278,27 @@ class BaseView(abc.ABC):
 class EntityView(BaseEntity, BaseView):
     """Return view for entity"""
 
+    RELATIONSHIPS: Dict[str, 'BaseRelationshipView'] = {}
+
     def __init__(
             self,
             id: str = None,
-            attributes: Optional[Dict[str, Any]]= None,
-            link: Optional[str]=None,
-            relationships: Dict[str, 'BaseRelationshipView']=None):
+            attributes: Optional[Dict[str, Any]]= None):
         """Store member variables for relationships"""
-        super().__init__(id, attributes, link)
-        self._relationships: Dict[str, 'BaseRelationshipView'] = relationships or {}
+        super().__init__(id, attributes)
+        self.relationships: Dict[str, 'BaseRelationshipView'] = {}
+        self.link: Optional[str] = None
 
-    def add_relationship(self, name: str, relationship: 'BaseRelationshipView'):
-        """Add relationship to entity"""
-        self._relationships[name] = relationship
+    @classmethod
+    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+        """Return entity from object"""
+        entity = cls._from_object(obj=obj, effective_user=effective_user)
+        entity.link = cls.generate_link(obj=obj)
+        entity.relationships = {
+            relationship_name: relationship_class.from_object(obj=obj, parent_view=entity)
+            for relationship_name, relationship_class in cls.RELATIONSHIPS.items()
+        }
+        return entity
 
     def to_dict(self):
         """Return view as dictionary"""
@@ -301,7 +313,7 @@ class EntityView(BaseEntity, BaseView):
             response["links"] = self_link
 
         relationships = {}
-        for relationship_name, relationship in self._relationships.items():
+        for relationship_name, relationship in self.relationships.items():
             if relationship_data := relationship.to_dict():
                 relationships[relationship_name] = relationship_data
         if relationships:
@@ -311,9 +323,9 @@ class EntityView(BaseEntity, BaseView):
 
     def get_self_link(self):
         """Get link for self"""
-        if self._link:
+        if self.link:
             return {
-                "self": self._link
+                "self": self.link
             }
         return None
 
@@ -342,31 +354,36 @@ class ApiErrorView(BaseEntity, BaseView):
 
 class BaseRelationshipView(BaseView):
     """Base relationship view"""
-    pass
+
+    @classmethod
+    @abc.abstractmethod
+    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
+        """Return entity from object"""
+        ...
 
 
 class RelatedRelationshipView(BaseRelationshipView):
     """Base relationship for related"""
 
-    NAME: Optional[str] = None
     CHILD_PATH: Optional[str] = None
 
     def __init__(self, parent_view: 'EntityView'):
         """Store member variables"""
-        if self.NAME is None:
-            raise NotImplementedError("Name not set on relationship")
         if self.CHILD_PATH is None:
             raise NotImplementedError("Name not set on relationship")
-        
         self._parent_view = parent_view
-        self._parent_view.add_relationship(self)
+
+    @classmethod
+    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
+        """Return entity from object"""
+        return cls(parent_view=parent_view)
 
     def to_dict(self):
         """Return API repsonse data"""
-        if self._parent_view._link:
+        if self._parent_view.link:
             return {
                 "links": {
-                    "related": f"{self._parent_view._link}/oauth-tokens"
+                    "related": f"{self._parent_view.link}/{self.CHILD_PATH}"
                 }
             }
         return None

@@ -7,7 +7,15 @@ import terrarun.models.user
 import terrarun.permissions.organisation
 import terrarun.workspace_execution_mode
 
-from .base_entity import BaseEntity, EntityView, Attribute, AttributeModifier, ATTRIBUTED_REQUIRED, UNDEFINED
+from .base_entity import (
+    BaseEntity,
+    EntityView,
+    RelatedRelationshipView,
+    Attribute,
+    AttributeModifier,
+    ATTRIBUTED_REQUIRED,
+    UNDEFINED
+)
 
 
 class OrganizationEntity(BaseEntity):
@@ -44,7 +52,7 @@ class OrganizationEntity(BaseEntity):
         )
 
     @classmethod
-    def from_object(cls, obj: 'terrarun.models.organisation.Organisation', effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: 'terrarun.models.organisation.Organisation', effective_user: 'terrarun.models.user.User'):
         """Convert object to saml settings entity"""
         permission = terrarun.permissions.organisation.OrganisationPermissions(current_user=effective_user, organisation=obj)
         return cls(
@@ -73,8 +81,7 @@ class OrganizationEntity(BaseEntity):
                 "owners_team_saml_role_id": obj.owners_team_saml_role_id,
                 "two_factor_conformant": obj.two_factor_conformant,
                 "default_execution_mode": obj.default_execution_mode,
-            },
-            link=cls.generate_link(obj)
+            }
         )
 
 
@@ -91,10 +98,37 @@ class OrganizationUpdateEntity(OrganizationEntity):
     }
 
 
+class OauthTokensRelationship(RelatedRelationshipView):
+
+    CHILD_PATH = "oauth-tokens"
+
+
+class OauthClientsRelationship(RelatedRelationshipView):
+
+    CHILD_PATH = "oauth-clients"
+
+
+class AuthenticationTokenRelationship(RelatedRelationshipView):
+
+    CHILD_PATH = "authentication-token"
+
+
+class SubscriptionRelationship(RelatedRelationshipView):
+
+    CHILD_PATH = "subscription"
+
+
 class OrganizationView(OrganizationEntity, EntityView):
     """View for settings"""
 
+    RELATIONSHIPS = {
+        "oauth-tokens": OauthTokensRelationship,
+        "oauth-clients": OauthClientsRelationship,
+        "authentication-token": AuthenticationTokenRelationship,
+        "subscription": SubscriptionRelationship,
+    }
+
     @staticmethod
-    def generate_link(organisation: 'terrarun.models.organisation.Organisation'):
+    def generate_link(obj: 'terrarun.models.organisation.Organisation'):
         """Generate self link from given objects"""
-        return f'/api/v2/organizations/{organisation.name}'
+        return f'/api/v2/organizations/{obj.name}'
