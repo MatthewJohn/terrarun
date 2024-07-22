@@ -2673,7 +2673,13 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
 
         state_base64 = data.get("attributes", {}).get("state", None)
         if not state_base64:
-            return {}, 400
+            param_error = ApiError(
+                title = "param is missing or the value is empty: state",
+                details = "Terrarun does not support state upload directly to storage.",
+                status = 400,
+                pointer="/data/attributes/state",
+            )
+            return ApiErrorView(error=param_error).to_response(code = 400)
 
         run_id = data.get("relationships", {}).get("run", {}).get("data", {}).get("id", None)
         run = None
