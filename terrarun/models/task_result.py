@@ -1,6 +1,5 @@
-# Copyright (C) Matt Comben - All Rights Reserved
-# Unauthorized copying of this file, via any medium is strictly prohibited
-# Proprietary and confidential
+# Copyright (C) 2024 Matt Comben - All Rights Reserved
+# SPDX-License-Identifier: GPL-2.0
 
 from enum import Enum
 import datetime

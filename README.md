@@ -132,10 +132,10 @@ To avoid any issues with Hashicorp, it is required that contributors state that 
 
  * Matt Comben <matthew@dockstudios.co.uk>
 
-## License
 
-Copyright (c) 2022 Matt Comben <matthew@dockstudios.co.uk>
+# License
 
-Terrarun can not be copied and/or distributed without the express
-permission of the authors
+This project and all associated code is covered by GNU General Public License v3.0.
+
+For full license, see [LICENSE](LICENSE).
 
