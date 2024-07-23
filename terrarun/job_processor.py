@@ -40,24 +40,45 @@ class JobProcessor:
         # Filter jobs that are being handled by an agent
         query = query.filter(RunQueue.agent_type==JobQueueAgentType.AGENT, RunQueue.agent==None)
 
-        # If agent pool is tied to an organisation, limit to just the organisation
-        if agent.agent_pool.organisation:
-            query = query.filter(RunQueue.run.configuration_version.workspace.organisation==agent.agent_pool.organisation)
+        # Limit by any organisations that have default agent pool and is set to this agent's pool
+        # or don't have a default agent pool
+        if agent.agent_pool.organisation is None:
+            query = query.filter(
+                sqlalchemy.or_(
+                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==agent.agent_pool,
+                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==None
+                )
+            )
+        elif agent.agent_pool.organisation and agent.agent_pool.organisation_scoped:
+            # Limit to organisation that this agent pool is tied to, ensuring
+            # the default agent pool is None or this agent pool
+            query = query.filter(
+                RunQueue.run.configuration_version.workspace.organisation==agent.agent_pool.organisation,
+                sqlalchemy.or_(
+                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==agent.agent_pool,
+                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==None
+                )
+            )
+        else:
+            # Agent has organisation set, but is not organisation scoped.
+            # Since we do not have any ways to associated agents to projects, environments or workspaces, give up
+            # for now
+            return None
 
         # Filter by allowed projects/workspaces, if not all workspaces are allowed
-        if not agent.agent_pool.allow_all_workspaces:
-            allowed_projects = session.query(
-                AgentPoolProjectPermission
-            ).filter(
-                AgentPoolProjectPermission.agent_pool==agent.agent_pool
-            )
-            query = query.filter(Workspace.project.in_(allowed_projects))
+        # if not agent.agent_pool.organisation_scoped:
+        #     allowed_projects = session.query(
+        #         AgentPoolProjectPermission
+        #     ).filter(
+        #         AgentPoolProjectPermission.agent_pool==agent.agent_pool
+        #     )
+        #     query = query.filter(Workspace.project.in_(allowed_projects))
 
         # Filter any projects that have workers associated with them or this agent pool is associated with it
-        query = query.filter(sqlalchemy.or_(
-            ~Project.agent_pool_associations.any(),
-            AgentPoolProjectAssociation.agent_pool==agent.agent_pool
-        ))
+        # query = query.filter(sqlalchemy.or_(
+        #     ~Project.agent_pool_associations.any(),
+        #     AgentPoolProjectAssociation.agent_pool==agent.agent_pool
+        # ))
 
         # @TODO Filter by environment if there are any within the organisation for the agent pool
 

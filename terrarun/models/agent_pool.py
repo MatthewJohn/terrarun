@@ -7,6 +7,7 @@ import sqlalchemy.orm
 
 import terrarun.config
 import terrarun.database
+import terrarun.models.organisation
 from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
 import terrarun.utils
@@ -30,23 +31,23 @@ class AgentPool(Base, BaseObject):
 
     agents = sqlalchemy.orm.relation("Agent", back_populates="agent_pool")
 
-    allow_all_workspaces = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+    organisation_scoped = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="allow_all_workspaces")
 
     @classmethod
-    def create(cls, name, organisation, allow_all_workspaces):
+    def create(cls, name, organisation: 'terrarun.models.organisation.Organisation', organisation_scoped: bool):
         """Create agent pool"""
         session = Database.get_session()
         agent_pool = cls(
             name=name,
             organisation=organisation,
-            allow_all_workspaces=allow_all_workspaces
+            organisation_scoped=organisation_scoped
         )
         session.add(agent_pool)
         session.commit()
         return agent_pool
 
     @classmethod
-    def get_by_organisation(cls, organisation, include_global):
+    def get_by_organisation(cls, organisation: 'terrarun.models.organisation.Organisation', include_global: bool):
         """Obtain all agent pools"""
         session = Database.get_session()
         query = session.query(cls)
@@ -57,7 +58,7 @@ class AgentPool(Base, BaseObject):
         return query.all()
 
     @classmethod
-    def get_by_name_and_organisation(cls, name, organisation):
+    def get_by_name_and_organisation(cls, name: str, organisation: 'terrarun.models.organisation.Organisation'):
         """Obtain agent pool by organisation and name"""
         session = Database.get_session()
         return session.query(cls).filter(cls.name==name, cls.organisation==organisation).first()
@@ -70,7 +71,7 @@ class AgentPool(Base, BaseObject):
             "attributes": {
                 "name": self.name,
                 "created-at": terrarun.utils.datetime_to_json(self.created_at),
-                "organization-scoped": self.organisation is not None,
+                "organization-scoped": self.organisation_scoped,
                 "agent-count": len(self.agents)
             },
             "relationships": {
