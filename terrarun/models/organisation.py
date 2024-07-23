@@ -198,6 +198,13 @@ class Organisation(Base, BaseObject):
                         return False
                     self.name_id = new_name_id
 
+            # Ensure agent pool is not assigned to another organisation
+            # @TODO Make this less hacky
+            if attribute == "default_agent_pool":
+                if value is not None:
+                    if not value.organisation and value.organisation.id != self.id:
+                        value = None
+
             setattr(self, attribute, value)
 
         session = Database.get_session()

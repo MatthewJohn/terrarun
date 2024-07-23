@@ -11,6 +11,7 @@ from flask import request
 
 from terrarun.api_error import ApiError
 import terrarun.models.user
+import terrarun.models.base_object
 from terrarun.utils import datetime_to_json, datetime_from_json
 
 
@@ -105,6 +106,15 @@ class Attribute:
                 return ApiError(
                     "Invalid datetime value for attribute",
                     f"The attribute '{self.req_attribute}' is set to an invalid datetime.",
+                    pointer=f"/data/attributes/{self.req_attribute}"
+                ), None, None
+
+        elif issubclass(self.type, terrarun.models.base_object.BaseObject):
+            val = self.type.get_by_api_id(val)
+            if val is None:
+                return ApiError(
+                    "Entity does not exist",
+                    f"The attribute '{self.req_attribute}' is set to an invalid/non-existent ID.",
                     pointer=f"/data/attributes/{self.req_attribute}"
                 ), None, None
 

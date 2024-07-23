@@ -9,6 +9,7 @@ import terrarun.models.organisation
 import terrarun.models.user
 import terrarun.permissions.organisation
 import terrarun.workspace_execution_mode
+import terrarun.models.agent_pool
 
 from .base_entity import (
     BaseEntity,
@@ -94,13 +95,23 @@ class OrganizationUpdateEntity(OrganizationEntity):
 
     require_id = False
     include_attributes = [
-        "name", "email", "default_execution_mode"
+        "name",
+        "email",
+        "default_execution_mode",
+        "default_agent_pool"
     ]
     attribute_modifiers = {
         "name": AttributeModifier(default=UNDEFINED),
         "email": AttributeModifier(default=UNDEFINED),
         "default_execution_mode": AttributeModifier(default=UNDEFINED),
     }
+
+    @classmethod
+    def _get_attributes(cls):
+        """Override get_attributes to add update-specific arguments"""
+        return super()._get_attributes() + (
+            Attribute("default-agent-pool-id", "default_agent_pool", terrarun.models.agent_pool.AgentPool, UNDEFINED, True),
+        )
 
 
 class OauthTokensRelationship(RelatedRelationshipView):
