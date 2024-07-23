@@ -1,5 +1,24 @@
 # Changelog
 
+# [0.57.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.56.1...v0.57.0) (2024-07-23)
+
+
+### Bug Fixes
+
+* Fix creating entity object from request data, passing attributes into attributes key, rather than kwargs ([61e1a12](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/61e1a1254ac99d796015d0e39f3241ef349644b5)), closes [#169](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/169)
+* Fix error when instantiating error response in entities, due to missing base methods of error API view ([7864428](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/786442863d4b92a43b4484a9405a5465c52ef2a6)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+* Fix pointer in invalid type error in entities ([c66b034](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/c66b034ecf4c49280e3f53e48ac3d81fdca03f62)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+* Update property of agent pool organisation_scoped to match API attribute. ([09274fc](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/09274fce0a17c52cebcb09e037c1c36778963ce8)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+
+
+### Features
+
+* Add default agent pool attribute to organisation model ([82e3381](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/82e33812d7e6af18e0ae8079cac7faa2c5aa078f)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+* Add default agent pool entity relationship to organisation ([54c4bd3](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/54c4bd3739100251eefd6938b68c456e2681a3c2)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+* Allow setting additional attributes to organisation on create/update API calls. ([36cb17c](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/36cb17c851a6f07280d8277587714e9dab559f1a)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+* Allow setting default agent pool of organisation through API ([0ce28bd](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/0ce28bd7101a8c738346b0f2ca21127ffa692194)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+* Convert organisation list API to use entity views using new ListView ([1761321](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/17613215a44aa5b85f0dcdd0805685553f5b58ad)), closes [#159](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/159)
+
 ## [0.56.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.56.0...v0.56.1) (2024-07-23)
 
 
