@@ -6,6 +6,7 @@ import sqlalchemy
 
 from terrarun.database import Database
 from terrarun import RunQueue
+import terrarun.models.agent
 from terrarun.models.agent_pool_association import AgentPoolProjectAssociation, AgentPoolProjectPermission
 from terrarun.models.apply import Apply
 from terrarun.models.configuration import ConfigurationVersion
@@ -31,7 +32,7 @@ class JobProcessor:
         return run
 
     @staticmethod
-    def get_job_by_agent_and_job_types(agent, job_types):
+    def get_job_by_agent_and_job_types(agent: 'terrarun.models.agent.Agent', job_types):
         """Obtain list of jobs from queue that are applicable to an agent"""
 
         session = Database.get_session()

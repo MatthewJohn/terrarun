@@ -29,6 +29,7 @@ import terrarun.terraform_command
 from terrarun.models.base_object import BaseObject
 import terrarun.utils
 import terrarun.config
+import terrarun.models.configuration
 from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 
 
@@ -82,8 +83,8 @@ class Run(Base, BaseObject):
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
-    configuration_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
-    configuration_version = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
+    configuration_version_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
+    configuration_version: 'terrarun.models.configuration.ConfigurationVersion' = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
 
     state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="run")
     plans = sqlalchemy.orm.relation("Plan", back_populates="run")

@@ -19,6 +19,7 @@ from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
 import terrarun.models.configuration
 import terrarun.models.ingress_attribute
+import terrarun.models.organisation
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.models.workspace_task
 import terrarun.models.user
@@ -42,8 +43,8 @@ class Workspace(Base, BaseObject):
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
     _description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="description")
 
-    organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
-    organisation = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces", lazy='select')
+    organisation_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id"), nullable=False)
+    organisation: 'terrarun.models.organisation.Organisation' = sqlalchemy.orm.relationship("Organisation", back_populates="workspaces", lazy='select')
 
     enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=True, nullable=False)
 
