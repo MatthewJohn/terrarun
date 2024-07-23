@@ -245,7 +245,7 @@ class BaseEntity(abc.ABC):
         obj_attributes = {}
 
         if id_ := request_data.get("id"):
-            obj_attributes["id"] = id_
+            pass
         elif cls.require_id:
             return ApiError(
                 "ID not provided",
@@ -261,7 +261,7 @@ class BaseEntity(abc.ABC):
             if key is not None:
                 obj_attributes[key] = value
         
-        return None, cls(**obj_attributes)
+        return None, cls(id=id_, attributes=obj_attributes)
 
 
 class BaseView(abc.ABC):
