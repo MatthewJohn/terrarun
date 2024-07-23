@@ -65,6 +65,7 @@ from terrarun.api_entities.base_entity import ListView
 from terrarun.api_entities.organization import (
     OrganizationUpdateEntity, OrganizationView, OrganizationCreateEntity
 )
+from terrarun.api_entities.agent_pool import AgentPoolView
 
 
 logger = get_logger(__name__)
@@ -405,6 +406,10 @@ class Server(object):
         self._api.add_resource(
             ApiOrganisationAgentPoolList,
             '/api/v2/organizations/<string:organisation_name>/agent-pools'
+        )
+        self._api.add_resource(
+            ApiOrganisationAgentPool,
+            '/api/v2/agent-pools/<string:agent_pool_id>'
         )
 
         self._api.add_resource(
@@ -3278,6 +3283,33 @@ class ApiOrganisationAgentPoolList(AuthenticatedEndpoint):
                 }
             }
         }
+
+
+class ApiOrganisationAgentPool(AuthenticatedEndpoint):
+    """Interface to interact with agent pool"""
+
+    def check_permissions_get(self, agent_pool_id, current_user, current_job):
+        """Check permissions"""
+        agent_pool = AgentPool.get_by_api_id(agent_pool_id)
+        if not agent_pool:
+            return False
+
+        if agent_pool.organisation:
+            return OrganisationPermissions(
+                current_user=current_user,
+                organisation=agent_pool.organisation
+            ).check_permission(
+                OrganisationPermissions.Permissions.CAN_ACCESS_VIA_TEAMS
+            )
+        else:
+            # Allow all users to view agent pools not associated with an organisation
+            return True
+    
+    def _get(self, agent_pool_id, current_user, current_job):
+        """Get list of agent pools for organisation"""
+        agent_pool = AgentPool.get_by_api_id(agent_pool_id)
+        view = AgentPoolView.from_object(agent_pool, effective_user=current_user)
+        return view.to_response()
 
 
 class AgentEndpoint:
