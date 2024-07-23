@@ -91,18 +91,45 @@ class OrganizationEntity(BaseEntity):
         )
 
 
-class OrganizationUpdateEntity(OrganizationEntity):
+class OrganizationCreateEntity(OrganizationEntity):
+    """Entity for organisation creation"""
 
     require_id = False
     include_attributes = [
         "name",
         "email",
+        "session_timeout",
+        "session_remember",
+        "cost_estimation_enabled",
+        "send_passing_statuses_for_untriggered_speculative_plans",
+        "owners_team_saml_role_id",
+        "default_execution_mode",
+    ]
+
+
+class OrganizationUpdateEntity(OrganizationEntity):
+    """Entity for organisation updates"""
+
+    require_id = False
+    include_attributes = [
+        "name",
+        "email",
+        "session_timeout",
+        "session_remember",
+        "cost_estimation_enabled",
+        "send_passing_statuses_for_untriggered_speculative_plans",
+        "owners_team_saml_role_id",
         "default_execution_mode",
         "default_agent_pool"
     ]
     attribute_modifiers = {
         "name": AttributeModifier(default=UNDEFINED),
         "email": AttributeModifier(default=UNDEFINED),
+        "session_timeout": AttributeModifier(default=UNDEFINED),
+        "session_remember": AttributeModifier(default=UNDEFINED),
+        "cost_estimation_enabled": AttributeModifier(default=UNDEFINED),
+        "send_passing_statuses_for_untriggered_speculative_plans": AttributeModifier(default=UNDEFINED),
+        "owners_team_saml_role_id": AttributeModifier(default=UNDEFINED),
         "default_execution_mode": AttributeModifier(default=UNDEFINED),
     }
 

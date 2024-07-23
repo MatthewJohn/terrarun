@@ -61,11 +61,13 @@ from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
 from terrarun.server.routes import *
 from terrarun.logger import get_logger
+from terrarun.api_entities.base_entity import ListView
+from terrarun.api_entities.organization import (
+    OrganizationUpdateEntity, OrganizationView, OrganizationCreateEntity
+)
+
 
 logger = get_logger(__name__)
-
-from terrarun.api_entities.base_entity import ListView
-from terrarun.api_entities.organization import OrganizationUpdateEntity, OrganizationView
 
 
 class Server(object):
@@ -671,25 +673,17 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
 
     def _post(self, current_user, current_job):
         """Create new organisation"""
-        json_data = flask.request.get_json().get('data', {})
-        if json_data.get('type', None) != "organizations":
-            return {}, 400
+        err, create_entity = OrganizationCreateEntity.from_request(request.json)
+        if err:
+            return ApiErrorView(error=err).to_response()
 
-        attributes = json_data.get('attributes', {})
-        name = attributes.get('name', None)
-        email = attributes.get('email', None)
+        try:
+            organisation = Organisation.create(**create_entity.get_set_object_attributes())
+        except ApiError as exc:
+            return ApiErrorView(error=exc).to_response()
 
-        if not email or not email:
-            return {}, 400
-
-        organisation = Organisation.create(name=name, email=email)
-
-        if organisation is None:
-            return {}, 400
-
-        return {
-            "data": organisation.get_api_details(effective_user=current_user)
-        }
+        view = OrganizationView.from_object(organisation, effective_user=current_user)
+        return view.to_response()
 
 
 class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
