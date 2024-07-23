@@ -70,7 +70,7 @@ for environment_name in args.environment:
 ## Create default agent pool
 if args.global_agent_pool and not terrarun.AgentPool.get_by_name_and_organisation(name=args.global_agent_pool, organisation=None):
     print("Creating agent pool")
-    agent_pool = terrarun.AgentPool.create(name=args.global_agent_pool, organisation=None, allow_all_workspaces=True)
+    agent_pool = terrarun.AgentPool.create(name=args.global_agent_pool, organisation=None, organisation_scoped=False)
     print(f"Created agent pool: {agent_pool.name}")
     print("Creating agent token")
     agent_token = terrarun.AgentToken.create(
