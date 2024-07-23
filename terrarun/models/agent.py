@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0
 
 from datetime import datetime
+from typing import Optional
 from enum import Enum
 import os
 import sqlalchemy
@@ -10,6 +11,7 @@ import sqlalchemy.orm
 import terrarun.config
 import terrarun.database
 from terrarun.database import Base, Database
+import terrarun.models.agent_pool
 from terrarun.models.base_object import BaseObject
 from terrarun.utils import generate_random_secret_string
 
@@ -39,11 +41,11 @@ class Agent(Base, BaseObject):
 
     # @TODO
     # Should this be held in the datbase?!
-    status = sqlalchemy.Column(sqlalchemy.Enum(AgentStatus), default=None)
-    last_ping_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
+    status: Optional[AgentStatus] = sqlalchemy.Column(sqlalchemy.Enum(AgentStatus), default=None)
+    last_ping_at: datetime = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
-    agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=True)
-    agent_pool = sqlalchemy.orm.relationship("AgentPool", back_populates="agents")
+    agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=True)
+    agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relationship("AgentPool", back_populates="agents")
 
     token = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 

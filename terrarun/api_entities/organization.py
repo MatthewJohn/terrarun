@@ -3,18 +3,20 @@
 
 
 import datetime
-from typing import Any, Tuple
+from typing import Any, Tuple, Optional
 
 import terrarun.models.organisation
 import terrarun.models.user
 import terrarun.permissions.organisation
 import terrarun.workspace_execution_mode
+import terrarun.models.agent_pool
 
 from .base_entity import (
     BaseEntity,
     EntityView,
     RelatedRelationshipView,
     RelatedWithDataRelationshipView,
+    DataRelationshipView,
     Attribute,
     AttributeModifier,
     ATTRIBUTED_REQUIRED,
@@ -89,17 +91,54 @@ class OrganizationEntity(BaseEntity):
         )
 
 
-class OrganizationUpdateEntity(OrganizationEntity):
+class OrganizationCreateEntity(OrganizationEntity):
+    """Entity for organisation creation"""
 
     require_id = False
     include_attributes = [
-        "name", "email", "default_execution_mode"
+        "name",
+        "email",
+        "session_timeout",
+        "session_remember",
+        "cost_estimation_enabled",
+        "send_passing_statuses_for_untriggered_speculative_plans",
+        "owners_team_saml_role_id",
+        "default_execution_mode",
+    ]
+
+
+class OrganizationUpdateEntity(OrganizationEntity):
+    """Entity for organisation updates"""
+
+    require_id = False
+    include_attributes = [
+        "name",
+        "email",
+        "session_timeout",
+        "session_remember",
+        "cost_estimation_enabled",
+        "send_passing_statuses_for_untriggered_speculative_plans",
+        "owners_team_saml_role_id",
+        "default_execution_mode",
+        "default_agent_pool"
     ]
     attribute_modifiers = {
         "name": AttributeModifier(default=UNDEFINED),
         "email": AttributeModifier(default=UNDEFINED),
+        "session_timeout": AttributeModifier(default=UNDEFINED),
+        "session_remember": AttributeModifier(default=UNDEFINED),
+        "cost_estimation_enabled": AttributeModifier(default=UNDEFINED),
+        "send_passing_statuses_for_untriggered_speculative_plans": AttributeModifier(default=UNDEFINED),
+        "owners_team_saml_role_id": AttributeModifier(default=UNDEFINED),
         "default_execution_mode": AttributeModifier(default=UNDEFINED),
     }
+
+    @classmethod
+    def _get_attributes(cls):
+        """Override get_attributes to add update-specific arguments"""
+        return super()._get_attributes() + (
+            Attribute("default-agent-pool-id", "default_agent_pool", terrarun.models.agent_pool.AgentPool, UNDEFINED, True),
+        )
 
 
 class OauthTokensRelationship(RelatedRelationshipView):
@@ -133,6 +172,18 @@ class EntitlementSetRelationship(RelatedWithDataRelationshipView):
         return obj.api_id
 
 
+class DefaultAgentPoolRelationship(DataRelationshipView):
+
+    TYPE = "agent-pools"
+
+    @classmethod
+    def get_id_from_object(cls, obj: 'terrarun.models.organisation.Organisation') -> Optional[str]:
+        """Get agent pool ID"""
+        if obj.default_agent_pool:
+            return obj.default_agent_pool.api_id
+        return None
+
+
 class OrganizationView(OrganizationEntity, EntityView):
     """View for settings"""
 
@@ -142,6 +193,7 @@ class OrganizationView(OrganizationEntity, EntityView):
         "authentication-token": AuthenticationTokenRelationship,
         "subscription": SubscriptionRelationship,
         "entitlement-set": EntitlementSetRelationship,
+        "default-agent-pool": DefaultAgentPoolRelationship,
     }
 
     @staticmethod

@@ -11,6 +11,7 @@ from flask import request
 
 from terrarun.api_error import ApiError
 import terrarun.models.user
+import terrarun.models.base_object
 from terrarun.utils import datetime_to_json, datetime_from_json
 
 
@@ -105,6 +106,15 @@ class Attribute:
                 return ApiError(
                     "Invalid datetime value for attribute",
                     f"The attribute '{self.req_attribute}' is set to an invalid datetime.",
+                    pointer=f"/data/attributes/{self.req_attribute}"
+                ), None, None
+
+        elif issubclass(self.type, terrarun.models.base_object.BaseObject):
+            val = self.type.get_by_api_id(val)
+            if val is None:
+                return ApiError(
+                    "Entity does not exist",
+                    f"The attribute '{self.req_attribute}' is set to an invalid/non-existent ID.",
                     pointer=f"/data/attributes/{self.req_attribute}"
                 ), None, None
 
@@ -239,7 +249,7 @@ class BaseEntity(abc.ABC):
             return ApiError(
                 "Invalid type",
                 f"The object type was either not provided or is not valid for this request",
-                pointer=f"/data/id"
+                pointer=f"/data/type"
             ), None
 
         obj_attributes = {}
@@ -333,6 +343,29 @@ class EntityView(BaseEntity, BaseView):
         return None
 
 
+class ListView(BaseView):
+    """View containing list of entities"""
+
+    def __init__(self, views: List['BaseView']):
+        """Member variables for list of views"""
+        self._views = views
+
+    def to_dict(self):
+        """Response dict"""
+        return {
+            "data": [
+                # Create nested list to allow inline conditional
+                # without running to_dict twice
+                view
+                for view in [
+                    view.to_dict().get("data")
+                    for view in self._views
+                ]
+                if view
+            ]
+        }
+
+
 class ApiErrorView(BaseEntity, BaseView):
 
     response_code = 409
@@ -353,6 +386,14 @@ class ApiErrorView(BaseEntity, BaseView):
                 for error in self.errors
             ]
         }
+
+    def _from_object(**kwargs):
+        """Handle abstract methods"""
+        pass
+
+    def _get_attributes(**kwargs):
+        """Handle abstract methods"""
+        pass
 
 
 class BaseRelationshipView(BaseView):
@@ -405,13 +446,13 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
             raise NotImplementedError("Name not set on relationship")
         self._parent_view = parent_view
 
-    def get_type(self):
+    def get_type(self) -> str:
         """Return entity type"""
         if self.TYPE is None:
             raise NotImplementedError
         return self.TYPE
 
-    def get_id(self):
+    def get_id(self) -> str:
         """Return ID"""
         if self.id is None:
             raise NotImplementedError
@@ -440,3 +481,43 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
             "type": self.get_type(),
         }
         return data
+
+
+class DataRelationshipView(BaseRelationshipView):
+    """Base relationship for related objects with data"""
+
+    TYPE: Optional[str] = None
+
+    def __init__(self, id: str):
+        """Store member variables"""
+        self.id = id
+
+    def get_type(self) -> str:
+        """Return entity type"""
+        if self.TYPE is None:
+            raise NotImplementedError
+        return self.TYPE
+
+    def get_id(self) -> Optional[str]:
+        """Return ID"""
+        return self.id
+
+    @classmethod
+    @abc.abstractmethod
+    def get_id_from_object(cls, obj: Any) -> Optional[str]:
+        """Obtain ID from object"""
+        ...
+
+    @classmethod
+    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
+        """Return entity from object"""
+        return cls(id=cls.get_id_from_object(obj=obj))
+
+    def to_dict(self) -> dict:
+        """Return API repsonse data"""
+        return {
+            "data": {
+                "id": self.get_id(),
+                "type": self.get_type()
+            } if self.get_id() else None
+        }

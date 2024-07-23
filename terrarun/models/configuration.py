@@ -19,6 +19,7 @@ from terrarun.database import Base, Database
 from terrarun.models.blob import Blob
 from terrarun.models.ingress_attribute import IngressAttribute
 import terrarun.models.run
+import terrarun.models.workspace
 from terrarun.object_storage import ObjectStorage
 
 
@@ -45,8 +46,8 @@ class ConfigurationVersion(Base, BaseObject):
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
-    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
-    workspace = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
+    workspace_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
+    workspace: 'terrarun.models.workspace.Workspace' = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
 
     configuration_blob_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     configuration_blob = sqlalchemy.orm.relation("Blob", foreign_keys=[configuration_blob_id])

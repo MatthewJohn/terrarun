@@ -20,7 +20,9 @@ from terrarun.models.team import Team
 from terrarun.utils import datetime_to_json
 import terrarun.models.workspace
 import terrarun.api_entities.organization
+import terrarun.models.agent_pool
 import terrarun.workspace_execution_mode
+import terrarun.errors
 
 
 class CollaboratorAuthPolicyType(Enum):
@@ -80,6 +82,9 @@ class Organisation(Base, BaseObject):
         default=terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
         nullable=False
     )
+
+    default_agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_organisation_default_agent_pool_id"), nullable=True)
+    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[default_agent_pool_id])
 
     fair_run_queuing_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     two_factor_conformant = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
@@ -194,12 +199,22 @@ class Organisation(Base, BaseObject):
                         return False
                     self.name_id = new_name_id
 
+            # Ensure agent pool is not assigned to another organisation
+            # @TODO Make this less hacky
+            if attribute == "default_agent_pool":
+                if value is not None:
+                    if not value.organisation and value.organisation.id != self.id:
+                        raise terrarun.errors.ApiError(
+                            'Invalid agent pool',
+                            'Agent pool cannot be associated to organisation',
+                            pointer='/data/attributes/default-agent-pool-id'
+                        )
+
             setattr(self, attribute, value)
 
         session = Database.get_session()
         session.add(self)
         session.commit()
-        return True
 
     def get_run_queue(self):
         """Return runs queued to be executed"""

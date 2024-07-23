@@ -9,6 +9,8 @@ import terrarun.models.environment
 import terrarun.models.lifecycle
 
 
+# @TODO These are currently unused
+
 class AgentPoolProjectPermission(Base):
     """Define agent pool project permission."""
 
