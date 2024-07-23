@@ -249,7 +249,7 @@ class BaseEntity(abc.ABC):
             return ApiError(
                 "Invalid type",
                 f"The object type was either not provided or is not valid for this request",
-                pointer=f"/data/id"
+                pointer=f"/data/type"
             ), None
 
         obj_attributes = {}
