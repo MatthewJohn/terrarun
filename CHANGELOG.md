@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.56.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.56.0...v0.56.1) (2024-07-23)
+
+
+### Bug Fixes
+
+* Fix creating entity object from request data, passing attributes into attributes key, rather than kwargs ([134de2b](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/134de2b3f632d1b86595fd3cdd63e611735d0354)), closes [#169](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/169)
+
 # [0.56.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.55.0...v0.56.0) (2024-07-22)
 
 
