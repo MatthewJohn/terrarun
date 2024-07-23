@@ -387,6 +387,14 @@ class ApiErrorView(BaseEntity, BaseView):
             ]
         }
 
+    def _from_object(**kwargs):
+        """Handle abstract methods"""
+        pass
+
+    def _get_attributes(**kwargs):
+        """Handle abstract methods"""
+        pass
+
 
 class BaseRelationshipView(BaseView):
     """Base relationship view"""
