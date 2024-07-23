@@ -1,36 +1,42 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
-from enum import Enum
 import json
 import os
-import datetime
+from enum import Enum
 
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.sql
-from terrarun.api_request import ApiRequest
-from terrarun.errors import (
-    FailedToUnlockWorkspaceError, RunCannotBeCancelledError, RunCannotBeDiscardedError,
-    TerraformVersionNotSetError,
-    CustomTerraformVersionCannotBeUsedError
-)
-from terrarun.models.audit_event import AuditEvent, AuditEventType
 
-from terrarun.database import Base, Database
-import terrarun.database
-import terrarun.models.plan
-import terrarun.models.apply
-import terrarun.models.state_version
-from terrarun.models.run_queue import JobQueueType, RunQueue, JobQueueAgentType
-from terrarun.models.task_result import TaskResultStatus
-from terrarun.models.task_stage import TaskStage, TaskStageStatus
-import terrarun.terraform_command
-from terrarun.models.base_object import BaseObject
-import terrarun.utils
 import terrarun.config
+import terrarun.database
+import terrarun.models.apply
+import terrarun.models.plan
+import terrarun.models.state_version
+import terrarun.terraform_command
+import terrarun.utils
 import terrarun.models.configuration
 from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
+from terrarun.api_request import ApiRequest
+from terrarun.database import Base, Database
+from terrarun.errors import (
+    CustomTerraformVersionCannotBeUsedError,
+    FailedToUnlockWorkspaceError,
+    RunCannotBeCancelledError,
+    RunCannotBeDiscardedError,
+    TerraformVersionNotSetError,
+)
+from terrarun.logger import get_logger
+from terrarun.models.audit_event import AuditEvent, AuditEventType
+from terrarun.models.base_object import BaseObject
+from terrarun.models.run_queue import JobQueueAgentType, JobQueueType, RunQueue
+from terrarun.models.task_stage import TaskStage
+from terrarun.models.workspace_task import (
+    WorkspaceTaskStage,
+)
+
+logger = get_logger(__name__)
 
 
 class RunStatus(Enum):
@@ -401,7 +407,7 @@ class Run(Base, BaseObject):
     def execute_next_step(self):
         """Execute terraform command"""
         # Handle plan job
-        print("Run Status: " + str(self.status))
+        logger.info("Run Status: " + str(self.status))
 
         if self.status is RunStatus.PLAN_QUEUED:
             self.execute_plan()
@@ -423,9 +429,9 @@ class Run(Base, BaseObject):
     def update_status(self, new_status, current_user=None, session=None):
         """Update state of run."""
         if self.status is RunStatus.CANCELED:
-            print(f"Ignoring run status update to {str(new_status)} as status is CANCELLED")
+            logger.warning("Ignoring run status update to %s as status is CANCELLED", new_status)
 
-        print(f"Updating job status to from {str(self.status)} to {str(new_status)}")
+        logger.info("Updating job status to from %s to %s", self.status, new_status)
         should_commit = False
         if session is None:
             session = Database.get_session()

@@ -2,26 +2,28 @@
 # SPDX-License-Identifier: GPL-2.0
 
 
-from enum import Enum
-from io import BytesIO
 import secrets
 import tarfile
-import uuid
 import urllib.parse
+import uuid
+from enum import Enum
+from io import BytesIO
 
+import requests
 import sqlalchemy
 import sqlalchemy.orm
-from flask import redirect, make_response
-import requests
+from flask import make_response, redirect
 
+import terrarun.config
 import terrarun.database
+import terrarun.utils
 from terrarun.database import Base, Database
+from terrarun.logger import get_logger
 from terrarun.models.authorised_repo import AuthorisedRepo
 from terrarun.models.base_object import BaseObject
-from terrarun.models.github_app_oauth_token import GithubAppOauthToken
 from terrarun.models.oauth_token import OauthToken
-import terrarun.utils
-import terrarun.config
+
+logger = get_logger(__name__)
 
 
 class OauthServiceProvider(Enum):
@@ -164,9 +166,9 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {oauth_token.token}"
         }
-        # print(f'Making github request to: {url}')
-        # print(f'params: {params}')
-        # print(f'headers: {headers}')
+        logger.debug('Making github request to: %s', url)
+        logger.debug('params: %s', params)
+        logger.debug('headers: %s', headers)
         res = method(
             url,
             headers=headers,
@@ -186,7 +188,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             endpoint=self._get_base_repo_endpoint(authorised_repo)
         )
         if res.status_code != 200:
-            print('rest !200')
+            logger.error('Failed to get default branch. Status code: %d', res.status_code)
             return None
         return res.json().get("default_branch")
 
@@ -221,7 +223,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
             endpoint=f'{self._get_base_repo_endpoint(authorised_repo=authorised_repo)}/tarball/{commit_ref}'
         )
         if data_res.status_code != 200:
-            print(f"archive redirect is not 302: {data_res.status_code}")
+            logger.error('Failed to get archive. Status code: %s', data_res.status_code)
             return None
 
         data = self._move_archive_into_root(archive_data=data_res.content)
@@ -336,7 +338,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
                 oauth_token=oauth_token,
                 method=requests.get,
                 #endpoint=f"/orgs/{oauth_token.service_provider_user}/repos",
-                endpoint=f"/user/repos",
+                endpoint="/user/repos",
                 params={
                     # "type": "all",
                     "per_page": 100,
@@ -344,7 +346,7 @@ class OauthServiceGithub(BaseOauthServiceProvider):
                 }
             )
             if github_repos_res.status_code != 200:
-                print(f'Got bad response from github org repos: {github_repos_res.status_code}')
+                logger.error('Failed to fetch user repos. Status code: %d', github_repos_res.status_code)
                 return None
             
             # Add results to all repos list
