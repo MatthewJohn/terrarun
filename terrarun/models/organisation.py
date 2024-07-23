@@ -22,6 +22,7 @@ import terrarun.models.workspace
 import terrarun.api_entities.organization
 import terrarun.models.agent_pool
 import terrarun.workspace_execution_mode
+import terrarun.errors
 
 
 class CollaboratorAuthPolicyType(Enum):
@@ -203,14 +204,17 @@ class Organisation(Base, BaseObject):
             if attribute == "default_agent_pool":
                 if value is not None:
                     if not value.organisation and value.organisation.id != self.id:
-                        value = None
+                        raise terrarun.errors.ApiError(
+                            'Invalid agent pool',
+                            'Agent pool cannot be associated to organisation',
+                            pointer='/data/attributes/default-agent-pool-id'
+                        )
 
             setattr(self, attribute, value)
 
         session = Database.get_session()
         session.add(self)
         session.commit()
-        return True
 
     def get_run_queue(self):
         """Return runs queued to be executed"""
