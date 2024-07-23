@@ -42,23 +42,19 @@ class JobProcessor:
 
         # Limit by any organisations that have default agent pool and is set to this agent's pool
         # or don't have a default agent pool
-        if agent.agent_pool.organisation is None:
-            query = query.filter(
-                sqlalchemy.or_(
-                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==agent.agent_pool,
-                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==None
-                )
-            )
-        elif agent.agent_pool.organisation and agent.agent_pool.organisation_scoped:
+        query =  query.filter(sqlalchemy.or_(
+            RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==agent.agent_pool,
+            RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==None,
+        ))
+
+        if agent.agent_pool.organisation and agent.agent_pool.organisation_scoped:
             # Limit to organisation that this agent pool is tied to, ensuring
             # the default agent pool is None or this agent pool
             query = query.filter(
                 RunQueue.run.configuration_version.workspace.organisation==agent.agent_pool.organisation,
-                sqlalchemy.or_(
-                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==agent.agent_pool,
-                    RunQueue.run.configuration_version.workspace.organisation.default_agent_pool==None
-                )
             )
+        elif agent.agent_pool.organisation is None:
+            pass
         else:
             # Agent has organisation set, but is not organisation scoped.
             # Since we do not have any ways to associated agents to projects, environments or workspaces, give up
