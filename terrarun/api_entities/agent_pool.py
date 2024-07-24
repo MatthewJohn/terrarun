@@ -3,6 +3,7 @@
 
 
 import datetime
+from typing import Tuple
 
 import terrarun.models.organisation
 import terrarun.models.user
@@ -23,7 +24,7 @@ class AgentPoolEntity(BaseEntity):
     type = "agent-pools"
 
     @classmethod
-    def _get_attributes(cls):
+    def _get_attributes(cls)-> Tuple['Attribute']:
         return (
             Attribute("name", "name", str, ATTRIBUTED_REQUIRED),
             Attribute("created-at", "created_at", datetime.datetime, None),
@@ -32,7 +33,7 @@ class AgentPoolEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: 'terrarun.models.agent_pool.AgentPool', effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: 'terrarun.models.agent_pool.AgentPool', effective_user: 'terrarun.models.user.User') -> 'AgentPoolEntity':
         """Convert object to saml settings entity"""
         return cls(
             id=obj.api_id,
