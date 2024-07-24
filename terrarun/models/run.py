@@ -4,6 +4,7 @@
 import json
 import os
 from enum import Enum
+from typing import Optional
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -17,6 +18,7 @@ import terrarun.models.state_version
 import terrarun.terraform_command
 import terrarun.utils
 import terrarun.models.configuration
+import terrarun.models.user
 from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 from terrarun.api_request import ApiRequest
 from terrarun.database import Base, Database
@@ -99,6 +101,8 @@ class Run(Base, BaseObject):
 
     status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
     confirmed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
+    confirmed_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_confirmed_by_id_user_id"), nullable=True)
+    confirmed_by = sqlalchemy.orm.relation("User", foreign_keys=[confirmed_by_id])
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     message = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     plan_only = sqlalchemy.Column(sqlalchemy.Boolean)
@@ -352,7 +356,10 @@ class Run(Base, BaseObject):
         """Handle post plan completed, waiting for run to be confirmed"""
         # Check if plan was confirmed before entering the state
         if self.auto_apply or self.confirmed:
-            self.update_status(RunStatus.CONFIRMED)
+            self.update_status(
+                RunStatus.CONFIRMED,
+                current_user=self.confirmed_by
+            )
             self.queue_worker_job()
 
     def handle_confirmed(self):
@@ -467,12 +474,11 @@ class Run(Base, BaseObject):
         # Requeue to be applied
         self.queue_agent_job(job_type=JobQueueType.PLAN)
 
-    def confirm(self, comment, user):
+    def confirm(self, comment: Optional[str], user: Optional['terrarun.models.user.User']):
         """Queue apply job"""
-        # @TODO Set status instead and provide user and comment
-        # to change
+        # @TODO Add comment to change
         # Mark job as confirmed
-        self.update_attributes(confirmed=True)
+        self.update_attributes(confirmed=True, confirmed_by=user)
         # If the job has already eached POST_PLAN_COMPLETED,
         # meaning that there is no longer queued, trigger
         # a worker job
