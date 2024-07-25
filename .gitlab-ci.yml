@@ -11,6 +11,7 @@ image: python:3.10
 build-test-docker-image:
   stage: build
   image: docker:latest
+  tags: [amd64]
   extends: .limit_release_and_non_pushes
   services:
     - docker:dind
@@ -21,6 +22,7 @@ smoke-tests:
   stage: test
   extends: .limit_release_and_non_pushes
   image: terrarun-smoke-image:v${CI_COMMIT_SHORT_SHA}
+  tags: [amd64]
   script:
     - bash ./tests/smoke/run_tests.sh
 
