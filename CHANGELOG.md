@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.58.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.58.0...v0.58.1) (2024-07-25)
+
+
+### Bug Fixes
+
+* Record confirmation user in job table and use when changing changes to confirmed ([2be9f04](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/2be9f040c63ee803a9ec7866e25dcd93871a6805)), closes [#168](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/168)
+
 # [0.58.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.57.0...v0.58.0) (2024-07-25)
 
 
