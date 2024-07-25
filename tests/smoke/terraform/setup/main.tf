@@ -7,7 +7,7 @@ terraform {
 }
 
 provider "tfe" {
-  hostname = "localhost"
+  hostname = "terrarun"
 }
 
 resource "tfe_organization" "test" {
