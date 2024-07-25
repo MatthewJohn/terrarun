@@ -56,7 +56,7 @@ docker compose up --build -d
 # Trap errors destroy stack
 error() {
     cd $TERRARUN_DIR
-    docker compose down --volumes --rmi=all
+    docker compose down --volumes
     exit 1
 }
 trap error ERR
