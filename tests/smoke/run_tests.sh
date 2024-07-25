@@ -102,3 +102,7 @@ sleep 30
 
 # Kill agent
 kill -9 $tfc_agent_pid
+
+# Teardown stack
+cd $TERRARUN_DIR
+docker compose down --volumes
