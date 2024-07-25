@@ -52,6 +52,15 @@ sed -E 's#BASE_URL=.*#BASE_URL=https://terrarun#g' .env
 
 # Run basic tests to check terrarun can come up
 docker compose up --build -d
+
+# Trap errors destroy stack
+error() {
+    cd $TERRARUN_DIR
+    docker compose down --volumes --rmi=all
+    exit 1
+}
+trap error ERR
+
 sleep 30
 
 docker compose exec -ti api \
