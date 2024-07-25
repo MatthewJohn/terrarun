@@ -1,5 +1,12 @@
 # Changelog
 
+# [0.58.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.57.0...v0.58.0) (2024-07-25)
+
+
+### Features
+
+* Add API endpoint for showing agent pool ([1de0481](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/1de0481bc76c38cc0f9f46bbecf2d2efe8ade49d)), closes [#160](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/160)
+
 # [0.57.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.56.1...v0.57.0) (2024-07-23)
 
 
