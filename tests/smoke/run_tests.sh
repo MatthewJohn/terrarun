@@ -7,7 +7,7 @@ set -x
 mkdir easy-rsa
 cp -r /usr/share/easy-rsa/* ./easy-rsa/
 
-TERRARUN_DIR=$CWD
+TERRARUN_DIR=`pwd`
 
 pushd ./easy-rsa
     export EASYRSA_BATCH=1
