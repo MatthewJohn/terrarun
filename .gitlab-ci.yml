@@ -1,5 +1,30 @@
 image: python:3.10
 
+.limit_release_and_non_pushes:
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /^chore\(release\):.*/
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'push'
+      when: always
+    - when: never
+
+build-test-docker-image:
+  stage: build
+  image: docker:latest
+  extends: .limit_release_and_non_pushes
+  services:
+    - docker:dind
+  script:
+    - cd tests/smoke; docker build -f Dockerfile -t terrarun-smoke-image:v${CI_COMMIT_SHORT_SHA} --build-arg http_proxy=$http_proxy --build-arg HTTP_PROXY=$http_proxy --build-arg https_proxy=$https_proxy --build-arg HTTPS_PROXY=$https_proxy .
+
+smoke-tests:
+  stage: test
+  extends: .limit_release_and_non_pushes
+  image: terrarun-smoke-image:v${CI_COMMIT_SHORT_SHA}
+  script:
+    - bash ./tests/smoke/run_tests.sh
+
+
 release:
   stage: deploy
   image: semantic-release:latest
@@ -21,4 +46,6 @@ release:
     - when: never
 
 stages:
+ - build
+ - test
  - deploy

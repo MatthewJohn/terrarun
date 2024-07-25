@@ -10,6 +10,7 @@ from argparse import ArgumentParser
 
 import terrarun
 import terrarun.models.user
+import terrarun.models.user_token
 from terrarun.database import Database
 
 parser = ArgumentParser()
@@ -18,6 +19,7 @@ parser.add_argument('--organisation-email', dest="organisation_email", type=str,
 parser.add_argument('--admin-username', dest='admin_username', type=str, required=True, help='Username of default admin user', default='builtin-admin')
 parser.add_argument('--admin-email', dest='admin_email', type=str, required=True, help='Email of default admin user')
 parser.add_argument('--admin-password', dest='admin_password', type=str, required=True, help='Password of default admin user')
+parser.add_argument('--create-admin-token', action='store_true', dest='create_admin_token')
 parser.add_argument('--lifecycle', type=str, default="default")
 parser.add_argument('--environment', type=str, nargs="+", default=["dev", "prod"])
 parser.add_argument('--migrate-database', action='store_true', dest='migrate_database')
@@ -45,7 +47,15 @@ if not (admin_user := terrarun.User.get_by_username(args.admin_username)):
         password=args.admin_password,
         site_admin=True
     )
-    print(f'Created admin user: {admin_user.api_id}')
+    print(f'Created admin user:', admin_user.api_id)
+    if args.create_admin_token:
+        user_token = terrarun.models.user_token.UserToken.create(
+            user=admin_user,
+            type=terrarun.models.user_token.UserTokenType.USER_GENERATED,
+            description='Created via initial setup'
+        )
+        print(f'Created admin token: {user_token.token}')
+
 
 if not (lifecycle := terrarun.Lifecycle.get_by_name_and_organisation(organisation=org, name=args.lifecycle)):
     lifecycle = terrarun.Lifecycle.create(organisation=org, name=args.lifecycle)
