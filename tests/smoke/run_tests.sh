@@ -51,10 +51,10 @@ sed -E 's/DOMAIN=.*/DOMAIN=terrarun/g' .env
 sed -E 's#BASE_URL=.*#BASE_URL=https://terrarun#g' .env
 
 # Run basic tests to check terrarun can come up
-docker-compose up --build -d
+docker compose up --build -d
 sleep 30
 
-docker-compose exec -ti api \
+docker compose exec -ti api \
     python ./bin/initial_setup.py \
         --migrate-database \
         --organisation-email=test@localhost.com \
