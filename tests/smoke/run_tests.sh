@@ -1,5 +1,8 @@
 #!/bin/bash
 
+set -e
+set -x
+
 # Setup CA certificates and server certs
 mkdir easy-rsa
 cp -r /usr/share/easy-rsa/* ./easy-rsa/
