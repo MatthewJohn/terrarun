@@ -83,7 +83,7 @@ agent_token=$(grep 'Created agent token' ./setup_output.log | sed 's/Created age
 echo "Agent Token: $agent_token"
 
 # Run terraform to setup
-pushd tests/smoke/terraform/setup
+pushd tests/e2e/terraform/setup
   terraform init
   terraform apply -auto-approve
 popd
