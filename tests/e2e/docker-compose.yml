@@ -13,4 +13,5 @@ services:
     build:
       context: ./
       dockerfile: tests/e2e/Dockerfile.traefik
-    volumes: !reset ["/var/run/docker.sock:/var/run/docker.sock:ro"]
+    volumes: !override
+      - /var/run/docker.sock:/var/run/docker.sock:ro
