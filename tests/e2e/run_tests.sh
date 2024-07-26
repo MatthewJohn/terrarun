@@ -50,8 +50,8 @@ cp .env-example .env
 sed -i -E 's/^DOMAIN=.*/DOMAIN=terrarun/g' .env
 sed -i -E 's#^BASE_URL=.*#BASE_URL=https://terrarun#g' .env
 
-# Run basic tests to check terrarun can come up
-docker compose up --build -d
+# Startup base containers for setup
+docker compose up --build -d api db minio createbucket
 
 # Trap errors destroy stack
 error() {
@@ -81,6 +81,9 @@ lifecycle_id=$(grep 'Created lifecycle' ./setup_output.log | sed 's/Created life
 echo "Lifecycle ID: $lifecycle_id"
 agent_token=$(grep 'Created agent token' ./setup_output.log | sed 's/Created agent token: //g')
 echo "Agent Token: $agent_token"
+
+# Bring up remaining containers
+docker compose up -d
 
 # Run terraform to setup
 pushd tests/e2e/terraform/setup
