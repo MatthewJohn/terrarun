@@ -97,12 +97,32 @@ curl 'https://terrarun/api/v2/organizations/smoke-test-org/projects' \
     -X POST \
     -H 'Authorization: Bearer KCTfieKEQ9Ohvc.terrav1.04qP283DMVgAFL0iGPO4icpCofCfMt7yciTWkSzC33tDX9hhzcZgyv83fGr0gM8F8FN' \
     -H 'Content-Type: application/json' \
+    --fail \
+    --output ./project.json \
     --data-raw '{"data":{"type":"projects","attributes":{"name":"smoketest","description":"Smoke Test Project","lifecycle":"'$lifecycle_id'"}}}'
+
+project_id=$(cat project.json | jq -r '.data.id')
+
+# Create Terraform tool
+curl 'https://terrarun/api/v2/admin/terraform-versions' \
+    -X POST \
+    -H 'Authorization: Bearer KCTfieKEQ9Ohvc.terrav1.04qP283DMVgAFL0iGPO4icpCofCfMt7yciTWkSzC33tDX9hhzcZgyv83fGr0gM8F8FN' \
+    -H 'Content-Type: application/json' \
+    --fail \
+    --data-raw '{"type":"terraform-versions","attributes":{"version":"1.4.5","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}'
+
+# Assign Terraform tool to project
+curl "https://terrarun/api/v2/projects/$project_id" \
+    -X PATCH \
+    -H 'Authorization: Bearer KCTfieKEQ9Ohvc.terrav1.04qP283DMVgAFL0iGPO4icpCofCfMt7yciTWkSzC33tDX9hhzcZgyv83fGr0gM8F8FN' \
+    -H 'Content-Type: application/json' \
+    --fail \
+    --data-raw '{"data":{"type":"projects","attributes":{"terraform-version":"1.4.5"}}}'
 
 # Start agent
 tfc-agent -address https://terrarun -token=$agent_token -log-level=TRACE  -auto-update=disabled &
 tfc_agent_pid=$!
-sleep 30
+sleep 10
 
 
 # Kill agent
