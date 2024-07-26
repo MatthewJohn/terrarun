@@ -35,7 +35,8 @@ EOF
 
     ./easyrsa import-req ./server.req terrarun
     ./easyrsa sign-req server terrarun
-    cp ./pki/issued/terrarun.crt $TERRARUN_DIR/ssl/public.pem
+    # Remove any lines before the cert that start with whitespace or 'Certificate'
+    cat ./pki/issued/terrarun.crt | grep -Ev '^\s+' | grep -Ev '^Certificate' > $TERRARUN_DIR/ssl/public.pem
 popd
 
 # Get IP of docker host to setup hosts file
