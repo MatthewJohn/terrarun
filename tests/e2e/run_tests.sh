@@ -137,9 +137,9 @@ EOF
 pushd tests/e2e/terraform/execution
     timeout --signal=TERM 1m \
         terraform init
-    timeout --signal=TERM 1m \
+    timeout --signal=TERM 3m \
         terraform plan
-    timeout --signal=TERM 1m \
+    timeout --signal=TERM 3m \
         terraform apply -auto-approve
 popd
 
