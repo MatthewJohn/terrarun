@@ -124,6 +124,12 @@ tfc-agent -address https://terrarun -token=$agent_token -log-level=TRACE  -auto-
 tfc_agent_pid=$!
 sleep 10
 
+# Run test Terraform
+pushd tests/e2e/terraform/execution
+    terraform init
+    terraform plan
+    terraform apply -auto-approve
+popd
 
 # Kill agent
 kill -9 $tfc_agent_pid
