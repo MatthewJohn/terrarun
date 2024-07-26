@@ -50,8 +50,10 @@ services:
 
     depends_on:
       - db
+      - minio
     links:
       - db
+      - minio
     env_file:
       - ./.env
 
@@ -67,8 +69,10 @@ services:
 
     depends_on:
       - db
+      - minio
     links:
       - db
+      - minio
       - tfsec-task
     env_file:
       - ./.env
@@ -80,6 +84,12 @@ services:
     build: .
     networks:
       - web
+    depends_on:
+      - db
+      - minio
+    links:
+      - db
+      - minio
     env_file:
       - ./.env
     entrypoint: ["python", "-u", "./cron_tasks.py"]
