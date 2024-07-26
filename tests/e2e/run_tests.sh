@@ -95,7 +95,7 @@ popd
 # Use the API endpoint to create a project
 curl 'https://terrarun/api/v2/organizations/smoke-test-org/projects' \
     -X POST \
-    -H 'Authorization: Bearer KCTfieKEQ9Ohvc.terrav1.04qP283DMVgAFL0iGPO4icpCofCfMt7yciTWkSzC33tDX9hhzcZgyv83fGr0gM8F8FN' \
+    -H "Authorization: Bearer $TFE_TOKEN" \
     -H 'Content-Type: application/json' \
     --fail \
     --output ./project.json \
@@ -106,7 +106,7 @@ project_id=$(cat project.json | jq -r '.data.id')
 # Create Terraform tool
 curl 'https://terrarun/api/v2/admin/terraform-versions' \
     -X POST \
-    -H 'Authorization: Bearer KCTfieKEQ9Ohvc.terrav1.04qP283DMVgAFL0iGPO4icpCofCfMt7yciTWkSzC33tDX9hhzcZgyv83fGr0gM8F8FN' \
+    -H "Authorization: Bearer $TFE_TOKEN" \
     -H 'Content-Type: application/json' \
     --fail \
     --data-raw '{"type":"terraform-versions","attributes":{"version":"1.4.5","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}'
@@ -114,7 +114,7 @@ curl 'https://terrarun/api/v2/admin/terraform-versions' \
 # Assign Terraform tool to project
 curl "https://terrarun/api/v2/projects/$project_id" \
     -X PATCH \
-    -H 'Authorization: Bearer KCTfieKEQ9Ohvc.terrav1.04qP283DMVgAFL0iGPO4icpCofCfMt7yciTWkSzC33tDX9hhzcZgyv83fGr0gM8F8FN' \
+    -H "Authorization: Bearer $TFE_TOKEN" \
     -H 'Content-Type: application/json' \
     --fail \
     --data-raw '{"data":{"type":"projects","attributes":{"terraform-version":"1.4.5"}}}'
