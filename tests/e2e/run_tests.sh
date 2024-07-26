@@ -126,6 +126,13 @@ tfc-agent -address https://terrarun -token=$agent_token -log-level=TRACE  -auto-
 tfc_agent_pid=$!
 sleep 10
 
+# Create Terraform credential file
+cat > ~/.terraformrc <<EOF
+credentials "terrarun" {
+  token = "$TFE_TOKEN"
+}
+EOF
+
 # Run test Terraform
 pushd tests/e2e/terraform/execution
     timeout --signal=TERM 1m \
