@@ -47,8 +47,8 @@ done | sed 's/.$//')
 echo "$ip terrarun" >> /etc/hosts
 
 cp .env-example .env
-sed -E 's/DOMAIN=.*/DOMAIN=terrarun/g' .env
-sed -E 's#BASE_URL=.*#BASE_URL=https://terrarun#g' .env
+sed -i -E 's/^DOMAIN=.*/DOMAIN=terrarun/g' .env
+sed -i -E 's#^BASE_URL=.*#BASE_URL=https://terrarun#g' .env
 
 # Run basic tests to check terrarun can come up
 docker compose up --build -d
