@@ -1,0 +1,4 @@
+FROM traefik:v2.8
+
+COPY ssl /
+COPY traefik.yml /etc/traefik/dynamic_conf/conf.yml

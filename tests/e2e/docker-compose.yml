@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+  # Override traefik config to build custom image
+  # The custom image has SSL certs and traefik config
+  # baked in.
+  # Disable mounts from main docker-compose, as these
+  # are difficult to predict since the docker-comopose
+  # is being spun up in dind and the underlying source code
+  # is held on a docker volume, making it hard to mount
+  # the directories to a path inside traefik
+  traefik:
+    extends:
+      file: docker-compose.yml
+      service: traefik
+    build:
+      context: ./
+      dockerfile: tests/e2e/Dockerfile.traefik
+    volumes: []
+
+  ui:
+    extends:
+      file: docker-compose.yml
+      service: ui
+
+  api:
+    extends:
+      file: docker-compose.yml
+      service: api
+
+  worker:
+    extends:
+      file: docker-compose.yml
+      service: worker
+
+  cron-tasks:
+    extends:
+      file: docker-compose.yml
+      service: cron-tasks
+
+  db:
+    extends:
+      file: docker-compose.yml
+      service: db
+
+  minio:
+    extends:
+      file: docker-compose.yml
+      service: minio
+
+  createbucket:
+    extends:
+      file: docker-compose.yml
+      service: createbucket
+
+volumes:
+  mysqldata:
+
+networks:
+  web: 
+    name: terrun-web
+  default:
+    name: terrarun-default
+    driver: bridge
