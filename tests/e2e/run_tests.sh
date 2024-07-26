@@ -45,7 +45,7 @@ ip=$(for i in $(echo "$hex_ip" | sed -E 's/(..)(..)(..)(..)/\4 \3 \2 \1/' ) ; do
     printf "%d." $((16#$i));
 done | sed 's/.$//')
 
-echo "$ip terrarun" >> /etc/hosts
+echo "$ip terrarun minio" >> /etc/hosts
 
 cp .env-example .env
 sed -i -E 's/^DOMAIN=.*/DOMAIN=terrarun/g' .env
