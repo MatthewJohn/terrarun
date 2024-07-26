@@ -88,8 +88,10 @@ docker compose -f docker-compose.yml -f ./tests/e2e/docker-compose.yml up -d
 
 # Run terraform to setup
 pushd tests/e2e/terraform/setup
-  terraform init
-  terraform apply -auto-approve
+    timeout --signal=TERM 1m \
+        terraform init
+    timeout --signal=TERM 1m \
+        terraform apply -auto-approve
 popd
 
 # Use the API endpoint to create a project
@@ -126,9 +128,12 @@ sleep 10
 
 # Run test Terraform
 pushd tests/e2e/terraform/execution
-    terraform init
-    terraform plan
-    terraform apply -auto-approve
+    timeout --signal=TERM 1m \
+        terraform init
+    timeout --signal=TERM 1m \
+        terraform plan
+    timeout --signal=TERM 1m \
+        terraform apply -auto-approve
 popd
 
 # Kill agent
