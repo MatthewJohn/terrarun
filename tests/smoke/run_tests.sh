@@ -56,6 +56,7 @@ docker compose up --build -d
 # Trap errors destroy stack
 error() {
     cd $TERRARUN_DIR
+    docker compose logs
     docker compose down --volumes
     exit 1
 }
