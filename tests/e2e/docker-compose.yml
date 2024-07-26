@@ -10,55 +10,7 @@ services:
   # is held on a docker volume, making it hard to mount
   # the directories to a path inside traefik
   traefik:
-    extends:
-      file: docker-compose.yml
-      service: traefik
     build:
       context: ./
       dockerfile: tests/e2e/Dockerfile.traefik
-    volumes: []
-
-  ui:
-    extends:
-      file: docker-compose.yml
-      service: ui
-
-  api:
-    extends:
-      file: docker-compose.yml
-      service: api
-
-  worker:
-    extends:
-      file: docker-compose.yml
-      service: worker
-
-  cron-tasks:
-    extends:
-      file: docker-compose.yml
-      service: cron-tasks
-
-  db:
-    extends:
-      file: docker-compose.yml
-      service: db
-
-  minio:
-    extends:
-      file: docker-compose.yml
-      service: minio
-
-  createbucket:
-    extends:
-      file: docker-compose.yml
-      service: createbucket
-
-volumes:
-  mysqldata:
-
-networks:
-  web: 
-    name: terrun-web
-  default:
-    name: terrarun-default
-    driver: bridge
+    volumes: !reset ["/var/run/docker.sock:/var/run/docker.sock:ro"]

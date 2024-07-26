@@ -51,7 +51,7 @@ sed -i -E 's/^DOMAIN=.*/DOMAIN=terrarun/g' .env
 sed -i -E 's#^BASE_URL=.*#BASE_URL=https://terrarun#g' .env
 
 # Startup base containers for setup
-docker compose -f ./tests/e2e/docker-compose.yml up --build -d traefik api db minio createbucket
+docker compose -f docker-compose.yml -f ./tests/e2e/docker-compose.yml up --build -d traefik api db minio createbucket
 
 # Trap errors destroy stack
 error() {
@@ -83,7 +83,7 @@ agent_token=$(grep 'Created agent token' ./setup_output.log | sed 's/Created age
 echo "Agent Token: $agent_token"
 
 # Bring up remaining containers
-docker compose -f ./tests/e2e/docker-compose.yml up -d
+docker compose -f docker-compose.yml -f ./tests/e2e/docker-compose.yml up -d
 
 # Run terraform to setup
 pushd tests/e2e/terraform/setup
