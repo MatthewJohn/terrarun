@@ -76,11 +76,11 @@ docker compose exec -ti api \
         --global-agent-pool=default-pool | tee ./setup_output.log
 
 # Obtain token from output
-export TFE_TOKEN=$(grep 'Created admin token' ./setup_output.log | sed 's/Created admin token: //g')
+export TFE_TOKEN=$(grep 'Created admin token:' ./setup_output.log | sed 's/Created admin token: //g')
 echo "Admin token: $TFE_TOKEN"
-lifecycle_id=$(grep 'Created lifecycle' ./setup_output.log | sed 's/Created lifecycle: //g')
+lifecycle_id=$(grep 'Created lifecycle:' ./setup_output.log | sed 's/Created lifecycle: //g')
 echo "Lifecycle ID: $lifecycle_id"
-agent_token=$(grep 'Created agent token' ./setup_output.log | sed 's/Created agent token: //g')
+agent_token=$(grep 'Created agent token:' ./setup_output.log | sed 's/Created agent token: //g')
 echo "Agent Token: $agent_token"
 
 # Bring up remaining containers
