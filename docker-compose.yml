@@ -24,7 +24,6 @@ services:
     restart: unless-stopped
     build:
       context: ./ui
-      # dockerfile: Dockerfile.dev
       dockerfile: Dockerfile
     networks:
       - web
@@ -35,9 +34,6 @@ services:
       - "traefik.http.routers.terrarun-ui.tls=true"
       - "traefik.http.services.terrarun-ui.loadbalancer.server.port=80"
       - "traefik.http.routers.terrarun-ui.service=terrarun-ui"
-    # Only for local development
-    volumes:
-      - ./ui/src:/app/src
 
   api:
     restart: unless-stopped
@@ -59,11 +55,7 @@ services:
     env_file:
       - ./.env
 
-    # Only for local development
-    #entrypoint: ["python", "terrarun.py", "--ssl-cert-private-key", "./ssl/private.pem", "--ssl-cert-public-key", "./ssl/public.pem"]
     entrypoint: ["python", "-u", "terrarun.py"]
-    volumes:
-      - ./:/app
 
   worker:
     restart: unless-stopped
@@ -81,10 +73,7 @@ services:
     env_file:
       - ./.env
 
-    # Only for local development
     entrypoint: ["python", "-u", "worker.py"]
-    volumes:
-      - ./:/app
 
   cron-tasks:
     restart: unless-stopped
@@ -94,10 +83,6 @@ services:
     env_file:
       - ./.env
     entrypoint: ["python", "-u", "./cron_tasks.py"]
-
-    # Only for local development
-    volumes:
-      - ./:/app
 
   db:
     image: mariadb
@@ -152,10 +137,6 @@ services:
     env_file:
       - ./.env
     entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
-
-    # Only for local development
-    volumes:
-      - ./:/app
 
   # Example run task application
   tfsec-task:
