@@ -172,6 +172,10 @@ class Server(object):
             '/api/v2/workspaces/<string:workspace_id>/current-state-version'
         )
         self._api.add_resource(
+            ApiTerraformWorkspaceLatestStateVersionOutputs,
+            '/api/v2/workspaces/<string:workspace_id>/current-state-version-outputs'
+        )
+        self._api.add_resource(
             ApiTerraformWorkspaceStates,
             '/api/v2/workspaces/<string:workspace_id>/state-versions'
         )
@@ -2512,6 +2516,42 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
             return {}, 404
         
         return {'data': state.get_api_details()}
+
+
+class ApiTerraformWorkspaceLatestStateVersionOutputs(AuthenticatedEndpoint):
+
+    def check_permissions_get(self, current_user, current_job, workspace_id):
+        """Check permissions to view run"""
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return False
+
+        if current_job and current_job.run.configuration_version.workspace == workspace:
+            return True
+
+        return WorkspacePermissions(
+            current_user=current_user,
+            workspace=workspace
+        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
+
+    def _get(self, current_user, current_job, workspace_id):
+        """Return latest state for workspace."""
+
+        workspace = Workspace.get_by_api_id(workspace_id)
+        if not workspace:
+            return {}, 404
+
+        state = workspace.latest_state
+        if not state:
+            return {}, 404
+
+        if not (state_outputs := state.state_version_outputs):
+            return {}, 404
+
+        return {'data': [
+            output.get_api_details()
+            for output in state_outputs
+        ]} #include_sensitive=True
 
 
 class ApiTerraformWorkspaceActionsLock(AuthenticatedEndpoint):

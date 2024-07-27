@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  # Override traefik config to build custom image
+  # The custom image has SSL certs and traefik config
+  # baked in.
+  # Disable mounts from main docker-compose, as these
+  # are difficult to predict since the docker-comopose
+  # is being spun up in dind and the underlying source code
+  # is held on a docker volume, making it hard to mount
+  # the directories to a path inside traefik
+  traefik:
+    build:
+      context: ./
+      dockerfile: tests/e2e/Dockerfile.traefik
+    volumes: !override
+      - /var/run/docker.sock:/var/run/docker.sock:ro
