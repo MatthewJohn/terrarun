@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0
 
 import datetime
+from typing import Optional
 from enum import Enum
 import secrets
 import string
@@ -10,6 +11,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 from terrarun.models.base_object import BaseObject
+import terrarun.models.user
 from terrarun.database import Base, Database
 from terrarun.config import Config
 import terrarun.database
@@ -80,7 +82,7 @@ class UserToken(Base, BaseObject):
         return token
 
     @classmethod
-    def create(cls, user, type, description=None):
+    def create(cls, user: 'terrarun.models.user.User', type: 'UserTokenType', description: Optional[str]=None):
         """Create API token"""
         # Generate expiry date
         expiry = None

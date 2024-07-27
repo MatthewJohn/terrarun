@@ -141,14 +141,15 @@ class Organisation(Base, BaseObject):
         return True
 
     @classmethod
-    def create(cls, name: str, email: str) -> 'Organisation':
+    def create(cls, name: str, email: str, **kwargs) -> 'Organisation':
         """Create organisation"""
+
         name_id = cls.name_to_name_id(name)
 
         if not cls.validate_new_name_id(name_id):
             return None
 
-        org = cls(name=name, name_id=name_id, email=email)
+        org = cls(name=name, name_id=name_id, email=email, **kwargs)
         session = Database.get_session()
         session.add(org)
         session.commit()
