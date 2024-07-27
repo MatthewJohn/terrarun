@@ -1,5 +1,20 @@
 # Changelog
 
+# [0.59.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.58.1...v0.59.0) (2024-07-27)
+
+
+### Bug Fixes
+
+* Add additional depends and links to docker-compose ([21c37d3](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/21c37d30997971d457a52c9be43e334aa1f3b731)), closes [#174](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/174)
+* Fix error when providing attributes other than name/email in organisation creation ([57ebbd5](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/57ebbd5ee9ec4898346c67558e3bfa17421a3fe7)), closes [#174](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/174)
+* Fix length of example encryption key ([38b1fff](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/38b1fffa7e837ec1b84c62af7122e339604931d6)), closes [#174](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/174)
+* Remove volume mounts for local code in docker-compose and add dev docker-compose with volume mounts ([2975cae](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/2975cae082d66c4ecbec7f6ef16184b1e776a3a7)), closes [#174](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/174)
+
+
+### Features
+
+* Add API endpoint to provide current state outputs for workspace. ([fcc02e4](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/fcc02e40e2166885a8c00249099dc79c1d404b18)), closes [#174](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/174)
+
 ## [0.58.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.58.0...v0.58.1) (2024-07-25)
 
 
