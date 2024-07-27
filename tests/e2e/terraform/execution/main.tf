@@ -10,3 +10,7 @@ terraform {
 }
 
 resource "null_resource" "test" { }
+
+output "test_output" {
+  value = "test_value"
+}

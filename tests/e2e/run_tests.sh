@@ -141,6 +141,13 @@ pushd tests/e2e/terraform/execution
         terraform plan
     timeout --signal=TERM 3m \
         terraform apply -auto-approve
+
+    # Check outputs of terraform
+    timeout --signal=TERM 30s \
+        terraform output > output.txt
+
+    # Ensure output contains correct value
+    grep 'test_output = "test_value"' output.txt || { echo Could not find output; false; }
 popd
 
 # Kill agent
