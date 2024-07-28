@@ -2648,7 +2648,7 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
     """Interface to list/create state versions"""
 
     def check_permissions_post(self, current_user, current_job, workspace_id):
-        """Check permissions to view run"""
+        """Check permissions to create state versions"""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return False
@@ -2662,7 +2662,7 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
         ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.WRITE)
 
     def _post(self, current_user, current_job, workspace_id):
-        """Return latest state for workspace."""
+        """Create new state version for workspace."""
         workspace = Workspace.get_by_api_id(workspace_id)
         if not workspace:
             return {}, 404
@@ -2673,7 +2673,13 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
 
         state_base64 = data.get("attributes", {}).get("state", None)
         if not state_base64:
-            return {}, 400
+            param_error = ApiError(
+                title = "param is missing or the value is empty: state",
+                details = "Terrarun does not support state upload directly to storage.",
+                status = 400,
+                pointer="/data/attributes/state",
+            )
+            return ApiErrorView(error=param_error).to_response(code = 400)
 
         run_id = data.get("relationships", {}).get("run", {}).get("data", {}).get("id", None)
         run = None
@@ -2704,7 +2710,7 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
 class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
 
     def check_permissions_get(self, current_user, current_job, state_version_id):
-        """Check permissions to view run"""
+        """Check permissions to read state versions"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version:
             return False
