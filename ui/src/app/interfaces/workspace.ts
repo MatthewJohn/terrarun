@@ -65,7 +65,7 @@ export interface WorkspaceAttributes {
     "working-directory": string | null;
     "workspace-kpis-runs-count": number;
 
-    "overrides": {
+    "setting-overwrites": {
         "allow-destroy-plan": boolean | null;
         "auto-apply": boolean | null;
         "execution-mode": string | null;

@@ -386,7 +386,7 @@ class Project(Base, BaseObject):
 
                 # Custom terrarun attribute with override values over the
                 # organisation configuration
-                "overrides": {
+                "setting-overwrites": {
                     "execution-mode": self._execution_mode.value if self._execution_mode else None,
                 }
             },

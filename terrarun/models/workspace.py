@@ -680,7 +680,7 @@ class Workspace(Base, BaseObject):
 
                 # Custom terrarun attribute with override values over the
                 # project configuration
-                "overrides": {
+                "setting-overwrites": {
                     "allow-destroy-plan": self._allow_destroy_plan,
                     "auto-apply": self._auto_apply,
                     "execution-mode": self._execution_mode.value if self._execution_mode else None,
