@@ -16,7 +16,6 @@ from terrarun.logger import get_logger
 
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
-from terrarun.models.blob import Blob
 from terrarun.models.ingress_attribute import IngressAttribute
 import terrarun.models.run
 import terrarun.models.workspace
@@ -48,9 +47,6 @@ class ConfigurationVersion(Base, BaseObject):
 
     workspace_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace: 'terrarun.models.workspace.Workspace' = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
-
-    configuration_blob_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    configuration_blob = sqlalchemy.orm.relation("Blob", foreign_keys=[configuration_blob_id])
 
     runs = sqlalchemy.orm.relation("Run", back_populates="configuration_version")
 
@@ -128,7 +124,13 @@ class ConfigurationVersion(Base, BaseObject):
             speculative=speculative,
             ingress_attribute=ingress_attributes
         )
-        configuration_version.process_upload(archive_data)
+        
+        configuration_version.update_status(ConfigurationVersionStatus.FETCHING)
+
+        configuration_version.update_to_object_storage(data = archive_data)
+
+        configuration_version.update_status(ConfigurationVersionStatus.UPLOADED)
+
         return configuration_version
 
     @classmethod
@@ -169,25 +171,6 @@ class ConfigurationVersion(Base, BaseObject):
         """Queue."""
         self.update_status(ConfigurationVersionStatus.FETCHING)
 
-    def process_upload(self, data):
-        """Handle upload of archive."""
-        if self.configuration_blob:
-            raise Exception('Configuration version already uploaded')
-
-        # Upload configuration version to s3
-        self.update_to_object_storage(data=data)
-
-        # Create blob for configuration version
-        session = Database.get_session()
-        blob = Blob(data=data)
-        session.refresh(self)
-        session.add(blob)
-        self.configuration_blob = blob
-        session.add(self)
-        session.commit()
-
-        self.update_status(ConfigurationVersionStatus.UPLOADED)
-
     def update_to_object_storage(self, data):
         """Upload to object storage"""
         object_storage = ObjectStorage()
@@ -197,6 +180,11 @@ class ConfigurationVersion(Base, BaseObject):
         """Get pre-signed download URL for conifiguration archive"""
         object_storage = ObjectStorage()
         return object_storage.create_presigned_download_url(path=self.storage_key)
+
+    def get_upload_url(self):
+        """Get pre-signed upload URL for configuration archive."""
+        object_storage = ObjectStorage()
+        return object_storage.create_presigned_upload_url(path=self.storage_key)
 
     def extract_configuration(self):
         if not self.configuration_blob:
@@ -342,10 +330,6 @@ terraform {
 
         # Allow run
         return True
-
-    def get_upload_url(self):
-        """Return URL for terraform to upload configuration."""
-        return f'{terrarun.config.Config().BASE_URL}/api/v2/upload-configuration/{self.api_id}'
 
     def get_api_details(self, api_request: ApiRequest=None):
         """Return API details."""
