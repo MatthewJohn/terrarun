@@ -3,8 +3,12 @@
 
 from math import pow
 
-from terrarun.database import Database
+import terrarun.database
 from terrarun.models.api_id import ApiId
+import terrarun.logger
+
+
+logger = terrarun.logger.get_logger(__name__)
 
 
 class BaseObject:
@@ -37,7 +41,7 @@ class BaseObject:
     @classmethod
     def get_by_id(cls, id):
         """Return object by ID"""
-        session = Database.get_session()
+        session = terrarun.database.Database.get_session()
         return session.query(cls).where(cls.id==id).first()
 
     def __eq__(self, comp):
@@ -53,10 +57,37 @@ class BaseObject:
             setattr(self, attr, kwargs[attr])
 
         if session is None:
-            session = Database.get_session()
+            session = terrarun.database.Database.get_session()
             should_commit = True
         else:
             should_commit = False
         session.add(self)
         if should_commit:
             session.commit()
+
+
+def update_object_status(obj, new_status, current_user=None, session=None):
+    """Update state of run."""
+    logger.debug("Updating %s to from %s to %s", obj, obj.status, new_status)
+    should_commit = False
+    if session is None:
+        session = terrarun.database.Database.get_session()
+        session.refresh(obj)
+        should_commit = True
+
+    audit_event = terrarun.models.audit_event.AuditEvent(
+        organisation=obj.organisation,
+        user_id=current_user.id if current_user else None,
+        object_id=obj.id,
+        object_type=obj.ID_PREFIX,
+        old_value=terrarun.database.Database.encode_value(obj.status.value) if obj.status else None,
+        new_value=terrarun.database.Database.encode_value(new_status.value),
+        event_type=terrarun.models.audit_event.AuditEventType.STATUS_CHANGE)
+
+    obj.update_attributes(status=new_status, session=session)
+
+    session.add(obj)
+    session.add(audit_event)
+    if should_commit:
+        session.commit()
+
