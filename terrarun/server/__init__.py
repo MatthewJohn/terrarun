@@ -2685,10 +2685,13 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
         # Attempt to get current run based on job authentication
         if not run_id and current_job:
             run = current_job.run
+            
+        created_by = current_user if current_user is not None else run.created_by if run is not None else None
 
         state_version = StateVersion.create_from_state_json(
             workspace=workspace,
             run=run,
+            created_by=created_by,
             state_json=json.loads(base64.b64decode(state_base64).decode('utf-8'))
         )
         if not state_version:
