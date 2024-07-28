@@ -12,7 +12,11 @@ import terrarun.models.lifecycle
 # @TODO These are currently unused
 
 class AgentPoolProjectPermission(Base):
-    """Define agent pool project permission."""
+    """
+    Define agent pool project permission.
+
+    This is only used when assigning a project to an agent pool.
+    """
 
     __tablename__ = "agent_pool_project_permission"
 
@@ -23,25 +27,17 @@ class AgentPoolProjectPermission(Base):
     project = sqlalchemy.orm.relationship("Project", foreign_keys=[project_id], back_populates="agent_pool_permissions")
 
 
-class AgentPoolProjectAssociation(Base):
-    """Define agent pool project associations."""
+class AgentPoolWorkspacePermission(Base):
+    """
+    Define agent pool workspace permission.
 
-    __tablename__ = "agent_pool_project_association"
+    This is only used when assigning a workspace to an agent pool.
+    """
 
-    agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=False, primary_key=True)
-    agent_pool = sqlalchemy.orm.relation("AgentPool", foreign_keys=[agent_pool_id])
-
-    project_id = sqlalchemy.Column(sqlalchemy.ForeignKey("project.id"), nullable=False, primary_key=True)
-    project = sqlalchemy.orm.relationship("Project", foreign_keys=[project_id], back_populates="agent_pool_associations")
-
-
-class AgentPoolEnvironmentAssociation(Base):
-    """Define agent pool environment associations."""
-
-    __tablename__ = "agent_pool_environment_association"
+    __tablename__ = "agent_pool_workspace_permission"
 
     agent_pool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=False, primary_key=True)
     agent_pool = sqlalchemy.orm.relation("AgentPool", foreign_keys=[agent_pool_id])
 
-    environment_id = sqlalchemy.Column(sqlalchemy.ForeignKey("environment.id"), nullable=False, primary_key=True)
-    environment = sqlalchemy.orm.relation("Environment", foreign_keys=[environment_id])
+    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("project.id"), nullable=False, primary_key=True)
+    workspace = sqlalchemy.orm.relationship("Workspace", foreign_keys=[workspace_id], back_populates="agent_pool_permissions")

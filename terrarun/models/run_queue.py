@@ -6,7 +6,6 @@ from typing import Optional
 import sqlalchemy
 import sqlalchemy.orm
 
-from terrarun.models.agent_pool_association import AgentPoolEnvironmentAssociation, AgentPoolProjectAssociation, AgentPoolProjectPermission
 from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.models.run

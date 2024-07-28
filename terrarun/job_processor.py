@@ -8,7 +8,6 @@ from terrarun.database import Database
 import terrarun.models.organisation
 import terrarun.models.run_queue
 import terrarun.models.agent
-from terrarun.models.agent_pool_association import AgentPoolProjectAssociation, AgentPoolProjectPermission
 import terrarun.models.apply
 import terrarun.models.configuration
 import terrarun.models.project
@@ -55,8 +54,8 @@ class JobProcessor:
             terrarun.models.workspace.Workspace.organisation
         ).outerjoin(
             terrarun.models.organisation.Organisation.default_agent_pool
-        ).outerjoin(
-            AgentPoolProjectAssociation
+        # ).outerjoin(
+        #     AgentPoolProjectAssociation
         )
 
         # Filter jobs that are being handled by an agent
