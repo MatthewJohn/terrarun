@@ -1,6 +1,7 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
+from enum import Enum
 from typing import Optional
 import json
 
@@ -16,6 +17,15 @@ from terrarun.models.state_version_output import StateVersionOutput
 import terrarun.models.user
 
 from terrarun.utils import datetime_to_json
+
+class StateVersionStatus(Enum):
+    """Status of agent"""
+
+    PENDING = "pending"
+    FINALIZED = "finalized"
+    DISCARDED = "discarded"
+    BACKING_DATA_SOFT_DELETED = "backing_data_soft_deleted"
+    BACKING_DATA_PERMANENTLY_DELETED = "backing_data_permanently_deleted"
 
 
 class StateVersion(Base, BaseObject):
@@ -47,6 +57,8 @@ class StateVersion(Base, BaseObject):
 
     created_by_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=True)
     created_by: 'terrarun.models.user.User' = sqlalchemy.orm.relationship("User")
+    
+    status = StateVersionStatus.FINALIZED
 
     @property
     def state_json(self):
@@ -164,6 +176,7 @@ class StateVersion(Base, BaseObject):
                 "resources-processed": bool(self.resources_processed),
                 "serial": self.serial,
                 "state-version": self.version,
+                "status": self.status.value,
                 "terraform-version": self.terraform_version,
                 "vcs-commit-url": "https://gitlab.com/my-organization/terraform-test/-/commit/abcdef12345",
                 "vcs-commit-sha": "abcdef12345"
