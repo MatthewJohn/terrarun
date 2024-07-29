@@ -91,9 +91,9 @@ class StateVersion(Base, BaseObject):
         session.commit()
 
     @classmethod
-    def create_from_state_json(cls, run, workspace, state_json, session=None):
+    def create_from_state_json(cls, run, workspace, created_by, state_json, session=None):
         """Create StateVersion from state_json."""
-        sv = cls(run=run, workspace=workspace, created_by=run.created_by)
+        sv = cls(run=run, workspace=workspace, created_by=created_by)
         session = Database.get_session()
         session.add(sv)
         session.commit()
