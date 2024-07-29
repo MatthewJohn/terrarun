@@ -524,7 +524,8 @@ class Run(Base, BaseObject):
 
         # @TODO Remove check for api_request object once all APIs use this methodology
         if api_request and api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION) and self.configuration_version:
-            api_request.add_included(self.configuration_version.get_api_details(api_request))
+            # @TODO Need to add current-user/job to create valid URL
+            api_request.add_included(self.configuration_version.get_api_details(api_request=api_request, effective_user=None, current_job=None))
 
         return {
             "id": self.api_id,

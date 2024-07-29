@@ -18,6 +18,7 @@ from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholde
 from terrarun.job_processor import JobProcessor
 import terrarun.config
 from terrarun.models import workspace
+import terrarun.models
 from terrarun.models.agent import Agent, AgentStatus
 from terrarun.models.agent_pool import AgentPool
 from terrarun.models.agent_token import AgentToken
@@ -34,6 +35,7 @@ from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
+import terrarun.models.run_queue
 from terrarun.models.state_version_output import StateVersionOutput
 from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.organisation import OrganisationPermissions
@@ -1780,7 +1782,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
         )
 
         for configuration_version in workspace.get_configuration_versions(api_request):
-            api_request.set_data(configuration_version.get_api_details(api_request))
+            api_request.set_data(configuration_version.get_api_details(current_job=current_job, effective_user=current_user, api_request=api_request))
 
         return api_request.get_response()
 
@@ -1811,7 +1813,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
             auto_queue_runs=attributes.get('auto-queue-runs', True),
             speculative=attributes.get('speculative', False)
         )
-        api_request.set_data(cv.get_api_details())
+        api_request.set_data(cv.get_api_details(current_job=current_job, effective_user=current_user))
 
         return api_request.get_response()
 
@@ -1891,26 +1893,44 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
             return {}, 404
 
         api_request = ApiRequest(request)
-        api_request.set_data(cv.get_api_details())
+        api_request.set_data(cv.get_api_details(current_job=current_job, effective_user=current_user))
         return api_request.get_response()
 
 
-class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
+class ApiTerraformConfigurationVersionUpload(Resource):
     """Configuration version upload endpoint"""
 
-    def check_permissions_put(self, current_user, current_job, configuration_version_id):
+    def put(self, configuration_version_id):
         """Check permissions"""
-        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
-        if not cv:
-            return False
-        return WorkspacePermissions(current_user=current_user,
-                                    workspace=cv.workspace).check_access_type(
-                                        runs=TeamWorkspaceRunsPermission.PLAN)
+        presign = Presign()
+        auth_str = presign.decrypt(request.args.get("key", ""))
+        try:
+            auth = json.loads(auth_str)
+        except:
+            return {}, 404
 
-    def _put(self, configuration_version_id, current_user, current_job):
-        """Handle upload of configuration version data."""
+        if not auth:
+            return {}, 404
+
+        if auth.get("cv") != configuration_version_id:
+            return {}, 404
+
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
+            return {}, 404
+
+        if job_id := auth.get("job"):
+            current_job = terrarun.models.run_queue.RunQueue.get_by_api_id(job_id)
+            if current_job.run.configuration_version.id != cv.id:
+                return {}, 404
+
+        elif user_id := auth.get("user"):
+            current_user = User.get_by_api_id(user_id)
+            if not WorkspacePermissions(current_user=current_user,
+                                        workspace=cv.workspace).check_access_type(
+                                            runs=TeamWorkspaceRunsPermission.PLAN):
+                return {}, 404
+        else:
             return {}, 404
 
         cv.process_upload(request.data)

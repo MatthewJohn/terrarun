@@ -3,7 +3,9 @@
 
 import os
 import subprocess
+import json
 from enum import Enum
+from typing import Optional
 from tarfile import TarFile
 from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
 
@@ -21,6 +23,9 @@ from terrarun.models.ingress_attribute import IngressAttribute
 import terrarun.models.run
 import terrarun.models.workspace
 from terrarun.object_storage import ObjectStorage
+import terrarun.presign
+import terrarun.models.user
+import terrarun.models.run_queue
 
 
 logger = get_logger(__name__)
@@ -343,11 +348,20 @@ terraform {
         # Allow run
         return True
 
-    def get_upload_url(self):
+    def get_upload_url(self, effective_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue']):
         """Return URL for terraform to upload configuration."""
-        return f'{terrarun.config.Config().BASE_URL}/api/v2/upload-configuration/{self.api_id}'
+        presign = terrarun.presign.Presign()
+        encrypt_value = {"cv": self.api_id}
+        if effective_user:
+            encrypt_value["user"] = effective_user.api_id
+        elif current_job:
+            encrypt_value["run"] = current_job.run.api_id
 
-    def get_api_details(self, api_request: ApiRequest=None):
+        key = presign.encrypt(json.dumps(encrypt_value))
+
+        return f'{terrarun.config.Config().BASE_URL}/api/v2/upload-configuration/{self.api_id}?key={key}'
+
+    def get_api_details(self, effective_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue'], api_request: ApiRequest=None):
         """Return API details."""
 
         if api_request and \
@@ -366,7 +380,7 @@ terraform {
                 "speculative": self.speculative,
                 "status": self.status.value,
                 "status-timestamps": {},
-                "upload-url": self.get_upload_url()
+                "upload-url": self.get_upload_url(effective_user=effective_user, current_job=current_job)
             },
             "relationships": {
                 "ingress-attributes": {
