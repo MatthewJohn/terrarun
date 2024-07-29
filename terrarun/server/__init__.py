@@ -2545,12 +2545,9 @@ class ApiTerraformWorkspaceLatestStateVersionOutputs(AuthenticatedEndpoint):
         if not state:
             return {}, 404
 
-        if not (state_outputs := state.state_version_outputs):
-            return {}, 404
-
         return {'data': [
             output.get_api_details()
-            for output in state_outputs
+            for output in state.state_version_outputs
         ]} #include_sensitive=True
 
 
