@@ -84,7 +84,7 @@ agent_token=$(grep 'Created agent token:' ./setup_output.log | sed 's/Created ag
 echo "Agent Token: $agent_token"
 
 # Bring up remaining containers
-docker compose -f docker-compose.yml -f ./tests/e2e/docker-compose.yml up -d
+docker compose -f docker-compose.yml -f ./tests/e2e/docker-compose.yml up --build -d
 
 # Run terraform to setup
 pushd tests/e2e/terraform/setup
@@ -143,6 +143,7 @@ pushd tests/e2e/terraform/execution
         terraform apply -auto-approve
 
     # Check outputs of terraform
+    sleep 10
     timeout --signal=TERM 30s \
         terraform output > output.txt
 
