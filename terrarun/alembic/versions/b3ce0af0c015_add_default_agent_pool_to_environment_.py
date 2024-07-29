@@ -1,4 +1,4 @@
-"""Add default agent pool to environment and workspace
+"""Add default agent pool to environment and project
 
 Revision ID: b3ce0af0c015
 Revises: 1f6d11cdcb8c
