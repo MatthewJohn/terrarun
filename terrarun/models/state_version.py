@@ -57,7 +57,10 @@ class StateVersion(Base, BaseObject):
 
     created_by_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=True)
     created_by: 'terrarun.models.user.User' = sqlalchemy.orm.relationship("User")
-    
+
+    # @TODO Make this a new column in the database
+    # Once terrarun add support for asynchronous upload (#166) or lifecycle for
+    # the state versions this will no longer be a static value
     status = StateVersionStatus.FINALIZED
 
     @property
