@@ -143,6 +143,7 @@ pushd tests/e2e/terraform/execution
         terraform apply -auto-approve
 
     # Check outputs of terraform
+    sleep 10
     timeout --signal=TERM 30s \
         terraform output > output.txt
 
