@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.59.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.59.0...v0.59.1) (2024-07-29)
+
+
+### Bug Fixes
+
+* Avoid returning 404 in current state outputs endpoint when current state has no outputs ([952ea3a](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/952ea3a79def708f8a1b3e3d49a20f89371919a3)), closes [#178](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/178)
+
 # [0.59.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.58.1...v0.59.0) (2024-07-27)
 
 
