@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.59.2](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.59.1...v0.59.2) (2024-07-29)
+
+
+### Bug Fixes
+
+* Add missing status field from state-version API ([de9e11c](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/de9e11c592226f50b6db21dcc077af2f8bf9e4dd)), closes [#167](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/167) [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+
 ## [0.59.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.59.0...v0.59.1) (2024-07-29)
 
 
