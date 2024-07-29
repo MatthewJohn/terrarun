@@ -71,17 +71,17 @@ class JobProcessor:
         if agent.agent_pool.organisation is None:
             query = query.filter(sqlalchemy.or_(
                 sqlalchemy.and_(
-                    terrarun.models.workspace.Workspace.execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
-                ),
+                    terrarun.models.workspace.Workspace._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                ).self_group(),
                 sqlalchemy.and_(
-                    terrarun.models.workspace.Workspace.execution_mode==None,
-                    terrarun.models.project.Project.execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
-                ),
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                ).self_group(),
                 sqlalchemy.and_(
-                    terrarun.models.workspace.Workspace.execution_mode==None,
-                    terrarun.models.project.Project.execution_mode==None,
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==None,
                     terrarun.models.organisation.Organisation.default_execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
-                ),
+                ).self_group(),
             ))
         else:
             # Limit to organisation that this agent pool is tied to, ensuring
@@ -89,47 +89,48 @@ class JobProcessor:
             query = query.filter(
                 terrarun.models.workspace.Workspace.organisation==agent.agent_pool.organisation,
             )
-            if agent.agent_pool.organisation_scoped:
-                # Limit by execution type of agent
-                query = query.filter(sqlalchemy.or_(
-                    sqlalchemy.and_(
-                        terrarun.models.workspace.Workspace.execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
-                    ),
-                    sqlalchemy.and_(
-                        terrarun.models.workspace.Workspace.execution_mode==None,
-                        terrarun.models.project.Project.execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
-                    ),
-                    sqlalchemy.and_(
-                        terrarun.models.workspace.Workspace.execution_mode==None,
-                        terrarun.models.project.Project.execution_mode==None,
-                        terrarun.models.organisation.Organisation.default_execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
-                    ),
-                ))
 
+            # Limit by execution type of agent
+            query = query.filter(sqlalchemy.or_(
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                ).self_group(),
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                ).self_group(),
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==None,
+                    terrarun.models.organisation.Organisation.default_execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                ).self_group(),
+            ))
+
+            if agent.agent_pool.organisation_scoped:
                 # Limit by any workspace, project or environment that has the agent pool assigned
                 query = query.filter(sqlalchemy.or_(
                     # If workspace is assigned to agent pool
                     sqlalchemy.and_(
                         terrarun.models.workspace.Workspace.agent_pool==agent.agent_pool,
-                    ),
+                    ).self_group(),
                     # Or workspace is unassigned and project is assigned to agent pool
                     sqlalchemy.and_(
                         terrarun.models.workspace.Workspace.agent_pool==None,
                         terrarun.models.project.Project.default_agent_pool==agent.agent_pool,
-                    ),
+                    ).self_group(),
                     # Or assigned at environment
                     sqlalchemy.and_(
                         terrarun.models.workspace.Workspace.agent_pool==None,
                         terrarun.models.project.Project.default_agent_pool==None,
                         terrarun.models.environment.Environment.default_agent_pool==agent.agent_pool,
-                    ),
+                    ).self_group(),
                     # Or assigned at org
                     sqlalchemy.and_(
                         terrarun.models.workspace.Workspace.agent_pool==None,
                         terrarun.models.project.Project.default_agent_pool==None,
                         terrarun.models.environment.Environment.default_agent_pool==None,
                         terrarun.models.organisation.Organisation.default_agent_pool==agent.agent_pool,
-                    ),
+                    ).self_group(),
                 ))
             else:
                 # Allow non-scoped agent pools to pick up jobs for workspaces
