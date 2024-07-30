@@ -503,7 +503,7 @@ class Run(Base, BaseObject):
         session.commit()
 
     @property
-    def plan(self):
+    def plan(self) -> Optional['terrarun.models.plan.Plan']:
         """Get latest plan"""
         if self.plans:
             return self.plans[-1]

@@ -8,6 +8,7 @@ import sqlalchemy.orm
 import terrarun.config
 import terrarun.database
 import terrarun.workspace_execution_mode
+import terrarun.models.agent
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
@@ -53,6 +54,14 @@ class Apply(TerraformCommand, Base):
         apply.api_id
         apply.update_status(TerraformCommandState.PENDING)
         return apply
+
+    def assign_to_agent(self, agent: 'terrarun.models.agent.Agent', execution_mode: 'terrarun.workspace_execution_mode.WorkspaceExecutionMode'):
+        """Assign plan to agent and set current execution mode"""
+        self.agent = agent
+        self.execution_mode = execution_mode
+        session = Database.get_session()
+        session.add(self)
+        session.commit()
 
     def _pull_plan_output(self, work_dir):
         """Create plan output file"""

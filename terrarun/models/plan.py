@@ -4,6 +4,7 @@
 import json
 import os
 import subprocess
+from typing import Optional
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -11,6 +12,8 @@ import sqlalchemy.orm
 import terrarun.config
 import terrarun.models.audit_event
 import terrarun.utils
+import terrarun.models.apply
+import terrarun.models.agent
 from terrarun.database import Base, Database
 from terrarun.logger import get_logger
 from terrarun.models.blob import Blob
@@ -76,11 +79,19 @@ class Plan(TerraformCommand, Base):
         return plan
 
     @property
-    def apply(self):
+    def apply(self) -> Optional['terrarun.models.apply.Apply']:
         """Get latest apply"""
         if self.applies:
             return self.applies[-1]
         return None
+
+    def assign_to_agent(self, agent: 'terrarun.models.agent.Agent', execution_mode: 'terrarun.workspace_execution_mode.WorkspaceExecutionMode'):
+        """Assign plan to agent and set current execution mode"""
+        self.agent = agent
+        self.execution_mode = execution_mode
+        session = Database.get_session()
+        session.add(self)
+        session.commit()
 
     def execute(self):
         """Execute plan"""

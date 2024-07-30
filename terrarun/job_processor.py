@@ -1,6 +1,7 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
+from typing import Tuple
 
 import sqlalchemy
 
@@ -38,8 +39,14 @@ class JobProcessor:
         return run
 
     @staticmethod
-    def get_job_by_agent_and_job_types(agent: 'terrarun.models.agent.Agent', job_types):
-        """Obtain list of jobs from queue that are applicable to an agent"""
+    def get_job_by_agent_and_job_types(agent: 'terrarun.models.agent.Agent', job_types) -> Tuple['terrarun.models.run_queue.RunQueue', 'terrarun.workspace_execution_mode.WorkspaceExecutionMode']:
+        """
+        Obtain list of jobs from queue that are applicable to an agent
+
+        Returns job and execution mode used for query.
+
+        @TODO Add support for job_types
+        """
 
         session = Database.get_session()
         query = session.query(
@@ -66,24 +73,29 @@ class JobProcessor:
             terrarun.models.run_queue.RunQueue.agent==None
         )
 
+        execution_mode = None
+
         # If current agent is not assigned to an organisation, look for
         # any jobs with execution type of "remote"
         if agent.agent_pool.organisation is None:
+            execution_mode = terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE
             query = query.filter(sqlalchemy.or_(
                 sqlalchemy.and_(
-                    terrarun.models.workspace.Workspace._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                    terrarun.models.workspace.Workspace._execution_mode==execution_mode,
                 ).self_group(),
                 sqlalchemy.and_(
                     terrarun.models.workspace.Workspace._execution_mode==None,
-                    terrarun.models.project.Project._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                    terrarun.models.project.Project._execution_mode==execution_mode,
                 ).self_group(),
                 sqlalchemy.and_(
                     terrarun.models.workspace.Workspace._execution_mode==None,
                     terrarun.models.project.Project._execution_mode==None,
-                    terrarun.models.organisation.Organisation.default_execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                    terrarun.models.organisation.Organisation.default_execution_mode==execution_mode,
                 ).self_group(),
             ))
         else:
+            execution_mode = terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT
+
             # Limit to organisation that this agent pool is tied to, ensuring
             # the default agent pool is None or this agent pool
             query = query.filter(
@@ -93,16 +105,16 @@ class JobProcessor:
             # Limit by execution type of agent
             query = query.filter(sqlalchemy.or_(
                 sqlalchemy.and_(
-                    terrarun.models.workspace.Workspace._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                    terrarun.models.workspace.Workspace._execution_mode==execution_mode,
                 ).self_group(),
                 sqlalchemy.and_(
                     terrarun.models.workspace.Workspace._execution_mode==None,
-                    terrarun.models.project.Project._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                    terrarun.models.project.Project._execution_mode==execution_mode,
                 ).self_group(),
                 sqlalchemy.and_(
                     terrarun.models.workspace.Workspace._execution_mode==None,
                     terrarun.models.project.Project._execution_mode==None,
-                    terrarun.models.organisation.Organisation.default_execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                    terrarun.models.organisation.Organisation.default_execution_mode==execution_mode,
                 ).self_group(),
             ))
 
@@ -153,7 +165,7 @@ class JobProcessor:
             session.add(job)
             session.commit()
 
-        return job
+        return job, execution_mode
 
     @classmethod
     def handle_plan_status_update(self, job_status):

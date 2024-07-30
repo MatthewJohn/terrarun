@@ -3453,7 +3453,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
         if not agent:
             return {}, 403
 
-        job = JobProcessor.get_job_by_agent_and_job_types(agent=agent, job_types=accepted_job_types)
+        job, execution_mode = JobProcessor.get_job_by_agent_and_job_types(agent=agent, job_types=accepted_job_types)
 
         if job:
             if job.job_type is JobQueueType.PLAN:
@@ -3478,6 +3478,18 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
             # Either the plan or apply api ID
             job_sub_task_id = job.run.plan.api_id if job.job_type is JobQueueType.PLAN else job.run.plan.apply.api_id
+            if job.job_type is JobQueueType.PLAN:
+                entity = job.run.plan
+                # Specified in each branch, because assign to agent
+                # are methods of both classes and not derrived from a common
+                # base class
+                # @TODO Improve this
+                entity.assign_to_agent(agent=agent, execution_mode=execution_mode)
+            else:
+                job_sub_task_id = job.run.plan.apply.api_id
+                entity.assign_to_agent(agent=agent, execution_mode=execution_mode)
+
+            job_sub_task_id = entity.api_id
 
             return {
                 # @TODO Should this be apply for plans during an apply run?
