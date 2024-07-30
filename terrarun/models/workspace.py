@@ -4,12 +4,14 @@
 from enum import Enum
 import json
 import re
+from typing import Optional
+
 import sqlalchemy
 import sqlalchemy.orm
+
 from terrarun.api_error import ApiError
 from terrarun.api_request import ApiRequest
 from terrarun.models.authorised_repo import AuthorisedRepo
-
 from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
 from terrarun.models.oauth_token import OauthToken
@@ -95,6 +97,9 @@ class Workspace(Base, BaseObject):
     _vcs_repo_tags_regex = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="vcs_repo_tags_regex")
     _working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     _assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="assessments_enabled")
+
+    agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_workspace_agent_pool_id"), nullable=True)
+    agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[agent_pool_id])
 
     _latest_state = None
     _latest_run = None
@@ -680,7 +685,7 @@ class Workspace(Base, BaseObject):
 
                 # Custom terrarun attribute with override values over the
                 # project configuration
-                "overrides": {
+                "setting-overwrites": {
                     "allow-destroy-plan": self._allow_destroy_plan,
                     "auto-apply": self._auto_apply,
                     "execution-mode": self._execution_mode.value if self._execution_mode else None,

@@ -18,7 +18,7 @@ import terrarun.models.organisation
 import terrarun.models.run
 import terrarun.models.configuration
 from terrarun.database import Base, Database
-from terrarun.utils import datetime_to_json
+import terrarun.utils
 
 
 logger = get_logger(__name__)
@@ -257,7 +257,7 @@ class Tool(Base, BaseObject):
                 "enabled": self.enabled,
                 "beta": self.beta,
                 "usage": 0,
-                "created-at": datetime_to_json(self.created_at)
+                "created-at": terrarun.utils.datetime_to_json(self.created_at)
             }
         }
 

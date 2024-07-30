@@ -8,14 +8,15 @@ from terrarun.database import Database
 import terrarun.models.organisation
 import terrarun.models.run_queue
 import terrarun.models.agent
-from terrarun.models.agent_pool_association import AgentPoolProjectAssociation, AgentPoolProjectPermission
 import terrarun.models.apply
 import terrarun.models.configuration
 import terrarun.models.project
 import terrarun.models.run
 import terrarun.models.run_queue
 import terrarun.models.workspace
+import terrarun.models.environment
 import terrarun.terraform_command
+import terrarun.workspace_execution_mode
 
 
 class JobProcessor:
@@ -52,11 +53,11 @@ class JobProcessor:
         ).join(
             terrarun.models.workspace.Workspace.project
         ).join(
+            terrarun.models.workspace.Workspace.environment
+        ).join(
             terrarun.models.workspace.Workspace.organisation
         ).outerjoin(
             terrarun.models.organisation.Organisation.default_agent_pool
-        ).outerjoin(
-            AgentPoolProjectAssociation
         )
 
         # Filter jobs that are being handled by an agent
@@ -65,45 +66,82 @@ class JobProcessor:
             terrarun.models.run_queue.RunQueue.agent==None
         )
 
-        # Limit by any organisations that have default agent pool and is set to this agent's pool
-        # or don't have a default agent pool
-        query = query.filter(sqlalchemy.or_(
-            terrarun.models.organisation.Organisation.default_agent_pool==agent.agent_pool,
-            terrarun.models.organisation.Organisation.default_agent_pool==None,
-        ))
-
-        if agent.agent_pool.organisation and agent.agent_pool.organisation_scoped:
+        # If current agent is not assigned to an organisation, look for
+        # any jobs with execution type of "remote"
+        if agent.agent_pool.organisation is None:
+            query = query.filter(sqlalchemy.or_(
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                ).self_group(),
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                ).self_group(),
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==None,
+                    terrarun.models.organisation.Organisation.default_execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.REMOTE,
+                ).self_group(),
+            ))
+        else:
             # Limit to organisation that this agent pool is tied to, ensuring
             # the default agent pool is None or this agent pool
             query = query.filter(
                 terrarun.models.workspace.Workspace.organisation==agent.agent_pool.organisation,
             )
-        elif agent.agent_pool.organisation is None:
-            pass
-        else:
-            # Agent has organisation set, but is not organisation scoped.
-            # Since we do not have any ways to associated agents to projects, environments or workspaces, give up
-            # for now
-            return None
 
-        # Filter by allowed projects/workspaces, if not all workspaces are allowed
-        # if not agent.agent_pool.organisation_scoped:
-        #     allowed_projects = session.query(
-        #         AgentPoolProjectPermission
-        #     ).filter(
-        #         AgentPoolProjectPermission.agent_pool==agent.agent_pool
-        #     )
-        #     query = query.filter(Workspace.project.in_(allowed_projects))
+            # Limit by execution type of agent
+            query = query.filter(sqlalchemy.or_(
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                ).self_group(),
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                ).self_group(),
+                sqlalchemy.and_(
+                    terrarun.models.workspace.Workspace._execution_mode==None,
+                    terrarun.models.project.Project._execution_mode==None,
+                    terrarun.models.organisation.Organisation.default_execution_mode==terrarun.workspace_execution_mode.WorkspaceExecutionMode.AGENT,
+                ).self_group(),
+            ))
 
-        # Filter any projects that have workers associated with them or this agent pool is associated with it
-        # query = query.filter(sqlalchemy.or_(
-        #     ~Project.agent_pool_associations.any(),
-        #     AgentPoolProjectAssociation.agent_pool==agent.agent_pool
-        # ))
-
-        # @TODO Filter by environment if there are any within the organisation for the agent pool
-
-        # @TODO Filter by job type
+            if agent.agent_pool.organisation_scoped:
+                # Limit by any workspace, project or environment that has the agent pool assigned
+                query = query.filter(sqlalchemy.or_(
+                    # If workspace is assigned to agent pool
+                    sqlalchemy.and_(
+                        terrarun.models.workspace.Workspace.agent_pool==agent.agent_pool,
+                    ).self_group(),
+                    # Or workspace is unassigned and project is assigned to agent pool
+                    sqlalchemy.and_(
+                        terrarun.models.workspace.Workspace.agent_pool==None,
+                        terrarun.models.project.Project.default_agent_pool==agent.agent_pool,
+                    ).self_group(),
+                    # Or assigned at environment
+                    sqlalchemy.and_(
+                        terrarun.models.workspace.Workspace.agent_pool==None,
+                        terrarun.models.project.Project.default_agent_pool==None,
+                        terrarun.models.environment.Environment.default_agent_pool==agent.agent_pool,
+                    ).self_group(),
+                    # Or assigned at org
+                    sqlalchemy.and_(
+                        terrarun.models.workspace.Workspace.agent_pool==None,
+                        terrarun.models.project.Project.default_agent_pool==None,
+                        terrarun.models.environment.Environment.default_agent_pool==None,
+                        terrarun.models.organisation.Organisation.default_agent_pool==agent.agent_pool,
+                    ).self_group(),
+                ))
+            else:
+                # Allow non-scoped agent pools to pick up jobs for workspaces
+                # that don't have an agent pool associated
+                # @TODO Verify this - should these be allowed at all?
+                query = query.filter(
+                    terrarun.models.workspace.Workspace.agent_pool==None,
+                    terrarun.models.project.Project.default_agent_pool==None,
+                    terrarun.models.environment.Environment.default_agent_pool==None,
+                    terrarun.models.organisation.Organisation.default_agent_pool==None,
+                )
 
         # Set to with_for_updates to lock row, avoiding any other requests taking the plan
         query = query.with_for_update()

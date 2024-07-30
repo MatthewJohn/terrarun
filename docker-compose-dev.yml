@@ -16,6 +16,14 @@ services:
       dockerfile: Dockerfile.dev
     volumes:
       - ./ui/src:/app/src
+    labels: !override
+      - "traefik.enable=true"
+      - "traefik.http.routers.terrarun-ui.rule=Host(`$DOMAIN`)"
+      - "traefik.http.routers.terrarun-ui.entrypoints=websecure"
+      - "traefik.http.routers.terrarun-ui.tls=true"
+      - "traefik.http.services.terrarun-ui.loadbalancer.server.port=4200"
+      - "traefik.http.routers.terrarun-ui.service=terrarun-ui"
+
 
   api:
     extends:

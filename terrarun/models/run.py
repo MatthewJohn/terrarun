@@ -30,7 +30,7 @@ from terrarun.errors import (
     TerraformVersionNotSetError,
 )
 from terrarun.logger import get_logger
-from terrarun.models.audit_event import AuditEvent, AuditEventType
+import terrarun.models.audit_event
 from terrarun.models.base_object import BaseObject
 from terrarun.models.run_queue import JobQueueAgentType, JobQueueType, RunQueue
 from terrarun.models.task_stage import TaskStage
@@ -445,14 +445,14 @@ class Run(Base, BaseObject):
             session.refresh(self)
             should_commit = True
 
-        audit_event = AuditEvent(
+        audit_event = terrarun.models.audit_event.AuditEvent(
             organisation=self.configuration_version.workspace.organisation,
             user_id=current_user.id if current_user else None,
             object_id=self.id,
             object_type=self.ID_PREFIX,
             old_value=Database.encode_value(self.status.value) if self.status else None,
             new_value=Database.encode_value(new_status.value),
-            event_type=AuditEventType.STATUS_CHANGE)
+            event_type=terrarun.models.audit_event.AuditEventType.STATUS_CHANGE)
 
         self.status = new_status
 
@@ -515,10 +515,10 @@ class Run(Base, BaseObject):
         session = Database.get_session()
         audit_events = {
             '{}-at'.format(Database.decode_blob(event.new_value).replace('_', '-')): terrarun.utils.datetime_to_json(event.timestamp)
-            for event in session.query(AuditEvent).where(
-                AuditEvent.object_id==self.id,
-                AuditEvent.object_type==self.ID_PREFIX,
-                AuditEvent.event_type==AuditEventType.STATUS_CHANGE)
+            for event in session.query(terrarun.models.audit_event.AuditEvent).where(
+                terrarun.models.audit_event.AuditEvent.object_id==self.id,
+                terrarun.models.audit_event.AuditEvent.object_type==self.ID_PREFIX,
+                terrarun.models.audit_event.AuditEvent.event_type==terrarun.models.audit_event.AuditEventType.STATUS_CHANGE)
         }
 
         # @TODO Remove check for api_request object once all APIs use this methodology

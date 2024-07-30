@@ -32,11 +32,11 @@ from terrarun.models.lifecycle_environment_group import LifecycleEnvironmentGrou
 from terrarun.models.environment import Environment
 from terrarun.models.agent import Agent
 from terrarun.models.agent_pool import AgentPool
-from terrarun.models.agent_pool_association import (
-    AgentPoolEnvironmentAssociation,
-    AgentPoolProjectAssociation,
-    AgentPoolProjectPermission
-)
+# from terrarun.models.agent_pool_association import (
+#     AgentPoolEnvironmentAssociation,
+#     AgentPoolProjectAssociation,
+#     AgentPoolProjectPermission
+# )
 from terrarun.models.agent_token import AgentToken
 from terrarun.models.oauth_client import OauthClient
 from terrarun.models.oauth_token import OauthToken

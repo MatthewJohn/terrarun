@@ -19,12 +19,12 @@ import terrarun.utils
 from terrarun.database import Base, Database
 from terrarun.logger import get_logger
 from terrarun.models.audit_event import AuditEvent, AuditEventType
-from terrarun.models.base_object import BaseObject
+from terrarun.models.base_object import BaseObject, update_object_status
 from terrarun.models.blob import Blob
 from terrarun.models.user import TaskExecutionUserAccess, User, UserType
 from terrarun.models.user_token import UserToken
 from terrarun.models.workspace_task import WorkspaceTaskStage
-from terrarun.utils import datetime_to_json, update_object_status
+from terrarun.utils import datetime_to_json
 
 logger = get_logger(__name__)
 

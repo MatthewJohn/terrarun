@@ -12,8 +12,8 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
   @Input()
   set attributes(value: WorkspaceAttributes | ProjectAttributes | null) {
     this.inputAttributes = value;
-    if (value && "overrides" in value && "queue-all-runs" in value.overrides) {
-      this.overrides['queue-all-runs'] = value.overrides["queue-all-runs"];
+    if (value && "setting-overwrites" in value && "queue-all-runs" in value['setting-overwrites']) {
+      this.overrides['queue-all-runs'] = value['setting-overwrites']["queue-all-runs"];
     }
   }
   inputAttributes: WorkspaceAttributes | ProjectAttributes | null = null;
@@ -51,7 +51,7 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
 
   emitChange(): void {
     if (this.inputAttributes) {
-      if ("overrides" in this.inputAttributes) {
+      if ("setting-overwrites" in this.inputAttributes) {
         // Emit override changes
         let updates: WorkspaceUpdateAttributes = {
           "queue-all-runs": this.overrides['queue-all-runs'],
@@ -68,13 +68,13 @@ export class ProjectWorkspaceSettingsComponent implements OnInit {
   }
 
   overrideQueueAllRuns() {
-    if (this.inputAttributes && "overrides" in this.inputAttributes) {
+    if (this.inputAttributes && "setting-overwrites" in this.inputAttributes) {
       this.overrides['queue-all-runs'] = this.inputAttributes['queue-all-runs'];
       this.emitChange();
     }
   }
   unOverrideQueueAllRuns() {
-    if (this.inputAttributes && "overrides" in this.inputAttributes) {
+    if (this.inputAttributes && "setting-overwrites" in this.inputAttributes) {
       // Emit update change to set override back to null
       this.overrides['queue-all-runs'] = null;
       this.emitChange();
