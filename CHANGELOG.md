@@ -1,5 +1,20 @@
 # Changelog
 
+# [0.60.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.59.2...v0.60.0) (2024-07-30)
+
+
+### Bug Fixes
+
+* Fix port for UI in local development ([486249c](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/486249cd9eecc66c9695b4040042d9b4e0c57fda)), closes [#170](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/170)
+* Remove old agent pool project/workspace associations and replace with Project/workspace permissions ([44a130a](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/44a130a59e56a6eedbb315c9326cddf7df794b22)), closes [#170](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/170)
+* Replace old "overrides" attribute of workspace/project with "settings-overwrites" to align with hashicorp API ([ce494b0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/ce494b0d7ac90c40b9ec730a8aad4dd94ab9491d)), closes [#175](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/175) [#170](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/170)
+
+
+### Features
+
+* Add default agent pool attributes to environment and  project ([72ca825](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/72ca825e6b816e7ab4c71292120b983315725783)), closes [#170](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/170)
+* Update job processor to take into account agent pool association at org, environment, project and workspace ([1c2d7f3](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/1c2d7f30e381b2ce6f15981d05981c34d939593e)), closes [#170](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/170)
+
 ## [0.59.2](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.59.1...v0.59.2) (2024-07-29)
 
 
