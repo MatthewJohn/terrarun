@@ -69,6 +69,9 @@ class Tool(Base, BaseObject):
     created_at = sqlalchemy.Column(
         sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
+    # @TODO Implement usage count
+    usage = 0
+
     @classmethod
     def get_all(cls, tool_type):
         """Return all tools"""
@@ -143,14 +146,14 @@ class Tool(Base, BaseObject):
                     "Tool checksum URL contains invalid placeholder")
 
     @classmethod
-    def upsert_by_version(cls, tool_type, version, url=None, checksum_url=None,
+    def upsert_by_version(cls, tool_type, version, custom_url=None, custom_checksum_url=None,
                           sha=None, enabled=True, deprecated=False, deprecated_reason=None,
                           only_create=False):
         """Upsert version based on version number"""
         # Check version is valid
         cls._validate_version(version)
-        cls._validate_url(url)
-        cls._validate_checksum_url(checksum_url)
+        cls._validate_url(custom_url)
+        cls._validate_checksum_url(custom_checksum_url)
 
         session = Database.get_session()
         pre_existing = session.query(cls).filter(
@@ -170,8 +173,8 @@ class Tool(Base, BaseObject):
         tool_version = cls(
             tool_type=tool_type,
             version=version,
-            custom_url=url,
-            custom_checksum_url=checksum_url,
+            custom_url=custom_url,
+            custom_checksum_url=custom_checksum_url,
             sha=sha,
             deprecated=deprecated,
             deprecated_reason=deprecated_reason,
@@ -240,26 +243,6 @@ class Tool(Base, BaseObject):
         session = Database.get_session()
         session.delete(self)
         session.commit()
-
-    def get_admin_api_details(self):
-        """Return API details for tool versions"""
-        return {
-            "id": self.api_id,
-            "type": self.tool_type.value,
-            "attributes": {
-                "version": self.version,
-                "url": self.custom_url,
-                "sha": self.sha,
-                "checksum-url": self.custom_checksum_url,
-                "deprecated": self.deprecated,
-                "deprecated-reason": self.deprecated_reason,
-                "official": self.official,
-                "enabled": self.enabled,
-                "beta": self.beta,
-                "usage": 0,
-                "created-at": terrarun.utils.datetime_to_json(self.created_at)
-            }
-        }
 
     def get_api_details(self):
         """Return end-user API details"""
