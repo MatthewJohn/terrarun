@@ -348,20 +348,17 @@ terraform {
         # Allow run
         return True
 
-    def get_upload_url(self, effective_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue']):
+    def get_upload_url(self, effective_user: terrarun.models.user.User):
         """Return URL for terraform to upload configuration."""
-        presign = terrarun.presign.Presign()
-        encrypt_value = {"cv": self.api_id}
-        if effective_user:
-            encrypt_value["user"] = effective_user.api_id
-        elif current_job:
-            encrypt_value["run"] = current_job.run.api_id
+        
+        upload_path = f'/api/v2/upload-configuration/{self.api_id}'
 
-        key = presign.encrypt(json.dumps(encrypt_value))
+        signer = terrarun.presign.RequestSigner()
+        signature = signer.sign(effective_user, upload_path)
 
-        return f'{terrarun.config.Config().BASE_URL}/api/v2/upload-configuration/{self.api_id}?key={key}'
+        return f'{terrarun.config.Config().BASE_URL}{upload_path}{signature}'
 
-    def get_api_details(self, effective_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue'], api_request: ApiRequest=None):
+    def get_api_details(self, effective_user: terrarun.models.user.User, api_request: Optional[ApiRequest] = None):
         """Return API details."""
 
         if api_request and \
@@ -380,7 +377,7 @@ terraform {
                 "speculative": self.speculative,
                 "status": self.status.value,
                 "status-timestamps": {},
-                "upload-url": self.get_upload_url(effective_user=effective_user, current_job=current_job)
+                "upload-url": self.get_upload_url(effective_user=effective_user)
             },
             "relationships": {
                 "ingress-attributes": {
