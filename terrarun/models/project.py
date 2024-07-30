@@ -3,6 +3,8 @@
 
 import json
 import re
+from typing import Optional
+
 import sqlalchemy
 import sqlalchemy.orm
 from sqlalchemy import func
@@ -72,8 +74,9 @@ class Project(Base, BaseObject):
     working_directory = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="working_directory")
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
 
-    agent_pool_permissions = sqlalchemy.orm.relation("AgentPoolProjectPermission", back_populates="project", lazy='select')
-    agent_pool_associations = sqlalchemy.orm.relation("AgentPoolProjectAssociation", back_populates="project", lazy='select')
+    default_agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_project_default_agent_pool_id"), nullable=True)
+    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[default_agent_pool_id])
+    # agent_pool_permissions = sqlalchemy.orm.relation("AgentPoolProjectPermission", back_populates="project", lazy='select')
 
     @classmethod
     def get_by_name(cls, organisation, name):
@@ -383,7 +386,7 @@ class Project(Base, BaseObject):
 
                 # Custom terrarun attribute with override values over the
                 # organisation configuration
-                "overrides": {
+                "setting-overwrites": {
                     "execution-mode": self._execution_mode.value if self._execution_mode else None,
                 }
             },

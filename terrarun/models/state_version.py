@@ -16,7 +16,7 @@ from terrarun.models.blob import Blob
 from terrarun.models.state_version_output import StateVersionOutput
 import terrarun.models.user
 
-from terrarun.utils import datetime_to_json
+import terrarun.utils
 
 class StateVersionStatus(Enum):
     """Status of agent"""
@@ -170,7 +170,7 @@ class StateVersion(Base, BaseObject):
             "id": self.api_id,
             "type": "state-versions",
             "attributes": {
-                "created-at": datetime_to_json(self.created_at),
+                "created-at": terrarun.utils.datetime_to_json(self.created_at),
                 "size": 940,
                 "hosted-state-download-url": f"{config.BASE_URL}/api/v2/state-versions/{self.api_id}/download",
                 "modules": self.modules,

@@ -142,7 +142,7 @@ export class OverviewComponent implements OnInit {
             let workspaces = projectDetails.data.relationships.workspaces.data;
 
             // Update general settings form
-            this.generalSettingsExecutionMode = this.projectDetails.data.attributes.overrides['execution-mode']
+            this.generalSettingsExecutionMode = this.projectDetails.data.attributes['setting-overwrites']['execution-mode']
             this.generalSettingsTerraformVersion = this.projectDetails.data.attributes['terraform-version'];
 
             // Sort workspaces by order

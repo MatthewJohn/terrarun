@@ -10,7 +10,7 @@ from terrarun.database import Base, Database
 from terrarun.models.base_object import BaseObject
 import terrarun.database
 from terrarun.models.blob import Blob
-from terrarun.utils import datetime_to_json
+import terrarun.utils
 
 
 class IngressAttribute(Base, BaseObject):
@@ -180,7 +180,7 @@ class IngressAttribute(Base, BaseObject):
                 "sender-html-url": self.sender_html_url,
 
                 # Custom attribute(s)
-                "created-at": datetime_to_json(self.created_at)
+                "created-at": terrarun.utils.datetime_to_json(self.created_at)
             },
             "relationships": {
                 "created-by": {

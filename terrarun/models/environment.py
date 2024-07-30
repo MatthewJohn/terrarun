@@ -1,6 +1,8 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
+from typing import Optional
+
 import sqlalchemy
 import sqlalchemy.orm
 
@@ -8,6 +10,7 @@ from terrarun.models.base_object import BaseObject
 from terrarun.database import Base, Database
 import terrarun.database
 import terrarun.models.lifecycle_environment
+import terrarun.models.agent_pool
 
 
 class Environment(Base, BaseObject):
@@ -31,6 +34,9 @@ class Environment(Base, BaseObject):
 
     workspaces = sqlalchemy.orm.relation("Workspace", back_populates="environment")
     lifecycle_environments = sqlalchemy.orm.relation("LifecycleEnvironment", back_populates="environment")
+
+    default_agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_environment_default_agent_pool_id"), nullable=True)
+    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[default_agent_pool_id])
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):
