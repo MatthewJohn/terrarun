@@ -66,6 +66,7 @@ from terrarun.api_entities.organization import (
     OrganizationUpdateEntity, OrganizationView, OrganizationCreateEntity
 )
 from terrarun.api_entities.agent_pool import AgentPoolView
+from terrarun.api_entities.plan import PlanView
 
 
 logger = get_logger(__name__)
@@ -2431,7 +2432,9 @@ class ApiTerraformPlans(AuthenticatedEndpoint):
             if not plan:
                 return {}, 404
 
-            return {"data": plan.get_api_details()}
+            entity = PlanView.from_object(obj=plan, effective_user=current_user)
+
+            return entity.to_response()
 
         raise Exception('Need to return list of plans?')
 

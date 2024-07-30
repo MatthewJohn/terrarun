@@ -1,12 +1,14 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
+import datetime
 import json
 import os
 import subprocess
 import threading
 from enum import Enum
 from time import sleep
+from typing import Dict
 
 import sqlalchemy.orm
 
@@ -16,6 +18,8 @@ from terrarun.database import Database
 from terrarun.logger import get_logger
 from terrarun.models.base_object import BaseObject
 from terrarun.models.blob import Blob
+import terrarun.utils
+
 
 logger = get_logger(__name__)
 
@@ -151,6 +155,18 @@ class TerraformCommand(BaseObject):
         session.add(audit_event)
         if should_commit:
             session.commit()
+
+    def get_status_change_timestamps(self) -> Dict[TerraformCommandState, datetime.datetime]:
+        """Get timestamps for status changes"""
+        session = Database.get_session()
+        return {
+            TerraformCommandState(Database.decode_blob(event.new_value)): event.timestamp
+            for event in session.query(terrarun.models.audit_event.AuditEvent).where(
+                terrarun.models.audit_event.AuditEvent.object_id==self.id,
+                terrarun.models.audit_event.AuditEvent.object_type==self.ID_PREFIX,
+                terrarun.models.audit_event.AuditEvent.event_type==terrarun.models.audit_event.AuditEventType.STATUS_CHANGE
+            )
+        }
 
     @property
     def status_timestamps(self):
