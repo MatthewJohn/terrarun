@@ -1784,7 +1784,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
         )
 
         for configuration_version in workspace.get_configuration_versions(api_request):
-            api_request.set_data(configuration_version.get_api_details(current_job=current_job, effective_user=current_user, api_request=api_request))
+            api_request.set_data(configuration_version.get_api_details(effective_user=current_user, api_request=api_request))
 
         return api_request.get_response()
 
