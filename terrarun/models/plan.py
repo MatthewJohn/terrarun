@@ -14,6 +14,7 @@ import terrarun.utils
 from terrarun.database import Base, Database
 from terrarun.logger import get_logger
 from terrarun.models.blob import Blob
+import terrarun.workspace_execution_mode
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
 logger = get_logger(__name__)
@@ -46,6 +47,12 @@ class Plan(TerraformCommand, Base):
     _providers_schemas = sqlalchemy.orm.relation("Blob", foreign_keys=[providers_schemas_id])
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
+
+    agent_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_plan_agent_id"), nullable=True)
+    agent = sqlalchemy.orm.relationship("Agent", back_populates="plans")
+    execution_mode = sqlalchemy.Column(
+        sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
+        nullable=True, default=None)
 
     ## Attributes provided by terraform agent
     _has_changes = sqlalchemy.Column(sqlalchemy.Boolean, default=None, nullable=True, name="has_changes")

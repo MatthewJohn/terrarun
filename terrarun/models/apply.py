@@ -7,6 +7,7 @@ import sqlalchemy.orm
 
 import terrarun.config
 import terrarun.database
+import terrarun.workspace_execution_mode
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
@@ -32,6 +33,12 @@ class Apply(TerraformCommand, Base):
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     changes = sqlalchemy.Column(terrarun.database.Database.GeneralString)
+
+    agent_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_apply_agent_id"), nullable=True)
+    agent = sqlalchemy.orm.relationship("Agent", back_populates="applies")
+    execution_mode = sqlalchemy.Column(
+        sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
+        nullable=True, default=None)
 
     @classmethod
     def create(cls, plan):
