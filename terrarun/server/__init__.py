@@ -6,7 +6,7 @@ import json
 import re
 from time import sleep
 
-from flask import Flask, make_response, request, session
+from flask import Flask, make_response, request, session, redirect
 from flask.signals import request_finished
 import flask
 from flask_cors import CORS
@@ -198,10 +198,6 @@ class Server(object):
         self._api.add_resource(
             ApiTerraformTaskDetails,
             '/api/v2/tasks/<string:task_id>'
-        )
-        self._api.add_resource(
-            ApiTerraformConfigurationVersionUpload,
-            '/api/v2/upload-configuration/<string:configuration_version_id>'
         )
         self._api.add_resource(
             ApiTerraformConfigurationVersions,
@@ -1902,27 +1898,6 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
         return api_request.get_response()
 
 
-class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
-    """Configuration version upload endpoint"""
-
-    def check_permissions_put(self, current_user, current_job, configuration_version_id):
-        """Check permissions"""
-        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
-        if not cv:
-            return False
-        return WorkspacePermissions(current_user=current_user,
-                                    workspace=cv.workspace).check_access_type(
-                                        runs=TeamWorkspaceRunsPermission.PLAN)
-
-    def _put(self, configuration_version_id, current_user, current_job):
-        """Handle upload of configuration version data."""
-        cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
-        if not cv:
-            return {}, 404
-
-        cv.process_upload(request.data)
-
-
 class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
     """Interface to download configuration version"""
 
@@ -1945,10 +1920,7 @@ class ApiTerraformRunConfigurationVersionDownload(AuthenticatedEndpoint):
         if not run:
             return {}, 404
 
-        response = make_response(run.configuration_version.configuration_blob.data)
-        # Considered wheteher to use application/gzip, application/tar
-        response.headers['Content-Type'] = 'application/tar+gzip'
-        return response
+        return redirect(run.configuration_version.get_download_url(), code=302)
 
 
 class ApiTerraformRun(AuthenticatedEndpoint):
