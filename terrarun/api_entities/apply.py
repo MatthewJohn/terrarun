@@ -7,7 +7,7 @@ import datetime
 import terrarun.models.organisation
 import terrarun.models.user
 import terrarun.workspace_execution_mode
-import terrarun.models.plan
+import terrarun.models.apply
 import terrarun.terraform_command
 import terrarun.config
 
@@ -22,14 +22,13 @@ from .agent_execution_details import AgentExecutionDetailsEntity
 from .execution_status_timestamps import ExecutionStatusTimestampsEntity
 
 
-class PlanEntity(BaseEntity):
+class ApplyEntity(BaseEntity):
 
-    type = "plans"
+    type = "applies"
 
     @classmethod
     def _get_attributes(cls):
         return (
-            Attribute("has-changes", "has_changes", bool, ATTRIBUTED_REQUIRED),
             Attribute("resource-additions", "resource_additions", int, ATTRIBUTED_REQUIRED),
             Attribute("resource-changes", "resource_changes", int, ATTRIBUTED_REQUIRED),
             Attribute("resource-destructions", "resource_destructions", int, ATTRIBUTED_REQUIRED),
@@ -40,23 +39,22 @@ class PlanEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: 'terrarun.models.plan.Plan', effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: 'terrarun.models.apply.Apply', effective_user: 'terrarun.models.user.User'):
         """Convert object to saml settings entity"""
         return cls(
             id=obj.api_id,
             attributes={
-                "has_changes": obj.has_changes,
-                "resource_additions": obj.resource_additions,
-                "resource_changes": obj.resource_changes,
-                "resource_destructions": obj.resource_destructions,
+                "resource_additions": 0,
+                "resource_changes": 0,
+                "resource_destructions": 0,
                 "status": obj.status,
-                "log_read_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{obj.api_id}/log",
+                "log_read_url": f"{terrarun.config.Config().BASE_URL}/api/v2/applies/{obj.api_id}/log",
                 "execution_details": AgentExecutionDetailsEntity.from_object(obj=obj, effective_user=effective_user),
                 "status_timestamps": ExecutionStatusTimestampsEntity.from_object(obj=obj, effective_user=effective_user),
             }
         )
 
 
-class PlanView(PlanEntity, EntityView):
+class ApplyView(ApplyEntity, EntityView):
 
     pass

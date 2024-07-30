@@ -51,9 +51,9 @@ class Plan(TerraformCommand, Base):
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
-    agent_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_plan_agent_id"), nullable=True)
-    agent = sqlalchemy.orm.relationship("Agent", back_populates="plans")
-    execution_mode = sqlalchemy.Column(
+    agent_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_apply_agent_id"), nullable=True)
+    agent: Optional['terrarun.models.agent.Agent'] = sqlalchemy.orm.relationship("Agent", back_populates="plans")
+    execution_mode: Optional['terrarun.workspace_execution_mode.WorkspaceExecutionMode'] = sqlalchemy.Column(
         sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
         nullable=True, default=None)
 

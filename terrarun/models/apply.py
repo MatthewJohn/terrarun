@@ -4,6 +4,7 @@
 import os
 import sqlalchemy
 import sqlalchemy.orm
+from typing import Optional
 
 import terrarun.config
 import terrarun.database
@@ -35,9 +36,9 @@ class Apply(TerraformCommand, Base):
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     changes = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
-    agent_id = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_apply_agent_id"), nullable=True)
-    agent = sqlalchemy.orm.relationship("Agent", back_populates="applies")
-    execution_mode = sqlalchemy.Column(
+    agent_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_apply_agent_id"), nullable=True)
+    agent: Optional['terrarun.models.agent.Agent'] = sqlalchemy.orm.relationship("Agent", back_populates="applies")
+    execution_mode: Optional['terrarun.workspace_execution_mode.WorkspaceExecutionMode'] = sqlalchemy.Column(
         sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
         nullable=True, default=None)
 

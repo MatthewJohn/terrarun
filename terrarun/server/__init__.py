@@ -67,6 +67,7 @@ from terrarun.api_entities.organization import (
 )
 from terrarun.api_entities.agent_pool import AgentPoolView
 from terrarun.api_entities.plan import PlanView
+from terrarun.api_entities.apply import ApplyView
 
 
 logger = get_logger(__name__)
@@ -2826,8 +2827,9 @@ class ApiTerraformApplies(AuthenticatedEndpoint):
         apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
-        
-        return {'data': apply.get_api_details()}
+
+        view = ApplyView.from_object(obj=apply, effective_user=current_user)
+        return view.to_response()
 
 
 class ApiTerraformApplyLog(Resource):
