@@ -1,7 +1,10 @@
+# Copyright (C) 2024 Matt Comben - All Rights Reserved
+# SPDX-License-Identifier: GPL-2.0
+
+
 from flask import request
 
-import terrarun
-from terrarun.api_entities.base_entity import ApiErrorView, ListView
+from terrarun.api_entities.base_entity import ListView
 from terrarun.api_entities.terraform_version import (
     TerraformVersionCreateEntity,
     TerraformVersionUpdateEntity,
@@ -21,23 +24,9 @@ from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
 
 
-class AuthenticatedEndpointErrorHandling(AuthenticatedEndpoint):
-    def _error_catching_call(self, method, args, kwargs):
-        """Call method, catching exceptions"""
-        try:
-            return method(*args, **kwargs)
-        except Exception as e:
-            # Rollback and remove session
-            terrarun.database.Database.get_session().rollback()
-            terrarun.database.Database.get_session().remove()
-            
-            if isinstance(e, ApiError):
-                return ApiErrorView(error=e).to_response()
-            
-            raise
-
-class ApiAdminTerraformVersionsBase(AuthenticatedEndpointErrorHandling):
+class ApiAdminTerraformVersionsBase(AuthenticatedEndpoint):
     def _tool_error_catching_call(self, method, kwargs):
+        """Call method and convert tool errors into ApiError"""
         try:
             return method(**kwargs)
         except ToolVersionAlreadyExistsError:
@@ -87,8 +76,22 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
 
     def _get(self, current_user, current_job):
         """Provide list of terraform versions"""
+        version_filter = request.args.get("filter[version]", None)
+        version_search = request.args.get("search[version]", None)
+        if version_filter:
+            version = version_filter
+            version_exact = True
+        elif version_search:
+            version = version_search
+            version_exact = False
+        else:
+            version = version_exact = None
 
-        terraform_version_list = Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
+        terraform_version_list = Tool.get_list(
+            tool_type=ToolType.TERRAFORM_VERSION,
+            version=version,
+            version_exact=version_exact,
+        )
         views = [
             TerraformVersionView.from_object(
                 terraform_version, effective_user=current_user
@@ -103,7 +106,6 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
 
     def _post(self, current_user, current_job):
         """Create terraform version"""
-
         err, create_entity = TerraformVersionCreateEntity.from_request(request.json)
         if err:
             raise err
@@ -111,7 +113,9 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         create_kwargs = create_entity.get_set_object_attributes()
         create_kwargs["tool_type"] = ToolType.TERRAFORM_VERSION
         create_kwargs["only_create"] = True
-        terraform_version = self._tool_error_catching_call(Tool.upsert_by_version, create_kwargs)
+        terraform_version = self._tool_error_catching_call(
+            Tool.upsert_by_version, create_kwargs
+        )
 
         view = TerraformVersionView.from_object(
             terraform_version, effective_user=current_user
@@ -128,19 +132,16 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
 
     def _get(self, current_user, current_job, tool_id):
         """Provide details about terraform version"""
-
         tool = Tool.get_by_api_id(tool_id)
         view = TerraformVersionView.from_object(tool, effective_user=current_user)
         return view.to_response()
 
     def check_permissions_patch(self, current_user, current_job, tool_id):
         """Can only be access by site admins"""
-  
         return current_user.site_admin
 
     def _patch(self, current_user, current_job, tool_id):
         """Update attributes of terraform version"""
-
         terraform_version = Tool.get_by_api_id(tool_id)
 
         err, update_entity = TerraformVersionUpdateEntity.from_request(request.json)
@@ -148,7 +149,9 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
             raise err
 
         update_kwargs = update_entity.get_set_object_attributes()
-        self._tool_error_catching_call(terraform_version.update_attributes, update_kwargs)
+        self._tool_error_catching_call(
+            terraform_version.update_attributes, update_kwargs
+        )
 
         view = TerraformVersionView.from_object(
             terraform_version, effective_user=current_user

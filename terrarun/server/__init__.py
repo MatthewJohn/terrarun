@@ -3715,7 +3715,7 @@ class ApiToolVersions(AuthenticatedEndpoint):
         return {
             "data": [
                 tool.get_api_details()
-                for tool in Tool.get_all(tool_type=ToolType.TERRAFORM_VERSION)
+                for tool in Tool.get_list(tool_type=ToolType.TERRAFORM_VERSION)
             ]
         }
 

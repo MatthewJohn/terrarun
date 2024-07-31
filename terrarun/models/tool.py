@@ -5,21 +5,27 @@ import re
 from enum import Enum
 
 import requests
+import semantic_version
 import sqlalchemy
 import sqlalchemy.orm
-import semantic_version
-from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholderError, ToolUrlPlaceholderError, ToolVersionAlreadyExistsError, UnableToDownloadToolArchiveError, UnableToDownloadToolChecksumFileError
 
-from terrarun.logger import get_logger
-from terrarun.object_storage import ObjectStorage
-from terrarun.models.base_object import BaseObject
 import terrarun.database
+import terrarun.models.configuration
 import terrarun.models.organisation
 import terrarun.models.run
-import terrarun.models.configuration
-from terrarun.database import Base, Database
 import terrarun.utils
-
+from terrarun.database import Base, Database
+from terrarun.errors import (
+    InvalidVersionNumberError,
+    ToolChecksumUrlPlaceholderError,
+    ToolUrlPlaceholderError,
+    ToolVersionAlreadyExistsError,
+    UnableToDownloadToolArchiveError,
+    UnableToDownloadToolChecksumFileError,
+)
+from terrarun.logger import get_logger
+from terrarun.models.base_object import BaseObject
+from terrarun.object_storage import ObjectStorage
 
 logger = get_logger(__name__)
 
@@ -73,10 +79,18 @@ class Tool(Base, BaseObject):
     usage = 0
 
     @classmethod
-    def get_all(cls, tool_type):
-        """Return all tools"""
+    def get_list(cls, tool_type, version: str | None = None, version_exact: bool = True):
+        """Return a list of tools"""
         session = Database.get_session()
-        return session.query(cls).filter(cls.tool_type == tool_type).all()
+        query = session.query(cls).filter(cls.tool_type == tool_type)
+
+        if version:
+            if version_exact:
+                query = query.filter(cls.version == version)
+            else:
+                query = query.filter(cls.version.contains(version))
+
+        return query.all()
 
     @classmethod
     def get_by_version(cls, tool_type, version):
