@@ -101,6 +101,8 @@ class Tool(Base, BaseObject):
     def update_attributes(self, session=None, **kwargs):
         """Update attributes"""
         update_kwargs = {}
+        
+        # @TODO Updating version should be possible
 
         if 'custom_url' in kwargs:
             # Validate custom URL
