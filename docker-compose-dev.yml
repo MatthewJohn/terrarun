@@ -21,7 +21,7 @@ services:
       - "traefik.http.routers.terrarun-ui.rule=Host(`$DOMAIN`)"
       - "traefik.http.routers.terrarun-ui.entrypoints=websecure"
       - "traefik.http.routers.terrarun-ui.tls=true"
-      - "traefik.http.services.terrarun-ui.loadbalancer.server.port=4200"
+      - "traefik.http.services.terrarun-ui.loadbalancer.server.port=3000"
       - "traefik.http.routers.terrarun-ui.service=terrarun-ui"
 
 
