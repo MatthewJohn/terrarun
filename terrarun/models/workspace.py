@@ -21,7 +21,7 @@ from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run
 import terrarun.models.configuration
 import terrarun.models.ingress_attribute
-import terrarun.models.organisation
+import terrarun.models.tool
 from terrarun.workspace_execution_mode import WorkspaceExecutionMode
 import terrarun.models.workspace_task
 import terrarun.models.user
@@ -82,8 +82,8 @@ class Workspace(Base, BaseObject):
     _operations = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="operations")
     _queue_all_runs = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="queue_all_runs")
     _speculative_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="speculative_enabled")
-    tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
-    _tool = sqlalchemy.orm.relationship("Tool")
+    tool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
+    _tool: Optional['terrarun.models.tool.Tool'] = sqlalchemy.orm.relationship("Tool")
     _trigger_prefixes = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_prefixes")
     _trigger_patterns = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="trigger_patterns")
 

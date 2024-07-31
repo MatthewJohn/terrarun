@@ -10,6 +10,7 @@ import terrarun.config
 import terrarun.database
 import terrarun.workspace_execution_mode
 import terrarun.models.agent
+import terrarun.models.plan
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
@@ -24,8 +25,8 @@ class Apply(TerraformCommand, Base):
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
-    plan_id = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
-    plan = sqlalchemy.orm.relationship("Plan", back_populates="applies")
+    plan_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
+    plan: 'terrarun.models.plan.Plan' = sqlalchemy.orm.relationship("Plan", back_populates="applies")
 
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="apply", uselist=False)
