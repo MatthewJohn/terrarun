@@ -35,7 +35,7 @@ export class AdminTerraformVersionService {
     return new Promise((resolve, reject) => {
       this.http.post<any>(
         `/api/v2/admin/terraform-versions`,
-        {'type': 'terraform-versions', 'attributes': attributes},
+        { data: { type: 'terraform-versions', 'attributes': attributes } },
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data: DataItem<ResponseObject<AdminTerraformVersion>>) => {
@@ -52,7 +52,7 @@ export class AdminTerraformVersionService {
     return new Promise((resolve, reject) => {
       this.http.patch<any>(
         `/api/v2/admin/terraform-versions/${toolId}`,
-        {'type': 'terraform-versions', 'id': toolId, 'attributes': attributes},
+        { data: { type: 'terraform-versions', 'attributes': attributes } },
         { headers: this.accountService.getAuthHeader() }
       ).subscribe({
         next: (data: DataItem<ResponseObject<AdminTerraformVersion>>) => {
