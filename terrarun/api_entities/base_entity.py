@@ -673,3 +673,15 @@ class ListEntityView(BaseView, ListEntity[EntityView]):
         """Handle abstract methods"""
         pass
 
+
+class ListRelationshipView(BaseRelationshipView, ListEntity[BaseRelationshipView]):
+
+    @classmethod
+    def from_object(cls, obj: List[Any], parent_view: 'EntityView') -> 'ListEntity':
+        """Create list entity object from list of model objects"""
+        return cls(
+            entities=[
+                cls._get_entity_class().from_object(obj=obj_itx, parent_view=parent_view)
+                for obj_itx in obj
+            ]
+        )
