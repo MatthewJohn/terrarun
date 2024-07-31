@@ -5,7 +5,7 @@
 import abc
 from enum import EnumMeta
 from datetime import datetime
-from typing import Tuple, Optional, List, Dict, Any
+from typing import Tuple, Optional, List, Dict, Any, TypeVar, Generic
 
 from flask import request
 
@@ -339,9 +339,15 @@ class BaseView(abc.ABC):
     response_code = 200
 
     @abc.abstractmethod
+    def get_data(self):
+        """Create response data for data"""
+        ...
+
     def to_dict(self):
         """Create response data"""
-        ...
+        return {
+            "data": self.get_data()
+        }
 
     def to_response(self, code=None):
         """Create response"""
@@ -363,6 +369,10 @@ class NestedAttributes(BaseEntity, BaseView):
     def to_dict(self):
         """Return just attributes"""
         return self.get_api_attributes()
+
+    def get_data(self):
+        """Implement abstract method"""
+        pass
 
     @classmethod
     def from_request(cls, request_args):
@@ -397,14 +407,18 @@ class EntityView(BaseEntity, BaseView):
         }
         return entity
 
-    def to_dict(self):
+    def get_data(self) -> Dict[str, Any]:
+        """Get data for entity"""
+        return {
+            "type": self.get_type(),
+            "id": self.get_id(),
+            "attributes": self.get_api_attributes()
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
         """Return view as dictionary"""
         response = {
-            "data": {
-                "type": self.get_type(),
-                "id": self.get_id(),
-                "attributes": self.get_api_attributes()
-            }
+            "data": self.get_data()
         }
         if self_link := self.get_self_link():
             response["links"] = self_link
@@ -425,29 +439,6 @@ class EntityView(BaseEntity, BaseView):
                 "self": self.link
             }
         return None
-
-
-class ListView(BaseView):
-    """View containing list of entities"""
-
-    def __init__(self, views: List['BaseView']):
-        """Member variables for list of views"""
-        self._views = views
-
-    def to_dict(self):
-        """Response dict"""
-        return {
-            "data": [
-                # Create nested list to allow inline conditional
-                # without running to_dict twice
-                view
-                for view in [
-                    view.to_dict().get("data")
-                    for view in self._views
-                ]
-                if view
-            ]
-        }
 
 
 class ApiErrorView(BaseEntity, BaseView):
@@ -483,10 +474,17 @@ class ApiErrorView(BaseEntity, BaseView):
 class BaseRelationshipView(BaseView):
     """Base relationship view"""
 
+    def get_data(self):
+        """Implement unused abstract method"""
+        pass
+
     @classmethod
     @abc.abstractmethod
     def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
-        """Return entity from object"""
+        """
+        Return entity from object
+        @TODO This method mixes replicates methods from BaseEntity
+        """
         ...
 
 
@@ -553,6 +551,13 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
         """Return entity from object"""
         return cls(parent_view=parent_view, id=cls.get_id_from_object(obj=obj))
 
+    def get_data(self) -> Dict[str, Any]:
+        """Get data"""
+        return {
+            "id": self.get_id(),
+            "type": self.get_type(),
+        }
+
     def to_dict(self) -> dict:
         """Return API repsonse data"""
         data = {}
@@ -560,10 +565,7 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
             data["links"] = {
                 "related": f"{self._parent_view.link}/{self.CHILD_PATH}"
             }
-        data["data"] = {
-            "id": self.get_id(),
-            "type": self.get_type(),
-        }
+        data["data"] = self.get_data()
         return data
 
 
@@ -597,11 +599,77 @@ class DataRelationshipView(BaseRelationshipView):
         """Return entity from object"""
         return cls(id=cls.get_id_from_object(obj=obj))
 
+    def get_data(self) -> Optional[Dict[str, Any]]:
+        """Return data object"""
+        return {
+            "id": self.get_id(),
+            "type": self.get_type()
+        } if self.get_id() else None
+
     def to_dict(self) -> dict:
         """Return API repsonse data"""
         return {
-            "data": {
-                "id": self.get_id(),
-                "type": self.get_type()
-            } if self.get_id() else None
+            "data": self.get_data()
         }
+
+
+TListEntityParent = TypeVar('TListEntityParent', bound=BaseEntity)
+
+class ListEntity(BaseEntity, Generic[TListEntityParent]):
+    """Wrapper for handling multiple entities"""
+
+    ENTITY_CLASS: 'TListEntityParent' = None
+
+    def __init__(self, entities: List['TListEntityParent']):
+        """Store member variables"""
+        self.entities: List['TListEntityParent'] = entities
+
+    @classmethod
+    def _get_entity_class(cls):
+        """Obtain entity class"""
+        if cls.ENTITY_CLASS is None:
+            raise NotImplementedError
+        return cls.ENTITY_CLASS
+
+    @classmethod
+    def from_object(cls, obj: List[Any], effective_user: terrarun.models.user.User) -> 'ListEntity':
+        """Create list entity object from list of model objects"""
+        return cls(
+            entities=[
+                cls._get_entity_class().from_object(obj=obj_itx, effective_user=effective_user)
+                for obj_itx in obj
+            ]
+        )
+
+    @classmethod
+    def _from_object(cls, obj: Any, effective_user: terrarun.models.user.User) -> 'ListEntity':
+        """Implement unused abstract method"""
+        pass
+
+
+class ListEntityView(BaseView, ListEntity[EntityView]):
+    """View containing list of entities"""
+
+    def get_data(self):
+        """Return data"""
+        return [
+            # Create nested list to allow inline conditional
+            # without running to_dict twice
+            view
+            for view in [
+                view.get_data()
+                for view in self.entities
+            ]
+            if view
+        ]
+
+    def to_dict(self):
+        """Response dict"""
+        return {
+            "data": self.get_data()
+        }
+
+    def _get_attributes(**kwargs):
+        """Handle abstract methods"""
+        pass
+

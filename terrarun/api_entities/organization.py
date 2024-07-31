@@ -17,6 +17,7 @@ from .base_entity import (
     RelatedRelationshipView,
     RelatedWithDataRelationshipView,
     DataRelationshipView,
+    ListEntityView,
     Attribute,
     AttributeModifier,
     ATTRIBUTED_REQUIRED,
@@ -200,3 +201,8 @@ class OrganizationView(OrganizationEntity, EntityView):
     def generate_link(obj: 'terrarun.models.organisation.Organisation'):
         """Generate self link from given objects"""
         return f'/api/v2/organizations/{obj.name}'
+
+
+class OrganisationListView(ListEntityView):
+
+    ENTITY_CLASS = OrganizationView
