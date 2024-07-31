@@ -333,30 +333,3 @@ Executed remotely on terrarun server
     def resource_changes(self, new_value):
         """Update resource_changes DB value"""
         self._resource_changes = new_value
-
-    def get_api_details(self):
-        """Return API details for plan"""
-        config = terrarun.config.Config()
-        return {
-            "id": self.api_id,
-            "type": "plans",
-            "attributes": {
-                "execution-details": {
-                    "mode": "remote",
-                },
-                "has-changes": self.has_changes,
-                "resource-additions": self.resource_additions,
-                "resource-changes": self.resource_changes,
-                "resource-destructions": self.resource_destructions,
-                "status": self.status.value,
-                "status-timestamps": self.status_timestamps,
-                "log-read-url": f"{config.BASE_URL}/api/v2/plans/{self.api_id}/log"
-            },
-            "relationships": {
-                "state-versions": {'data': {'id': self.state_version.api_id, 'type': 'state-versions'}} if self.state_version else {}
-            },
-            "links": {
-                "self": f"/api/v2/plans/{self.api_id}",
-                "json-output": f"/api/v2/plans/{self.api_id}/json-output"
-            }
-        }

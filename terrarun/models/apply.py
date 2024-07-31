@@ -138,34 +138,3 @@ Executed remotely on terrarun server
             })
 
         return relationships
-
-    def get_api_details(self):
-        """Return API details for apply"""
-        config = terrarun.config.Config()
-        return {
-            "id": self.api_id,
-            "type": "applies",
-            "attributes": {
-                "execution-details": {
-                    # "agent-id": "agent-S1Y7tcKxXPJDQAvq",
-                    # "agent-name": "agent_01",
-                    # "agent-pool-id": "apool-Zigq2VGreKq7nwph",
-                    # "agent-pool-name": "first-pool",
-                    # "mode": "agent",
-                },
-                "status": self.status.value,
-                "status-timestamps": self.status_timestamps,
-                "log-read-url": f"{config.BASE_URL}/api/v2/applies/{self.api_id}/log",
-                "resource-additions": 0,
-                "resource-changes": 0,
-                "resource-destructions": 0
-            },
-            "relationships": {
-                "state-versions": {
-                    "data": self.state_version_relationships
-                }
-            },
-            "links": {
-                "self": f"/api/v2/applies/{self.api_id}"
-            }
-        }
