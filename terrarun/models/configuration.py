@@ -2,18 +2,15 @@
 # SPDX-License-Identifier: GPL-2.0
 
 import os
-import subprocess
-import json
 from enum import Enum
 from typing import Optional
 from tarfile import TarFile
-from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import sqlalchemy
 import sqlalchemy.orm
 from terrarun.api_error import ApiError
 from terrarun.api_request import ApiRequest
-import terrarun.config
 from terrarun.logger import get_logger
 
 from terrarun.models.base_object import BaseObject
@@ -353,10 +350,8 @@ terraform {
         
         upload_path = f'/api/v2/upload-configuration/{self.api_id}'
 
-        signer = terrarun.presign.RequestSigner()
-        signature = signer.sign(effective_user, upload_path)
-
-        return f'{terrarun.config.Config().BASE_URL}{upload_path}{signature}'
+        url_generator = terrarun.presign.PresignedUrlGenerator()
+        return url_generator.create_url(effective_user, upload_path)
 
     def get_api_details(self, effective_user: terrarun.models.user.User, api_request: Optional[ApiRequest] = None):
         """Return API details."""

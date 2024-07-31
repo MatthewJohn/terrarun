@@ -4,6 +4,8 @@
 
 import base64
 import json
+from dataclasses import dataclass
+from datetime import datetime
 
 from cryptography.fernet import Fernet
 from werkzeug.wrappers.request import Request
@@ -34,49 +36,75 @@ class Presign:
             return None
 
 
-class RequestSignerException(Exception):
-    pass
+@dataclass
+class RequestSignature:
+    """Class containing the request signature data."""
+
+    user_id: str
+    path: str
+    created_at: datetime
+
+    def serialize(self) -> str:
+        data = {
+            "user_id": self.user_id,
+            "path": self.path,
+            "created_at": self.created_at.isoformat(),
+        }
+        return json.dumps(data)
+
+    @staticmethod
+    def deserialise(serialized: str):
+        data = json.loads(serialized)
+
+        if data is None:
+            return None
+
+        return RequestSignature(**data)
 
 
-class RequestSigner:
+class PresignedUrlGenerator:
     """Interface to sign and verify requests"""
 
     ARG_NAME = "sigkey"
 
-    def sign(self, effective_user: User, path: str) -> str:
+    def create_url(self, effective_user: User, path: str) -> str:
         """Return signature for the url"""
 
-        signature_data = {}
-        signature_data["user_id"] = effective_user.id
-
-        # @TODO include query string and replace with a hash
-        signature_data["path"] = path
+        signature_data = RequestSignature(effective_user.id, path, datetime.now())
 
         presign = Presign()
-        signature = presign.encrypt(json.dumps(signature_data))
+        signature = presign.encrypt(signature_data.serialize())
 
-        return f'?{self.ARG_NAME}={signature}'
+        return f"{terrarun.config.Config().BASE_URL}{path}?{self.ARG_NAME}={signature}"
 
-    def verify(self, request: Request) -> str:
+
+class PresignedRequestValidatorError(Exception):
+    pass
+
+
+class PresignedRequestValidator:
+    def validate(self, request: Request) -> str:
         """Verify the request and return the effective user id"""
 
-        signature_list = request.args.getlist(self.ARG_NAME)
+        signature_list = request.args.getlist(PresignedUrlGenerator.ARG_NAME)
         if len(signature_list) < 1:
-            raise RequestSignerException("Signature not found.")
+            raise PresignedRequestValidatorError("Signature not found.")
         if len(signature_list) > 1:
-            raise RequestSignerException("Multiple signatures found.")
+            raise PresignedRequestValidatorError("Multiple signatures found.")
 
         presign = Presign()
         signature_data_json = presign.decrypt(signature_list[0])
 
         if signature_data_json is None:
-            raise RequestSignerException("Failed to decode signature.")
+            raise PresignedRequestValidatorError("Failed to decode signature.")
 
-        signature_data: dict | None = json.loads(signature_data_json)
+        signature_data = RequestSignature.deserialise(signature_data_json)
         if signature_data is None:
-            raise RequestSignerException("Failed to parse signature data.")
+            raise PresignedRequestValidatorError("Failed to parse signature data.")
 
-        if signature_data["path"] != request.path:
-            raise RequestSignerException("Signature path does not match.")
+        if signature_data.path != request.path:
+            raise PresignedRequestValidatorError("Signature path does not match.")
 
-        return signature_data["user_id"]
+        # @TODO Check the creation date and add a time limit
+
+        return signature_data.user_id
