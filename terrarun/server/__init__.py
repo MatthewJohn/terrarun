@@ -3473,6 +3473,8 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 return {}, 204
 
             tool = job.run.tool if job.run.tool else job.run.configuration_version.workspace.tool
+            if not tool:
+                return {}, 204
 
             # Generate user token for run
             token = UserToken.create_agent_job_token(job=job)
