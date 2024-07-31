@@ -3492,7 +3492,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 # @TODO Improve this
                 entity.assign_to_agent(agent=agent, execution_mode=execution_mode)
             else:
-                job_sub_task_id = job.run.plan.apply.api_id
+                entity = job.run.plan.apply
                 entity.assign_to_agent(agent=agent, execution_mode=execution_mode)
 
             job_sub_task_id = entity.api_id
