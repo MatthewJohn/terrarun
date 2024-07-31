@@ -59,6 +59,7 @@ class ApplyEntity(BaseEntity):
 
     @classmethod
     def _get_attributes(cls):
+        """Get all entity attributes"""
         return (
             Attribute("resource-additions", "resource_additions", int, ATTRIBUTED_REQUIRED),
             Attribute("resource-changes", "resource_changes", int, ATTRIBUTED_REQUIRED),
@@ -71,7 +72,7 @@ class ApplyEntity(BaseEntity):
 
     @classmethod
     def _from_object(cls, obj: 'terrarun.models.apply.Apply', effective_user: 'terrarun.models.user.User'):
-        """Convert object to saml settings entity"""
+        """Convert object to apply entity"""
         return cls(
             id=obj.api_id,
             attributes={

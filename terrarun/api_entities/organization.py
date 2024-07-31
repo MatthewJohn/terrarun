@@ -60,7 +60,7 @@ class OrganizationEntity(BaseEntity):
 
     @classmethod
     def _from_object(cls, obj: 'terrarun.models.organisation.Organisation', effective_user: 'terrarun.models.user.User'):
-        """Convert object to saml settings entity"""
+        """Convert object to organisation entity"""
         permission = terrarun.permissions.organisation.OrganisationPermissions(current_user=effective_user, organisation=obj)
         return cls(
             id=obj.name_id,

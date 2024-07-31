@@ -70,7 +70,7 @@ class PlanEntity(BaseEntity):
 
     @classmethod
     def _from_object(cls, obj: 'terrarun.models.plan.Plan', effective_user: 'terrarun.models.user.User'):
-        """Convert object to saml settings entity"""
+        """Convert object to plan entity"""
         return cls(
             id=obj.api_id,
             attributes={
