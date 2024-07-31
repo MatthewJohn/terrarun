@@ -35,9 +35,9 @@ export class TerraformVersionsComponent implements OnInit {
     'sha': 'Checksum SHA',
     'enabled': 'Enabled',
     'deprecated': 'Deprecated',
-    'deprecated-message': 'Deprecated warning'
+    'deprecated-reason': 'Deprecated warning'
   };
-  tableColumns: string[] = ['version', 'url', 'checksum-url', 'sha', 'enabled', 'deprecated', 'deprecated-message'];
+  tableColumns: string[] = ['version', 'url', 'checksum-url', 'sha', 'enabled', 'deprecated', 'deprecated-reason'];
 
   constructor(
     private adminTerraformVersionService: AdminTerraformVersionService,
