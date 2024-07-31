@@ -2,10 +2,11 @@
 # SPDX-License-Identifier: GPL-2.0
 
 
-import datetime
+from typing import Any, List, Optional
 
 import terrarun.models.organisation
 import terrarun.models.user
+import terrarun.models.state_version
 import terrarun.workspace_execution_mode
 import terrarun.models.apply
 import terrarun.terraform_command
@@ -13,18 +14,48 @@ import terrarun.config
 
 from .base_entity import (
     BaseEntity,
-    NestedAttributes,
+    DataRelationshipView,
     EntityView,
     Attribute,
+    ListRelationshipView,
     ATTRIBUTED_REQUIRED,
 )
 from .agent_execution_details import AgentExecutionDetailsEntity
 from .execution_status_timestamps import ExecutionStatusTimestampsEntity
 
 
+class StateVersionsRelationship(DataRelationshipView):
+
+    TYPE = "state-versions"
+
+    @classmethod
+    def get_id_from_object(cls, obj: 'terrarun.models.state_version.StateVersion') -> Optional[str]:
+        """Get state version ID"""
+        return obj.api_id
+
+
+class StateVersionListRelationship(ListRelationshipView):
+
+    ENTITY_CLASS = StateVersionsRelationship
+
+    @classmethod
+    def _get_objects(cls, obj: 'terrarun.models.apply.Apply') -> List['terrarun.models.state_version.StateVersion']:
+        """Return state versions"""
+        state_versions = []
+        if obj.state_version:
+            state_versions.append(obj.state_version)
+        if obj.plan.state_version:
+            state_versions.append(obj.state_version)
+        return state_versions
+
+
 class ApplyEntity(BaseEntity):
 
     type = "applies"
+
+    RELATIONSHIPS = {
+        "state-versions": StateVersionListRelationship,
+    }
 
     @classmethod
     def _get_attributes(cls):
