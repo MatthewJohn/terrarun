@@ -98,8 +98,3 @@ class TerraformVersionUpdateEntity(TerraformVersionEntity):
         "enabled": AttributeModifier(default=UNDEFINED),
     }
 
-
-class TerraformVersionView(TerraformVersionEntity, EntityView):
-    """View for terraform-version"""
-
-    pass

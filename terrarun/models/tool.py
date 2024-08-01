@@ -29,12 +29,11 @@ from terrarun.object_storage import ObjectStorage
 
 logger = get_logger(__name__)
 
-
 class ToolType(Enum):
-
     TERRAFORM_VERSION = "terraform-versions"
 
-ToolType.TERRAFORM_VERSION.display_name = "terraform"
+    def __str__(self):
+        return str(self.value)
 
 
 class Tool(Base, BaseObject):

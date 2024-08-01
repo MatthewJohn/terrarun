@@ -3,6 +3,7 @@
 
 
 from flask import request
+from flask_restful import Resource, Api, marshal_with, fields
 
 from terrarun.api_entities.base_entity import ListView
 from terrarun.api_entities.terraform_version import (
@@ -22,6 +23,25 @@ from terrarun.errors import (
 from terrarun.models.tool import Tool, ToolType
 from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
+
+
+tool_fields = {
+    'id': fields.String(attribute='api_id'),
+    'type': fields.String(attribute='tool_type'),
+    'attributes': {
+        'version': fields.String,
+        'url': fields.String(attribute='custom_url'),
+        'sha': fields.String,
+        'checksum-url': fields.String(attribute='custom_checksum_url'),
+        'official': fields.Boolean,
+        'deprecated': fields.Boolean,
+        'deprecated-reason': fields.String(attribute='deprecated_reason'),
+        'enabled': fields.Boolean,
+        'beta': fields.Boolean,
+        'usage': fields.Integer,
+        'created-at': fields.DateTime(attribute='created_at', dt_format='iso8601'),
+    }
+}
 
 
 class ApiAdminTerraformVersionsBase(AuthenticatedEndpoint):
@@ -74,6 +94,8 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         """Can only be access by site admins"""
         return current_user.site_admin
 
+
+    @marshal_with(tool_fields, envelope="data")
     def _get(self, current_user, current_job):
         """Provide list of terraform versions"""
         version_filter = request.args.get("filter[version]", None)
@@ -87,23 +109,17 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         else:
             version = version_exact = None
 
-        terraform_version_list = Tool.get_list(
+        return Tool.get_list(
             tool_type=ToolType.TERRAFORM_VERSION,
             version=version,
             version_exact=version_exact,
         )
-        views = [
-            TerraformVersionView.from_object(
-                terraform_version, effective_user=current_user
-            )
-            for terraform_version in terraform_version_list
-        ]
-        return ListView(views=views).to_response()
 
     def check_permissions_post(self, current_user, current_job):
         """Can only be access by site admins"""
         return current_user.site_admin
 
+    @marshal_with(tool_fields, envelope="data")
     def _post(self, current_user, current_job):
         """Create terraform version"""
         err, create_entity = TerraformVersionCreateEntity.from_request(request.json)
@@ -117,10 +133,7 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
             Tool.upsert_by_version, create_kwargs
         )
 
-        view = TerraformVersionView.from_object(
-            terraform_version, effective_user=current_user
-        )
-        return view.to_response()
+        return terraform_version
 
 
 class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
@@ -130,19 +143,26 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
         """Can only be access by site admins"""
         return current_user.site_admin
 
+    @marshal_with(tool_fields, envelope='data')
     def _get(self, current_user, current_job, tool_id):
         """Provide details about terraform version"""
+        
         tool = Tool.get_by_api_id(tool_id)
-        view = TerraformVersionView.from_object(tool, effective_user=current_user)
-        return view.to_response()
+        if tool is None:
+            raise ApiError("Tool not found", "Tool not found", status = 404)
+        
+        return tool
 
     def check_permissions_patch(self, current_user, current_job, tool_id):
         """Can only be access by site admins"""
         return current_user.site_admin
 
+    @marshal_with(tool_fields, envelope="data")
     def _patch(self, current_user, current_job, tool_id):
         """Update attributes of terraform version"""
         terraform_version = Tool.get_by_api_id(tool_id)
+        if terraform_version is None:
+            raise ApiError("Tool not found", "Tool not found", status = 404)
 
         err, update_entity = TerraformVersionUpdateEntity.from_request(request.json)
         if err:
@@ -153,10 +173,7 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
             terraform_version.update_attributes, update_kwargs
         )
 
-        view = TerraformVersionView.from_object(
-            terraform_version, effective_user=current_user
-        )
-        return view.to_response()
+        return terraform_version
 
     def check_permissions_delete(self, current_user, current_job, tool_id):
         """Can only be access by site admins"""
@@ -166,6 +183,9 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
         """Delete terraform version"""
 
         tool = Tool.get_by_api_id(tool_id)
+        if tool is None:
+            raise ApiError("Tool not found", "Tool not found", status = 404)
+
         tool.delete()
 
         return {}, 200
