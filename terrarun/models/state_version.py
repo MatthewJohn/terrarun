@@ -58,10 +58,9 @@ class StateVersion(Base, BaseObject):
     created_by_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=True)
     created_by: 'terrarun.models.user.User' = sqlalchemy.orm.relationship("User")
 
-    # @TODO Make this a new column in the database
-    # Once terrarun add support for asynchronous upload (#166) or lifecycle for
-    # the state versions this will no longer be a static value
-    status = StateVersionStatus.FINALIZED
+    status: StateVersionStatus = sqlalchemy.Column(sqlalchemy.Enum(StateVersionStatus),
+                                                   nullable=False,
+                                                   default=StateVersionStatus.PENDING)
 
     @property
     def state_json(self):
@@ -160,8 +159,8 @@ class StateVersion(Base, BaseObject):
         for output_name, output_data in self.state_json.get("outputs").items():
             StateVersionOutput.create_from_state_output(state_version=self, name=output_name, data=output_data)
 
-        # Set resources_processed to True
-        self.update_attributes(resources_processed=True)
+        # Set resources_processed to True and mark as finalized
+        self.update_attributes(resources_processed=True, status=StateVersionStatus.FINALIZED)
 
     def get_api_details(self):
         """Return API details."""
