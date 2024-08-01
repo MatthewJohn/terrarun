@@ -44,6 +44,9 @@ class Agent(Base, BaseObject):
     status: Optional[AgentStatus] = sqlalchemy.Column(sqlalchemy.Enum(AgentStatus), default=None)
     last_ping_at: datetime = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
+    plans = sqlalchemy.orm.relation("Plan", back_populates="agent")
+    applies = sqlalchemy.orm.relation("Apply", back_populates="agent")
+
     agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id"), nullable=True)
     agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relationship("AgentPool", back_populates="agents")
 

@@ -33,7 +33,7 @@ class AgentPoolEntity(BaseEntity):
 
     @classmethod
     def _from_object(cls, obj: 'terrarun.models.agent_pool.AgentPool', effective_user: 'terrarun.models.user.User'):
-        """Convert object to saml settings entity"""
+        """Convert object to agent pool entity"""
         return cls(
             id=obj.api_id,
             attributes={

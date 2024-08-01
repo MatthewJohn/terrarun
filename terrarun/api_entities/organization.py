@@ -17,6 +17,7 @@ from .base_entity import (
     RelatedRelationshipView,
     RelatedWithDataRelationshipView,
     DataRelationshipView,
+    ListEntityView,
     Attribute,
     AttributeModifier,
     ATTRIBUTED_REQUIRED,
@@ -59,7 +60,7 @@ class OrganizationEntity(BaseEntity):
 
     @classmethod
     def _from_object(cls, obj: 'terrarun.models.organisation.Organisation', effective_user: 'terrarun.models.user.User'):
-        """Convert object to saml settings entity"""
+        """Convert object to organisation entity"""
         permission = terrarun.permissions.organisation.OrganisationPermissions(current_user=effective_user, organisation=obj)
         return cls(
             id=obj.name_id,
@@ -200,3 +201,8 @@ class OrganizationView(OrganizationEntity, EntityView):
     def generate_link(obj: 'terrarun.models.organisation.Organisation'):
         """Generate self link from given objects"""
         return f'/api/v2/organizations/{obj.name}'
+
+
+class OrganisationListView(ListEntityView):
+
+    ENTITY_CLASS = OrganizationView

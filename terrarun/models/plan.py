@@ -4,6 +4,7 @@
 import json
 import os
 import subprocess
+from typing import Optional
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -11,9 +12,12 @@ import sqlalchemy.orm
 import terrarun.config
 import terrarun.models.audit_event
 import terrarun.utils
+import terrarun.models.apply
+import terrarun.models.agent
 from terrarun.database import Base, Database
 from terrarun.logger import get_logger
 from terrarun.models.blob import Blob
+import terrarun.workspace_execution_mode
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
 logger = get_logger(__name__)
@@ -47,6 +51,12 @@ class Plan(TerraformCommand, Base):
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
     log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
 
+    agent_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_apply_agent_id"), nullable=True)
+    agent: Optional['terrarun.models.agent.Agent'] = sqlalchemy.orm.relationship("Agent", back_populates="plans")
+    execution_mode: Optional['terrarun.workspace_execution_mode.WorkspaceExecutionMode'] = sqlalchemy.Column(
+        sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
+        nullable=True, default=None)
+
     ## Attributes provided by terraform agent
     _has_changes = sqlalchemy.Column(sqlalchemy.Boolean, default=None, nullable=True, name="has_changes")
     _resource_additions = sqlalchemy.Column(sqlalchemy.Integer, default=None, nullable=True, name="resource_additions")
@@ -69,11 +79,19 @@ class Plan(TerraformCommand, Base):
         return plan
 
     @property
-    def apply(self):
+    def apply(self) -> Optional['terrarun.models.apply.Apply']:
         """Get latest apply"""
         if self.applies:
             return self.applies[-1]
         return None
+
+    def assign_to_agent(self, agent: 'terrarun.models.agent.Agent', execution_mode: 'terrarun.workspace_execution_mode.WorkspaceExecutionMode'):
+        """Assign plan to agent and set current execution mode"""
+        self.agent = agent
+        self.execution_mode = execution_mode
+        session = Database.get_session()
+        session.add(self)
+        session.commit()
 
     def execute(self):
         """Execute plan"""
@@ -315,30 +333,3 @@ Executed remotely on terrarun server
     def resource_changes(self, new_value):
         """Update resource_changes DB value"""
         self._resource_changes = new_value
-
-    def get_api_details(self):
-        """Return API details for plan"""
-        config = terrarun.config.Config()
-        return {
-            "id": self.api_id,
-            "type": "plans",
-            "attributes": {
-                "execution-details": {
-                    "mode": "remote",
-                },
-                "has-changes": self.has_changes,
-                "resource-additions": self.resource_additions,
-                "resource-changes": self.resource_changes,
-                "resource-destructions": self.resource_destructions,
-                "status": self.status.value,
-                "status-timestamps": self.status_timestamps,
-                "log-read-url": f"{config.BASE_URL}/api/v2/plans/{self.api_id}/log"
-            },
-            "relationships": {
-                "state-versions": {'data': {'id': self.state_version.api_id, 'type': 'state-versions'}} if self.state_version else {}
-            },
-            "links": {
-                "self": f"/api/v2/plans/{self.api_id}",
-                "json-output": f"/api/v2/plans/{self.api_id}/json-output"
-            }
-        }

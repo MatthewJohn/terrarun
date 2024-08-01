@@ -16,6 +16,7 @@ import terrarun.models.apply
 import terrarun.models.plan
 import terrarun.models.state_version
 import terrarun.terraform_command
+import terrarun.models.tool
 import terrarun.utils
 import terrarun.models.configuration
 import terrarun.models.user
@@ -112,8 +113,8 @@ class Run(Base, BaseObject):
     _replace_addrs = sqlalchemy.Column("replace_addrs", terrarun.database.Database.GeneralString)
     _target_addrs = sqlalchemy.Column("target_addrs", terrarun.database.Database.GeneralString)
     _variables = sqlalchemy.Column("variables", terrarun.database.Database.GeneralString)
-    tool_id = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
-    tool = sqlalchemy.orm.relationship("Tool")
+    tool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("tool.id"), nullable=True)
+    tool: Optional['terrarun.models.tool.Tool'] = sqlalchemy.orm.relationship("Tool")
     allow_empty_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
@@ -503,7 +504,7 @@ class Run(Base, BaseObject):
         session.commit()
 
     @property
-    def plan(self):
+    def plan(self) -> Optional['terrarun.models.plan.Plan']:
         """Get latest plan"""
         if self.plans:
             return self.plans[-1]
