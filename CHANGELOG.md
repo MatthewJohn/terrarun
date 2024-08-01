@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.60.2](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.60.1...v0.60.2) (2024-08-01)
+
+
+### Bug Fixes
+
+* official should be true when custom url is empty ([ecf67af](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/ecf67af9950cf6a83aa9aab748521c5e8da1d877))
+
 ## [0.60.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.60.0...v0.60.1) (2024-08-01)
 
 
