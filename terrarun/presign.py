@@ -12,6 +12,7 @@ from werkzeug.wrappers.request import Request
 
 import terrarun.config
 from terrarun.models.user import User
+from terrarun.utils import datetime_from_json
 
 
 class Presign:
@@ -59,7 +60,11 @@ class RequestSignature:
         if data is None:
             return None
 
-        return RequestSignature(**data)
+        return RequestSignature(
+            user_id=data.get("user_id"),
+            path=data.get("path"),
+            created_at=datetime_from_json(data.get("created_at")),
+        )
 
 
 class PresignedUrlGenerator:
