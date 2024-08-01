@@ -5,7 +5,7 @@
 import abc
 from enum import EnumMeta
 from datetime import datetime
-from typing import Tuple, Optional, List, Dict, Any
+from typing import Tuple, Optional, List, Dict, Any, TypeVar, Union, Generic
 
 from flask import request
 
@@ -15,13 +15,28 @@ import terrarun.models.base_object
 from terrarun.utils import datetime_to_json, datetime_from_json
 
 
-UNDEFINED = object()
-ATTRIBUTED_REQUIRED = object()
+class BaseDefaultAttribute:
+
+    pass
+
+
+class UndefinedType(BaseDefaultAttribute):
+
+    pass
+
+
+class AttributeRequiredType(BaseDefaultAttribute):
+
+    pass
+
+
+UNDEFINED = UndefinedType()
+ATTRIBUTED_REQUIRED = AttributeRequiredType()
 
 
 class Attribute:
 
-    def __init__(self, req_attribute, obj_attribute, type, default, nullable=True):
+    def __init__(self, req_attribute: str, obj_attribute: str, type: Any, default: Optional[Union[Any, BaseDefaultAttribute]], nullable: bool=True):
         """Store member variables"""
         self.req_attribute = req_attribute
         self.obj_attribute = obj_attribute
@@ -29,7 +44,7 @@ class Attribute:
         self.default = default
         self.nullable = nullable
 
-    def convert_entity_data_to_api(self, value):
+    def convert_entity_data_to_api(self, value: Any) -> Any:
         """Convert data to API type"""
         if self.type in [str, bool, int]:
             return value
@@ -51,7 +66,7 @@ class Attribute:
 
         raise Exception(f"Unknown data type: {self.type}: {value}")
 
-    def validate_request_data(self, request_attributes):
+    def validate_request_data(self, request_attributes: Dict[str, Any]):
         """Validate request attributes and return key and value from request"""
         # Ignore any attributes that don't have a request mapping
         if self.req_attribute is None:
@@ -124,13 +139,21 @@ class Attribute:
         return None, self.obj_attribute, val
 
 
+class AttributeModifierUnset:
+
+    pass
+
 
 class AttributeModifier:
     """Provide encapulsation of modifications to be mae to Attribute"""
 
-    UNSET = object()
+    UNSET = AttributeModifierUnset()
 
-    def __init__(self, req_attribute=UNSET, type=UNSET, default=UNSET, nullable=UNSET):
+    def __init__(self,
+                 req_attribute: Union[str, AttributeModifierUnset]=UNSET,
+                 type: Union[Any, AttributeModifierUnset]=UNSET,
+                 default: Union[Any, AttributeModifierUnset]=UNSET,
+                 nullable: Union[bool, AttributeModifierUnset]=UNSET):
         """Store modifications"""
         self._req_attribute = req_attribute
         self._type = type
@@ -149,7 +172,11 @@ class AttributeModifier:
             attribute.nullable = self._nullable
 
 
-class BaseEntity(abc.ABC):
+TBaseEntity = TypeVar('TBaseEntity', bound='BaseEntity[Any, Any]')
+TModel = TypeVar('TModel', bound='terrarun.models.base_object.BaseObject')
+
+
+class BaseEntity(abc.ABC, Generic[TBaseEntity, TModel]):
     """Base entity"""
 
     id: Optional[str] = None
@@ -171,13 +198,13 @@ class BaseEntity(abc.ABC):
                 else UNDEFINED
             )
 
-    def get_type(self):
+    def get_type(self) -> str:
         """Return entity type"""
         if self.type is None:
             raise NotImplementedError
         return self.type
 
-    def get_id(self):
+    def get_id(self) -> str:
         """Return ID"""
         if self.id is None:
             raise NotImplementedError
@@ -205,14 +232,14 @@ class BaseEntity(abc.ABC):
             attributes.append(attribute)
         return attributes
 
-    def get_api_attributes(self):
+    def get_api_attributes(self) -> Dict[str, Any]:
         """Return API attributes for entity"""
         return {
             attribute.req_attribute: attribute.convert_entity_data_to_api(self._attribute_values[attribute.obj_attribute])
             for attribute in self.get_attributes()
         }
 
-    def get_set_object_attributes(self):
+    def get_set_object_attributes(self) -> Dict[str, Any]:
         """Return all set object attributes, used when updating models"""
         return {
             attr.obj_attribute: self._attribute_values[attr.obj_attribute]
@@ -222,22 +249,22 @@ class BaseEntity(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def _from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def _from_object(cls: TBaseEntity, obj: TModel, effective_user: 'terrarun.models.user.User') -> 'TBaseEntity':
         """Return entity from object"""
         ...
 
     @classmethod
-    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def from_object(cls: TBaseEntity, obj: TModel, effective_user: 'terrarun.models.user.User') -> 'TBaseEntity':
         """Return entity from object"""
         return cls._from_object(obj=obj, effective_user=effective_user)
 
     @staticmethod
-    def generate_link(obj: Any):
+    def generate_link(obj: TModel) -> Optional[str]:
         """Generate self link from given objects"""
         return None
 
     @classmethod
-    def from_request(cls, request_args, create=False):
+    def from_request(cls: TBaseEntity, request_args: Dict[str, Any], create: bool=False) -> TBaseEntity:
         """
         Obtain entity object from request
         
@@ -274,21 +301,27 @@ class BaseEntity(abc.ABC):
         return None, cls(id=id_, attributes=obj_attributes)
 
 
-class BaseView(abc.ABC):
+TBaseView = TypeVar('TBaseView', bound='BaseView[Any]')
+
+
+class BaseView(abc.ABC, Generic[TBaseView]):
     
     response_code = 200
 
     @abc.abstractmethod
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Create response data"""
         ...
 
-    def to_response(self, code=None):
+    def to_response(self, code=None) -> Tuple[Dict[str, Any], int]:
         """Create response"""
         return self.to_dict(), code if code is not None else self.response_code
 
 
-class EntityView(BaseEntity, BaseView):
+TBaseEntityView = TypeVar('TBaseEntityView', bound='EntityView[Any, Any]')
+
+
+class EntityView(BaseEntity[TBaseEntityView, TModel], BaseView):
     """Return view for entity"""
 
     RELATIONSHIPS: Dict[str, 'BaseRelationshipView'] = {}
@@ -296,14 +329,14 @@ class EntityView(BaseEntity, BaseView):
     def __init__(
             self,
             id: str = None,
-            attributes: Optional[Dict[str, Any]]= None):
+            attributes: Optional[Dict[str, Any]]=None):
         """Store member variables for relationships"""
         super().__init__(id, attributes)
         self.relationships: Dict[str, 'BaseRelationshipView'] = {}
         self.link: Optional[str] = None
 
     @classmethod
-    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def from_object(cls, obj: TModel, effective_user: 'terrarun.models.user.User') -> TBaseEntityView:
         """Return entity from object"""
         entity = cls._from_object(obj=obj, effective_user=effective_user)
         entity.link = cls.generate_link(obj=obj)
@@ -334,7 +367,7 @@ class EntityView(BaseEntity, BaseView):
 
         return response
 
-    def get_self_link(self):
+    def get_self_link(self) -> Optional[Dict[str, str]]:
         """Get link for self"""
         if self.link:
             return {
@@ -350,7 +383,7 @@ class ListView(BaseView):
         """Member variables for list of views"""
         self._views = views
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, str]:
         """Response dict"""
         return {
             "data": [
@@ -401,10 +434,12 @@ class BaseRelationshipView(BaseView):
 
     @classmethod
     @abc.abstractmethod
-    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
+    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'TBaseEntityView':
         """Return entity from object"""
         ...
 
+
+TRelatedRelationshipView = TypeVar('TRelatedRelationshipView', bound='RelatedRelationshipView[Any]')
 
 class RelatedRelationshipView(BaseRelationshipView):
     """Base relationship for related"""
