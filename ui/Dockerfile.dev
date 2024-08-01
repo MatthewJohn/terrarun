@@ -16,4 +16,4 @@ COPY . /app
 ENV PORT=3000
 EXPOSE 3000
 
-CMD [ "ng", "serve", "--host", "0.0.0.0", "--disable-host-check" ]
+CMD [ "ng", "serve", "--port", "3000", "--host", "0.0.0.0", "--disable-host-check" ]
