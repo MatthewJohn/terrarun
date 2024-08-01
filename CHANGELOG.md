@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.60.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.60.0...v0.60.1) (2024-08-01)
+
+
+### Bug Fixes
+
+* Align the dev UI port to 3000 ([cc0be72](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/cc0be7284366ec90ef97c7d22df91ee7ee7f95ca))
+
 # [0.60.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.59.2...v0.60.0) (2024-07-30)
 
 
