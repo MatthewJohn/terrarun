@@ -207,7 +207,7 @@ class Tool(Base, BaseObject):
     @property
     def official(self):
         """Determine if the release is official, based on whether the URL has been overriden"""
-        return bool(self.custom_url)
+        return not self.custom_url
 
     @property
     def beta(self):
