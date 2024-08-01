@@ -133,6 +133,10 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
     def _get(self, current_user, current_job, tool_id):
         """Provide details about terraform version"""
         tool = Tool.get_by_api_id(tool_id)
+        
+        if tool is None:
+            raise ApiError("Tool not found", "Tool not found", status = 404)
+
         view = TerraformVersionView.from_object(tool, effective_user=current_user)
         return view.to_response()
 
@@ -143,6 +147,9 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
     def _patch(self, current_user, current_job, tool_id):
         """Update attributes of terraform version"""
         terraform_version = Tool.get_by_api_id(tool_id)
+        
+        if terraform_version is None:
+            raise ApiError("Tool not found", "Tool not found", status = 404)
 
         err, update_entity = TerraformVersionUpdateEntity.from_request(request.json)
         if err:
@@ -166,6 +173,10 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
         """Delete terraform version"""
 
         tool = Tool.get_by_api_id(tool_id)
+        
+        if tool is None:
+            raise ApiError("Tool not found", "Tool not found", status = 404)
+ 
         tool.delete()
 
         return {}, 200
