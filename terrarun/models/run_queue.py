@@ -25,6 +25,7 @@ class JobQueueType(Enum):
     APPLY = "apply"
     POLICY = "policy"
     ASSESSMENT = "assessment"
+    TEST = "test"
 
 
 class RunQueue(Base, BaseObject):
