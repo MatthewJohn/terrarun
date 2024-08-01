@@ -26,7 +26,7 @@ class Plan(TerraformCommand, Base):
     __tablename__ = 'plan'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
     run = sqlalchemy.orm.relationship("Run", back_populates="plans")
@@ -34,18 +34,18 @@ class Plan(TerraformCommand, Base):
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="plan", uselist=False)
 
-    applies = sqlalchemy.orm.relation("Apply", back_populates="plan")
+    applies = sqlalchemy.orm.relationship("Apply", back_populates="plan")
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
 
     plan_output_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    _plan_output = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_id])
+    _plan_output = sqlalchemy.orm.relationship("Blob", foreign_keys=[plan_output_id])
     plan_output_binary_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    _plan_output_binary = sqlalchemy.orm.relation("Blob", foreign_keys=[plan_output_binary_id])
+    _plan_output_binary = sqlalchemy.orm.relationship("Blob", foreign_keys=[plan_output_binary_id])
     providers_schemas_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    _providers_schemas = sqlalchemy.orm.relation("Blob", foreign_keys=[providers_schemas_id])
+    _providers_schemas = sqlalchemy.orm.relationship("Blob", foreign_keys=[providers_schemas_id])
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
+    log = sqlalchemy.orm.relationship("Blob", foreign_keys=[log_id])
 
     ## Attributes provided by terraform agent
     _has_changes = sqlalchemy.Column(sqlalchemy.Boolean, default=None, nullable=True, name="has_changes")

@@ -22,7 +22,7 @@ class Environment(Base, BaseObject):
     __tablename__ = 'environment'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     description = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
@@ -32,11 +32,11 @@ class Environment(Base, BaseObject):
         nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="environments")
 
-    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="environment")
-    lifecycle_environments = sqlalchemy.orm.relation("LifecycleEnvironment", back_populates="environment")
+    workspaces = sqlalchemy.orm.relationship("Workspace", back_populates="environment")
+    lifecycle_environments = sqlalchemy.orm.relationship("LifecycleEnvironment", back_populates="environment")
 
     default_agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_environment_default_agent_pool_id"), nullable=True)
-    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[default_agent_pool_id])
+    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relationship("AgentPool", foreign_keys=[default_agent_pool_id])
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):

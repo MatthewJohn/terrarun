@@ -23,11 +23,11 @@ class IngressAttribute(Base, BaseObject):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     branch = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     commit_message_blob_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="ingress_attribute_commit_message_blob_id_blob_id"), nullable=True)
-    commit_message_blob = sqlalchemy.orm.relation("Blob", foreign_keys=[commit_message_blob_id])
+    commit_message_blob = sqlalchemy.orm.relationship("Blob", foreign_keys=[commit_message_blob_id])
     commit_sha = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     parent_commit_sha = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     on_default_branch = sqlalchemy.Column(sqlalchemy.Boolean)
@@ -52,7 +52,7 @@ class IngressAttribute(Base, BaseObject):
     )
     creator = sqlalchemy.orm.relationship("User", back_populates="ingress_attributes")
 
-    configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="ingress_attribute")
+    configuration_versions = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="ingress_attribute")
 
     @classmethod
     def create(cls, authorised_repo, commit_sha, branch, pull_request_id, creator, tag):

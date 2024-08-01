@@ -40,7 +40,7 @@ class Workspace(Base, BaseObject):
     __tablename__ = 'workspace'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
     _description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None, name="description")
@@ -60,8 +60,8 @@ class Workspace(Base, BaseObject):
         nullable=False)
     environment = sqlalchemy.orm.relationship("Environment", back_populates="workspaces", lazy='select')
 
-    state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="workspace")
-    configuration_versions = sqlalchemy.orm.relation("ConfigurationVersion", back_populates="workspace")
+    state_versions = sqlalchemy.orm.relationship("StateVersion", back_populates="workspace")
+    configuration_versions = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="workspace")
 
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace", lazy='select')
 
@@ -70,10 +70,10 @@ class Workspace(Base, BaseObject):
     workspace_tasks = sqlalchemy.orm.relationship("WorkspaceTask", back_populates="workspace", lazy='select')
 
     locked_by_user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="fk_workspace_locked_by_user_id_user_id"), nullable=True)
-    locked_by_user = sqlalchemy.orm.relation("User", foreign_keys=[locked_by_user_id], lazy='select')
+    locked_by_user = sqlalchemy.orm.relationship("User", foreign_keys=[locked_by_user_id], lazy='select')
 
     locked_by_run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id", name="fk_workspace_locked_by_run_id_run_id"), nullable=True)
-    locked_by_run = sqlalchemy.orm.relation("Run", foreign_keys=[locked_by_run_id], lazy='select')
+    locked_by_run = sqlalchemy.orm.relationship("Run", foreign_keys=[locked_by_run_id], lazy='select')
 
     _allow_destroy_plan = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="allow_destroy_plan")
     _auto_apply = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="auto_apply")
@@ -99,7 +99,7 @@ class Workspace(Base, BaseObject):
     _assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=None, name="assessments_enabled")
 
     agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_workspace_agent_pool_id"), nullable=True)
-    agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[agent_pool_id])
+    agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relationship("AgentPool", foreign_keys=[agent_pool_id])
 
     _latest_state = None
     _latest_run = None

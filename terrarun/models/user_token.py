@@ -33,7 +33,7 @@ class UserToken(Base, BaseObject):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     type = sqlalchemy.Column(sqlalchemy.Enum(UserTokenType))
     created_at = sqlalchemy.Column(sqlalchemy.DateTime)
@@ -43,7 +43,7 @@ class UserToken(Base, BaseObject):
     description = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
 
     user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=True)
-    user = sqlalchemy.orm.relation("User", back_populates="user_tokens")
+    user = sqlalchemy.orm.relationship("User", back_populates="user_tokens")
 
     job_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run_queue.id"), nullable=True)
 

@@ -35,7 +35,7 @@ class StateVersion(Base, BaseObject):
     __tablename__ = 'state_version'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")
@@ -44,14 +44,14 @@ class StateVersion(Base, BaseObject):
     run = sqlalchemy.orm.relationship("Run", back_populates="state_versions")
 
     # Optional references to either plan that generated state or apply
-    apply = sqlalchemy.orm.relation("Apply", back_populates="state_version")
-    plan = sqlalchemy.orm.relation("Plan", back_populates="state_version")
+    apply = sqlalchemy.orm.relationship("Apply", back_populates="state_version")
+    plan = sqlalchemy.orm.relationship("Plan", back_populates="state_version")
 
     resources_processed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
-    state_version_outputs = sqlalchemy.orm.relation("StateVersionOutput", back_populates="state_version")
+    state_version_outputs = sqlalchemy.orm.relationship("StateVersionOutput", back_populates="state_version")
 
     state_json_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    _state_json = sqlalchemy.orm.relation("Blob", foreign_keys=[state_json_id])
+    _state_json = sqlalchemy.orm.relationship("Blob", foreign_keys=[state_json_id])
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 

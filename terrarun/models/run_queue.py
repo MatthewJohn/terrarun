@@ -35,15 +35,15 @@ class RunQueue(Base, BaseObject):
 
     id: int = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk: int = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj: 'terrarun.models.api_id.ApiId' = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj: 'terrarun.models.api_id.ApiId' = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     run_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
-    run: 'terrarun.models.run.Run' = sqlalchemy.orm.relation("Run", back_populates="run_queue")
+    run: 'terrarun.models.run.Run' = sqlalchemy.orm.relationship("Run", back_populates="run_queue")
 
     agent_type: JobQueueAgentType = sqlalchemy.Column(sqlalchemy.Enum(JobQueueAgentType))
     job_type: JobQueueType = sqlalchemy.Column(sqlalchemy.Enum(JobQueueType))
 
     agent_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id"), nullable=True)
-    agent: Optional['terrarun.models.agent.Agent'] = sqlalchemy.orm.relation("Agent")
+    agent: Optional['terrarun.models.agent.Agent'] = sqlalchemy.orm.relationship("Agent")
 
     user_token: Optional['terrarun.models.user_token.UserToken'] = sqlalchemy.orm.relationship("UserToken", uselist=False, backref="job")

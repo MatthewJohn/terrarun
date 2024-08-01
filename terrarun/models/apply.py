@@ -19,7 +19,7 @@ class Apply(TerraformCommand, Base):
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
 
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     plan_id = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
     plan = sqlalchemy.orm.relationship("Plan", back_populates="applies")
@@ -28,7 +28,7 @@ class Apply(TerraformCommand, Base):
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="apply", uselist=False)
 
     log_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    log = sqlalchemy.orm.relation("Blob", foreign_keys=[log_id])
+    log = sqlalchemy.orm.relationship("Blob", foreign_keys=[log_id])
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     changes = sqlalchemy.Column(terrarun.database.Database.GeneralString)

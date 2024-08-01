@@ -18,7 +18,7 @@ class StateVersionOutput(Base, BaseObject):
     __tablename__ = 'state_version_output'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=False)
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="state_version_outputs")
@@ -27,7 +27,7 @@ class StateVersionOutput(Base, BaseObject):
     sensitive = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False)
     output_type = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     value_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    _value = sqlalchemy.orm.relation("Blob", foreign_keys=[value_id])
+    _value = sqlalchemy.orm.relationship("Blob", foreign_keys=[value_id])
     detailed_type = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
 
     @classmethod
