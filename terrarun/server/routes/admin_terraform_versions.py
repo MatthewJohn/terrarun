@@ -87,16 +87,16 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         else:
             version = version_exact = None
 
-        terraform_version_list = Tool.get_list(
+        tool_list = Tool.get_list(
             tool_type=ToolType.TERRAFORM_VERSION,
             version=version,
             version_exact=version_exact,
         )
         views = [
             TerraformVersionView.from_object(
-                terraform_version, effective_user=current_user
+                tool, effective_user=current_user
             )
-            for terraform_version in terraform_version_list
+            for tool in tool_list
         ]
         return ListView(views=views).to_response()
 
@@ -113,12 +113,12 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         create_kwargs = create_entity.get_set_object_attributes()
         create_kwargs["tool_type"] = ToolType.TERRAFORM_VERSION
         create_kwargs["only_create"] = True
-        terraform_version = self._tool_error_catching_call(
+        tool = self._tool_error_catching_call(
             Tool.upsert_by_version, create_kwargs
         )
 
         view = TerraformVersionView.from_object(
-            terraform_version, effective_user=current_user
+            tool, effective_user=current_user
         )
         return view.to_response()
 
@@ -146,9 +146,9 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
 
     def _patch(self, current_user, current_job, tool_id):
         """Update attributes of terraform version"""
-        terraform_version = Tool.get_by_api_id(tool_id)
+        tool = Tool.get_by_api_id(tool_id)
         
-        if terraform_version is None:
+        if tool is None:
             raise ApiError("Tool not found", "Tool not found", status = 404)
 
         err, update_entity = TerraformVersionUpdateEntity.from_request(request.json)
@@ -157,11 +157,11 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
 
         update_kwargs = update_entity.get_set_object_attributes()
         self._tool_error_catching_call(
-            terraform_version.update_attributes, update_kwargs
+            tool.update_attributes, update_kwargs
         )
 
         view = TerraformVersionView.from_object(
-            terraform_version, effective_user=current_user
+            tool, effective_user=current_user
         )
         return view.to_response()
 
