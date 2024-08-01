@@ -47,16 +47,32 @@ class StateVersion(Base, BaseObject):
     apply = sqlalchemy.orm.relationship("Apply", back_populates="state_version")
     plan = sqlalchemy.orm.relationship("Plan", back_populates="state_version")
 
+    # @TODO Populate old data and set to False, if null to avoid required conversion to bool and set nullable=False
     resources_processed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     state_version_outputs = sqlalchemy.orm.relationship("StateVersionOutput", back_populates="state_version")
 
-    state_json_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
+    state_json_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="fk_blob_state_version_state_json"), nullable=True)
     _state_json = sqlalchemy.orm.relationship("Blob", foreign_keys=[state_json_id])
+
+    # Binary JSON
+    state_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="fk_blob_state_version_state"), nullable=True)
+    _state = sqlalchemy.orm.relation("Blob", foreign_keys=[state_json_id])
+
+    # Attributes provided by user to verify state
+    lineage: Optional[str] = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True, default=None)
+    md5: Optional[str] = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True, default=None)
+
+    # Values cached from json data
+    serial: Optional[int] = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=None)
+    state_version: Optional[int] = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=None)
+    terraform_version: Optional[str] = sqlalchemy.Column(Database.GeneralString, nullable=True, default=None)
+
+    intermediate: bool = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     created_by_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=True)
-    created_by: 'terrarun.models.user.User' = sqlalchemy.orm.relationship("User")
+    created_by: Optional['terrarun.models.user.User'] = sqlalchemy.orm.relationship("User")
 
     status: StateVersionStatus = sqlalchemy.Column(sqlalchemy.Enum(StateVersionStatus),
                                                    nullable=False,
@@ -138,20 +154,6 @@ class StateVersion(Base, BaseObject):
 
         return modules
 
-    @property
-    def serial(self):
-        """Return serial of state"""
-        return self.state_json['serial']
-
-    @property
-    def version(self):
-        """Return serial of state"""
-        return self.state_json['version']
-
-    @property
-    def terraform_version(self):
-        return self.state_json['terraform_version']
-
     def process_resources(self):
         """Process resources"""
         # Create state version outputs for each output
@@ -177,7 +179,7 @@ class StateVersion(Base, BaseObject):
                 "resources": self.resources,
                 "resources-processed": bool(self.resources_processed),
                 "serial": self.serial,
-                "state-version": self.version,
+                "state-version": self.state_version,
                 "status": self.status.value,
                 "terraform-version": self.terraform_version,
                 "vcs-commit-url": "https://gitlab.com/my-organization/terraform-test/-/commit/abcdef12345",

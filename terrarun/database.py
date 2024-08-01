@@ -36,7 +36,7 @@ class Database:
         return cls._ENGINE
 
     @classmethod
-    def get_session(cls):
+    def get_session(cls) -> sqlalchemy.orm.Session:
         """Return database session"""
         thread_id = _ident_func()
         if thread_id not in cls._SESSIONS:
