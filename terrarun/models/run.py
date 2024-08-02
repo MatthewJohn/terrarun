@@ -510,7 +510,7 @@ class Run(Base, BaseObject):
             return self.plans[-1]
         return None
 
-    def get_api_details(self, api_request: ApiRequest=None):
+    def get_api_details(self, effective_user: terrarun.models.user.User, api_request: ApiRequest | None = None):
         """Return API details."""
         # Get status change audit events
         session = Database.get_session()
@@ -524,7 +524,7 @@ class Run(Base, BaseObject):
 
         # @TODO Remove check for api_request object once all APIs use this methodology
         if api_request and api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION) and self.configuration_version:
-            api_request.add_included(self.configuration_version.get_api_details(api_request))
+            api_request.add_included(self.configuration_version.get_api_details(api_request=api_request, effective_user=effective_user))
 
         return {
             "id": self.api_id,
