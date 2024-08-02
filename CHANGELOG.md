@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.62.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.0...v0.62.1) (2024-08-02)
+
+
+### Bug Fixes
+
+* Align tests to terraform-versions API ([9194339](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/91943395db54c5636d734cd6c9fe55374f029c48))
+* Align UI to terraform-versions API changes ([f29f8f5](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/f29f8f575e65b1b1ed3686b664c8f178be7fe8f1))
+* Attribute name fixed ([cdb78e9](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/cdb78e992d61386f9db11bd480914a6db7569b5e))
+* Fix Terraform version entity attribute defaults ([4f3c38d](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/4f3c38de12b487a135f8f18dbeec781e63c16361))
+
 # [0.62.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.61.0...v0.62.0) (2024-08-02)
 
 
