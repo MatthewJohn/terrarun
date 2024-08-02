@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.2](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.1...v0.62.2) (2024-08-02)
+
+
+### Bug Fixes
+
+* Fix use of ListView, which was removed in main, with new TerraformVersionListView ([6d966fd](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/6d966fddf8b7ef74fc2c0959b81736e9225fac14))
+
 ## [0.62.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.0...v0.62.1) (2024-08-02)
 
 

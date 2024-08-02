@@ -15,6 +15,7 @@ from .base_entity import (
     AttributeModifier,
     BaseEntity,
     EntityView,
+    ListEntityView,
 )
 
 
@@ -103,3 +104,8 @@ class TerraformVersionView(TerraformVersionEntity, EntityView):
     """View for terraform-version"""
 
     pass
+
+
+class TerraformVersionListView(ListEntityView):
+
+    ENTITY_CLASS = TerraformVersionView
