@@ -4,11 +4,11 @@
 
 from flask import request
 
-from terrarun.api_entities.base_entity import ListView
 from terrarun.api_entities.terraform_version import (
     TerraformVersionCreateEntity,
     TerraformVersionUpdateEntity,
     TerraformVersionView,
+    TerraformVersionListView,
 )
 from terrarun.errors import (
     ApiError,
@@ -92,13 +92,11 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
             version=version,
             version_exact=version_exact,
         )
-        views = [
-            TerraformVersionView.from_object(
-                tool, effective_user=current_user
-            )
-            for tool in tool_list
-        ]
-        return ListView(views=views).to_response()
+        view = TerraformVersionListView.from_object(
+            obj=tool_list,
+            effective_user=current_user
+        )
+        return view.to_response()
 
     def check_permissions_post(self, current_user, current_job):
         """Can only be access by site admins"""
