@@ -1,5 +1,19 @@
 # Changelog
 
+# [0.61.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.60.2...v0.61.0) (2024-08-02)
+
+
+### Bug Fixes
+
+* Return early in job API endpoint from jobs that contain no specified tool version ([1725e23](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/1725e237a3ccfded25c103d89df42c53a355e930)), closes [#180](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/180)
+
+
+### Features
+
+* Add agent execution information to apply API response. ([178ca0f](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/178ca0f8db174e63037e2d0e000a9084aafe017a)), closes [#180](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/180)
+* Add agent execution information to plan API response ([5c77f52](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/5c77f525ee5b1d59cafb7eb81e9b402b39029a77)), closes [#180](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/180)
+* Set agent and execution mode to run/apply when being assigned to agent ([cf3ae43](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/cf3ae43f335e00d512f1b35dab893164fe8b4e95)), closes [#180](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/180)
+
 ## [0.60.2](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.60.1...v0.60.2) (2024-08-01)
 
 
