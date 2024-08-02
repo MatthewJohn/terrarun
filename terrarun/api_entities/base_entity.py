@@ -442,9 +442,6 @@ class EntityView(BaseEntity, BaseView):
 
 
 class ApiErrorView(BaseEntity, BaseView):
-
-    response_code = 409
-
     def __init__(self, error: Optional[ApiError]=None, errors: Optional[List[ApiError]]=None):
         """Return"""
         self.errors: List[ApiError] = []
@@ -452,6 +449,11 @@ class ApiErrorView(BaseEntity, BaseView):
             self.errors.append(error)
         if errors:
             self.errors += errors
+
+        if len(self.errors) > 0:
+            self.response_code = self.errors[0]._status
+        else:
+            self.response_code = 500
 
     def to_dict(self):
         """Return errror"""
