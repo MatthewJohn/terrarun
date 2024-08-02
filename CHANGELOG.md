@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.62.3](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.2...v0.62.3) (2024-08-02)
+
+
+### Bug Fixes
+
+* Add missing get_data abstract implementation on error view causing errors when throwing errors ([a634dc3](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/a634dc3f43457842976faa65843b0553afab8492))
+
 ## [0.62.2](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.1...v0.62.2) (2024-08-02)
 
 
