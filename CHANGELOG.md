@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.62.4](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.3...v0.62.4) (2024-08-02)
+
+
+### Bug Fixes
+
+* Deserialize created-at in signature ([9caee80](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/9caee80a6145a5f0346bc2f331bba28820b639b8))
+* Remove non-existing parameter ([aef9c1a](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/aef9c1a519c78d7fe922672efea37c6d525d461f))
+* Use pre-signed keys for API authentication to upload configuration version ([9a99924](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/9a9992401b445d170464df61f882e477d42faccc)), closes [#161](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/161) [#177](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/177)
+* Use pre-signed keys for API authentication to upload configuration version ([6d471c3](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/6d471c39368c081d5813fee33917145929dbc657))
+
 ## [0.62.3](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.2...v0.62.3) (2024-08-02)
 
 
