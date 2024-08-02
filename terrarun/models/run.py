@@ -90,20 +90,20 @@ class Run(Base, BaseObject):
     __tablename__ = 'run'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     configuration_version_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
     configuration_version: 'terrarun.models.configuration.ConfigurationVersion' = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
 
-    state_versions = sqlalchemy.orm.relation("StateVersion", back_populates="run")
-    plans = sqlalchemy.orm.relation("Plan", back_populates="run")
+    state_versions = sqlalchemy.orm.relationship("StateVersion", back_populates="run")
+    plans = sqlalchemy.orm.relationship("Plan", back_populates="run")
 
-    run_queue = sqlalchemy.orm.relation("RunQueue", back_populates="run", uselist=False)
+    run_queue = sqlalchemy.orm.relationship("RunQueue", back_populates="run", uselist=False)
 
     status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
     confirmed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     confirmed_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_confirmed_by_id_user_id"), nullable=True)
-    confirmed_by = sqlalchemy.orm.relation("User", foreign_keys=[confirmed_by_id])
+    confirmed_by = sqlalchemy.orm.relationship("User", foreign_keys=[confirmed_by_id])
     auto_apply = sqlalchemy.Column(sqlalchemy.Boolean)
     message = sqlalchemy.Column(terrarun.database.Database.GeneralString)
     plan_only = sqlalchemy.Column(sqlalchemy.Boolean)
@@ -119,7 +119,7 @@ class Run(Base, BaseObject):
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     created_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_created_by_id_user_id"), nullable=True)
-    created_by = sqlalchemy.orm.relation("User", foreign_keys=[created_by_id])
+    created_by = sqlalchemy.orm.relationship("User", foreign_keys=[created_by_id])
 
     task_stages = sqlalchemy.orm.relationship("TaskStage", back_populates="run")
 

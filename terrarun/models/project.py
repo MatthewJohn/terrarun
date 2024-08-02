@@ -34,7 +34,7 @@ class Project(Base, BaseObject):
     __tablename__ = 'project'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     description = sqlalchemy.Column(terrarun.database.Database.GeneralString)
@@ -44,7 +44,7 @@ class Project(Base, BaseObject):
         nullable=False)
     organisation: 'terrarun.models.organisation.Organisation' = sqlalchemy.orm.relationship("Organisation", back_populates="projects", lazy='select')
 
-    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="project", lazy='select')
+    workspaces = sqlalchemy.orm.relationship("Workspace", back_populates="project", lazy='select')
 
     lifecycle_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("lifecycle.id", name="fk_project_lifecycle_id_lifecycle_id"),
@@ -75,8 +75,8 @@ class Project(Base, BaseObject):
     assessments_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="assessments_enabled")
 
     default_agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_project_default_agent_pool_id"), nullable=True)
-    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[default_agent_pool_id])
-    # agent_pool_permissions = sqlalchemy.orm.relation("AgentPoolProjectPermission", back_populates="project", lazy='select')
+    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relationship("AgentPool", foreign_keys=[default_agent_pool_id])
+    # agent_pool_permissions = sqlalchemy.orm.relationship("AgentPoolProjectPermission", back_populates="project", lazy='select')
 
     @classmethod
     def get_by_name(cls, organisation, name):

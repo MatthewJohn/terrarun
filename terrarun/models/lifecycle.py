@@ -21,7 +21,7 @@ class Lifecycle(Base, BaseObject):
     __tablename__ = 'lifecycle'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=False)
     description = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
@@ -34,8 +34,8 @@ class Lifecycle(Base, BaseObject):
         nullable=False)
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="lifecycles", foreign_keys=[organisation_id])
 
-    projects = sqlalchemy.orm.relation("Project", back_populates="lifecycle")
-    lifecycle_environment_groups = sqlalchemy.orm.relation("LifecycleEnvironmentGroup", back_populates="lifecycle")
+    projects = sqlalchemy.orm.relationship("Project", back_populates="lifecycle")
+    lifecycle_environment_groups = sqlalchemy.orm.relationship("LifecycleEnvironmentGroup", back_populates="lifecycle")
 
     @classmethod
     def get_by_name_and_organisation(cls, name, organisation):
