@@ -1,5 +1,17 @@
 # Changelog
 
+# [0.62.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.61.0...v0.62.0) (2024-08-02)
+
+
+### Bug Fixes
+
+* Add new 'TEST' Job type for agents to avoid errors when connecting new agent ([71a6db6](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/71a6db617a58224d01b36f757c0e8a0d4f1a7e6a)), closes [#142](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/142)
+
+
+### Features
+
+* use first error status as response code ([e4484e1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/e4484e19150e7579e903cfafafa0ba4f313df339))
+
 # [0.61.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.60.2...v0.61.0) (2024-08-02)
 
 
