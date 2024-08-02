@@ -2,16 +2,15 @@
 # SPDX-License-Identifier: GPL-2.0
 
 import os
-import subprocess
 from enum import Enum
+from typing import Optional
 from tarfile import TarFile
-from tempfile import NamedTemporaryFile, TemporaryDirectory, TemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import sqlalchemy
 import sqlalchemy.orm
 from terrarun.api_error import ApiError
 from terrarun.api_request import ApiRequest
-import terrarun.config
 from terrarun.logger import get_logger
 
 from terrarun.models.base_object import BaseObject
@@ -21,6 +20,9 @@ from terrarun.models.ingress_attribute import IngressAttribute
 import terrarun.models.run
 import terrarun.models.workspace
 from terrarun.object_storage import ObjectStorage
+import terrarun.presign
+import terrarun.models.user
+import terrarun.models.run_queue
 
 
 logger = get_logger(__name__)
@@ -343,11 +345,15 @@ terraform {
         # Allow run
         return True
 
-    def get_upload_url(self):
+    def get_upload_url(self, effective_user: terrarun.models.user.User):
         """Return URL for terraform to upload configuration."""
-        return f'{terrarun.config.Config().BASE_URL}/api/v2/upload-configuration/{self.api_id}'
+        
+        upload_path = f'/api/v2/upload-configuration/{self.api_id}'
 
-    def get_api_details(self, api_request: ApiRequest=None):
+        url_generator = terrarun.presign.PresignedUrlGenerator()
+        return url_generator.create_url(effective_user, upload_path)
+
+    def get_api_details(self, effective_user: terrarun.models.user.User, api_request: Optional[ApiRequest] = None):
         """Return API details."""
 
         if api_request and \
@@ -366,7 +372,7 @@ terraform {
                 "speculative": self.speculative,
                 "status": self.status.value,
                 "status-timestamps": {},
-                "upload-url": self.get_upload_url()
+                "upload-url": self.get_upload_url(effective_user=effective_user)
             },
             "relationships": {
                 "ingress-attributes": {

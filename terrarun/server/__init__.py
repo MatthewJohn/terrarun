@@ -18,6 +18,7 @@ from terrarun.errors import InvalidVersionNumberError, ToolChecksumUrlPlaceholde
 from terrarun.job_processor import JobProcessor
 import terrarun.config
 from terrarun.models import workspace
+import terrarun.models
 from terrarun.models.agent import Agent, AgentStatus
 from terrarun.models.agent_pool import AgentPool
 from terrarun.models.agent_token import AgentToken
@@ -34,6 +35,7 @@ from terrarun.models.oauth_client import OauthClient, OauthServiceProvider
 from terrarun.models.oauth_token import OauthToken
 from terrarun.models.project import Project
 from terrarun.models.organisation import Organisation
+import terrarun.models.run_queue
 from terrarun.models.state_version_output import StateVersionOutput
 from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.organisation import OrganisationPermissions
@@ -58,9 +60,11 @@ from terrarun.agent_filesystem import AgentFilesystem
 from terrarun.presign import Presign
 from terrarun.api_error import ApiError, api_error_response
 from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
+from terrarun.server.signature_authenticated_endpoint import SignatureAuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
 from terrarun.server.routes import *
 from terrarun.logger import get_logger
+from terrarun.api_entities.base_entity import ApiErrorView
 from terrarun.api_entities.organization import (
     OrganizationUpdateEntity, OrganizationView, OrganizationCreateEntity,
     OrganisationListView
@@ -1780,7 +1784,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
         )
 
         for configuration_version in workspace.get_configuration_versions(api_request):
-            api_request.set_data(configuration_version.get_api_details(api_request))
+            api_request.set_data(configuration_version.get_api_details(effective_user=current_user, api_request=api_request))
 
         return api_request.get_response()
 
@@ -1811,7 +1815,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
             auto_queue_runs=attributes.get('auto-queue-runs', True),
             speculative=attributes.get('speculative', False)
         )
-        api_request.set_data(cv.get_api_details())
+        api_request.set_data(cv.get_api_details(effective_user=current_user))
 
         return api_request.get_response()
 
@@ -1891,11 +1895,11 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
             return {}, 404
 
         api_request = ApiRequest(request)
-        api_request.set_data(cv.get_api_details())
+        api_request.set_data(cv.get_api_details(effective_user=current_user))
         return api_request.get_response()
 
 
-class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
+class ApiTerraformConfigurationVersionUpload(SignatureAuthenticatedEndpoint):
     """Configuration version upload endpoint"""
 
     def check_permissions_put(self, current_user, current_job, configuration_version_id):
@@ -1903,12 +1907,13 @@ class ApiTerraformConfigurationVersionUpload(AuthenticatedEndpoint):
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return False
-        return WorkspacePermissions(current_user=current_user,
-                                    workspace=cv.workspace).check_access_type(
-                                        runs=TeamWorkspaceRunsPermission.PLAN)
+        
+        wp = WorkspacePermissions(current_user=current_user, workspace=cv.workspace)
+        return wp.check_access_type(runs=TeamWorkspaceRunsPermission.PLAN)
 
-    def _put(self, configuration_version_id, current_user, current_job):
+    def _put(self, current_user, current_job, configuration_version_id):
         """Handle upload of configuration version data."""
+
         cv = ConfigurationVersion.get_by_api_id(configuration_version_id)
         if not cv:
             return {}, 404
@@ -1967,7 +1972,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
-        return {"data": run.get_api_details()}
+        return {"data": run.get_api_details(effective_user=current_user)}
 
     def check_permissions_post(self, current_user, current_job, run_id=None,):
         """Check permissions to view run"""
@@ -2070,7 +2075,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             api_request.add_error(exc)
             return api_request.get_response()
 
-        return {"data": run.get_api_details()}
+        return {"data": run.get_api_details(effective_user=current_user, api_request=api_request)}
 
 
 class ApiTerraformRunRunEvents(AuthenticatedEndpoint):
@@ -2197,7 +2202,7 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
         api_request = ApiRequest(request, list_data=True)
         
         for run in workspace.runs:
-            api_request.set_data(run.get_api_details(api_request))
+            api_request.set_data(run.get_api_details(effective_user=current_user, api_request=api_request))
 
         return api_request.get_response()
 
@@ -2238,7 +2243,7 @@ class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
-        return {"data": [run.get_api_details() for run in organisation.get_run_queue()]}
+        return {"data": [run.get_api_details(effective_user=current_user) for run in organisation.get_run_queue()]}
 
 
 class ApiTerraformOrganisationOauthClients(AuthenticatedEndpoint):
