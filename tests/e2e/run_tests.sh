@@ -111,7 +111,7 @@ curl 'https://terrarun/api/v2/admin/terraform-versions' \
     -H "Authorization: Bearer $TFE_TOKEN" \
     -H 'Content-Type: application/json' \
     --fail \
-    --data-raw '{"type":"terraform-versions","attributes":{"version":"1.4.5","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}'
+    --data-raw '{"data":{"type":"terraform-versions","attributes":{"version":"1.4.5","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}}'
 
 # Assign Terraform tool to project
 curl "https://terrarun/api/v2/projects/$project_id" \

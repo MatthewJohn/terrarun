@@ -7,7 +7,9 @@ import re
 from flask import request, session
 from flask_restful import Resource
 
+from terrarun.api_entities.base_entity import ApiErrorView
 import terrarun.database
+from terrarun.errors import ApiError
 import terrarun.models.user_token
 from terrarun.logger import get_logger
 
@@ -34,10 +36,14 @@ class AuthenticatedEndpoint(Resource):
         """Call method, catching exceptions"""
         try:
             return method(*args, **kwargs)
-        except:
+        except Exception as e:
             # Rollback and remove session
             terrarun.database.Database.get_session().rollback()
             terrarun.database.Database.get_session().remove()
+
+            if isinstance(e, ApiError):
+                return ApiErrorView(error=e).to_response()
+
             raise
 
     def _get(self, *args, **kwargs):
