@@ -4,9 +4,13 @@
 import os
 import sqlalchemy
 import sqlalchemy.orm
+from typing import Optional
 
 import terrarun.config
 import terrarun.database
+import terrarun.workspace_execution_mode
+import terrarun.models.agent
+import terrarun.models.plan
 from terrarun.database import Base, Database
 from terrarun.terraform_command import TerraformCommand, TerraformCommandState
 
@@ -21,8 +25,8 @@ class Apply(TerraformCommand, Base):
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
 
-    plan_id = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
-    plan = sqlalchemy.orm.relationship("Plan", back_populates="applies")
+    plan_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("plan.id"), nullable=False)
+    plan: 'terrarun.models.plan.Plan' = sqlalchemy.orm.relationship("Plan", back_populates="applies")
 
     state_version_id = sqlalchemy.Column(sqlalchemy.ForeignKey("state_version.id"), nullable=True)
     state_version = sqlalchemy.orm.relationship("StateVersion", back_populates="apply", uselist=False)
@@ -32,6 +36,12 @@ class Apply(TerraformCommand, Base):
 
     status = sqlalchemy.Column(sqlalchemy.Enum(TerraformCommandState))
     changes = sqlalchemy.Column(terrarun.database.Database.GeneralString)
+
+    agent_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id", name="fk_apply_agent_id"), nullable=True)
+    agent: Optional['terrarun.models.agent.Agent'] = sqlalchemy.orm.relationship("Agent", back_populates="applies")
+    execution_mode: Optional['terrarun.workspace_execution_mode.WorkspaceExecutionMode'] = sqlalchemy.Column(
+        sqlalchemy.Enum(terrarun.workspace_execution_mode.WorkspaceExecutionMode),
+        nullable=True, default=None)
 
     @classmethod
     def create(cls, plan):
@@ -46,6 +56,14 @@ class Apply(TerraformCommand, Base):
         apply.api_id
         apply.update_status(TerraformCommandState.PENDING)
         return apply
+
+    def assign_to_agent(self, agent: 'terrarun.models.agent.Agent', execution_mode: 'terrarun.workspace_execution_mode.WorkspaceExecutionMode'):
+        """Assign plan to agent and set current execution mode"""
+        self.agent = agent
+        self.execution_mode = execution_mode
+        session = Database.get_session()
+        session.add(self)
+        session.commit()
 
     def _pull_plan_output(self, work_dir):
         """Create plan output file"""
@@ -121,34 +139,3 @@ Executed remotely on terrarun server
             })
 
         return relationships
-
-    def get_api_details(self):
-        """Return API details for apply"""
-        config = terrarun.config.Config()
-        return {
-            "id": self.api_id,
-            "type": "applies",
-            "attributes": {
-                "execution-details": {
-                    # "agent-id": "agent-S1Y7tcKxXPJDQAvq",
-                    # "agent-name": "agent_01",
-                    # "agent-pool-id": "apool-Zigq2VGreKq7nwph",
-                    # "agent-pool-name": "first-pool",
-                    # "mode": "agent",
-                },
-                "status": self.status.value,
-                "status-timestamps": self.status_timestamps,
-                "log-read-url": f"{config.BASE_URL}/api/v2/applies/{self.api_id}/log",
-                "resource-additions": 0,
-                "resource-changes": 0,
-                "resource-destructions": 0
-            },
-            "relationships": {
-                "state-versions": {
-                    "data": self.state_version_relationships
-                }
-            },
-            "links": {
-                "self": f"/api/v2/applies/{self.api_id}"
-            }
-        }

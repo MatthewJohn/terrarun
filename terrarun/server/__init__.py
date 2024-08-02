@@ -61,11 +61,13 @@ from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 from terrarun.server.route_registration import RouteRegistration
 from terrarun.server.routes import *
 from terrarun.logger import get_logger
-from terrarun.api_entities.base_entity import ListView
 from terrarun.api_entities.organization import (
-    OrganizationUpdateEntity, OrganizationView, OrganizationCreateEntity
+    OrganizationUpdateEntity, OrganizationView, OrganizationCreateEntity,
+    OrganisationListView
 )
 from terrarun.api_entities.agent_pool import AgentPoolView
+from terrarun.api_entities.plan import PlanView
+from terrarun.api_entities.apply import ApplyView
 
 
 logger = get_logger(__name__)
@@ -669,11 +671,10 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
 
     def _get(self, current_user, current_job):
         """Obtain list of organisations"""
-        views = [
-            OrganizationView.from_object(organisation, effective_user=current_user)
-            for organisation in current_user.organisations
-        ]
-        return ListView(views=views).to_response()
+        return OrganisationListView.from_object(
+            obj=current_user.organisations,
+            effective_user=current_user
+        ).to_response()
 
     def check_permissions_post(self, current_user, current_job):
         """Check permissions"""
@@ -2431,7 +2432,9 @@ class ApiTerraformPlans(AuthenticatedEndpoint):
             if not plan:
                 return {}, 404
 
-            return {"data": plan.get_api_details()}
+            entity = PlanView.from_object(obj=plan, effective_user=current_user)
+
+            return entity.to_response()
 
         raise Exception('Need to return list of plans?')
 
@@ -2823,8 +2826,9 @@ class ApiTerraformApplies(AuthenticatedEndpoint):
         apply = Apply.get_by_api_id(apply_id)
         if not apply:
             return {}, 404
-        
-        return {'data': apply.get_api_details()}
+
+        view = ApplyView.from_object(obj=apply, effective_user=current_user)
+        return view.to_response()
 
 
 class ApiTerraformApplyLog(Resource):
@@ -3453,7 +3457,7 @@ class ApiAgentJobs(Resource, AgentEndpoint):
         if not agent:
             return {}, 403
 
-        job = JobProcessor.get_job_by_agent_and_job_types(agent=agent, job_types=accepted_job_types)
+        job, execution_mode = JobProcessor.get_job_by_agent_and_job_types(agent=agent, job_types=accepted_job_types)
 
         if job:
             if job.job_type is JobQueueType.PLAN:
@@ -3469,6 +3473,8 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                 return {}, 204
 
             tool = job.run.tool if job.run.tool else job.run.configuration_version.workspace.tool
+            if not tool:
+                return {}, 204
 
             # Generate user token for run
             token = UserToken.create_agent_job_token(job=job)
@@ -3478,6 +3484,18 @@ class ApiAgentJobs(Resource, AgentEndpoint):
 
             # Either the plan or apply api ID
             job_sub_task_id = job.run.plan.api_id if job.job_type is JobQueueType.PLAN else job.run.plan.apply.api_id
+            if job.job_type is JobQueueType.PLAN:
+                entity = job.run.plan
+                # Specified in each branch, because assign to agent
+                # are methods of both classes and not derrived from a common
+                # base class
+                # @TODO Improve this
+                entity.assign_to_agent(agent=agent, execution_mode=execution_mode)
+            else:
+                entity = job.run.plan.apply
+                entity.assign_to_agent(agent=agent, execution_mode=execution_mode)
+
+            job_sub_task_id = entity.api_id
 
             return {
                 # @TODO Should this be apply for plans during an apply run?
