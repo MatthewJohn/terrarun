@@ -464,6 +464,10 @@ class ApiErrorView(BaseEntity, BaseView):
             ]
         }
 
+    def get_data(self):
+        """Handle abstract methods"""
+        pass
+
     def _from_object(**kwargs):
         """Handle abstract methods"""
         pass
