@@ -2024,8 +2024,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
                 return {}, 404
         elif workspace.can_run_vcs_build:
             cv = ConfigurationVersion.generate_from_vcs(
-                workspace=workspace,
-                speculative=request_attributes.get('plan-only', False)
+                workspace=workspace
             )
             if not cv:
                 return {}, 400
