@@ -105,21 +105,45 @@ curl 'https://terrarun/api/v2/organizations/smoke-test-org/projects' \
 
 project_id=$(cat project.json | jq -r '.data.id')
 
-# Create Terraform tool
-curl 'https://terrarun/api/v2/admin/terraform-versions' \
-    -X POST \
-    -H "Authorization: Bearer $TFE_TOKEN" \
-    -H 'Content-Type: application/json' \
-    --fail \
-    --data-raw '{"data":{"type":"terraform-versions","attributes":{"version":"1.4.5","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}}'
+function testTerraformVersion {
+    version=$1
 
-# Assign Terraform tool to project
-curl "https://terrarun/api/v2/projects/$project_id" \
-    -X PATCH \
-    -H "Authorization: Bearer $TFE_TOKEN" \
-    -H 'Content-Type: application/json' \
-    --fail \
-    --data-raw '{"data":{"type":"projects","attributes":{"terraform-version":"1.4.5"}}}'
+    # Create Terraform tool
+    curl 'https://terrarun/api/v2/admin/terraform-versions' \
+        -X POST \
+        -H "Authorization: Bearer $TFE_TOKEN" \
+        -H 'Content-Type: application/json' \
+        --fail \
+        --data-raw '{"data":{"type":"terraform-versions","attributes":{"version":"'$version'","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}}'
+
+    # Assign Terraform tool to project
+    curl "https://terrarun/api/v2/projects/$project_id" \
+        -X PATCH \
+        -H "Authorization: Bearer $TFE_TOKEN" \
+        -H 'Content-Type: application/json' \
+        --fail \
+        --data-raw '{"data":{"type":"projects","attributes":{"terraform-version":"'$version'"}}}'
+
+    # Run test Terraform
+    pushd tests/e2e/terraform/execution
+        timeout --signal=TERM 1m \
+            terraform init
+        timeout --signal=TERM 3m \
+            terraform plan \
+            -var "input_version=$version"
+        timeout --signal=TERM 3m \
+            terraform apply -auto-approve \
+            -var "input_version=$version"
+
+        # Check outputs of terraform
+        sleep 10
+        timeout --signal=TERM 30s \
+            terraform output > output.txt
+
+        # Ensure output contains correct value
+        grep 'test_output = "test_value-'$version'"' output.txt || { echo Could not find output; false; }
+    popd
+}
 
 # Start agent
 tfc-agent -address https://terrarun -token=$agent_token -log-level=TRACE  -auto-update=disabled &
@@ -129,27 +153,12 @@ sleep 10
 # Create Terraform credential file
 cat > ~/.terraformrc <<EOF
 credentials "terrarun" {
-  token = "$TFE_TOKEN"
+token = "$TFE_TOKEN"
 }
 EOF
 
-# Run test Terraform
-pushd tests/e2e/terraform/execution
-    timeout --signal=TERM 1m \
-        terraform init
-    timeout --signal=TERM 3m \
-        terraform plan
-    timeout --signal=TERM 3m \
-        terraform apply -auto-approve
-
-    # Check outputs of terraform
-    sleep 10
-    timeout --signal=TERM 30s \
-        terraform output > output.txt
-
-    # Ensure output contains correct value
-    grep 'test_output = "test_value"' output.txt || { echo Could not find output; false; }
-popd
+testTerraformVersion 1.4.5
+testTerraformVersion 1.9.1
 
 # Kill agent
 kill -9 $tfc_agent_pid
