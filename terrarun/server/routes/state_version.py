@@ -79,6 +79,6 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
     def _get(self, current_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue'], state_version_id: int):
         """Return state version json"""
         state_version = StateVersion.get_by_api_id(state_version_id)
-        if not state_version_id:
+        if not state_version:
             return {}, 404
         return state_version.state_json
