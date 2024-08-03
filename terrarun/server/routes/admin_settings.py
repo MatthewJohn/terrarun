@@ -8,6 +8,7 @@ from terrarun.api_entities.base_entity import ApiErrorView
 from terrarun.api_entities.saml_settings import SamlSettingsUpdateEntity, SamlSettingsView
 from terrarun.api_error import ApiError
 
+import terrarun.auth_context
 from terrarun.api_request import ApiRequest
 from terrarun.permissions.user import UserPermissions
 from terrarun.models.saml_settings import SamlSettings
@@ -17,21 +18,21 @@ from terrarun.server.authenticated_endpoint import AuthenticatedEndpoint
 
 class AdminSettingsSamlSettings(AuthenticatedEndpoint):
 
-    def check_permissions_get(self, current_user, current_job):
+    def check_permissions_get(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Check permissions to view SAML settings"""
-        return current_user.site_admin
+        return auth_context.user and auth_context.user.site_admin
 
-    def _get(self, current_user, current_job):
+    def _get(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Obtain SAML settings"""
         saml_settings = SamlSettings.get_instance()
-        view = SamlSettingsView.from_object(saml_settings, current_user)
+        view = SamlSettingsView.from_object(saml_settings, auth_context.user)
         return view.to_response()
 
-    def check_permissions_post(self, current_user, current_job):
+    def check_permissions_post(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Check permissions to update SAML settings"""
-        return current_user.site_admin
+        return auth_context.user and auth_context.user.site_admin
 
-    def _post(self, current_user, current_job):
+    def _post(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Update SAML settings"""
         saml_settings = SamlSettings.get_instance()
 
@@ -44,7 +45,7 @@ class AdminSettingsSamlSettings(AuthenticatedEndpoint):
         except ApiError as exc:
             return ApiErrorView(error=exc).to_response()
 
-        view = SamlSettingsView.from_object(saml_settings, effective_user=current_user)
+        view = SamlSettingsView.from_object(saml_settings, effective_user=auth_context.user)
         return view.to_response()
 
 

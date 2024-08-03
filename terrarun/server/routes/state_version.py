@@ -7,6 +7,7 @@ from flask import request
 import flask
 import flask_restful
 
+import terrarun.auth_context
 from terrarun.api_entities.state_version import (
     StateVersionView
 )
@@ -36,47 +37,47 @@ class AdminTerraformVersionsRegistration(RouteRegistration):
 
 class ApiTerraformStateVersion(AuthenticatedEndpoint):
 
-    def check_permissions_get(self, current_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue'], state_version_id: int):
+    def check_permissions_get(self, auth_context: 'terrarun.auth_context.AuthContext', state_version_id: int):
         """Check permissions to read state versions"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version:
             return False
 
-        if current_job and current_job.run.configuration_version.workspace == state_version.workspace:
+        if auth_context.job and auth_context.job.run.configuration_version.workspace == state_version.workspace:
             return True
 
         return WorkspacePermissions(
-            current_user=current_user,
+            current_user=auth_context.user,
             workspace=state_version.workspace
         ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
 
-    def _get(self, current_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue'], state_version_id: int):
+    def _get(self, auth_context: 'terrarun.auth_context.AuthContext', state_version_id: int):
         """Return state version json"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version:
             return {}, 404
 
-        view = StateVersionView.from_object(obj=state_version, effective_user=current_user)
+        view = StateVersionView.from_object(obj=state_version, effective_user=auth_context.user)
         return view.to_response()
 
 
 class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
 
-    def check_permissions_get(self, current_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue'], state_version_id: int):
+    def check_permissions_get(self, auth_context: 'terrarun.auth_context.AuthContext', state_version_id: int):
         """Check permissions to read state versions"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version:
             return False
 
-        if current_job and current_job.run.configuration_version.workspace == state_version.workspace:
+        if auth_context.job and auth_context.job.run.configuration_version.workspace == state_version.workspace:
             return True
 
         return WorkspacePermissions(
-            current_user=current_user,
+            current_user=auth_context.user,
             workspace=state_version.workspace
         ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
 
-    def _get(self, current_user: Optional['terrarun.models.user.User'], current_job: Optional['terrarun.models.run_queue.RunQueue'], state_version_id: int):
+    def _get(self, auth_context: 'terrarun.auth_context.AuthContext', state_version_id: int):
         """Return state version json"""
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version:
