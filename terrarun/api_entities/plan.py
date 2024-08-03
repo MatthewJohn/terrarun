@@ -11,6 +11,7 @@ import terrarun.models.plan
 import terrarun.terraform_command
 import terrarun.models.state_version
 import terrarun.config
+import terrarun.auth_context
 
 from .base_entity import (
     BaseEntity,
@@ -69,7 +70,7 @@ class PlanEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: 'terrarun.models.plan.Plan', effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: 'terrarun.models.plan.Plan', auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert object to plan entity"""
         return cls(
             id=obj.api_id,
@@ -80,8 +81,8 @@ class PlanEntity(BaseEntity):
                 "resource_destructions": obj.resource_destructions,
                 "status": obj.status,
                 "log_read_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{obj.api_id}/log",
-                "execution_details": AgentExecutionDetailsEntity.from_object(obj=obj, effective_user=effective_user),
-                "status_timestamps": ExecutionStatusTimestampsEntity.from_object(obj=obj, effective_user=effective_user),
+                "execution_details": AgentExecutionDetailsEntity.from_object(obj=obj, auth_context=auth_context),
+                "status_timestamps": ExecutionStatusTimestampsEntity.from_object(obj=obj, auth_context=auth_context),
             }
         )
 

@@ -4,6 +4,7 @@
 
 from typing import Union
 
+import terrarun.auth_context
 import terrarun.models.organisation
 import terrarun.models.user
 import terrarun.workspace_execution_mode
@@ -31,7 +32,7 @@ class AgentExecutionDetailsEntity(NestedAttributes):
         )
 
     @classmethod
-    def _from_object(cls, obj: Union['terrarun.models.plan.Plan', 'terrarun.models.apply.Apply'], effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: Union['terrarun.models.plan.Plan', 'terrarun.models.apply.Apply'], auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert plan object agent details entity"""
         attributes = {
             "mode": obj.execution_mode

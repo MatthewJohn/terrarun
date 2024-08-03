@@ -12,6 +12,7 @@ from cryptography.fernet import Fernet
 from werkzeug.wrappers.request import Request
 
 import terrarun.config
+import terrarun.auth_context
 from terrarun.models.user import User
 from terrarun.models.run_queue import RunQueue
 from terrarun.utils import datetime_from_json
@@ -85,12 +86,12 @@ class PresignedUrlGenerator:
 
     ARG_NAME = "sigkey"
 
-    def create_url(self, effective_user: Optional['User'], job: Optional['RunQueue'], path: str) -> str:
+    def create_url(self, auth_context: 'terrarun.auth_context.AuthContext', path: str) -> str:
         """Return signature for the url"""
 
         signature_data = RequestSignature(
-            user=effective_user,
-            job=job,
+            user=auth_context.user,
+            job=auth_context.job,
             path=path,
             created_at=datetime.now()
         )
@@ -107,7 +108,7 @@ class PresignedRequestValidatorError(Exception):
 
 class PresignedRequestValidator:
 
-    def validate(self, request: Request) -> RequestSignature:
+    def validate(self, request: Request) -> 'terrarun.auth_context.AuthContext':
         """Verify the request and return the effective user id"""
 
         signature_list = request.args.getlist(PresignedUrlGenerator.ARG_NAME)
@@ -131,4 +132,7 @@ class PresignedRequestValidator:
 
         # @TODO Check the creation date and add a time limit
 
-        return signature_data
+        return terrarun.auth_context.AuthContext(
+            user=signature_data.user,
+            job=signature_data.job,
+        )

@@ -95,7 +95,7 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         )
         view = TerraformVersionListView.from_object(
             obj=tool_list,
-            effective_user=auth_context.user
+            auth_context=auth_context
         )
         return view.to_response()
 
@@ -117,7 +117,7 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         )
 
         view = TerraformVersionView.from_object(
-            tool, effective_user=auth_context.user
+            tool, auth_context=auth_context
         )
         return view.to_response()
 
@@ -136,7 +136,7 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
         if tool is None:
             raise ApiError("Tool not found", "Tool not found", status = 404)
 
-        view = TerraformVersionView.from_object(tool, effective_user=auth_context.user)
+        view = TerraformVersionView.from_object(tool, auth_context=auth_context)
         return view.to_response()
 
     def check_permissions_patch(self, auth_context: 'terrarun.auth_context.AuthContext', tool_id):
@@ -160,7 +160,7 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
         )
 
         view = TerraformVersionView.from_object(
-            tool, effective_user=auth_context.user
+            tool, auth_context=auth_context
         )
         return view.to_response()
 

@@ -8,6 +8,7 @@ from typing import Tuple, List, Optional
 import terrarun.models.state_version
 import terrarun.models.user
 import terrarun.models.state_version_output
+import terrarun.auth_context
 
 from .base_entity import (
     ATTRIBUTED_REQUIRED,
@@ -105,17 +106,17 @@ class StateVersionEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: 'terrarun.models.state_version.StateVersion', effective_user: "terrarun.models.user.User"):
+    def _from_object(cls, obj: 'terrarun.models.state_version.StateVersion', auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert object to saml settings entity"""
         return cls(
             id=obj.api_id,
             attributes={
                 "created_at": obj.created_at,
                 "size": 940,
-                "hosted_state_download_url": obj.get_state_download_url(effective_user=effective_user),
-                "hosted_json_state_download_url": obj.get_json_state_download_url(effective_user=effective_user),
-                "hosted_state_upload_url": obj.get_state_upload_url(effective_user=effective_user),
-                "hosted_json_state_upload_url": obj.get_json_state_upload_url(effective_user=effective_user),
+                "hosted_state_download_url": obj.get_state_download_url(auth_context=auth_context),
+                "hosted_json_state_download_url": obj.get_json_state_download_url(auth_context=auth_context),
+                "hosted_state_upload_url": obj.get_state_upload_url(auth_context=auth_context),
+                "hosted_json_state_upload_url": obj.get_json_state_upload_url(auth_context=auth_context),
                 "resources_processed": obj.resources_processed,
                 "serial": obj.serial,
                 "state_version": obj.state_version,

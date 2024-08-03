@@ -12,6 +12,7 @@ from flask import request
 from terrarun.api_error import ApiError
 import terrarun.models.user
 import terrarun.models.base_object
+import terrarun.auth_context
 from terrarun.utils import datetime_to_json, datetime_from_json
 
 
@@ -276,14 +277,14 @@ class BaseEntity(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def _from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def _from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'BaseEntity':
         """Return entity from object"""
         ...
 
     @classmethod
-    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'BaseEntity':
         """Return entity from object"""
-        return cls._from_object(obj=obj, effective_user=effective_user)
+        return cls._from_object(obj=obj, auth_context=auth_context)
 
     @staticmethod
     def generate_link(obj: Any):
@@ -397,9 +398,9 @@ class EntityView(BaseEntity, BaseView):
         self.link: Optional[str] = None
 
     @classmethod
-    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'BaseEntity':
         """Return entity from object"""
-        entity = cls._from_object(obj=obj, effective_user=effective_user)
+        entity = cls._from_object(obj=obj, auth_context=auth_context)
         entity.link = cls.generate_link(obj=obj)
         entity.relationships = {
             relationship_name: relationship_class.from_object(obj=obj, parent_view=entity)
@@ -638,17 +639,17 @@ class ListEntity(BaseEntity, Generic[TListEntityParent]):
         return cls.ENTITY_CLASS
 
     @classmethod
-    def from_object(cls, obj: List[Any], effective_user: terrarun.models.user.User) -> 'ListEntity':
+    def from_object(cls, obj: List[Any], auth_context: 'terrarun.auth_context.AuthContext') -> 'ListEntity':
         """Create list entity object from list of model objects"""
         return cls(
             entities=[
-                cls._get_entity_class().from_object(obj=obj_itx, effective_user=effective_user)
+                cls._get_entity_class().from_object(obj=obj_itx, auth_context=auth_context)
                 for obj_itx in obj
             ]
         )
 
     @classmethod
-    def _from_object(cls, obj: Any, effective_user: terrarun.models.user.User) -> 'ListEntity':
+    def _from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'ListEntity':
         """Implement unused abstract method"""
         pass
 

@@ -45,7 +45,7 @@ class AdminSettingsSamlSettings(AuthenticatedEndpoint):
         except ApiError as exc:
             return ApiErrorView(error=exc).to_response()
 
-        view = SamlSettingsView.from_object(saml_settings, effective_user=auth_context.user)
+        view = SamlSettingsView.from_object(saml_settings, auth_context=auth_context)
         return view.to_response()
 
 

@@ -23,6 +23,7 @@ from terrarun.object_storage import ObjectStorage
 import terrarun.presign
 import terrarun.models.user
 import terrarun.models.run_queue
+import terrarun.auth_context
 
 
 logger = get_logger(__name__)
@@ -345,15 +346,15 @@ terraform {
         # Allow run
         return True
 
-    def get_upload_url(self, effective_user: terrarun.models.user.User):
+    def get_upload_url(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Return URL for terraform to upload configuration."""
         
         upload_path = f'/api/v2/upload-configuration/{self.api_id}'
 
         url_generator = terrarun.presign.PresignedUrlGenerator()
-        return url_generator.create_url(effective_user, upload_path)
+        return url_generator.create_url(auth_context=auth_context, path=upload_path)
 
-    def get_api_details(self, effective_user: terrarun.models.user.User, api_request: Optional[ApiRequest] = None):
+    def get_api_details(self, auth_context: 'terrarun.auth_context.AuthContext', api_request: Optional[ApiRequest] = None):
         """Return API details."""
 
         if api_request and \
@@ -372,7 +373,7 @@ terraform {
                 "speculative": self.speculative,
                 "status": self.status.value,
                 "status-timestamps": {},
-                "upload-url": self.get_upload_url(effective_user=effective_user)
+                "upload-url": self.get_upload_url(auth_context=auth_context)
             },
             "relationships": {
                 "ingress-attributes": {

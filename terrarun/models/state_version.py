@@ -19,6 +19,7 @@ import terrarun.presign
 import terrarun.utils
 import terrarun.models.workspace
 import terrarun.models.run
+import terrarun.auth_context
 
 
 class StateVersionStatus(Enum):
@@ -160,7 +161,7 @@ class StateVersion(Base, BaseObject):
         session = Database.get_session()
         return session.query(cls).where(cls.resources_processed!=True).first()
 
-    def can_upload_state(self, effective_user: 'terrarun.models.user.User') -> bool:
+    def can_upload_state(self, auth_context: 'terrarun.auth_context.AuthContext') -> bool:
         """Whether state can be uploaded"""
         if self.status is not StateVersionStatus.PENDING:
             return False
@@ -172,37 +173,37 @@ class StateVersion(Base, BaseObject):
         if self.workspace.locked_by_run_id != self.run_id:
             return False
 
-        if self.workspace.locked_by_user_id != effective_user.id:
+        if self.workspace.locked_by_user_id != auth_context.user.id:
             return False
 
         return True
 
-    def get_state_upload_url(self, effective_user: 'terrarun.models.user.User'):
+    def get_state_upload_url(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Generate state upload URL"""
-        if self.can_upload_state(effective_user=effective_user) and self._state is None:
+        if self.can_upload_state(auth_context=auth_context) and self._state is None:
             url_generator = terrarun.presign.PresignedUrlGenerator()
-            return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/upload")
+            return url_generator.create_url(auth_context=auth_context, path=f"/api/v2/state-versions/{self.api_id}/upload")
 
-    def get_json_state_upload_url(self, effective_user: 'terrarun.models.user.User'):
+    def get_json_state_upload_url(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Generate state upload URL"""
-        if self.can_upload_state(effective_user=effective_user) and self._json_state is None:
+        if self.can_upload_state(auth_context=auth_context) and self._json_state is None:
             return None
         url_generator = terrarun.presign.PresignedUrlGenerator()
-        return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/json-upload")
+        return url_generator.create_url(auth_context=auth_context, path=f"/api/v2/state-versions/{self.api_id}/json-upload")
 
-    def get_state_download_url(self, effective_user: 'terrarun.models.user.User'):
+    def get_state_download_url(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Generate state upload URL"""
         if self._state is None:
             return None
         url_generator = terrarun.presign.PresignedUrlGenerator()
-        return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/download")
+        return url_generator.create_url(auth_context=auth_context, path=f"/api/v2/state-versions/{self.api_id}/download")
 
-    def get_json_state_download_url(self, effective_user: 'terrarun.models.user.User'):
+    def get_json_state_download_url(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Generate state upload URL"""
         if self._json_state is None:
             return None
         url_generator = terrarun.presign.PresignedUrlGenerator()
-        return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/json-download")
+        return url_generator.create_url(auth_context=auth_context, path=f"/api/v2/state-versions/{self.api_id}/json-download")
 
     @property
     def resources(self):

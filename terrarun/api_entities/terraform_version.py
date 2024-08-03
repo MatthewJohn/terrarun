@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Tuple
 
 import terrarun.models.user
+import terrarun.auth_context
 from terrarun.models.tool import Tool
 
 from .base_entity import (
@@ -41,7 +42,7 @@ class TerraformVersionEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: Tool, effective_user: "terrarun.models.user.User"):
+    def _from_object(cls, obj: Tool, auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert object to saml settings entity"""
         return cls(
             id=obj.api_id,

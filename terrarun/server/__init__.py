@@ -666,7 +666,7 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
         """Obtain list of organisations"""
         return OrganisationListView.from_object(
             obj=auth_context.user.organisations,
-            effective_user=auth_context.user
+            auth_context=auth_context
         ).to_response()
 
     def check_permissions_post(self, auth_context: 'terrarun.auth_context.AuthContext'):
@@ -685,7 +685,7 @@ class ApiTerraformOrganisation(AuthenticatedEndpoint):
         except ApiError as exc:
             return ApiErrorView(error=exc).to_response()
 
-        view = OrganizationView.from_object(organisation, effective_user=auth_context.user)
+        view = OrganizationView.from_object(organisation, auth_context=auth_context)
         return view.to_response()
 
 
@@ -705,7 +705,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
-        view = OrganizationView.from_object(organisation, effective_user=auth_context.user)
+        view = OrganizationView.from_object(organisation, auth_context=auth_context)
         return view.to_response()
 
     def check_permissions_patch(self, organisation_name, auth_context: 'terrarun.auth_context.AuthContext', *args, **kwargs):
@@ -731,7 +731,7 @@ class ApiTerraformOrganisationDetails(AuthenticatedEndpoint):
         except ApiError as exc:
             return ApiErrorView(error=exc).to_response()
 
-        view = OrganizationView.from_object(organisation, effective_user=auth_context.user)
+        view = OrganizationView.from_object(organisation, auth_context=auth_context)
         return view.to_response()
 
 
@@ -1812,7 +1812,7 @@ class ApiTerraformWorkspaceConfigurationVersions(AuthenticatedEndpoint):
             auto_queue_runs=attributes.get('auto-queue-runs', True),
             speculative=attributes.get('speculative', False)
         )
-        api_request.set_data(cv.get_api_details(effective_user=auth_context.user))
+        api_request.set_data(cv.get_api_details(auth_context=auth_context))
 
         return api_request.get_response()
 
@@ -1892,7 +1892,7 @@ class ApiTerraformConfigurationVersions(AuthenticatedEndpoint):
             return {}, 404
 
         api_request = ApiRequest(request)
-        api_request.set_data(cv.get_api_details(effective_user=auth_context.user))
+        api_request.set_data(cv.get_api_details(auth_context=auth_context))
         return api_request.get_response()
 
 
@@ -1969,7 +1969,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
         run = Run.get_by_api_id(run_id)
         if not run:
             return {}, 404
-        return {"data": run.get_api_details(effective_user=auth_context.user)}
+        return {"data": run.get_api_details(auth_context=auth_context)}
 
     def check_permissions_post(self, auth_context: 'terrarun.auth_context.AuthContext', run_id=None,):
         """Check permissions to view run"""
@@ -2072,7 +2072,7 @@ class ApiTerraformRun(AuthenticatedEndpoint):
             api_request.add_error(exc)
             return api_request.get_response()
 
-        return {"data": run.get_api_details(effective_user=auth_context.user, api_request=api_request)}
+        return {"data": run.get_api_details(auth_context=auth_context, api_request=api_request)}
 
 
 class ApiTerraformRunRunEvents(AuthenticatedEndpoint):
@@ -2199,7 +2199,7 @@ class ApiTerraformWorkspaceRuns(AuthenticatedEndpoint):
         api_request = ApiRequest(request, list_data=True)
         
         for run in workspace.runs:
-            api_request.set_data(run.get_api_details(effective_user=auth_context.user, api_request=api_request))
+            api_request.set_data(run.get_api_details(auth_context=auth_context, api_request=api_request))
 
         return api_request.get_response()
 
@@ -2240,7 +2240,7 @@ class ApiTerraformOrganisationQueue(AuthenticatedEndpoint):
         if not organisation:
             return {}, 404
 
-        return {"data": [run.get_api_details(effective_user=auth_context.user) for run in organisation.get_run_queue()]}
+        return {"data": [run.get_api_details(auth_context=auth_context) for run in organisation.get_run_queue()]}
 
 
 class ApiTerraformOrganisationOauthClients(AuthenticatedEndpoint):
@@ -2426,7 +2426,7 @@ class ApiTerraformPlans(AuthenticatedEndpoint):
             if not plan:
                 return {}, 404
 
-            entity = PlanView.from_object(obj=plan, effective_user=auth_context.user)
+            entity = PlanView.from_object(obj=plan, auth_context=auth_context)
 
             return entity.to_response()
 
@@ -2789,7 +2789,7 @@ class ApiTerraformApplies(AuthenticatedEndpoint):
         if not apply:
             return {}, 404
 
-        view = ApplyView.from_object(obj=apply, effective_user=auth_context.user)
+        view = ApplyView.from_object(obj=apply, auth_context=auth_context)
         return view.to_response()
 
 
@@ -3320,7 +3320,7 @@ class ApiOrganisationAgentPool(AuthenticatedEndpoint):
     def _get(self, agent_pool_id, auth_context: 'terrarun.auth_context.AuthContext'):
         """Get list of agent pools for organisation"""
         agent_pool = AgentPool.get_by_api_id(agent_pool_id)
-        view = AgentPoolView.from_object(agent_pool, effective_user=auth_context.user)
+        view = AgentPoolView.from_object(agent_pool, auth_context=auth_context)
         return view.to_response()
 
 

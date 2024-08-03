@@ -11,6 +11,7 @@ import terrarun.workspace_execution_mode
 import terrarun.models.apply
 import terrarun.terraform_command
 import terrarun.config
+import terrarun.auth_context
 
 from .base_entity import (
     BaseEntity,
@@ -71,7 +72,7 @@ class ApplyEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: 'terrarun.models.apply.Apply', effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: 'terrarun.models.apply.Apply', auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert object to apply entity"""
         return cls(
             id=obj.api_id,
@@ -81,8 +82,8 @@ class ApplyEntity(BaseEntity):
                 "resource_destructions": 0,
                 "status": obj.status,
                 "log_read_url": f"{terrarun.config.Config().BASE_URL}/api/v2/applies/{obj.api_id}/log",
-                "execution_details": AgentExecutionDetailsEntity.from_object(obj=obj, effective_user=effective_user),
-                "status_timestamps": ExecutionStatusTimestampsEntity.from_object(obj=obj, effective_user=effective_user),
+                "execution_details": AgentExecutionDetailsEntity.from_object(obj=obj, auth_context=auth_context),
+                "status_timestamps": ExecutionStatusTimestampsEntity.from_object(obj=obj, auth_context=auth_context),
             }
         )
 
