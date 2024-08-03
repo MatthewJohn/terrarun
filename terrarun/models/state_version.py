@@ -15,8 +15,11 @@ import terrarun.database
 from terrarun.models.blob import Blob
 from terrarun.models.state_version_output import StateVersionOutput
 import terrarun.models.user
-
+import terrarun.presign
 import terrarun.utils
+import terrarun.models.workspace
+import terrarun.models.run
+
 
 class StateVersionStatus(Enum):
     """Status of agent"""
@@ -37,11 +40,11 @@ class StateVersion(Base, BaseObject):
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
     api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
-    workspace_id = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
-    workspace = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")
+    workspace_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
+    workspace: 'terrarun.models.workspace.Workspace' = sqlalchemy.orm.relationship("Workspace", back_populates="state_versions")
 
-    run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=True)
-    run = sqlalchemy.orm.relationship("Run", back_populates="state_versions")
+    run_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=True)
+    run: Optional['terrarun.models.run.Run'] = sqlalchemy.orm.relationship("Run", back_populates="state_versions")
 
     # Optional references to either plan that generated state or apply
     apply = sqlalchemy.orm.relationship("Apply", back_populates="state_version")
@@ -126,6 +129,50 @@ class StateVersion(Base, BaseObject):
         """Obtain first unprocessed state version"""
         session = Database.get_session()
         return session.query(cls).where(cls.resources_processed!=True).first()
+
+    def can_upload_state(self, effective_user: 'terrarun.models.user.User') -> bool:
+        """Whether state can be uploaded"""
+        if self.status is not StateVersionStatus.PENDING:
+            return False
+
+        if not self.workspace.locked:
+            return False
+
+        # @TODO Don't use IDs, but logic to check if both are none or both the IDs match is less obvious
+        if self.workspace.locked_by_run_id != self.run_id:
+            return False
+
+        if self.workspace.locked_by_user_id != effective_user.id:
+            return False
+
+        return True
+
+    def get_state_upload_url(self, effective_user: 'terrarun.models.user.User'):
+        """Generate state upload URL"""
+        if self.can_upload_state(effective_user=effective_user) and self._state is None:
+            url_generator = terrarun.presign.PresignedUrlGenerator()
+            return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/upload")
+
+    def get_state_json_upload_url(self, effective_user: 'terrarun.models.user.User'):
+        """Generate state upload URL"""
+        if self.can_upload_state(effective_user=effective_user) and self._state_json is None:
+            return None
+        url_generator = terrarun.presign.PresignedUrlGenerator()
+        return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/json-upload")
+
+    def get_state_download_url(self, effective_user: 'terrarun.models.user.User'):
+        """Generate state upload URL"""
+        if self._state is None:
+            return None
+        url_generator = terrarun.presign.PresignedUrlGenerator()
+        return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/download")
+
+    def get_state_json_download_url(self, effective_user: 'terrarun.models.user.User'):
+        """Generate state upload URL"""
+        if self._state_json is None:
+            return None
+        url_generator = terrarun.presign.PresignedUrlGenerator()
+        return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/json-download")
 
     @property
     def resources(self):

@@ -4,7 +4,7 @@
 import json
 import os
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -95,7 +95,7 @@ class Run(Base, BaseObject):
     configuration_version_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
     configuration_version: 'terrarun.models.configuration.ConfigurationVersion' = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
 
-    state_versions = sqlalchemy.orm.relationship("StateVersion", back_populates="run")
+    state_versions: List['terrarun.models.state_version.StateVersion'] = sqlalchemy.orm.relationship("StateVersion", back_populates="run")
     plans = sqlalchemy.orm.relationship("Plan", back_populates="run")
 
     run_queue = sqlalchemy.orm.relationship("RunQueue", back_populates="run", uselist=False)
