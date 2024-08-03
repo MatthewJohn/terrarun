@@ -154,6 +154,19 @@ popd
 # Kill agent
 kill -9 $tfc_agent_pid
 
+# Run tfe provider compatibility tests
+pushd tests/e2e/terraform/tfe_provider
+    # Create Terraform tfvars file with terrarun token
+    cat > terraform.tfvars <<-EOF
+    tfe_token = "$TFE_TOKEN"
+EOF
+
+    timeout --signal=TERM 1m \
+        terraform init
+    timeout --signal=TERM 3m \
+        terraform test
+popd
+
 # Teardown stack
 cd $TERRARUN_DIR
 docker compose down --volumes
