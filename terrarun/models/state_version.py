@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0
 
 from enum import Enum
-from typing import Optional
+from typing import Optional, Dict, Any
 import json
 
 import sqlalchemy
@@ -54,12 +54,11 @@ class StateVersion(Base, BaseObject):
     resources_processed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     state_version_outputs = sqlalchemy.orm.relationship("StateVersionOutput", back_populates="state_version")
 
-    state_json_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="fk_blob_state_version_state_json"), nullable=True)
-    _state_json = sqlalchemy.orm.relationship("Blob", foreign_keys=[state_json_id])
-
-    # Binary JSON
     state_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="fk_blob_state_version_state"), nullable=True)
-    _state = sqlalchemy.orm.relation("Blob", foreign_keys=[state_json_id])
+    _state = sqlalchemy.orm.relation("Blob", foreign_keys=[state_id])
+
+    json_state_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="fk_blob_state_version_json_state"), nullable=True)
+    _json_state = sqlalchemy.orm.relationship("Blob", foreign_keys=[json_state_id])
 
     # Attributes provided by user to verify state
     lineage: Optional[str] = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True, default=None)
@@ -82,43 +81,74 @@ class StateVersion(Base, BaseObject):
                                                    default=StateVersionStatus.PENDING)
 
     @property
-    def state_json(self):
-        """Return plan output value"""
-        if self._state_json and self._state_json.data:
-            return json.loads(self._state_json.data.decode('utf-8'))
-        return {}
+    def state(self) -> Optional[Dict[str, Any]]:
+        """Return state JSON"""
+        if self._state and self._state.data:
+            return json.loads(self._state.data.decode('utf-8'))
+        return None
 
-    @state_json.setter
-    def state_json(self, value):
+    @state.setter
+    def state(self, value: Optional[Dict[str, Any]]):
         """Set plan output"""
         session = Database.get_session()
 
-        if self._state_json:
-            state_json_blob = self._state_json
-            session.refresh(state_json_blob)
+        if self._state:
+            state_blob = self._state
+            session.refresh(state_blob)
         else:
-            state_json_blob = Blob()
+            state_blob = Blob()
 
         if value is not None:
-            state_json_blob.data = bytes(json.dumps(value), 'utf-8')
+            state_blob.data = bytes(json.dumps(value), 'utf-8')
         else:
-            state_json_blob.data = None
+            state_blob.data = None
 
-        session.add(state_json_blob)
+        session.add(state_blob)
         # @TODO this does not work when creating object
         #session.refresh(self)
-        self._state_json = state_json_blob
+        self._state = state_blob
+        session.add(self)
+        session.commit()
+
+    @property
+    def json_state(self) -> Optional[Dict[str, Any]]:
+        """Return plan output value"""
+        if self._json_state and self._json_state.data:
+            return json.loads(self._json_state.data.decode('utf-8'))
+        return None
+
+    @json_state.setter
+    def json_state(self, value: Optional[Dict[str, Any]]):
+        """Set plan output"""
+        session = Database.get_session()
+
+        if self._json_state:
+            json_state_blob = self._json_state
+            session.refresh(json_state_blob)
+        else:
+            json_state_blob = Blob()
+
+        if value is not None:
+            json_state_blob.data = bytes(json.dumps(value), 'utf-8')
+        else:
+            json_state_blob.data = None
+
+        session.add(json_state_blob)
+        # @TODO this does not work when creating object
+        #session.refresh(self)
+        self._json_state = json_state_blob
         session.add(self)
         session.commit()
 
     @classmethod
-    def create_from_state_json(cls, run, workspace, created_by, state_json, session=None):
+    def create(cls, run, workspace, created_by, state, json_state, session=None):
         """Create StateVersion from state_json."""
         sv = cls(run=run, workspace=workspace, created_by=created_by)
         session = Database.get_session()
         session.add(sv)
         session.commit()
-        sv.state_json=state_json
+        sv.state = state
+        sv.json_state = json_state
         sv.intermediate = True
         sv.status = StateVersionStatus.PENDING
 
@@ -153,9 +183,9 @@ class StateVersion(Base, BaseObject):
             url_generator = terrarun.presign.PresignedUrlGenerator()
             return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/upload")
 
-    def get_state_json_upload_url(self, effective_user: 'terrarun.models.user.User'):
+    def get_json_state_upload_url(self, effective_user: 'terrarun.models.user.User'):
         """Generate state upload URL"""
-        if self.can_upload_state(effective_user=effective_user) and self._state_json is None:
+        if self.can_upload_state(effective_user=effective_user) and self._json_state is None:
             return None
         url_generator = terrarun.presign.PresignedUrlGenerator()
         return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/json-upload")
@@ -167,9 +197,9 @@ class StateVersion(Base, BaseObject):
         url_generator = terrarun.presign.PresignedUrlGenerator()
         return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/download")
 
-    def get_state_json_download_url(self, effective_user: 'terrarun.models.user.User'):
+    def get_json_state_download_url(self, effective_user: 'terrarun.models.user.User'):
         """Generate state upload URL"""
-        if self._state_json is None:
+        if self._json_state is None:
             return None
         url_generator = terrarun.presign.PresignedUrlGenerator()
         return url_generator.create_url(effective_user, f"/api/v2/state-versions/{self.api_id}/json-download")
@@ -177,7 +207,7 @@ class StateVersion(Base, BaseObject):
     @property
     def resources(self):
         """Return resources"""
-        return self.state_json['resources'] if self.state_json else []
+        return self.state['resources'] if self.state else []
 
     @property
     def providers(self):
@@ -210,8 +240,8 @@ class StateVersion(Base, BaseObject):
         """Process resources"""
         # Create state version outputs for each output
         # in state
-        if self.state_json:
-            for output_name, output_data in self.state_json.get("outputs").items():
+        if state := self.state:
+            for output_name, output_data in state.get("outputs").items():
                 StateVersionOutput.create_from_state_output(state_version=self, name=output_name, data=output_data)
 
         # Set resources_processed to True and mark as finalized

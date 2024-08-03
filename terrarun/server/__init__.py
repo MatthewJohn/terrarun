@@ -2679,11 +2679,11 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
             
         created_by = current_user if current_user is not None else run.created_by if run is not None else None
 
-        state_version = StateVersion.create_from_state_json(
+        state_version = StateVersion.create(
             workspace=workspace,
             run=run,
             created_by=created_by,
-            state_json=json.loads(base64.b64decode(state_base64).decode('utf-8')) if state_base64 else None
+            state=json.loads(base64.b64decode(state_base64).decode('utf-8')) if state_base64 else None
         )
         if not state_version:
             return {}, 400

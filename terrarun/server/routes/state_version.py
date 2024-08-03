@@ -81,4 +81,4 @@ class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
         state_version = StateVersion.get_by_api_id(state_version_id)
         if not state_version:
             return {}, 404
-        return state_version.state_json
+        return state_version.state
