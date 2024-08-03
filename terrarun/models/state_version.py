@@ -19,6 +19,7 @@ import terrarun.presign
 import terrarun.utils
 import terrarun.models.workspace
 import terrarun.models.run
+import terrarun.models.run_queue
 import terrarun.auth_context
 
 
@@ -67,7 +68,7 @@ class StateVersion(Base, BaseObject):
 
     # Values cached from json data
     serial: Optional[int] = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=None)
-    state_version: Optional[int] = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=None)
+    state_version: Optional[int] = sqlalchemy.Column(sqlalchemy.Integer, nullable=True, default=None, unique=True)
     terraform_version: Optional[str] = sqlalchemy.Column(Database.GeneralString, nullable=True, default=None)
 
     intermediate: bool = sqlalchemy.Column(sqlalchemy.Boolean, nullable=False, default=True)
@@ -148,10 +149,18 @@ class StateVersion(Base, BaseObject):
         session = Database.get_session()
         session.add(sv)
         session.commit()
-        sv.state = state
-        sv.json_state = json_state
-        sv.intermediate = True
+        if json_state:
+            sv.json_state = json_state
+
         sv.status = StateVersionStatus.PENDING
+        if state:
+            sv.status = StateVersionStatus.FINALIZED
+            sv.state = state
+
+        sv.intermediate = True
+
+        session.add(sv)
+        session.commit()
 
         return sv
 
@@ -159,7 +168,29 @@ class StateVersion(Base, BaseObject):
     def get_state_version_to_process(cls):
         """Obtain first unprocessed state version"""
         session = Database.get_session()
-        return session.query(cls).where(cls.resources_processed!=True).first()
+        return session.query(cls).where(
+            cls.resources_processed!=True,
+            cls.status==StateVersionStatus.FINALIZED,
+        ).first()
+
+    def handle_state_upload(self, state: Any, auth_context: 'terrarun.auth_context.AuthContext') -> bool:
+        """Handle upload of state"""
+        if not self.can_upload_state(auth_context=auth_context) or self._state is not None:
+            return False
+
+        # Set status to FINALIZED
+        self.update_attributes(status=StateVersionStatus.FINALIZED)
+
+        self.state = state
+        return True
+
+    def handle_json_state_upload(self, json_state: Any, auth_context: 'terrarun.auth_context.AuthContext') -> bool:
+        """Handle upload of state"""
+        if not self.can_upload_state(auth_context=auth_context) or self._state is not None:
+            return False
+
+        self.json_state = json_state
+        return True
 
     def can_upload_state(self, auth_context: 'terrarun.auth_context.AuthContext') -> bool:
         """Whether state can be uploaded"""
@@ -170,10 +201,10 @@ class StateVersion(Base, BaseObject):
             return False
 
         # @TODO Don't use IDs, but logic to check if both are none or both the IDs match is less obvious
-        if self.workspace.locked_by_run_id != self.run_id:
-            return False
-
-        if self.workspace.locked_by_user_id != auth_context.user.id:
+        if self.workspace.locked_by_run:
+            if self.workspace.locked_by_run.api_id != self.run.api_id:
+                return False
+        elif self.workspace.locked_by_user_id != auth_context.user.id if auth_context.user else None:
             return False
 
         return True
@@ -232,7 +263,7 @@ class StateVersion(Base, BaseObject):
 
             if resource_type not in modules[module]:
                 modules[module][resource_type] = 0
-            
+
             modules[module][resource_type] += 1
 
         return modules
@@ -245,61 +276,15 @@ class StateVersion(Base, BaseObject):
             for output_name, output_data in state.get("outputs").items():
                 StateVersionOutput.create_from_state_output(state_version=self, name=output_name, data=output_data)
 
-        # Set resources_processed to True and mark as finalized
-        self.update_attributes(resources_processed=True, status=StateVersionStatus.FINALIZED)
+            self.update_attributes(
+                state_version=state.get("version"),
+                serial=state.get("serial"),
+                lineage=state.get("lineage"),
+                terraform_version=state.get("terraform_version"),
+        )
 
-    def get_api_details(self):
-        """Return API details."""
-        config = terrarun.config.Config()
-        return {
-            "id": self.api_id,
-            "type": "state-versions",
-            "attributes": {
-                "created-at": terrarun.utils.datetime_to_json(self.created_at),
-                "size": 940,
-                "hosted-state-download-url": f"{config.BASE_URL}/api/v2/state-versions/{self.api_id}/download",
-                "modules": self.modules,
-                "providers": self.providers,
-                "resources": self.resources,
-                "resources-processed": bool(self.resources_processed),
-                "serial": self.serial,
-                "state-version": self.state_version,
-                "status": self.status.value,
-                "terraform-version": self.terraform_version,
-                "vcs-commit-url": "https://gitlab.com/my-organization/terraform-test/-/commit/abcdef12345",
-                "vcs-commit-sha": "abcdef12345"
-            },
-            "relationships": {
-                "run": {
-                    "data": {
-                        "id": self.run.api_id,
-                        "type": "runs"
-                    }
-                } if self.run else {},
-                "created-by": {
-                    "data": {
-                        "id": self.created_by.api_id,
-                        "type": "users"
-                    },
-                    "links": {
-                        "self": f"/api/v2/users/{self.created_by.api_id}",
-                        "related": f"/api/v2/runs/{self.api_id}/created-by"
-                    }
-                } if self.created_by else {},
-                "workspace": {
-                    "data": {
-                        "id": self.workspace.api_id,
-                        "type": "workspaces"
-                    }
-                },
-                "outputs": {
-                    "data": [
-                        state_version_output.get_relationship()
-                        for state_version_output in self.state_version_outputs
-                    ]
-                }
-            },
-            "links": {
-                "self": f"/api/v2/state-versions/{self.api_id}"
-            }
-        }
+        # Set resources_processed to True and mark as finalized
+        self.update_attributes(
+            resources_processed=True,
+            status=StateVersionStatus.FINALIZED,
+        )

@@ -2512,7 +2512,7 @@ class ApiTerraformWorkspaceLatestStateVersion(AuthenticatedEndpoint):
         if not state:
             return {}, 404
         
-        return {'data': state.get_api_details()}
+        return StateVersionView.from_object(obj=state, auth_context=auth_context).to_response()
 
 
 class ApiTerraformWorkspaceLatestStateVersionOutputs(AuthenticatedEndpoint):
@@ -2666,6 +2666,7 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
         assert data.get("type") == "state-versions"
 
         state_base64 = data.get("attributes", {}).get("state", None)
+        json_state_base64 = data.get("attributes", {}).get("json-state", None)
 
         run_id = data.get("relationships", {}).get("run", {}).get("data", {}).get("id", None)
         run = None
@@ -2684,7 +2685,8 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
             workspace=workspace,
             run=run,
             created_by=created_by,
-            state=json.loads(base64.b64decode(state_base64).decode('utf-8')) if state_base64 else None
+            state=json.loads(base64.b64decode(state_base64).decode('utf-8')) if state_base64 else None,
+            json_state=json.loads(base64.b64decode(json_state_base64).decode('utf-8')) if json_state_base64 else None,
         )
         if not state_version:
             return {}, 400
@@ -2693,7 +2695,7 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
             # Update run with state version
             run.plan.apply.update_attributes(state_version=state_version)
 
-        return {'data': state_version.get_api_details()}
+        return StateVersionView.from_object(obj=state_version, auth_context=auth_context).to_response()
 
 
 class ApiTerraformStateVersionOutput(AuthenticatedEndpoint):
