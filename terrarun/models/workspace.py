@@ -61,7 +61,7 @@ class Workspace(Base, BaseObject):
         nullable=False)
     environment = sqlalchemy.orm.relationship("Environment", back_populates="workspaces", lazy='select')
 
-    state_versions = sqlalchemy.orm.relationship("StateVersion", back_populates="workspace")
+    state_versions = sqlalchemy.orm.relationship("StateVersion", back_populates="workspace", lazy='select')
     configuration_versions = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="workspace")
 
     team_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="workspace", lazy='select')
@@ -186,9 +186,16 @@ class Workspace(Base, BaseObject):
     @property
     def latest_state(self):
         """Return latest state version"""
-        if self.state_versions:
-            return self.state_versions[-1]
-        return None
+        session = terrarun.database.Database.get_session()
+        return session.query(
+            terrarun.models.state_version.StateVersion
+        ).filter(
+            terrarun.models.state_version.StateVersion.workspace==self,
+            terrarun.models.state_version.StateVersion.status==terrarun.models.state_version.StateVersionStatus.FINALIZED,
+            terrarun.models.state_version.StateVersion.intermediate==False,
+        ).order_by(
+            terrarun.models.state_version.StateVersion.state_version.desc()
+        ).limit(1).first()
 
     @property
     def latest_run(self):
@@ -580,10 +587,12 @@ class Workspace(Base, BaseObject):
             session.commit()
         return True
 
-    def unlock(self, user=None, run=None, force=False):
+    def unlock(self, user: Optional['terrarun.models.user.User']=None, run: Optional['terrarun.models.run.Run']=None, force: bool=False):
         """Unlock workspace"""
         if not self.locked:
             return False
+
+        session = Database.get_session()
 
         # Handle force unlock
         if force:
@@ -595,11 +604,16 @@ class Workspace(Base, BaseObject):
             self.locked_by_user = None
         elif self.locked_by_run and run and self.locked_by_run == run:
             self.locked_by_run = None
+
+            # Remove intermediate from state versions of run, if available
+            for state_version in run.state_versions:
+                if state_version.intermediate:
+                    state_version.intermediate = False
+                    session.add(state_version)
         else:
             # Otherwise, not able to unlock
             return False
 
-        session = Database.get_session()
         session.add(self)
         session.commit()
         return True
