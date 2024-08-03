@@ -14,3 +14,4 @@ schedule==1.2.0
 semantic-version==2.10.0
 blinker==1.6.2
 werkzeug<3
+typing_extensions==4.12.2
