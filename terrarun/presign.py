@@ -61,7 +61,7 @@ class RequestSignature:
     def deserialise(serialized: str):
         data = json.loads(serialized)
 
-        if data is None:
+        if data is None or not isinstance(data, dict):
             return None
 
         user = None
