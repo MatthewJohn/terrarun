@@ -6,12 +6,14 @@ import base64
 import json
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from cryptography.fernet import Fernet
 from werkzeug.wrappers.request import Request
 
 import terrarun.config
 from terrarun.models.user import User
+from terrarun.models.run_queue import RunQueue
 from terrarun.utils import datetime_from_json
 
 
@@ -41,13 +43,15 @@ class Presign:
 class RequestSignature:
     """Class containing the request signature data."""
 
-    user_id: str
+    user: Optional[User]
+    job: Optional[RunQueue]
     path: str
     created_at: datetime
 
     def serialize(self) -> str:
         data = {
-            "user_id": self.user_id,
+            "user_id": self.user.api_id if self.user else None,
+            "job_id": self.job.api_id if self.job else None,
             "path": self.path,
             "created_at": self.created_at.isoformat(),
         }
@@ -60,8 +64,17 @@ class RequestSignature:
         if data is None:
             return None
 
+        user = None
+        if user_id := data.get("user_id"):
+            user = User.get_by_api_id(user_id)
+
+        job = None
+        if job_id := data.get("job_id"):
+            job = RunQueue.get_by_api_id(job_id)
+
         return RequestSignature(
-            user_id=data.get("user_id"),
+            user=user,
+            job=job,
             path=data.get("path"),
             created_at=datetime_from_json(data.get("created_at")),
         )
@@ -72,10 +85,15 @@ class PresignedUrlGenerator:
 
     ARG_NAME = "sigkey"
 
-    def create_url(self, effective_user: User, path: str) -> str:
+    def create_url(self, effective_user: Optional['User'], job: Optional['RunQueue'], path: str) -> str:
         """Return signature for the url"""
 
-        signature_data = RequestSignature(effective_user.id, path, datetime.now())
+        signature_data = RequestSignature(
+            user=effective_user,
+            job=job,
+            path=path,
+            created_at=datetime.now()
+        )
 
         presign = Presign()
         signature = presign.encrypt(signature_data.serialize())
@@ -88,7 +106,8 @@ class PresignedRequestValidatorError(Exception):
 
 
 class PresignedRequestValidator:
-    def validate(self, request: Request) -> str:
+
+    def validate(self, request: Request) -> RequestSignature:
         """Verify the request and return the effective user id"""
 
         signature_list = request.args.getlist(PresignedUrlGenerator.ARG_NAME)
@@ -112,4 +131,4 @@ class PresignedRequestValidator:
 
         # @TODO Check the creation date and add a time limit
 
-        return signature_data.user_id
+        return signature_data
