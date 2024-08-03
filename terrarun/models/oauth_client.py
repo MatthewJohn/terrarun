@@ -495,7 +495,7 @@ class OauthClient(Base, BaseObject):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
@@ -515,7 +515,7 @@ class OauthClient(Base, BaseObject):
     )
     organisation = sqlalchemy.orm.relationship("Organisation", back_populates="oauth_clients")
 
-    oauth_tokens = sqlalchemy.orm.relation("OauthToken", back_populates="oauth_client")
+    oauth_tokens = sqlalchemy.orm.relationship("OauthToken", back_populates="oauth_client")
 
     @classmethod
     def get_by_callback_uuid(cls, callback_uuid):

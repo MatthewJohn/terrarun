@@ -46,15 +46,15 @@ class ConfigurationVersion(Base, BaseObject):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     workspace_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("workspace.id"), nullable=False)
     workspace: 'terrarun.models.workspace.Workspace' = sqlalchemy.orm.relationship("Workspace", back_populates="configuration_versions")
 
     configuration_blob_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    configuration_blob = sqlalchemy.orm.relation("Blob", foreign_keys=[configuration_blob_id])
+    configuration_blob = sqlalchemy.orm.relationship("Blob", foreign_keys=[configuration_blob_id])
 
-    runs = sqlalchemy.orm.relation("Run", back_populates="configuration_version")
+    runs = sqlalchemy.orm.relationship("Run", back_populates="configuration_version")
 
     speculative = sqlalchemy.Column(sqlalchemy.Boolean)
     auto_queue_runs = sqlalchemy.Column(sqlalchemy.Boolean)

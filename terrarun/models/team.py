@@ -28,7 +28,7 @@ class Team(Base, BaseObject):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
 
@@ -49,7 +49,7 @@ class Team(Base, BaseObject):
 
     users = sqlalchemy.orm.relationship("TeamUserMembership", back_populates="team")
 
-    workspace_accesses = sqlalchemy.orm.relation("TeamWorkspaceAccess", back_populates="team")
+    workspace_accesses = sqlalchemy.orm.relationship("TeamWorkspaceAccess", back_populates="team")
 
     def get_api_details(self):
         """Return API details for organisation"""

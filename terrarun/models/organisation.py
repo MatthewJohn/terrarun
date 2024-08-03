@@ -40,7 +40,7 @@ class Organisation(Base, BaseObject):
     __tablename__ = 'organisation'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     # User-chosen name of org
     name = sqlalchemy.Column(terrarun.database.Database.GeneralString)
@@ -84,7 +84,7 @@ class Organisation(Base, BaseObject):
     )
 
     default_agent_pool_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent_pool.id", name="fk_organisation_default_agent_pool_id"), nullable=True)
-    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relation("AgentPool", foreign_keys=[default_agent_pool_id])
+    default_agent_pool: Optional['terrarun.models.agent_pool.AgentPool'] = sqlalchemy.orm.relationship("AgentPool", foreign_keys=[default_agent_pool_id])
 
     fair_run_queuing_enabled = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     two_factor_conformant = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
@@ -97,13 +97,13 @@ class Organisation(Base, BaseObject):
     send_passing_statuses_for_untriggered_speculative_plans = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     owners_team_saml_role_id = sqlalchemy.Column(terrarun.database.Database.GeneralString, default=None)
 
-    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="organisation")
-    tags = sqlalchemy.orm.relation("Tag", back_populates="organisation")
-    audit_events = sqlalchemy.orm.relation("AuditEvent", back_populates="organisation")
-    environments = sqlalchemy.orm.relation("Environment", back_populates="organisation")
-    lifecycles = sqlalchemy.orm.relation("Lifecycle", back_populates="organisation", foreign_keys=[Lifecycle.organisation_id])
-    projects = sqlalchemy.orm.relation("Project", back_populates="organisation")
-    oauth_clients = sqlalchemy.orm.relation("OauthClient", back_populates="organisation")
+    workspaces = sqlalchemy.orm.relationship("Workspace", back_populates="organisation")
+    tags = sqlalchemy.orm.relationship("Tag", back_populates="organisation")
+    audit_events = sqlalchemy.orm.relationship("AuditEvent", back_populates="organisation")
+    environments = sqlalchemy.orm.relationship("Environment", back_populates="organisation")
+    lifecycles = sqlalchemy.orm.relationship("Lifecycle", back_populates="organisation", foreign_keys=[Lifecycle.organisation_id])
+    projects = sqlalchemy.orm.relationship("Project", back_populates="organisation")
+    oauth_clients = sqlalchemy.orm.relationship("OauthClient", back_populates="organisation")
 
     default_lifecycle_id = sqlalchemy.Column(
         sqlalchemy.ForeignKey("lifecycle.id", name="fk_organisation_default_lifecycle_id_lifecycle_id"),
@@ -111,9 +111,9 @@ class Organisation(Base, BaseObject):
     )
     default_lifecycle = sqlalchemy.orm.relationship("Lifecycle", foreign_keys=[default_lifecycle_id], lazy=True)
 
-    teams = sqlalchemy.orm.relation("Team", back_populates="organisation")
+    teams = sqlalchemy.orm.relationship("Team", back_populates="organisation")
 
-    tasks = sqlalchemy.orm.relation("Task", back_populates="organisation")
+    tasks = sqlalchemy.orm.relationship("Task", back_populates="organisation")
 
     @classmethod
     def get_by_name_id(cls, name_id: str) -> Optional['Organisation']:

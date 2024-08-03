@@ -22,12 +22,12 @@ class LifecycleEnvironmentGroup(Base, BaseObject):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id", name="fk_lifecycle_environment_group_api_id_id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     lifecycle_id = sqlalchemy.Column(sqlalchemy.ForeignKey("lifecycle.id", name="fk_lifecycle_environment_group_lifecycle_id_lifecycle_id"))
     lifecycle = sqlalchemy.orm.relationship("Lifecycle", back_populates="lifecycle_environment_groups")
 
-    lifecycle_environments = sqlalchemy.orm.relation("LifecycleEnvironment", back_populates="lifecycle_environment_group")
+    lifecycle_environments = sqlalchemy.orm.relationship("LifecycleEnvironment", back_populates="lifecycle_environment_group")
 
     order = sqlalchemy.Column(sqlalchemy.Integer)
 

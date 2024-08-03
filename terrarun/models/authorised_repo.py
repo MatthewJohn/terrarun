@@ -25,7 +25,7 @@ class AuthorisedRepo(Base, BaseObject):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
@@ -47,12 +47,12 @@ class AuthorisedRepo(Base, BaseObject):
 
     # Store vendor-specific information about the repository
     vendor_configuration_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id"), nullable=True)
-    _vendor_configuration = sqlalchemy.orm.relation("Blob", foreign_keys=[vendor_configuration_id])
+    _vendor_configuration = sqlalchemy.orm.relationship("Blob", foreign_keys=[vendor_configuration_id])
 
-    projects = sqlalchemy.orm.relation("Project", back_populates="authorised_repo")
-    workspaces = sqlalchemy.orm.relation("Workspace", back_populates="workspace_authorised_repo")
+    projects = sqlalchemy.orm.relationship("Project", back_populates="authorised_repo")
+    workspaces = sqlalchemy.orm.relationship("Workspace", back_populates="workspace_authorised_repo")
 
-    ingress_attributes = sqlalchemy.orm.relation("IngressAttribute", back_populates="authorised_repo")
+    ingress_attributes = sqlalchemy.orm.relationship("IngressAttribute", back_populates="authorised_repo")
 
     @classmethod
     def create(cls, oauth_token, provider_id, external_id, display_identifier, name, http_url, session=None):

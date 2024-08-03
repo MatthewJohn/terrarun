@@ -16,7 +16,7 @@ class TeamUserMembership(Base):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id", name="team_user_membership_api_id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     team_id = sqlalchemy.Column(sqlalchemy.ForeignKey("team.id"), nullable=False)
     team = sqlalchemy.orm.relationship("Team", back_populates="users")

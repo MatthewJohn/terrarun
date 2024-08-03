@@ -24,12 +24,12 @@ class AgentPool(Base, BaseObject):
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     organisation_id = sqlalchemy.Column(sqlalchemy.ForeignKey("organisation.id", name="fk_agent_pool_organisation_id"), nullable=True)
     organisation = sqlalchemy.orm.relationship("Organisation", foreign_keys=[organisation_id])
 
-    agents = sqlalchemy.orm.relation("Agent", back_populates="agent_pool")
+    agents = sqlalchemy.orm.relationship("Agent", back_populates="agent_pool")
 
     organisation_scoped = sqlalchemy.Column(sqlalchemy.Boolean, default=False, name="allow_all_workspaces")
 

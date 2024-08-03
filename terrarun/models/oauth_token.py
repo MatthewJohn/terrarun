@@ -22,7 +22,7 @@ class OauthToken(Base, BaseObject):
 
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     created_at = sqlalchemy.Column(sqlalchemy.DateTime, default=sqlalchemy.sql.func.now())
 
@@ -36,7 +36,7 @@ class OauthToken(Base, BaseObject):
     ssh_key = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
     token = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True)
 
-    authorised_repos = sqlalchemy.orm.relation("AuthorisedRepo", back_populates="oauth_token")
+    authorised_repos = sqlalchemy.orm.relationship("AuthorisedRepo", back_populates="oauth_token")
 
     @classmethod
     def create(cls, oauth_client, service_provider_user, token, session=None):

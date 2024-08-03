@@ -29,9 +29,9 @@ class TaskExecutionUserAccess(Base):
     __tablename__ = 'task_execution_user_access'
 
     user_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id"), nullable=False, primary_key=True)
-    user = sqlalchemy.orm.relation("User")
+    user = sqlalchemy.orm.relationship("User")
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
-    run = sqlalchemy.orm.relation("Run")
+    run = sqlalchemy.orm.relationship("Run")
     
 
 
@@ -42,7 +42,7 @@ class User(Base, BaseObject):
     __tablename__ = 'user'
     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
     api_id_fk = sqlalchemy.Column(sqlalchemy.ForeignKey("api_id.id"), nullable=True)
-    api_id_obj = sqlalchemy.orm.relation("ApiId", foreign_keys=[api_id_fk])
+    api_id_obj = sqlalchemy.orm.relationship("ApiId", foreign_keys=[api_id_fk])
 
     username = sqlalchemy.Column(terrarun.database.Database.GeneralString, unique=True)
     salt = sqlalchemy.Column(sqlalchemy.BLOB)
@@ -52,8 +52,8 @@ class User(Base, BaseObject):
     site_admin = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     user_type = sqlalchemy.Column(sqlalchemy.Enum(UserType, default=UserType.NORMAL))
 
-    user_tokens = sqlalchemy.orm.relation("UserToken", back_populates="user")
-    ingress_attributes = sqlalchemy.orm.relation("IngressAttribute", back_populates="creator")
+    user_tokens = sqlalchemy.orm.relationship("UserToken", back_populates="user")
+    ingress_attributes = sqlalchemy.orm.relationship("IngressAttribute", back_populates="creator")
 
     teams = sqlalchemy.orm.relationship("TeamUserMembership", back_populates="user")
 
