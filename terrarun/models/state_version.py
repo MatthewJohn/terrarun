@@ -3,6 +3,7 @@
 
 from enum import Enum
 from typing import Optional, Dict, Any
+from typing_extensions import Self
 import json
 
 import sqlalchemy
@@ -165,7 +166,7 @@ class StateVersion(Base, BaseObject):
         return sv
 
     @classmethod
-    def get_state_version_to_process(cls):
+    def get_state_version_to_process(cls) -> Self:
         """Obtain first unprocessed state version"""
         session = Database.get_session()
         return session.query(cls).where(

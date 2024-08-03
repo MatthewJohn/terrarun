@@ -20,6 +20,7 @@ import terrarun.models.tool
 import terrarun.utils
 import terrarun.models.configuration
 import terrarun.models.user
+import terrarun.models.task_stage
 import terrarun.auth_context
 from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 from terrarun.api_request import ApiRequest
@@ -122,7 +123,7 @@ class Run(Base, BaseObject):
     created_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_created_by_id_user_id"), nullable=True)
     created_by = sqlalchemy.orm.relationship("User", foreign_keys=[created_by_id])
 
-    task_stages = sqlalchemy.orm.relationship("TaskStage", back_populates="run")
+    task_stages: List['terrarun.models.task_stage.TaskStage'] = sqlalchemy.orm.relationship("TaskStage", back_populates="run")
 
     @property
     def replace_addrs(self):

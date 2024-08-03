@@ -1,7 +1,7 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
-from typing import Tuple
+from typing import Tuple, Optional
 
 import sqlalchemy
 
@@ -23,7 +23,7 @@ import terrarun.workspace_execution_mode
 class JobProcessor:
 
     @staticmethod
-    def get_worker_job():
+    def get_worker_job() -> Optional['terrarun.models.run.Run']:
         """Get first run by type"""
         session = Database.get_session()
         run = None
@@ -158,7 +158,7 @@ class JobProcessor:
         # Set to with_for_updates to lock row, avoiding any other requests taking the plan
         query = query.with_for_update()
 
-        job = query.first()
+        job: Optional['terrarun.models.run_queue.RunQueue'] = query.first()
         # Add agent to row, if one has been returned
         if job:
             job.agent = agent
