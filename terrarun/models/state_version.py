@@ -96,7 +96,10 @@ class StateVersion(Base, BaseObject):
         else:
             state_json_blob = Blob()
 
-        state_json_blob.data = bytes(json.dumps(value), 'utf-8')
+        if value is not None:
+            state_json_blob.data = bytes(json.dumps(value), 'utf-8')
+        else:
+            state_json_blob.data = None
 
         session.add(state_json_blob)
         # @TODO this does not work when creating object
@@ -113,6 +116,8 @@ class StateVersion(Base, BaseObject):
         session.add(sv)
         session.commit()
         sv.state_json=state_json
+        sv.intermediate = True
+        sv.status = StateVersionStatus.PENDING
 
         return sv
 
@@ -125,7 +130,7 @@ class StateVersion(Base, BaseObject):
     @property
     def resources(self):
         """Return resources"""
-        return self.state_json['resources']
+        return self.state_json['resources'] if self.state_json else []
 
     @property
     def providers(self):
@@ -158,8 +163,9 @@ class StateVersion(Base, BaseObject):
         """Process resources"""
         # Create state version outputs for each output
         # in state
-        for output_name, output_data in self.state_json.get("outputs").items():
-            StateVersionOutput.create_from_state_output(state_version=self, name=output_name, data=output_data)
+        if self.state_json:
+            for output_name, output_data in self.state_json.get("outputs").items():
+                StateVersionOutput.create_from_state_output(state_version=self, name=output_name, data=output_data)
 
         # Set resources_processed to True and mark as finalized
         self.update_attributes(resources_processed=True, status=StateVersionStatus.FINALIZED)
