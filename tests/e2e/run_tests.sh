@@ -111,7 +111,7 @@ curl 'https://terrarun/api/v2/admin/terraform-versions' \
     -H "Authorization: Bearer $TFE_TOKEN" \
     -H 'Content-Type: application/json' \
     --fail \
-    --data-raw '{"data":{"type":"terraform-versions","attributes":{"version":"1.4.5","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}}'
+    --data-raw '{"data":{"type":"terraform-versions","attributes":{"version":"1.9.3","url":"","checksum-url":"","sha":"","deprecated":false,"enabled":true}}}'
 
 # Assign Terraform tool to project
 curl "https://terrarun/api/v2/projects/$project_id" \
@@ -119,7 +119,7 @@ curl "https://terrarun/api/v2/projects/$project_id" \
     -H "Authorization: Bearer $TFE_TOKEN" \
     -H 'Content-Type: application/json' \
     --fail \
-    --data-raw '{"data":{"type":"projects","attributes":{"terraform-version":"1.4.5"}}}'
+    --data-raw '{"data":{"type":"projects","attributes":{"terraform-version":"1.9.3"}}}'
 
 # Start agent
 tfc-agent -address https://terrarun -token=$agent_token -log-level=TRACE  -auto-update=disabled &
@@ -153,6 +153,19 @@ popd
 
 # Kill agent
 kill -9 $tfc_agent_pid
+
+# Run tfe provider compatibility tests
+pushd tests/e2e/terraform/tfe_provider
+    # Create Terraform tfvars file with terrarun token
+    cat > terraform.tfvars <<-EOF
+    tfe_token = "$TFE_TOKEN"
+EOF
+
+    timeout --signal=TERM 1m \
+        terraform init
+    timeout --signal=TERM 3m \
+        terraform test
+popd
 
 # Teardown stack
 cd $TERRARUN_DIR
