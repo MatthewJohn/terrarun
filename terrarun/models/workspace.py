@@ -16,6 +16,7 @@ from terrarun.models.base_object import BaseObject
 from terrarun.config import Config
 from terrarun.models.oauth_token import OauthToken
 import terrarun.models.organisation
+import terrarun.models.state_version
 from terrarun.models.tool import Tool, ToolType
 from terrarun.permissions.workspace import WorkspacePermissions
 import terrarun.models.run

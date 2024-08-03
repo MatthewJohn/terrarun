@@ -280,10 +280,6 @@ class Server(object):
             '/api/v2/plans/<string:plan_id>/json-providers-schemas',
         )
         self._api.add_resource(
-            ApiTerraformStateVersionDownload,
-            '/api/v2/state-versions/<string:state_version_id>/download'
-        )
-        self._api.add_resource(
             ApiTerraformStateVersionOutput,
             '/api/v2/state-version-outputs/<string:state_version_output_id>'
         )
@@ -2705,30 +2701,6 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
             run.plan.apply.update_attributes(state_version=state_version)
 
         return {'data': state_version.get_api_details()}
-
-
-class ApiTerraformStateVersionDownload(AuthenticatedEndpoint):
-
-    def check_permissions_get(self, current_user, current_job, state_version_id):
-        """Check permissions to read state versions"""
-        state_version = StateVersion.get_by_api_id(state_version_id)
-        if not state_version:
-            return False
-
-        if current_job and current_job.run.configuration_version.workspace == state_version.workspace:
-            return True
-
-        return WorkspacePermissions(
-            current_user=current_user,
-            workspace=state_version.workspace
-        ).check_access_type(state_versions=TeamWorkspaceStateVersionsPermissions.READ)
-
-    def _get(self, current_user, current_job, state_version_id):
-        """Return state version json"""
-        state_version = StateVersion.get_by_api_id(state_version_id)
-        if not state_version_id:
-            return {}, 404
-        return state_version.state_json
 
 
 class ApiTerraformStateVersionOutput(AuthenticatedEndpoint):
