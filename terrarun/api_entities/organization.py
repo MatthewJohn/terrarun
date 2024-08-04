@@ -177,6 +177,7 @@ class EntitlementSetRelationship(RelatedWithDataRelationshipView):
 class DefaultAgentPoolRelationship(DataRelationshipView):
 
     TYPE = "agent-pools"
+    OPTIONAL = True
 
     @classmethod
     def get_id_from_object(cls, obj: 'terrarun.models.organisation.Organisation') -> Optional[str]:
