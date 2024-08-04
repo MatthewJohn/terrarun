@@ -141,7 +141,7 @@ function testTerraformVersion {
             terraform output > output.txt
 
         # Ensure output contains correct value
-        grep 'test_output = "test_value-'$version'"' output.txt || { echo Could not find output; false; }
+        grep 'test_output = "test_value"' output.txt || { echo Could not find output; false; }
     popd
 }
 

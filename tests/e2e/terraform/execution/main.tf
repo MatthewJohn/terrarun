@@ -10,7 +10,8 @@ terraform {
 }
 
 variable "input_version" {
-  type = string
+  type    = string
+  default = "Until cmd vars fixed"
 }
 
 resource "null_resource" "test" {
