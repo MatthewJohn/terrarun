@@ -219,9 +219,8 @@ class StateVersion(Base, BaseObject):
     def get_json_state_upload_url(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Generate state upload URL"""
         if self.can_upload_state(auth_context=auth_context) and self._json_state is None:
-            return None
-        url_generator = terrarun.presign.PresignedUrlGenerator()
-        return url_generator.create_url(auth_context=auth_context, path=f"/api/v2/state-versions/{self.api_id}/json-upload")
+            url_generator = terrarun.presign.PresignedUrlGenerator()
+            return url_generator.create_url(auth_context=auth_context, path=f"/api/v2/state-versions/{self.api_id}/json-upload")
 
     def get_state_download_url(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Generate state upload URL"""
