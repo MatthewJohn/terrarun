@@ -478,7 +478,7 @@ class ApiErrorView(BaseEntity, BaseView):
         pass
 
 
-class BaseRelationshipView(BaseView):
+class BaseRelationshipEntity(BaseView):
     """Base relationship view"""
 
     def get_data(self):
@@ -495,34 +495,7 @@ class BaseRelationshipView(BaseView):
         ...
 
 
-class RelatedRelationshipView(BaseRelationshipView):
-    """Base relationship for related"""
-
-    CHILD_PATH: Optional[str] = None
-
-    def __init__(self, parent_view: 'EntityView'):
-        """Store member variables"""
-        if self.CHILD_PATH is None:
-            raise NotImplementedError("Name not set on relationship")
-        self._parent_view = parent_view
-
-    @classmethod
-    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
-        """Return entity from object"""
-        return cls(parent_view=parent_view)
-
-    def to_dict(self):
-        """Return API repsonse data"""
-        if self._parent_view.link:
-            return {
-                "links": {
-                    "related": f"{self._parent_view.link}/{self.CHILD_PATH}"
-                }
-            }
-        return None
-
-
-class RelatedWithDataRelationshipView(BaseRelationshipView):
+class RelatedWithDataRelationshipView(BaseRelationshipEntity):
     """Base relationship for related"""
 
     CHILD_PATH: Optional[str] = None
@@ -531,9 +504,15 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
     def __init__(self, id: str, parent_view: 'EntityView'):
         """Store member variables"""
         self.id = id
-        if self.CHILD_PATH is None:
-            raise NotImplementedError("Name not set on relationship")
         self._parent_view = parent_view
+        # Validate child path
+        self._get_child_path()
+
+    def _get_child_path(self):
+        """Get child path"""
+        if self.CHILD_PATH is None:
+            raise NotImplementedError
+        return self.CHILD_PATH
 
     def get_type(self) -> str:
         """Return entity type"""
@@ -558,25 +537,51 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
         """Return entity from object"""
         return cls(parent_view=parent_view, id=cls.get_id_from_object(obj=obj))
 
-    def get_data(self) -> Dict[str, Any]:
+    def get_data(self) -> Optional[Dict[str, str]]:
         """Get data"""
-        return {
-            "id": self.get_id(),
-            "type": self.get_type(),
-        }
+        if (id_ := self.get_id()) and (type_ := self.get_type()):
+            return {
+                "id": id_,
+                "type": type_,
+            }
+        return None
 
     def to_dict(self) -> dict:
         """Return API repsonse data"""
-        data = {}
-        if self._parent_view.link:
-            data["links"] = {
-                "related": f"{self._parent_view.link}/{self.CHILD_PATH}"
+        response = {}
+        if (parent_link := self._parent_view.link) and (child_path := self._get_child_path()):
+            response["links"] = {
+                "related": f"{parent_link}/{child_path}"
             }
-        data["data"] = self.get_data()
-        return data
+        if data := self.get_data():
+            response["data"] = data
+        return response
 
 
-class DataRelationshipView(BaseRelationshipView):
+class RelatedRelationshipView(RelatedWithDataRelationshipView):
+    """Base relationship for related"""
+
+    def get_type(self) -> None:
+        """Return entity type"""
+        pass
+
+    def get_id(self) -> None:
+        """Return ID"""
+        pass
+
+    @classmethod
+    def get_id_from_object(cls, obj: Any) -> None:
+        """Obtain ID from object"""
+        pass
+
+    @classmethod
+    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
+        """Return entity from object"""
+        return cls(id=None, parent_view=parent_view)
+
+
+
+class DataRelationshipView(BaseRelationshipEntity):
     """Base relationship for related objects with data"""
 
     TYPE: Optional[str] = None
@@ -681,7 +686,7 @@ class ListEntityView(BaseView, ListEntity[EntityView]):
         pass
 
 
-class ListRelationshipView(BaseRelationshipView, ListEntity[BaseRelationshipView]):
+class ListRelationshipView(BaseRelationshipEntity, ListEntity[BaseRelationshipEntity]):
 
     @classmethod
     @abc.abstractmethod
