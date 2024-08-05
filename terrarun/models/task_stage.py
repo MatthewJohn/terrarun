@@ -73,27 +73,6 @@ class TaskStage(Base, BaseObject):
         """Return organisation."""
         return self.run.configuration_version.workspace.organisation
 
-    def update_attributes(self, **kwargs):
-        """Update attributes of task"""
-
-        if 'id' in kwargs or 'organisation' in kwargs:
-            # Do not allow update of ID or organisation
-            return False
-
-        # If name is specificed in arguments to update,
-        # check it is valid
-        if ('name' in kwargs and
-                kwargs['name'] != self.name and
-                not self.validate_new_name(self.organisation, kwargs['name'])):
-            return False
-
-        for attr in kwargs:
-            setattr(self, attr, kwargs[attr])
-
-        session = Database.get_session()
-        session.add(self)
-        session.commit()
-
     def check_status(self):
         """Check status of tasks and update statuses accordingly"""
         # Iterate through each task stage result
