@@ -72,6 +72,10 @@ from terrarun.api_entities.organization import (
 from terrarun.api_entities.agent_pool import AgentPoolView
 from terrarun.api_entities.plan import PlanView
 from terrarun.api_entities.apply import ApplyView
+from terrarun.api_entities.state_version import (
+    StateVersionView,
+    StateVersionCreateEntity,
+)
 import terrarun.auth_context
 
 
@@ -2661,32 +2665,31 @@ class ApiTerraformWorkspaceStates(AuthenticatedEndpoint):
         if not workspace:
             return {}, 404
 
-        data = request.json.get("data", {})
-        # @TODO Handle this more nicely
-        assert data.get("type") == "state-versions"
+        err, state_version_entity = StateVersionCreateEntity.from_request(request_args=request.json)
+        if err:
+            return ApiErrorView(error=err).to_response()
 
-        state_base64 = data.get("attributes", {}).get("state", None)
-        json_state_base64 = data.get("attributes", {}).get("json-state", None)
-
-        run_id = data.get("relationships", {}).get("run", {}).get("data", {}).get("id", None)
         run = None
-        if run_id:
-            run = Run.get_by_api_id(run_id)
-            if run is None:
-                return {}, 400
+        if "run" in state_version_entity.relationships:
+            run = Run.get_by_api_id(state_version_entity.relationships["run"].id)
+            if run is None or run.configuration_version.workspace.api_id != workspace.api_id:
+                raise ApiError(
+                    "Invalid run ID",
+                    "Run does not exist or is not associated to this workspace",
+                    pointer="/data/relationships/run/id"
+                )
 
         # Attempt to get current run based on job authentication
-        if not run_id and auth_context.job:
+        if not run and auth_context.job:
             run = auth_context.job.run
-            
+
         created_by = auth_context.user if auth_context.user is not None else run.created_by if run is not None else None
 
-        state_version = StateVersion.create(
+        state_version = StateVersion.create_from_entity(
             workspace=workspace,
             run=run,
             created_by=created_by,
-            state=json.loads(base64.b64decode(state_base64).decode('utf-8')) if state_base64 else None,
-            json_state=json.loads(base64.b64decode(json_state_base64).decode('utf-8')) if json_state_base64 else None,
+            entity=state_version_entity
         )
         if not state_version:
             return {}, 400

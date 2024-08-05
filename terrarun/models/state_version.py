@@ -22,6 +22,7 @@ import terrarun.models.workspace
 import terrarun.models.run
 import terrarun.models.run_queue
 import terrarun.auth_context
+import terrarun.api_entities.state_version
 
 
 class StateVersionStatus(Enum):
@@ -62,6 +63,9 @@ class StateVersion(Base, BaseObject):
 
     json_state_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="fk_blob_state_version_json_state"), nullable=True)
     _json_state = sqlalchemy.orm.relationship("Blob", foreign_keys=[json_state_id])
+
+    json_state_outputs_id = sqlalchemy.Column(sqlalchemy.ForeignKey("blob.id", name="fk_blob_state_version_json_state_outputs"), nullable=True)
+    _json_state_outputs = sqlalchemy.orm.relationship("Blob", foreign_keys=[json_state_outputs_id])
 
     # Attributes provided by user to verify state
     lineage: Optional[str] = sqlalchemy.Column(terrarun.database.Database.GeneralString, nullable=True, default=None)
@@ -143,6 +147,36 @@ class StateVersion(Base, BaseObject):
         session.add(self)
         session.commit()
 
+    @property
+    def json_state_outputs(self) -> Optional[Dict[str, Any]]:
+        """Return plan output value"""
+        if self._json_state_outputs and self._json_state_outputs.data:
+            return json.loads(self._json_state_outputs.data.decode('utf-8'))
+        return None
+
+    @json_state_outputs.setter
+    def json_state_outputs(self, value: Optional[Dict[str, Any]]):
+        """Set plan output"""
+        session = Database.get_session()
+
+        if self._json_state_outputs:
+            json_state_outputs_blob = self._json_state_outputs
+            session.refresh(json_state_outputs_blob)
+        else:
+            json_state_outputs_blob = Blob()
+
+        if value is not None:
+            json_state_outputs_blob.data = bytes(json.dumps(value), 'utf-8')
+        else:
+            json_state_outputs_blob.data = None
+
+        session.add(json_state_outputs_blob)
+        # @TODO this does not work when creating object
+        #session.refresh(self)
+        self._json_state_outputs = json_state_outputs_blob
+        session.add(self)
+        session.commit()
+
     @classmethod
     def create(cls, run, workspace, created_by, state, json_state, session=None):
         """Create StateVersion from state_json."""
@@ -159,6 +193,58 @@ class StateVersion(Base, BaseObject):
             sv.state = state
 
         sv.intermediate = True
+
+        session.add(sv)
+        session.commit()
+
+        return sv
+    
+    @classmethod
+    def create_from_entity(cls,
+                           run: Optional['terrarun.models.run.Run'],
+                           workspace: 'terrarun.models.workspace.Workspace',
+                           created_by: Optional['terrarun.models.user.User'],
+                           entity: 'terrarun.api_entities.state_version.StateVersionCreateEntity') -> Self:
+
+        attributes = entity.get_set_object_attributes()
+
+        # Handle custom attributes to set
+        state = None
+        if "state" in attributes:
+            state = attributes["state"]
+            del attributes["state"]
+
+        json_state = None
+        if "json_state" in attributes:
+            json_state = attributes["json_state"]
+            del attributes["json_state"]
+
+        json_state_outputs = None
+        if "json_state_outputs" in attributes:
+            json_state_outputs = attributes["json_state_outputs"]
+            del attributes["json_state_outputs"]
+
+        sv = cls(
+            run=run,
+            workspace=workspace,
+            created_by=created_by,
+            intermediate=True,
+            status=StateVersionStatus.PENDING,
+            **attributes,
+        )
+        session = Database.get_session()
+        session.add(sv)
+        session.commit()
+        if json_state:
+            sv.json_state = json_state
+
+        if json_state_outputs:
+            sv.json_state_outputs = json_state_outputs
+
+        sv.status = StateVersionStatus.PENDING
+        if state:
+            sv.status = StateVersionStatus.FINALIZED
+            sv.state = state
 
         session.add(sv)
         session.commit()
