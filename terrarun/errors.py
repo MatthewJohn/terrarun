@@ -11,22 +11,22 @@ class ApiError(TerrarunError):
 
     def __init__(self, title, details, pointer=None, status=None):
         """Store member variables"""
-        self._title = title
-        self._details = details
-        self._pointer = pointer
-        self._status = status if status else 422
+        self.title = title
+        self.details = details
+        self.pointer = pointer
+        self.status = status if status else 422
 
         super(ApiError, self).__init__(details)
 
     def get_api_details(self):
         """Return API details for error"""
         return {
-            "status": str(self._status),
-            "title": self._title,
-            "detail": self._details,
+            "status": str(self.status),
+            "title": self.title,
+            "detail": self.details,
             "source": {
-                "pointer": self._pointer
-            } if self._pointer else {}
+                "pointer": self.pointer
+            } if self.pointer else {}
         }
 
 

@@ -469,7 +469,7 @@ class ApiErrorView(BaseEntity, BaseView):
             self.errors += errors
 
         if len(self.errors) > 0:
-            self.response_code = self.errors[0]._status
+            self.response_code = self.errors[0].status
         else:
             self.response_code = 500
 
