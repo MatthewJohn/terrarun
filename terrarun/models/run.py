@@ -16,6 +16,9 @@ import terrarun.models.apply
 import terrarun.models.plan
 import terrarun.models.state_version
 import terrarun.models.run_flow
+import terrarun.models.team_workspace_access
+import terrarun.permissions
+import terrarun.permissions.workspace
 import terrarun.terraform_command
 import terrarun.models.tool
 import terrarun.utils
@@ -522,6 +525,52 @@ class Run(Base, BaseObject):
         if api_request and api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION) and self.configuration_version:
             api_request.add_included(self.configuration_version.get_api_details(api_request=api_request, auth_context=auth_context))
 
+        permissions = {
+            "can-apply": False,
+            "can-cancel": False,
+            "can-comment": False,
+            "can-discard": False,
+            "can-force-execute": False,
+            "can-force-cancel": False,
+            "can-override-policy-check": False
+        }
+        if auth_context.user:
+            workspace_permissions = terrarun.permissions.workspace.WorkspacePermissions(
+                current_user=auth_context.user,
+                workspace=self.configuration_version.workspace
+            )
+            permissions["can-apply"] = workspace_permissions.check_access_type(
+                runs=terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY
+            )
+            permissions["can-cancel"] = workspace_permissions.check_access_type(
+                runs=(
+                    terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.PLAN
+                    if self.plan_only else
+                    terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY
+                )
+            )
+            permissions["can-comment"] = workspace_permissions.check_access_type(
+                runs=(
+                    terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.PLAN
+                )
+            )
+            permissions["can-discard"] = workspace_permissions.check_access_type(
+                runs=(
+                    terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.PLAN
+                    if self.plan_only else
+                    terrarun.models.team_workspace_access.TeamWorkspaceRunsPermission.APPLY
+                )
+            )
+            permissions["can-force-execute"] = workspace_permissions.check_permission(
+                permission=terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN
+            )
+            permissions["can-force-cancel"] = workspace_permissions.check_permission(
+                permission=terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN
+            )
+            permissions["can-override-policy-check"] = workspace_permissions.check_permission(
+                permission=terrarun.models.team_workspace_access.TeamWorkspaceAccessType.ADMIN
+            )
+
         actions = None
         if flow := self.flow:
             actions = flow.get_run_actions()
@@ -544,15 +593,7 @@ class Run(Base, BaseObject):
                 "status": self.status.value,
                 "trigger-reason": "manual",
                 "target-addrs": self.target_addrs,
-                "permissions": {
-                    "can-apply": True,
-                    "can-cancel": True,
-                    "can-comment": True,
-                    "can-discard": True,
-                    "can-force-execute": True,
-                    "can-force-cancel": True,
-                    "can-override-policy-check": True
-                },
+                "permissions": permissions,
                 "refresh": self.refresh,
                 "refresh-only": self.refresh_only,
                 "replace-addrs": self.replace_addrs,
