@@ -516,12 +516,32 @@ class Run(Base, BaseObject):
         """Return API details."""
         # Get status change audit events
         session = Database.get_session()
-        audit_events = {
-            '{}-at'.format(Database.decode_blob(event.new_value).replace('_', '-')): terrarun.utils.datetime_to_json(event.timestamp)
+        audit_events_types = {
+            "pending-at": RunStatus.PENDING,
+            "applied-at": RunStatus.APPLIED,
+            "planned-at": RunStatus.PLANNED,
+            "queuing-at": RunStatus.QUEUING,
+            "applying-at": RunStatus.APPLYING,
+            "planning-at": RunStatus.PLANNING,
+            "confirmed-at": RunStatus.CONFIRMED,
+            "plan-queued-at": RunStatus.PLAN_QUEUED,
+            "apply-queued-at": RunStatus.APPLY_QUEUED,
+            "queuing-apply-at": RunStatus.APPLY_QUEUED,
+            "cost-estimated-at": RunStatus.COST_ESTIMATED,
+            "plan-queueable-at": RunStatus.PLAN_QUEUED,
+            "cost-estimating-at": RunStatus.COST_ESTIMATING
+        }
+        all_audit_events = {
+            RunStatus(Database.decode_blob(event.new_value)): terrarun.utils.datetime_to_json(event.timestamp)
             for event in session.query(terrarun.models.audit_event.AuditEvent).where(
                 terrarun.models.audit_event.AuditEvent.object_id==self.id,
                 terrarun.models.audit_event.AuditEvent.object_type==self.ID_PREFIX,
                 terrarun.models.audit_event.AuditEvent.event_type==terrarun.models.audit_event.AuditEventType.STATUS_CHANGE)
+        }
+        audit_events = {
+            label: all_audit_events[enum_val]
+            for label, enum_val in audit_events_types.items()
+            if enum_val in all_audit_events
         }
 
         # @TODO Remove check for api_request object once all APIs use this methodology
