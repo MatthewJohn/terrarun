@@ -55,13 +55,13 @@ sed -i -E 's#^BASE_URL=.*#BASE_URL=https://terrarun#g' .env
 docker compose -f docker-compose.yml -f ./tests/e2e/docker-compose.yml up --build -d traefik api db minio createbucket
 
 # Trap errors destroy stack
-error() {
+handleError() {
     cd $TERRARUN_DIR
     docker compose logs
     docker compose down --volumes
     exit 1
 }
-trap error ERR
+trap handleError ERR
 
 sleep 30
 
@@ -157,8 +157,14 @@ token = "$TFE_TOKEN"
 }
 EOF
 
-testTerraformVersion 1.4.5
-testTerraformVersion 1.9.1
+function terraformFailure() {
+    kill -9 $tfc_agent_pid
+    handleError
+    exit 1
+}
+
+testTerraformVersion 1.4.5 || terraformFailure
+testTerraformVersion 1.9.1 || terraformFailure
 
 # Kill agent
 kill -9 $tfc_agent_pid
