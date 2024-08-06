@@ -148,7 +148,7 @@ function testTerraformVersion {
 # Start agent
 tfc-agent -address https://terrarun -token=$agent_token -log-level=TRACE  -auto-update=disabled &
 tfc_agent_pid=$!
-sleep 10
+sleep 30
 
 # Create Terraform credential file
 cat > ~/.terraformrc <<EOF
