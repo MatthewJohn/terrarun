@@ -18,6 +18,7 @@ from terrarun.database import Base, Database
 from terrarun.models.blob import Blob
 from terrarun.models.ingress_attribute import IngressAttribute
 import terrarun.models.run
+import terrarun.models.run_flow
 import terrarun.models.workspace
 from terrarun.object_storage import ObjectStorage
 import terrarun.presign
@@ -296,14 +297,14 @@ terraform {
                 run_found = True
                 # Check for any statuses that indicate that plan has completed successfully
                 if run.status in [
-                        terrarun.models.run.RunStatus.PLANNED_AND_FINISHED, terrarun.models.run.RunStatus.PLANNED,
-                        terrarun.models.run.RunStatus.APPLY_QUEUED, terrarun.models.run.RunStatus.APPLYING,
-                        terrarun.models.run.RunStatus.PRE_APPLY_RUNNING, terrarun.models.run.RunStatus.PRE_APPLY_COMPLETED,
-                        terrarun.models.run.RunStatus.POST_PLAN_RUNNING, terrarun.models.run.RunStatus.POST_PLAN_COMPLETED]:
+                        terrarun.models.run_flow.RunStatus.PLANNED_AND_FINISHED, terrarun.models.run_flow.RunStatus.PLANNED,
+                        terrarun.models.run_flow.RunStatus.APPLY_QUEUED, terrarun.models.run_flow.RunStatus.APPLYING,
+                        terrarun.models.run_flow.RunStatus.PRE_APPLY_RUNNING, terrarun.models.run_flow.RunStatus.PRE_APPLY_COMPLETED,
+                        terrarun.models.run_flow.RunStatus.POST_PLAN_RUNNING, terrarun.models.run_flow.RunStatus.POST_PLAN_COMPLETED]:
                     successful_plan_found = True
 
                 # Check for states that indicate that apply has completed successfully
-                if run.status in [terrarun.models.run.RunStatus.APPLIED]:
+                if run.status in [terrarun.models.run_flow.RunStatus.APPLIED]:
                     successful_plan_found = True
                     successful_apply_found = True
 

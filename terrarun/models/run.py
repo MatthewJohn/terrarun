@@ -15,6 +15,7 @@ import terrarun.database
 import terrarun.models.apply
 import terrarun.models.plan
 import terrarun.models.state_version
+import terrarun.models.run_flow
 import terrarun.terraform_command
 import terrarun.models.tool
 import terrarun.utils
@@ -44,38 +45,6 @@ from terrarun.models.workspace_task import (
 logger = get_logger(__name__)
 
 
-class RunStatus(Enum):
-
-    PENDING = 'pending'
-    FETCHING = 'fetching'
-    FETCHING_COMPLETED = 'fetching_completed'
-    PRE_PLAN_RUNNING = 'pre_plan_running'
-    PRE_PLAN_COMPLETED = 'pre_plan_completed'
-    QUEUING = 'queuing'
-    PLAN_QUEUED = 'plan_queued'
-    PLANNING = 'planning'
-    PLANNED = 'planned'
-    COST_ESTIMATING = 'cost_estimating'
-    COST_ESTIMATED = 'cost_estimated'
-    POLICY_CHECKING = 'policy_checking'
-    POLICY_OVERRIDE = 'policy_override'
-    POLICY_SOFT_FAILED = 'policy_soft_failed'
-    POLICY_CHECKED = 'policy_checked'
-    CONFIRMED = 'confirmed'
-    POST_PLAN_RUNNING = 'post_plan_running'
-    POST_PLAN_COMPLETED = 'post_plan_completed'
-    PLANNED_AND_FINISHED = 'planned_and_finished'
-    PRE_APPLY_RUNNING = 'pre_apply_running'  # Not yet part of official documentation
-    PRE_APPLY_COMPLETED = 'pre_apply_completed'  # Not yet part of official documentation
-    APPLY_QUEUED = 'apply_queued'
-    APPLYING = 'applying'
-    APPLIED = 'applied'
-    DISCARDED = 'discarded'
-    ERRORED = 'errored'
-    CANCELED = 'canceled'
-    FORCE_CANCELLED = 'force_canceled'
-
-
 class RunOperations:
 
     PLAN_ONLY = 'plan_only'
@@ -102,7 +71,7 @@ class Run(Base, BaseObject):
 
     run_queue = sqlalchemy.orm.relationship("RunQueue", back_populates="run", uselist=False)
 
-    status = sqlalchemy.Column(sqlalchemy.Enum(RunStatus))
+    status = sqlalchemy.Column(sqlalchemy.Enum(terrarun.models.run_flow.RunStatus))
     confirmed = sqlalchemy.Column(sqlalchemy.Boolean, default=False)
     confirmed_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_confirmed_by_id_user_id"), nullable=True)
     confirmed_by = sqlalchemy.orm.relationship("User", foreign_keys=[confirmed_by_id])
@@ -195,7 +164,7 @@ class Run(Base, BaseObject):
         # duplicate requests, causing the API ID to be generated twice and
         # different values returned in different responses
         run.api_id
-        run.update_status(RunStatus.PENDING, current_user=created_by)
+        run.update_status(terrarun.models.run_flow.RunStatus.PENDING, current_user=created_by)
 
         # Create all task stages
         TaskStage.create(
@@ -217,17 +186,17 @@ class Run(Base, BaseObject):
 
     def cancel(self, user):
         """Cancel run"""
-        if self.status in [RunStatus.APPLIED, RunStatus.PLANNED_AND_FINISHED, RunStatus.POST_PLAN_COMPLETED]:
+        if self.status in [terrarun.models.run_flow.RunStatus.APPLIED, terrarun.models.run_flow.RunStatus.PLANNED_AND_FINISHED, terrarun.models.run_flow.RunStatus.POST_PLAN_COMPLETED]:
             raise RunCannotBeCancelledError("Run is not in a state that can be cancelled")
-        self.update_status(RunStatus.CANCELED, current_user=user)
+        self.update_status(terrarun.models.run_flow.RunStatus.CANCELED, current_user=user)
 
     def discard(self, user):
         """Discard run"""
-        if self.status is not RunStatus.POST_PLAN_COMPLETED:
+        if self.status is not terrarun.models.run_flow.RunStatus.POST_PLAN_COMPLETED:
             raise RunCannotBeDiscardedError("Run is not in a state that can be discarded")
         if not self.configuration_version.workspace.unlock(run=self):
             raise FailedToUnlockWorkspaceError("Failed to unlock run")
-        self.update_status(RunStatus.DISCARDED)
+        self.update_status(terrarun.models.run_flow.RunStatus.DISCARDED)
 
     @property
     def pre_plan_workspace_tasks(self):
@@ -273,7 +242,7 @@ class Run(Base, BaseObject):
         # Create plan, as the terraform client expects this
         # to immediately exist
         terrarun.models.plan.Plan.create(run=self)
-        self.update_status(RunStatus.PRE_PLAN_RUNNING)
+        self.update_status(terrarun.models.run_flow.RunStatus.PRE_PLAN_RUNNING)
 
         # Handle pre-run tasks.
         if self.pre_plan_workspace_tasks:
@@ -301,33 +270,33 @@ class Run(Base, BaseObject):
 
         if should_continue:
             if completed:
-                self.update_status(RunStatus.PRE_PLAN_COMPLETED)
+                self.update_status(terrarun.models.run_flow.RunStatus.PRE_PLAN_COMPLETED)
             self.queue_worker_job()
 
     def execute_plan(self):
         """Execute plan"""
         session = Database.get_session()
-        self.update_status(RunStatus.PLANNING)
+        self.update_status(terrarun.models.run_flow.RunStatus.PLANNING)
         plan = self.plan
         self.plan.execute()
         session.refresh(self)
-        if self.status == RunStatus.CANCELED:
+        if self.status == terrarun.models.run_flow.RunStatus.CANCELED:
             return
         elif plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-            self.update_status(RunStatus.ERRORED)
+            self.update_status(terrarun.models.run_flow.RunStatus.ERRORED)
             return
         elif self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
-            self.update_status(RunStatus.PLANNED_AND_FINISHED)
+            self.update_status(terrarun.models.run_flow.RunStatus.PLANNED_AND_FINISHED)
             return
         else:
-            self.update_status(RunStatus.PLANNED)
+            self.update_status(terrarun.models.run_flow.RunStatus.PLANNED)
             terrarun.models.apply.Apply.create(plan=self.plan)
             self.queue_worker_job()
 
     def handle_planned(self):
         """Handle planned state"""
         # If successfully planned, move to pre-plan tasks
-        self.update_status(RunStatus.POST_PLAN_RUNNING)
+        self.update_status(terrarun.models.run_flow.RunStatus.POST_PLAN_RUNNING)
         if self.post_plan_workspace_tasks:
             task_stage = [task_stage for task_stage in self.task_stages if task_stage.stage is WorkspaceTaskStage.POST_PLAN][0]
 
@@ -352,7 +321,7 @@ class Run(Base, BaseObject):
 
         if should_continue:
             if completed:
-                self.update_status(RunStatus.POST_PLAN_COMPLETED)
+                self.update_status(terrarun.models.run_flow.RunStatus.POST_PLAN_COMPLETED)
             self.queue_worker_job()
 
     def handle_post_plan_completed(self):
@@ -360,7 +329,7 @@ class Run(Base, BaseObject):
         # Check if plan was confirmed before entering the state
         if self.auto_apply or self.confirmed:
             self.update_status(
-                RunStatus.CONFIRMED,
+                terrarun.models.run_flow.RunStatus.CONFIRMED,
                 current_user=self.confirmed_by
             )
             self.queue_worker_job()
@@ -376,7 +345,7 @@ class Run(Base, BaseObject):
                 task_result.execute()
 
 
-        self.update_status(RunStatus.PRE_APPLY_RUNNING)
+        self.update_status(terrarun.models.run_flow.RunStatus.PRE_APPLY_RUNNING)
         self.queue_worker_job()
 
     def handle_pre_apply_running(self):
@@ -394,8 +363,8 @@ class Run(Base, BaseObject):
 
         if should_continue:
             if completed:
-                self.update_status(RunStatus.PRE_APPLY_COMPLETED)
-                self.update_status(RunStatus.APPLY_QUEUED)
+                self.update_status(terrarun.models.run_flow.RunStatus.PRE_APPLY_COMPLETED)
+                self.update_status(terrarun.models.run_flow.RunStatus.APPLY_QUEUED)
                 self.queue_agent_job(job_type=JobQueueType.APPLY)
             else:
                 self.queue_worker_job()
@@ -403,27 +372,27 @@ class Run(Base, BaseObject):
     def handle_apply_queued(self):
         """Handle apply_queued state"""
         session = Database.get_session()
-        self.update_status(RunStatus.APPLYING)
+        self.update_status(terrarun.models.run_flow.RunStatus.APPLYING)
         self.plan.apply.execute()
         session.refresh(self)
-        if self.status == RunStatus.CANCELED:
+        if self.status == terrarun.models.run_flow.RunStatus.CANCELED:
             return
         elif self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-            self.update_status(RunStatus.ERRORED)
+            self.update_status(terrarun.models.run_flow.RunStatus.ERRORED)
             return
         else:
-            self.update_status(RunStatus.APPLIED)
+            self.update_status(terrarun.models.run_flow.RunStatus.APPLIED)
 
     def execute_next_step(self):
         """Execute terraform command"""
         # Handle plan job
         logger.info("Run Status: " + str(self.status))
 
-        if self.status is RunStatus.PLAN_QUEUED:
+        if self.status is terrarun.models.run_flow.RunStatus.PLAN_QUEUED:
             self.execute_plan()
 
         # Handle apply job
-        elif self.status is RunStatus.APPLY_QUEUED:
+        elif self.status is terrarun.models.run_flow.RunStatus.APPLY_QUEUED:
             self.handle_apply_queued()
 
     def generate_state_version(self, work_dir):
@@ -438,7 +407,7 @@ class Run(Base, BaseObject):
 
     def update_status(self, new_status, current_user=None, session=None):
         """Update state of run."""
-        if self.status is RunStatus.CANCELED:
+        if self.status is terrarun.models.run_flow.RunStatus.CANCELED:
             logger.warning("Ignoring run status update to %s as status is CANCELLED", new_status)
 
         logger.info("Updating job status to from %s to %s", self.status, new_status)
@@ -471,8 +440,8 @@ class Run(Base, BaseObject):
 
     def queue_plan(self):
         """Queue for plan"""
-        self.update_status(RunStatus.QUEUING)
-        self.update_status(RunStatus.PLAN_QUEUED)
+        self.update_status(terrarun.models.run_flow.RunStatus.QUEUING)
+        self.update_status(terrarun.models.run_flow.RunStatus.PLAN_QUEUED)
 
         # Requeue to be applied
         self.queue_agent_job(job_type=JobQueueType.PLAN)
@@ -485,7 +454,7 @@ class Run(Base, BaseObject):
         # If the job has already eached POST_PLAN_COMPLETED,
         # meaning that there is no longer queued, trigger
         # a worker job
-        if self.status is RunStatus.POST_PLAN_COMPLETED:
+        if self.status is terrarun.models.run_flow.RunStatus.POST_PLAN_COMPLETED:
             self.queue_worker_job()
 
         # @TODO Do something with comment
@@ -512,27 +481,32 @@ class Run(Base, BaseObject):
             return self.plans[-1]
         return None
 
+    @property
+    def flow(self) -> Optional['terrarun.models.run_flow.BaseRunFlow']:
+        """Obtain run flow for current status"""
+        return terrarun.models.run_flow.RunFlowFactory.get_flow_by_status(self.status)
+
     def get_api_details(self, auth_context: 'terrarun.auth_context.AuthContext', api_request: ApiRequest | None = None):
         """Return API details."""
         # Get status change audit events
         session = Database.get_session()
         audit_events_types = {
-            "pending-at": RunStatus.PENDING,
-            "applied-at": RunStatus.APPLIED,
-            "planned-at": RunStatus.PLANNED,
-            "queuing-at": RunStatus.QUEUING,
-            "applying-at": RunStatus.APPLYING,
-            "planning-at": RunStatus.PLANNING,
-            "confirmed-at": RunStatus.CONFIRMED,
-            "plan-queued-at": RunStatus.PLAN_QUEUED,
-            "apply-queued-at": RunStatus.APPLY_QUEUED,
-            "queuing-apply-at": RunStatus.APPLY_QUEUED,
-            "cost-estimated-at": RunStatus.COST_ESTIMATED,
-            "plan-queueable-at": RunStatus.PLAN_QUEUED,
-            "cost-estimating-at": RunStatus.COST_ESTIMATING
+            "pending-at": terrarun.models.run_flow.RunStatus.PENDING,
+            "applied-at": terrarun.models.run_flow.RunStatus.APPLIED,
+            "planned-at": terrarun.models.run_flow.RunStatus.PLANNED,
+            "queuing-at": terrarun.models.run_flow.RunStatus.QUEUING,
+            "applying-at": terrarun.models.run_flow.RunStatus.APPLYING,
+            "planning-at": terrarun.models.run_flow.RunStatus.PLANNING,
+            "confirmed-at": terrarun.models.run_flow.RunStatus.CONFIRMED,
+            "plan-queued-at": terrarun.models.run_flow.RunStatus.PLAN_QUEUED,
+            "apply-queued-at": terrarun.models.run_flow.RunStatus.APPLY_QUEUED,
+            "queuing-apply-at": terrarun.models.run_flow.RunStatus.APPLY_QUEUED,
+            "cost-estimated-at": terrarun.models.run_flow.RunStatus.COST_ESTIMATED,
+            "plan-queueable-at": terrarun.models.run_flow.RunStatus.PLAN_QUEUED,
+            "cost-estimating-at": terrarun.models.run_flow.RunStatus.COST_ESTIMATING
         }
         all_audit_events = {
-            RunStatus(Database.decode_blob(event.new_value)): terrarun.utils.datetime_to_json(event.timestamp)
+            terrarun.models.run_flow.RunStatus(Database.decode_blob(event.new_value)): terrarun.utils.datetime_to_json(event.timestamp)
             for event in session.query(terrarun.models.audit_event.AuditEvent).where(
                 terrarun.models.audit_event.AuditEvent.object_id==self.id,
                 terrarun.models.audit_event.AuditEvent.object_type==self.ID_PREFIX,
@@ -548,16 +522,15 @@ class Run(Base, BaseObject):
         if api_request and api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION) and self.configuration_version:
             api_request.add_included(self.configuration_version.get_api_details(api_request=api_request, auth_context=auth_context))
 
+        actions = None
+        if flow := self.flow:
+            actions = flow.get_run_actions()
+
         return {
             "id": self.api_id,
             "type": "runs",
             "attributes": {
-                "actions": {
-                    "is-cancelable": True,
-                    "is-confirmable": True,
-                    "is-discardable": False,
-                    "is-force-cancelable": False
-                },
+                "actions": actions,
                 "canceled-at": None,
                 "created-at": terrarun.utils.datetime_to_json(self.created_at),
                 "has-changes": self.plan.has_changes if self.plan else False,

@@ -14,6 +14,7 @@ import sqlalchemy.orm
 
 import terrarun.models.audit_event
 import terrarun.models.run
+import terrarun.models.run_flow
 from terrarun.database import Database
 from terrarun.logger import get_logger
 from terrarun.models.base_object import BaseObject
@@ -79,7 +80,7 @@ class TerraformCommand(BaseObject):
         obj = session.query(cls).filter(cls.id==obj_id).first()
         while command_proc.poll() is None:
             session.refresh(obj)
-            if obj.run.status == terrarun.models.run.RunStatus.CANCELED:
+            if obj.run.status == terrarun.models.run_flow.RunStatus.CANCELED:
                 command_proc.kill()
                 break
             sleep(0.5)
