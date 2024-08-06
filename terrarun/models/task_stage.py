@@ -3,6 +3,7 @@
 
 import datetime
 from enum import Enum
+from typing import List
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -10,6 +11,7 @@ import sqlalchemy.orm
 import terrarun.models.run
 import terrarun.terraform_command
 import terrarun.utils
+import terrarun.models.task_result
 from terrarun.database import Base, Database
 from terrarun.logger import get_logger
 from terrarun.models.base_object import BaseObject, update_object_status
@@ -50,7 +52,7 @@ class TaskStage(Base, BaseObject):
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
     run = sqlalchemy.orm.relationship("Run", back_populates="task_stages")
 
-    task_results = sqlalchemy.orm.relationship("TaskResult", back_populates="task_stage")
+    task_results: List['terrarun.models.task_result.TaskResult'] = sqlalchemy.orm.relationship("TaskResult", back_populates="task_stage")
 
     @classmethod
     def create(cls, run, stage, workspace_tasks):
