@@ -162,7 +162,7 @@ volumes:
 
 networks:
   web: 
-    name: terrun-web
+    name: "${COMPOSE_PROJECT_NAME}-web"
   default:
-    name: terrarun-default
+    name: "${COMPOSE_PROJECT_NAME}-default"
     driver: bridge
