@@ -148,8 +148,8 @@ class StateVersionCreateEntity(StateVersionEntity):
     def _get_attributes(cls) -> Tuple[Attribute]:
         return super()._get_attributes() + (
             Attribute("md5", "md5", str, ATTRIBUTED_REQUIRED),
-            Attribute("serial", "serial", str, ATTRIBUTED_REQUIRED),
             Attribute("lineage", "lineage", str, None),
+            Attribute("state", "state", str, None),
             Attribute("json-state", "json_state", str, None),
             Attribute("json-state-outputs", "json_state_outputs", str, None),
             Attribute("force", "force", bool, False),
