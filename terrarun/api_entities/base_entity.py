@@ -21,6 +21,22 @@ UNDEFINED = object()
 ATTRIBUTED_REQUIRED = object()
 
 
+class BaseAttributeTypeConversion(abc.ABC):
+    """Base class for custom conversions from"""
+
+    @staticmethod
+    @abc.abstractmethod
+    def to_request_data(value: Any) -> Any:
+        """Convert entity data to request data"""
+        ...
+
+    @staticmethod
+    @abc.abstractmethod
+    def from_request_data(value: Any) -> Union[Tuple[None, Any], Tuple[ApiError, None]]:
+        """Convert from request data to entity data"""
+        ...
+
+
 class Attribute:
 
     def __init__(self,
@@ -90,6 +106,9 @@ class Attribute:
 
         elif issubclass(self.type, NestedAttributes):
             return value.to_dict()
+
+        elif issubclass(self.type, BaseAttributeTypeConversion):
+            return self.type.to_request_data(value=value)
 
         raise Exception(f"Unknown data type: {self.type}: {value}")
 
@@ -168,6 +187,15 @@ class Attribute:
                     pointer=f"/data/attributes/{self.req_attribute}"
                 ), None, None
             val = self.type.from_request(request_args=val)
+
+        elif issubclass(self.type, BaseAttributeTypeConversion):
+            error, val = self.type.from_request_data(value=val)
+            if error:
+                return ApiError(
+                    "Attribute is invalid",
+                    error.details,
+                    pointer=f"/data/attributes/{self.req_attribute}"
+                ), None, None
 
         else:
             raise Exception("Unsupported attribute type")
