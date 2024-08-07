@@ -224,6 +224,10 @@ class StateVersion(Base, BaseObject):
             json_state_outputs = attributes["json_state_outputs"]
             del attributes["json_state_outputs"]
 
+        # Delete unknown 'force' attribute
+        if "force" in attributes:
+            del attributes["force"]
+
         sv = cls(
             run=run,
             workspace=workspace,
