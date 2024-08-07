@@ -1,4 +1,4 @@
-version: '3.9'
+name: terrarun-tests
 
 services:
   # Override traefik config to build custom image
@@ -10,8 +10,34 @@ services:
   # is held on a docker volume, making it hard to mount
   # the directories to a path inside traefik
   traefik:
+    image: !reset null
     build:
       context: ./
       dockerfile: tests/e2e/Dockerfile.traefik
     volumes: !override
       - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  test-runner:
+    image: hashicorp/terraform
+    command: version
+    volumes:
+      - ./tests/e2e:/tests
+
+  agent:
+    restart: unless-stopped
+    entrypoint:  !reset null
+    build: !reset null
+    image: hashicorp/tfc-agent
+    volumes:
+      - /etc/ssl/certs:/etc/ssl/certs:ro
+      - /usr/local/share/ca-certificates/:/usr/local/share/ca-certificates/:ro
+    networks:
+      - web
+      - default
+    depends_on:
+      - traefik
+      - api
+    env_file:
+      - .env
+    links:
+      - "traefik:terrarun"

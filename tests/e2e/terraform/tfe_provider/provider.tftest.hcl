@@ -107,6 +107,35 @@ run "test" {
     error_message = "Failed to set parameter allow_force_delete_workspaces for new organisation"
   }
 
+  ##################################
+  # Organizations Default Settings #
+  ##################################
+
+  assert {
+    condition     = tfe_organization_default_settings.test_create.organization == "test-create"
+    error_message = "Set settings for wrong organisation ${tfe_organization_default_settings.test_create.organization}."
+  }
+  assert {
+    condition     = tfe_organization_default_settings.test_create.default_execution_mode == "local"
+    error_message = "Expected: local. Actual: ${tfe_organization_default_settings.test_create.default_execution_mode}."
+  }
+  assert {
+    condition     = tfe_organization_default_settings.test_create.default_agent_pool_id == null
+    error_message = "Expected: null. Actual: ${jsonencode(tfe_organization_default_settings.test_create.default_agent_pool_id)}."
+  }
+  assert {
+    condition     = tfe_organization_default_settings.test_import.organization == tfe_organization.test_import.name
+    error_message = "Set settings for wrong organisation ${tfe_organization_default_settings.test_import.organization}."
+  }
+  assert {
+    condition     = tfe_organization_default_settings.test_import.default_execution_mode == "agent"
+    error_message = "Expected: agent. Actual: ${tfe_organization_default_settings.test_import.default_execution_mode}."
+  }
+  assert {
+    condition     = tfe_organization_default_settings.test_import.default_agent_pool_id == "abcd"
+    error_message = "Expected: abcd. Actual: ${jsonencode(tfe_organization_default_settings.test_import.default_agent_pool_id)}."
+  }
+
   ################################
   # Terraform Versions           #
   ################################

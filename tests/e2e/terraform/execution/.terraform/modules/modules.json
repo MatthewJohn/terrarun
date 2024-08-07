@@ -1,0 +1,1 @@
+{"Modules":[{"Key":"","Source":"","Dir":"."},{"Key":"test.main.setup","Source":"./setup","Dir":"setup"},{"Key":"test.main.setup.test_lifecycle","Source":"../../modules/curl_create","Dir":"../modules/curl_create"},{"Key":"test.main.setup.test_project","Source":"../../modules/curl_create","Dir":"../modules/curl_create"}]}

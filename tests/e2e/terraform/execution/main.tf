@@ -1,7 +1,7 @@
 terraform {
   cloud {
     organization = "smoke-test-org"
-    hostname = "terrarun"
+    hostname     = "terrarun"
 
     workspaces {
       name = "smoketest-dev"
@@ -9,7 +9,7 @@ terraform {
   }
 }
 
-resource "null_resource" "test" { }
+resource "null_resource" "test" {}
 
 output "test_output" {
   value = "test_value"

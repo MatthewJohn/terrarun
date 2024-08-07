@@ -21,7 +21,7 @@ resource "tfe_organization" "test_import" {
 
   lifecycle {
     # Terrarun does not allow destroying orgs
-    prevent_destroy = true
+    #prevent_destroy = true
   }
 }
 
@@ -43,7 +43,7 @@ resource "tfe_organization" "test_create" {
 
   lifecycle {
     # Terrarun does not allow destroying orgs
-    prevent_destroy = true
+    #prevent_destroy = true
   }
 }
 
