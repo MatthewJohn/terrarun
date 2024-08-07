@@ -608,8 +608,7 @@ class Workspace(Base, BaseObject):
             # Remove intermediate from state versions of run, if available
             for state_version in run.state_versions:
                 if state_version.intermediate:
-                    state_version.intermediate = False
-                    session.add(state_version)
+                    state_version.unset_intermediate(session=session)
         else:
             # Otherwise, not able to unlock
             return False

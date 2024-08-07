@@ -358,6 +358,10 @@ class StateVersion(Base, BaseObject):
 
         return modules
 
+    def unset_intermediate(self, session: Optional['sqlalchemy.orm.Session']=None):
+        """Unset intermediate flag"""
+        self.update_attributes(session=session, intermediate=False)
+
     def process_resources(self):
         """Process resources"""
         # Create state version outputs for each output
