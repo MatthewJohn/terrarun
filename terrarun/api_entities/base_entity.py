@@ -315,7 +315,7 @@ class BaseEntity(abc.ABC):
             if key is not None:
                 obj_attributes[key] = value
 
-        return obj_attributes
+        return None, obj_attributes
 
     @classmethod
     def from_request(cls, request_args, create=False) -> Union[Tuple['ApiError', None], Tuple[None, Self]]:
@@ -342,7 +342,9 @@ class BaseEntity(abc.ABC):
                 pointer=f"/data/id"
             ), None
 
-        obj_attributes = cls._attributes_from_request(request_data.get("attributes", {}))
+        err, obj_attributes = cls._attributes_from_request(request_data.get("attributes", {}))
+        if err:
+            return err, None
 
         entity = cls(id=id_, attributes=obj_attributes)
 
