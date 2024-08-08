@@ -194,7 +194,7 @@ class Workspace(Base, BaseObject):
             terrarun.models.state_version.StateVersion.status==terrarun.models.state_version.StateVersionStatus.FINALIZED,
             terrarun.models.state_version.StateVersion.intermediate==False,
         ).order_by(
-            terrarun.models.state_version.StateVersion.state_version.desc()
+            terrarun.models.state_version.StateVersion.serial.desc()
         ).limit(1).first()
 
     @property
