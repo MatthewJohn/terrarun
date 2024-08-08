@@ -34,6 +34,7 @@ class OrganisationPermissions:
         CAN_MANAGE_CUSTOM_PROVIDERS = "can-manage-custom-providers"
         CAN_MANAGE_RUN_TASKS = "can-manage-run-tasks"
         CAN_READ_RUN_TASKS = "can-read-run-tasks"
+        CAN_CREATE_PROJECT = "can-create-project"
 
         # CUSTOM PERMISSIONS
         CAN_MANAGE_ENVIRONMENTS = "can-manage-environments"
