@@ -1,5 +1,23 @@
 # Changelog
 
+# [0.63.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.4...v0.63.0) (2024-08-08)
+
+
+### Bug Fixes
+
+* Fix bug where attributes were not being set correctly due to mis-aligned returning of errors ([d9ce23f](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/d9ce23f3f3a2e077302490ffba9bd392b27a40f3)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+* Fix bug where check for existent of state version was incorrect, throwing an error if a non-existent state version ID was provided ([b819bc2](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/b819bc2117e450c16fa2e17207a907bad0cc0f95)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+* Fix bug where if presign data is json decoded to a non-dict object, an exception would be thrown ([fd24e80](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/fd24e80c9b3a91e957d79c515dbeef244ccf89d8)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+* Fix exception when invalid response is returned from run task ([acf43e4](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/acf43e4152062960777eaf080c031f2907b529ab)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+* Ignore any states in workspace that are not finalised and are not intermediate and mark states as not intermediate after unlocking workspace ([d5fcf0e](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/d5fcf0e2b9bc9edd947e677e756312d6ff8240a6)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+
+
+### Features
+
+* Add API endpoint for state version details by ID ([828131d](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/828131dbbb0e01a06627fee2b731fff282e7a071)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+* Add API endpoints for uploading/download state and handle state creation without providing state JSON ([e55ae16](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/e55ae16fff6fa65cd7b306ea467791845f4b2fcc)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+* Add intial handling of creation of state version without state attribute ([6de1e5a](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/6de1e5aa2188ba7df55f88fb1e928fdde3f67ae3)), closes [#166](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/166)
+
 ## [0.62.4](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.3...v0.62.4) (2024-08-02)
 
 
