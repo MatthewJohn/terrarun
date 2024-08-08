@@ -131,7 +131,7 @@ class TaskResult(Base, BaseObject):
                 if res.status_code == 200:
                     break
                 else:
-                    logger.error("Got invalid response from task result: {}".format(res.status_code))
+                    logger.error("Got invalid response from task result: %s", res.status_code)
             except requests.exceptions.ConnectionError:
                 logger.exception('Exception occurred whilst calling task result.')
         else:

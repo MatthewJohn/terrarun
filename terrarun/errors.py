@@ -9,12 +9,12 @@ class TerrarunError(Exception):
 
 class ApiError(TerrarunError):
 
-    def __init__(self, title, details, pointer=None, status=None):
+    def __init__(self, title, details, pointer=None, status=422):
         """Store member variables"""
         self.title = title
         self.details = details
         self.pointer = pointer
-        self.status = status if status else 422
+        self.status = status
 
         super(ApiError, self).__init__(details)
 

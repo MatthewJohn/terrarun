@@ -194,7 +194,10 @@ class Workspace(Base, BaseObject):
             terrarun.models.state_version.StateVersion.status==terrarun.models.state_version.StateVersionStatus.FINALIZED,
             terrarun.models.state_version.StateVersion.intermediate==False,
         ).order_by(
-            terrarun.models.state_version.StateVersion.state_version.desc()
+            # Attempt to get state with highest serial
+            terrarun.models.state_version.StateVersion.serial.desc(),
+            # Use the latest if there's multiple
+            terrarun.models.state_version.StateVersion.id.desc()
         ).limit(1).first()
 
     @property
@@ -608,8 +611,7 @@ class Workspace(Base, BaseObject):
             # Remove intermediate from state versions of run, if available
             for state_version in run.state_versions:
                 if state_version.intermediate:
-                    state_version.intermediate = False
-                    session.add(state_version)
+                    state_version.unset_intermediate(session=session)
         else:
             # Otherwise, not able to unlock
             return False

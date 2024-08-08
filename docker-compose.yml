@@ -139,14 +139,15 @@ services:
   # Example custom agent
   agent:
     restart: unless-stopped
-    build: .
+    image: hashicorp/tfc-agent:1.15.4
     networks:
       - web
     depends_on:
       - traefik
+      - api
     env_file:
       - ./.env
-    entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
+    entrypoint: ["-address", "https://$DOMAIN", "-token", "$AGENT_TOKEN"]
 
   # Example run task application
   tfsec-task:

@@ -224,6 +224,10 @@ class StateVersion(Base, BaseObject):
             json_state_outputs = attributes["json_state_outputs"]
             del attributes["json_state_outputs"]
 
+        # Delete unknown 'force' attribute
+        if "force" in attributes:
+            del attributes["force"]
+
         sv = cls(
             run=run,
             workspace=workspace,
@@ -353,6 +357,10 @@ class StateVersion(Base, BaseObject):
             modules[module][resource_type] += 1
 
         return modules
+
+    def unset_intermediate(self, session: Optional['sqlalchemy.orm.Session']=None):
+        """Unset intermediate flag"""
+        self.update_attributes(session=session, intermediate=False)
 
     def process_resources(self):
         """Process resources"""

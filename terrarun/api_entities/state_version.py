@@ -2,13 +2,16 @@
 # SPDX-License-Identifier: GPL-2.0
 
 
+import base64
+import json
 from datetime import datetime
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Any, Dict
 
 import terrarun.models.state_version
 import terrarun.models.user
 import terrarun.models.state_version_output
 import terrarun.auth_context
+from terrarun.api_error import ApiError
 
 from .base_entity import (
     ATTRIBUTED_REQUIRED,
@@ -17,6 +20,7 @@ from .base_entity import (
     DataRelationshipView,
     ListRelationshipView,
     EntityView,
+    BaseAttributeTypeConversion,
 )
 
 
@@ -126,6 +130,33 @@ class StateVersionEntity(BaseEntity):
         )
 
 
+class Base64EncodedJsonAttributeType(BaseAttributeTypeConversion):
+
+    @staticmethod
+    def from_request_data(value: Any) -> Tuple[None, Optional[Dict[str, Any]]] | Tuple[ApiError, None]:
+        """Convert base64-encoded JSON to dict"""
+        if not value:
+            return None, None
+
+        try:
+            json_string = base64.b64decode(value).decode('utf-8')
+        except Exception as exc:
+            return ApiError('Failed to convert from base64', 'Failed to convert from base64'), None
+
+        try:
+            return None, json.loads(json_string)
+        except Exception:
+            return ApiError('Failed to deocde JSON', 'Failed to decode JSON'), None
+
+    @staticmethod
+    def to_request_data(value: Any) -> Optional[str]:
+        """Convert object to JSON and base64 encode"""
+        if value is None:
+            return None
+
+        return base64.b64encode(json.dumps(value).encode('utf-8')).decode('utf-8')
+
+
 class StateVersionCreateEntity(StateVersionEntity):
     """Entity for creating state version"""
 
@@ -148,10 +179,10 @@ class StateVersionCreateEntity(StateVersionEntity):
     def _get_attributes(cls) -> Tuple[Attribute]:
         return super()._get_attributes() + (
             Attribute("md5", "md5", str, ATTRIBUTED_REQUIRED),
-            Attribute("serial", "serial", str, ATTRIBUTED_REQUIRED),
             Attribute("lineage", "lineage", str, None),
-            Attribute("json-state", "json_state", str, None),
-            Attribute("json-state-outputs", "json_state_outputs", str, None),
+            Attribute("state", "state", Base64EncodedJsonAttributeType, None),
+            Attribute("json-state", "json_state", Base64EncodedJsonAttributeType, None),
+            Attribute("json-state-outputs", "json_state_outputs", Base64EncodedJsonAttributeType, None),
             Attribute("force", "force", bool, False),
         )
 
