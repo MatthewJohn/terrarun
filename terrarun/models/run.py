@@ -304,26 +304,6 @@ class Run(Base, BaseObject):
                 self.update_status(RunStatus.PRE_PLAN_COMPLETED)
             self.queue_worker_job()
 
-    def execute_plan(self):
-        """Execute plan"""
-        session = Database.get_session()
-        self.update_status(RunStatus.PLANNING)
-        plan = self.plan
-        self.plan.execute()
-        session.refresh(self)
-        if self.status == RunStatus.CANCELED:
-            return
-        elif plan.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-            self.update_status(RunStatus.ERRORED)
-            return
-        elif self.plan_only or self.configuration_version.speculative or not self.plan.has_changes:
-            self.update_status(RunStatus.PLANNED_AND_FINISHED)
-            return
-        else:
-            self.update_status(RunStatus.PLANNED)
-            terrarun.models.apply.Apply.create(plan=self.plan)
-            self.queue_worker_job()
-
     def handle_planned(self):
         """Handle planned state"""
         # If successfully planned, move to pre-plan tasks
@@ -399,42 +379,6 @@ class Run(Base, BaseObject):
                 self.queue_agent_job(job_type=JobQueueType.APPLY)
             else:
                 self.queue_worker_job()
-
-    def handle_apply_queued(self):
-        """Handle apply_queued state"""
-        session = Database.get_session()
-        self.update_status(RunStatus.APPLYING)
-        self.plan.apply.execute()
-        session.refresh(self)
-        if self.status == RunStatus.CANCELED:
-            return
-        elif self.plan.apply.status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-            self.update_status(RunStatus.ERRORED)
-            return
-        else:
-            self.update_status(RunStatus.APPLIED)
-
-    def execute_next_step(self):
-        """Execute terraform command"""
-        # Handle plan job
-        logger.info("Run Status: " + str(self.status))
-
-        if self.status is RunStatus.PLAN_QUEUED:
-            self.execute_plan()
-
-        # Handle apply job
-        elif self.status is RunStatus.APPLY_QUEUED:
-            self.handle_apply_queued()
-
-    def generate_state_version(self, work_dir):
-        """Generate state version from state file."""
-        state_content = None
-        with open(os.path.join(work_dir, 'terraform.tfstate'), 'r') as state_file_fh:
-            state_content = state_file_fh.readlines()
-        state_json = json.loads('\n'.join(state_content))
-        state_version = terrarun.models.state_version.StateVersion.create_from_state_json(run=self, state_json=state_json)
-
-        return state_version
 
     def update_status(self, new_status, current_user=None, session=None):
         """Update state of run."""

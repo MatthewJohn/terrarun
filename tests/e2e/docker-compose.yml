@@ -15,3 +15,7 @@ services:
       dockerfile: tests/e2e/Dockerfile.traefik
     volumes: !override
       - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  agent:
+    profiles:
+      - donotstart

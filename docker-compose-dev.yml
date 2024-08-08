@@ -69,7 +69,10 @@ services:
   agent:
     extends:
       file: docker-compose.yml
-      service: agent
+    # Don't start agent for local development, as self-generated SSL certificates
+    # are not being injected
+    profiles:
+      - donotstart
 
     # Only for local development
     volumes:
