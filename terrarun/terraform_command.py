@@ -14,6 +14,7 @@ import sqlalchemy.orm
 
 import terrarun.models.audit_event
 import terrarun.models.run
+import terrarun.models.run_flow
 from terrarun.database import Database
 from terrarun.logger import get_logger
 from terrarun.models.base_object import BaseObject

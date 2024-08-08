@@ -7,12 +7,12 @@ import sqlalchemy
 
 from terrarun.database import Database
 import terrarun.models.organisation
-import terrarun.models.run_queue
 import terrarun.models.agent
 import terrarun.models.apply
 import terrarun.models.configuration
 import terrarun.models.project
 import terrarun.models.run
+import terrarun.models.run_flow
 import terrarun.models.run_queue
 import terrarun.models.workspace
 import terrarun.models.environment
@@ -191,29 +191,29 @@ class JobProcessor:
 
         # Update run status
         ## Do not update run status if is has been cancelled
-        if run.status == terrarun.models.run.RunStatus.CANCELED:
+        if run.status == terrarun.models.run_flow.RunStatus.CANCELED:
             # Unlock workspace
             run.unlock_workspace()
             return
 
         elif plan_status is terrarun.terraform_command.TerraformCommandState.RUNNING:
-            run.update_status(terrarun.models.run.RunStatus.PLANNING)
+            run.update_status(terrarun.models.run_flow.RunStatus.PLANNING)
 
         elif plan_status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-            run.update_status(terrarun.models.run.RunStatus.ERRORED)
+            run.update_status(terrarun.models.run_flow.RunStatus.ERRORED)
             # Unlock workspace
             run.unlock_workspace()
             return
 
         elif plan_status is terrarun.terraform_command.TerraformCommandState.FINISHED:
             if run.plan_only or run.configuration_version.speculative or not run.plan.has_changes:
-                run.update_status(terrarun.models.run.RunStatus.PLANNED_AND_FINISHED)
+                run.update_status(terrarun.models.run_flow.RunStatus.PLANNED_AND_FINISHED)
                 # Unlock workspace
                 run.unlock_workspace()
                 return
 
             else:
-                run.update_status(terrarun.models.run.RunStatus.PLANNED)
+                run.update_status(terrarun.models.run_flow.RunStatus.PLANNED)
                 terrarun.models.apply.Apply.create(plan=run.plan)
 
                 # Queue worker job for next stages
@@ -241,22 +241,22 @@ class JobProcessor:
 
         # Update run status
         ## Do not update run status if is has been cancelled
-        if run.status == terrarun.models.run.RunStatus.CANCELED:
+        if run.status == terrarun.models.run_flow.RunStatus.CANCELED:
             # Unlock workspace
             run.unlock_workspace()
             return
 
         elif apply_status is terrarun.terraform_command.TerraformCommandState.RUNNING:
-            run.update_status(terrarun.models.run.RunStatus.APPLYING)
+            run.update_status(terrarun.models.run_flow.RunStatus.APPLYING)
 
         elif apply_status is terrarun.terraform_command.TerraformCommandState.ERRORED:
-            run.update_status(terrarun.models.run.RunStatus.ERRORED)
+            run.update_status(terrarun.models.run_flow.RunStatus.ERRORED)
             # Unlock workspace
             run.unlock_workspace()
             return
 
         elif apply_status is terrarun.terraform_command.TerraformCommandState.FINISHED:
-            run.update_status(terrarun.models.run.RunStatus.APPLIED)
+            run.update_status(terrarun.models.run_flow.RunStatus.APPLIED)
             # Unlock workspace
             run.unlock_workspace()
 
