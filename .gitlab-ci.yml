@@ -8,23 +8,13 @@ image: python:3.10
       when: always
     - when: never
 
-build-e2e-test-docker-image:
-  stage: build
-  image: docker:latest
-  tags: [amd64]
-  extends: .limit_release_and_non_pushes
-  services:
-    - docker:dind
-  script:
-    - cd tests/e2e; docker build -f Dockerfile -t terrarun-e2e-image:v${CI_COMMIT_SHORT_SHA} --build-arg http_proxy=$http_proxy --build-arg HTTP_PROXY=$http_proxy --build-arg https_proxy=$https_proxy --build-arg HTTPS_PROXY=$https_proxy .
-
 e2e-tests:
   stage: test
   extends: .limit_release_and_non_pushes
-  image: terrarun-e2e-image:v${CI_COMMIT_SHORT_SHA}
+  image: docker:cli
   tags: [amd64]
   script:
-    - bash ./tests/e2e/run_tests.sh
+    - sh ./tests/e2e/run_tests.sh
 
 
 release:
