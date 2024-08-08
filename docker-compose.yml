@@ -47,15 +47,14 @@ services:
       - "traefik.http.routers.terrarun-api.tls=true"
       - "traefik.http.services.terrarun-api.loadbalancer.server.port=5000"
       - "traefik.http.routers.terrarun-api.service=terrarun-api"
-
+    environment:
+      DATABASE_URL: $DATABASE_URL
     depends_on:
       - db
       - minio
     links:
       - db
       - minio
-    env_file:
-      - ./.env
 
     entrypoint: ["python", "-u", "terrarun.py"]
 
@@ -75,8 +74,6 @@ services:
       - db
       - minio
       - tfsec-task
-    env_file:
-      - ./.env
 
     entrypoint: ["python", "-u", "worker.py"]
 
@@ -92,8 +89,6 @@ services:
     links:
       - db
       - minio
-    env_file:
-      - ./.env
     entrypoint: ["python", "-u", "./cron_tasks.py"]
 
   db:
@@ -101,8 +96,6 @@ services:
     restart: always
     networks:
       - web
-    env_file:
-      - ./.env
     labels:
       - "traefik.enable=false"
     volumes:
@@ -116,8 +109,6 @@ services:
     networks:
       - web
       - default
-    env_file:
-     - .env
     environment:
       MINIO_ACCESS_KEY: $AWS_ACCESS_KEY_ID
       MINIO_SECRET_KEY: $AWS_SECRET_ACCESS_KEY
@@ -129,8 +120,6 @@ services:
       - minio
     networks:
       - web
-    env_file:
-     - .env
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc config host add jmonminio $AWS_ENDPOINT $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY;
@@ -147,9 +136,7 @@ services:
     depends_on:
       - api
       - traefik
-    env_file:
-      - ./.env
-    entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$AGENT_TOKEN"]
+    entrypoint: ["python", "-u", "./agent.py", "--address", "$BASE_URL", "--token", "$TFC_AGENT_TOKEN"]
 
   # Example run task application
   tfsec-task:

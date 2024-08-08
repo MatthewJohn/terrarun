@@ -1,45 +1,62 @@
 name: terrarun-tests
 
 services:
+  certs:
+    build:
+      context: ./tests/e2e
+      dockerfile: Dockerfile.certs
+    command: bash /scripts/generate_ssl.sh
+    working_dir: /tmp
+    volumes:
+      - ./tests/e2e/scripts:/scripts
+      - certs:/certs
+
   traefik:
-    ports: !override
-      # Open traefik http [80] and https [443] ports.
-      - '5580:80'
-      - '55443:443'
-      - '5588:8080'
-    
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    ports: !reset []
+    volumes: !override
+      - certs:/ssl:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/etc/traefik/dynamic_conf/conf.yml:ro
     expose:
       - 443
 
   test-runner:
+    depends_on:
+      certs:
+        condition: service_completed_successfully
     image: hashicorp/terraform
     command: version
     volumes:
-      - /etc/ssl/certs:/etc/ssl/certs:ro
-
-#      - certs:/etc/ssl/certs:ro
+      - certs:/etc/ssl/certs:ro
+      - terraform:/root/.terraform.d/
       - ./tests/e2e:/tests
 
   agent:
     restart: unless-stopped
-    # entrypoint:  !reset null
-    entrypoint: tail -f /dev/null
+    entrypoint:  !reset null
     build: !reset null
     image: hashicorp/tfc-agent
+    environment:
+      TFC_AGENT_TOKEN: $TFC_AGENT_TOKEN
+      TFC_AGENT_ACCEPT: plan,apply
+      TFC_ADDRESS: https://terrarun
     volumes:
-      - /etc/ssl/certs:/etc/ssl/certs:ro
- #     - certs:/etc/ssl/certs:ro
+      - certs:/etc/ssl/certs:ro
     networks:
       - web
       - default
     depends_on:
-      - traefik
-      - api
-    env_file:
-      - .env
+      traefik:
+      api:
+      certs:
+        condition: service_completed_successfully
     links:
       - "traefik:terrarun"
 
 
 volumes:
   certs:
+  terraform:

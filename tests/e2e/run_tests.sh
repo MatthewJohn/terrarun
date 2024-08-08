@@ -17,6 +17,7 @@ cd tests/e2e/temp
 
 export COMPOSE_PROJECT_NAME=terrarun-tests
 export COMPOSE_FILE="${BASE_DIR}/docker-compose.yml:$BASE_DIR/tests/e2e/docker-compose.yml"
+export COMPOSE_ENV_FILES="$(pwd)/.env"
 
 # Make sure to clean up in case of failures
 finish() {
@@ -43,7 +44,7 @@ sed -i -E 's#^BASE_URL=.*#BASE_URL=https://terrarun#g' .env
 
 # Just in case of leftovers from previous run.
 if [ $RESET = true ]; then
-    docker compose down
+    docker compose down --volumes
 fi
 
 # Build UI and api containers
@@ -54,7 +55,7 @@ fi
 # Startup base containers for setup
 docker compose up -d traefik api db minio createbucket
 
-# @TODO Replace with a proper wait.
+# @TODO Replace with a proper wait for DB.
 # sleep 15
 
 docker compose exec -ti api alembic upgrade head
@@ -62,13 +63,12 @@ docker compose exec -ti api alembic upgrade head
 TFE_TOKEN=$(docker compose exec -e PYTHONPATH=/app: -ti api python tests/e2e/scripts/bootstrap_admin.py)
 
 # @TODO Replace with curl or something.
-AGENT_TOKEN=$(docker compose exec -e PYTHONPATH=/app: -ti api python tests/e2e/scripts/bootstrap_agent_pool.py)
-
-# Set token
-sed -i -E "s#^TFC_AGENT_TOKEN=.*#TFC_AGENT_TOKEN=${AGENT_TOKEN}#g" .env
+export TFC_AGENT_TOKEN=$(docker compose exec -e PYTHONPATH=/app: -ti api python tests/e2e/scripts/bootstrap_agent_pool.py)
 
 # Bring up remaining containers
 docker compose up -d
+
+docker compose run --rm -i --entrypoint /bin/sh test-runner /tests/scripts/login.sh "$TFE_TOKEN"
 
 # Run terraform executing test
 timeout --signal=TERM --foreground 1m docker compose run --rm -i -w /tests/terraform/execution test-runner init

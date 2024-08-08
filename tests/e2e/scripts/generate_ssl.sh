@@ -2,11 +2,15 @@
 
 set -ex
 
+if [ -f /certs/public.pem ]; then
+  echo "Certs already available." >&2
+  exit 0
+fi
+
+
 # Setup CA certificates and server certs
 mkdir easy-rsa
 cp -r /usr/share/easy-rsa/* ./easy-rsa/
-
-TERRARUN_DIR=$(pwd)
 
 cd ./easy-rsa
 export EASYRSA_BATCH=1
@@ -26,15 +30,18 @@ EOF
 
 ./easyrsa build-ca nopass
 
-# @TODO Avoid installing CA on machine.
+mkdir -p /usr/local/share/ca-certificates/
 cp ./pki/ca.crt /usr/local/share/ca-certificates/terrarunCA.crt
 update-ca-certificates
 
-openssl genrsa -out $TERRARUN_DIR/ssl/private.pem
-openssl req -new -key $TERRARUN_DIR/ssl/private.pem -out server.req -subj \
+cp /etc/ssl/certs/ca-certificates.crt /certs/ca-certificates.crt
+
+openssl genrsa -out /certs/private.pem
+openssl req -new -key /certs/private.pem -out server.req -subj \
     /C=GB/ST=Hampshire/L=Southampton/O=Terrarun/OU=Community/CN=terrarun
 
 ./easyrsa import-req ./server.req terrarun
 ./easyrsa sign-req server terrarun
+
 # Remove any lines before the cert that start with whitespace or 'Certificate'
-grep -Ev '^(\s|Certificate)' ./pki/issued/terrarun.crt > $TERRARUN_DIR/ssl/public.pem
+grep -Ev '^(\s|Certificate)' ./pki/issued/terrarun.crt > /certs/public.pem
