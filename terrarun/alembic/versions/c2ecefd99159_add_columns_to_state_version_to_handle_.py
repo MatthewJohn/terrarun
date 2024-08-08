@@ -5,6 +5,7 @@ Revises: 376a843af267
 Create Date: 2024-08-03 05:49:29.376688
 
 """
+import json
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
@@ -31,6 +32,24 @@ def upgrade() -> None:
     op.add_column('state_version', sa.Column('terraform_version', sa.String(length=128), nullable=True))
     op.add_column('state_version', sa.Column('intermediate', sa.Boolean(), nullable=False))
     op.create_foreign_key('fk_blob_state_version_json_state', 'state_version', 'blob', ['json_state_id'], ['id'])
+
+    bind = op.get_bind()
+    for row in bind.execute("""SELECT state_version.id AS state_version_id, `blob`.data AS state_version_data FROM state_version INNER JOIN `blob` ON state_version.state_id=`blob`.id""").all():
+        state = {}
+        if row['state_version_data']:
+            state = json.loads(row['state_version_data'].decode('utf-8'))
+        bind.execute(
+            sa.sql.text(
+                """UPDATE state_version SET lineage=:lineage, md5=:md5, serial=:serial, state_version=:state_version, terraform_version=:terraform_version, intermediate=:intermediate WHERE id=:state_version_id"""
+            ),
+            lineage=state.get("lineage"),
+            md5=None,
+            serial=state.get("serial"),
+            state_version=state.get("version"),
+            terraform_version=state.get("terraform_version"),
+            intermediate=False,
+            state_version_id=row['state_version_id']
+        )
     # ### end Alembic commands ###
 
 
@@ -47,5 +66,4 @@ def downgrade() -> None:
     op.drop_column('state_version', 'md5')
     op.drop_column('state_version', 'lineage')
     op.drop_column('state_version', 'json_state_id')
-    op.drop_column('state_version', 'state_id')
     # ### end Alembic commands ###
