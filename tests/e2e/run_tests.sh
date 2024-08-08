@@ -71,9 +71,11 @@ sed -i -E "s#^TFC_AGENT_TOKEN=.*#TFC_AGENT_TOKEN=${AGENT_TOKEN}#g" .env
 docker compose up -d
 
 # Run terraform executing test
+timeout --signal=TERM --foreground 1m docker compose run --rm -i -w /tests/terraform/execution test-runner init
 timeout --signal=TERM --foreground 3m docker compose run --rm -i -w /tests/terraform/execution test-runner test
 
 # Run tfe provider compatibility tests
+timeout --signal=TERM --foreground 1m docker compose run --rm -i -w /tests/terraform/tfe_provider test-runner init
 timeout --signal=TERM --foreground 3m docker compose run --rm -i -w /tests/terraform/tfe_provider test-runner test
 
 # Teardown stack

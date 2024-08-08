@@ -25,7 +25,9 @@ set_var EASYRSA_DIGEST         "sha512"
 EOF
 
 ./easyrsa build-ca nopass
-cp ./pki/ca.crt /usr/local/share/ca-certificates/
+
+# @TODO Avoid installing CA on machine.
+cp ./pki/ca.crt /usr/local/share/ca-certificates/terrarunCA.crt
 update-ca-certificates
 
 openssl genrsa -out $TERRARUN_DIR/ssl/private.pem

@@ -110,9 +110,9 @@ services:
 
   minio:
     image: minio/minio
-    ports:
-     - 9000:9000
-     - 9001:9001
+    expose:
+     - 9000
+     - 9001
     networks:
       - web
       - default

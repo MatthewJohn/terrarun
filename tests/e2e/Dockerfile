@@ -14,9 +14,3 @@ RUN echo \
 
 RUN apt-get update
 RUN apt-get install docker-ce-cli easy-rsa openssl wget unzip jq --assume-yes
-
-# Install Terraform agent
-RUN cd /tmp; wget https://releases.hashicorp.com/tfc-agent/1.8.0/tfc-agent_1.8.0_linux_amd64.zip; unzip tfc-agent_1.8.0_linux_amd64.zip; cp tfc-agent* /usr/local/bin/
-
-# Install Terraform
-RUN cd /tmp; wget https://releases.hashicorp.com/terraform/1.9.3/terraform_1.9.3_linux_amd64.zip; unzip terraform_1.9.3_linux_amd64.zip; cp terraform /usr/local/bin/
