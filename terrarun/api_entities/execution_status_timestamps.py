@@ -8,6 +8,7 @@ import terrarun.models.user
 import terrarun.models.plan
 import terrarun.models.apply
 import terrarun.terraform_command
+import terrarun.auth_context
 
 from .base_entity import (
     NestedAttributes,
@@ -27,7 +28,7 @@ class ExecutionStatusTimestampsEntity(NestedAttributes):
         )
 
     @classmethod
-    def _from_object(cls, obj: Union['terrarun.models.plan.Plan', 'terrarun.models.apply.Apply'], effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: Union['terrarun.models.plan.Plan', 'terrarun.models.apply.Apply'], auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert plan object to status timestamps entity"""
         timestamps = obj.get_status_change_timestamps()
         return cls(

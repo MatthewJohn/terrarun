@@ -3,6 +3,7 @@
 
 import datetime
 from enum import Enum
+from typing import List
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -10,6 +11,7 @@ import sqlalchemy.orm
 import terrarun.models.run
 import terrarun.terraform_command
 import terrarun.utils
+import terrarun.models.task_result
 from terrarun.database import Base, Database
 from terrarun.logger import get_logger
 from terrarun.models.base_object import BaseObject, update_object_status
@@ -50,7 +52,7 @@ class TaskStage(Base, BaseObject):
     run_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run.id"), nullable=False)
     run = sqlalchemy.orm.relationship("Run", back_populates="task_stages")
 
-    task_results = sqlalchemy.orm.relationship("TaskResult", back_populates="task_stage")
+    task_results: List['terrarun.models.task_result.TaskResult'] = sqlalchemy.orm.relationship("TaskResult", back_populates="task_stage")
 
     @classmethod
     def create(cls, run, stage, workspace_tasks):
@@ -72,27 +74,6 @@ class TaskStage(Base, BaseObject):
     def organisation(self):
         """Return organisation."""
         return self.run.configuration_version.workspace.organisation
-
-    def update_attributes(self, **kwargs):
-        """Update attributes of task"""
-
-        if 'id' in kwargs or 'organisation' in kwargs:
-            # Do not allow update of ID or organisation
-            return False
-
-        # If name is specificed in arguments to update,
-        # check it is valid
-        if ('name' in kwargs and
-                kwargs['name'] != self.name and
-                not self.validate_new_name(self.organisation, kwargs['name'])):
-            return False
-
-        for attr in kwargs:
-            setattr(self, attr, kwargs[attr])
-
-        session = Database.get_session()
-        session.add(self)
-        session.commit()
 
     def check_status(self):
         """Check status of tasks and update statuses accordingly"""

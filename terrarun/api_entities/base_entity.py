@@ -5,18 +5,36 @@
 import abc
 from enum import EnumMeta
 from datetime import datetime
-from typing import Tuple, Optional, List, Dict, Any, TypeVar, Generic
+from typing import Tuple, Optional, List, Dict, Any, TypeVar, Generic, Union
+from typing_extensions import Self
 
 from flask import request
 
 from terrarun.api_error import ApiError
 import terrarun.models.user
 import terrarun.models.base_object
+import terrarun.auth_context
 from terrarun.utils import datetime_to_json, datetime_from_json
 
 
 UNDEFINED = object()
 ATTRIBUTED_REQUIRED = object()
+
+
+class BaseAttributeTypeConversion(abc.ABC):
+    """Base class for custom conversions from"""
+
+    @staticmethod
+    @abc.abstractmethod
+    def to_request_data(value: Any) -> Any:
+        """Convert entity data to request data"""
+        ...
+
+    @staticmethod
+    @abc.abstractmethod
+    def from_request_data(value: Any) -> Union[Tuple[None, Any], Tuple[ApiError, None]]:
+        """Convert from request data to entity data"""
+        ...
 
 
 class Attribute:
@@ -88,6 +106,9 @@ class Attribute:
 
         elif issubclass(self.type, NestedAttributes):
             return value.to_dict()
+
+        elif issubclass(self.type, BaseAttributeTypeConversion):
+            return self.type.to_request_data(value=value)
 
         raise Exception(f"Unknown data type: {self.type}: {value}")
 
@@ -167,6 +188,15 @@ class Attribute:
                 ), None, None
             val = self.type.from_request(request_args=val)
 
+        elif issubclass(self.type, BaseAttributeTypeConversion):
+            error, val = self.type.from_request_data(value=val)
+            if error:
+                return ApiError(
+                    "Attribute is invalid",
+                    error.details,
+                    pointer=f"/data/attributes/{self.req_attribute}"
+                ), None, None
+
         else:
             raise Exception("Unsupported attribute type")
 
@@ -206,8 +236,12 @@ class BaseEntity(abc.ABC):
     type: Optional[str] = None
     include_attributes: Optional[Tuple[str]] = None
     attribute_modifiers: Dict[str, AttributeModifier] = {}
+    RELATIONSHIPS: Dict[str, 'BaseRelationshipEntity'] = {}
 
-    def __init__(self, id: str=None, attributes: Optional[Dict[str, Any]]=None):
+    def __init__(self,
+                 id: str=None,
+                 attributes: Optional[Dict[str, Any]]=None,
+                 relationships: Optional[Dict[str, 'BaseRelationshipEntity']]=None):
         """Assign attributes from kwargs to attributes"""
         self.id = id
         self._attribute_values = {}
@@ -219,6 +253,8 @@ class BaseEntity(abc.ABC):
                 if attribute.obj_attribute in attributes
                 else UNDEFINED
             )
+
+        self.relationships: Dict[str, 'BaseRelationshipEntity'] = relationships if relationships else {}
 
     def get_type(self):
         """Return entity type"""
@@ -276,14 +312,19 @@ class BaseEntity(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def _from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def _from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'Self':
         """Return entity from object"""
         ...
 
     @classmethod
-    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'Self':
         """Return entity from object"""
-        return cls._from_object(obj=obj, effective_user=effective_user)
+        entity = cls._from_object(obj=obj, auth_context=auth_context)
+        entity.relationships = {
+            relationship_name: relationship_class.from_object(obj=obj, parent_view=entity)
+            for relationship_name, relationship_class in cls.RELATIONSHIPS.items()
+        }
+        return entity
 
     @staticmethod
     def generate_link(obj: Any):
@@ -302,10 +343,10 @@ class BaseEntity(abc.ABC):
             if key is not None:
                 obj_attributes[key] = value
 
-        return obj_attributes
+        return None, obj_attributes
 
     @classmethod
-    def from_request(cls, request_args, create=False):
+    def from_request(cls, request_args, create=False) -> Union[Tuple['ApiError', None], Tuple[None, Self]]:
         """
         Obtain entity object from request
         
@@ -329,9 +370,22 @@ class BaseEntity(abc.ABC):
                 pointer=f"/data/id"
             ), None
 
-        obj_attributes = cls._attributes_from_request(request_data.get("attributes", {}))
-        
-        return None, cls(id=id_, attributes=obj_attributes)
+        err, obj_attributes = cls._attributes_from_request(request_data.get("attributes", {}))
+        if err:
+            return err, None
+
+        entity = cls(id=id_, attributes=obj_attributes)
+
+        for relationship_name, relationship_data in request_data.get("relationships", {}).items():
+            if relationship_name in cls.RELATIONSHIPS:
+                err, relationship_entity = cls.RELATIONSHIPS.get(relationship_name).from_request(request_args=relationship_data, parent_view=entity)
+                if err:
+                    # Update error pointer
+                    err.pointer = f"/relationships/{relationship_name}/{err.pointer}"
+                    return err, None
+                entity.relationships[relationship_name] = relationship_entity
+
+        return None, entity
 
 
 class BaseView(abc.ABC):
@@ -385,26 +439,20 @@ class NestedAttributes(BaseEntity, BaseView):
 class EntityView(BaseEntity, BaseView):
     """Return view for entity"""
 
-    RELATIONSHIPS: Dict[str, 'BaseRelationshipView'] = {}
-
     def __init__(
             self,
             id: str = None,
-            attributes: Optional[Dict[str, Any]]= None):
+            attributes: Optional[Dict[str, Any]]=None,
+            relationships: Optional[Dict[str, Any]]=None):
         """Store member variables for relationships"""
-        super().__init__(id, attributes)
-        self.relationships: Dict[str, 'BaseRelationshipView'] = {}
+        super().__init__(id, attributes=attributes, relationships=relationships)
         self.link: Optional[str] = None
 
     @classmethod
-    def from_object(cls, obj: Any, effective_user: 'terrarun.models.user.User') -> 'BaseEntity':
+    def from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'BaseEntity':
         """Return entity from object"""
-        entity = cls._from_object(obj=obj, effective_user=effective_user)
+        entity = super().from_object(obj=obj, auth_context=auth_context)
         entity.link = cls.generate_link(obj=obj)
-        entity.relationships = {
-            relationship_name: relationship_class.from_object(obj=obj, parent_view=entity)
-            for relationship_name, relationship_class in cls.RELATIONSHIPS.items()
-        }
         return entity
 
     def get_data(self) -> Dict[str, Any]:
@@ -451,7 +499,7 @@ class ApiErrorView(BaseEntity, BaseView):
             self.errors += errors
 
         if len(self.errors) > 0:
-            self.response_code = self.errors[0]._status
+            self.response_code = self.errors[0].status
         else:
             self.response_code = 500
 
@@ -477,7 +525,7 @@ class ApiErrorView(BaseEntity, BaseView):
         pass
 
 
-class BaseRelationshipView(BaseView):
+class BaseRelationshipEntity(BaseView):
     """Base relationship view"""
 
     def get_data(self):
@@ -493,46 +541,32 @@ class BaseRelationshipView(BaseView):
         """
         ...
 
-
-class RelatedRelationshipView(BaseRelationshipView):
-    """Base relationship for related"""
-
-    CHILD_PATH: Optional[str] = None
-
-    def __init__(self, parent_view: 'EntityView'):
-        """Store member variables"""
-        if self.CHILD_PATH is None:
-            raise NotImplementedError("Name not set on relationship")
-        self._parent_view = parent_view
-
     @classmethod
-    def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
-        """Return entity from object"""
-        return cls(parent_view=parent_view)
-
-    def to_dict(self):
-        """Return API repsonse data"""
-        if self._parent_view.link:
-            return {
-                "links": {
-                    "related": f"{self._parent_view.link}/{self.CHILD_PATH}"
-                }
-            }
-        return None
+    @abc.abstractmethod
+    def from_request(cls, request_args: Dict[str, str], parent_view: 'EntityView') -> Union[Tuple['ApiError', None], Tuple[None, Self]]:
+        """Generate relationship from relationship data"""
+        ...
 
 
-class RelatedWithDataRelationshipView(BaseRelationshipView):
+class RelatedWithDataRelationshipView(BaseRelationshipEntity):
     """Base relationship for related"""
 
     CHILD_PATH: Optional[str] = None
     TYPE: Optional[str] = None
+    OPTIONAL: bool = False
 
     def __init__(self, id: str, parent_view: 'EntityView'):
         """Store member variables"""
         self.id = id
-        if self.CHILD_PATH is None:
-            raise NotImplementedError("Name not set on relationship")
         self._parent_view = parent_view
+        # Validate child path
+        self._get_child_path()
+
+    def _get_child_path(self):
+        """Get child path"""
+        if self.CHILD_PATH is None:
+            raise NotImplementedError
+        return self.CHILD_PATH
 
     def get_type(self) -> str:
         """Return entity type"""
@@ -543,6 +577,8 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
     def get_id(self) -> str:
         """Return ID"""
         if self.id is None:
+            if self.OPTIONAL:
+                return None
             raise NotImplementedError
         return self.id
 
@@ -557,66 +593,95 @@ class RelatedWithDataRelationshipView(BaseRelationshipView):
         """Return entity from object"""
         return cls(parent_view=parent_view, id=cls.get_id_from_object(obj=obj))
 
-    def get_data(self) -> Dict[str, Any]:
+    def get_data(self) -> Optional[Dict[str, str]]:
         """Get data"""
-        return {
-            "id": self.get_id(),
-            "type": self.get_type(),
-        }
+        if (id_ := self.get_id()) and (type_ := self.get_type()):
+            return {
+                "id": id_,
+                "type": type_,
+            }
+        return None
+
+    def get_related_link(self) -> Optional[str]:
+        """Get related link"""
+        if (parent_link := self._parent_view.link) and (child_path := self._get_child_path()):
+            return f"{parent_link}/{child_path}"
 
     def to_dict(self) -> dict:
         """Return API repsonse data"""
-        data = {}
-        if self._parent_view.link:
-            data["links"] = {
-                "related": f"{self._parent_view.link}/{self.CHILD_PATH}"
+        response = {}
+        if related_link := self.get_related_link():
+            response["links"] = {
+                "related": related_link
             }
-        data["data"] = self.get_data()
-        return data
-
-
-class DataRelationshipView(BaseRelationshipView):
-    """Base relationship for related objects with data"""
-
-    TYPE: Optional[str] = None
-
-    def __init__(self, id: str):
-        """Store member variables"""
-        self.id = id
-
-    def get_type(self) -> str:
-        """Return entity type"""
-        if self.TYPE is None:
-            raise NotImplementedError
-        return self.TYPE
-
-    def get_id(self) -> Optional[str]:
-        """Return ID"""
-        return self.id
+        if data := self.get_data():
+            response["data"] = data
+        return response
 
     @classmethod
-    @abc.abstractmethod
-    def get_id_from_object(cls, obj: Any) -> Optional[str]:
+    def from_request(cls, request_args: Dict[str, str], parent_view: 'EntityView') -> Union[Tuple['ApiError', None], Tuple[None, Self]]:
+        """Generate relationship from relationship data"""
+        data = request_args.get("data")
+        if not isinstance(data, dict):
+            return ApiError(
+                "Invalid relationship data",
+                "Relationship must contain a data object",
+                pointer='data'
+            )
+
+        type_ = data.get("type")
+        if type_ != cls.TYPE:
+            return ApiError(
+                'Relationship type does not match expected type',
+                f'Relationships type \'{cls.TYPE}\' expected',
+                pointer='data/type'
+            ), None
+
+        id_ = data.get("id")
+        if id_ is None:
+            return ApiError(
+                'Relationship id not set',
+                f'Relationship ID must be set',
+                pointer='data/id'
+            ), None
+        return None, cls(id=id_, parent_view=parent_view)
+
+
+class RelatedRelationshipView(RelatedWithDataRelationshipView):
+    """Base relationship for related"""
+
+    def get_type(self) -> None:
+        """Return entity type"""
+        pass
+
+    def get_id(self) -> None:
+        """Return ID"""
+        pass
+
+    @classmethod
+    def get_id_from_object(cls, obj: Any) -> None:
         """Obtain ID from object"""
-        ...
+        pass
 
     @classmethod
     def from_object(cls, obj: Any, parent_view: 'EntityView') -> 'BaseEntity':
         """Return entity from object"""
-        return cls(id=cls.get_id_from_object(obj=obj))
+        return cls(id=None, parent_view=parent_view)
 
-    def get_data(self) -> Optional[Dict[str, Any]]:
-        """Return data object"""
-        return {
-            "id": self.get_id(),
-            "type": self.get_type()
-        } if self.get_id() else None
+    @classmethod
+    def from_request(cls, request_args: Dict[str, str], parent_view: 'EntityView') -> Union[Tuple['ApiError', None], Tuple[None, Self]]:
+        """Generate relationship from relationship data"""
+        return None, cls(id=None, parent_view=parent_view)
 
-    def to_dict(self) -> dict:
-        """Return API repsonse data"""
-        return {
-            "data": self.get_data()
-        }
+
+class DataRelationshipView(RelatedWithDataRelationshipView):
+    """Base relationship for related objects with data"""
+
+    TYPE: Optional[str] = None
+
+    def _get_child_path(self) -> None:
+        """Get child path"""
+        pass
 
 
 TListEntityParent = TypeVar('TListEntityParent', bound=BaseEntity)
@@ -638,17 +703,17 @@ class ListEntity(BaseEntity, Generic[TListEntityParent]):
         return cls.ENTITY_CLASS
 
     @classmethod
-    def from_object(cls, obj: List[Any], effective_user: terrarun.models.user.User) -> 'ListEntity':
+    def from_object(cls, obj: List[Any], auth_context: 'terrarun.auth_context.AuthContext') -> 'ListEntity':
         """Create list entity object from list of model objects"""
         return cls(
             entities=[
-                cls._get_entity_class().from_object(obj=obj_itx, effective_user=effective_user)
+                cls._get_entity_class().from_object(obj=obj_itx, auth_context=auth_context)
                 for obj_itx in obj
             ]
         )
 
     @classmethod
-    def _from_object(cls, obj: Any, effective_user: terrarun.models.user.User) -> 'ListEntity':
+    def _from_object(cls, obj: Any, auth_context: 'terrarun.auth_context.AuthContext') -> 'ListEntity':
         """Implement unused abstract method"""
         pass
 
@@ -680,7 +745,7 @@ class ListEntityView(BaseView, ListEntity[EntityView]):
         pass
 
 
-class ListRelationshipView(BaseRelationshipView, ListEntity[BaseRelationshipView]):
+class ListRelationshipView(BaseRelationshipEntity, ListEntity[BaseRelationshipEntity]):
 
     @classmethod
     @abc.abstractmethod
@@ -697,6 +762,10 @@ class ListRelationshipView(BaseRelationshipView, ListEntity[BaseRelationshipView
                 for obj_itx in cls._get_objects(obj=obj)
             ]
         )
+
+    @classmethod
+    def from_request(cls, request_args: Dict[str, str], parent_view: EntityView) -> Tuple[ApiError | None] | Tuple[None | Self]:
+        pass
 
     def _get_attributes(**kwargs):
         """Handle abstract methods"""

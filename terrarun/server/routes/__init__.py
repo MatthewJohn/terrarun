@@ -3,3 +3,4 @@
 
 from .admin_settings import *
 from .admin_terraform_versions import *
+from .state_version import *

@@ -1,6 +1,8 @@
 # Copyright (C) 2024 Matt Comben - All Rights Reserved
 # SPDX-License-Identifier: GPL-2.0
 
+from typing_extensions import Self
+
 from math import pow
 
 import terrarun.database
@@ -19,17 +21,17 @@ class BaseObject:
     ID_LENGTH = 16
 
     @classmethod
-    def db_id_from_api_id(cls, api_id):
+    def db_id_from_api_id(cls, api_id: str) -> int:
         """Obtain database ID from given API ID"""
         return ApiId.get_db_id_from_api_id(target_class=cls, api_id=api_id)
 
     @property
-    def api_id(self):
+    def api_id(self) -> str:
         """Generate API ID for object"""
         return ApiId.get_api_id(self)
 
     @classmethod
-    def get_by_api_id(cls, id):
+    def get_by_api_id(cls, id: str) -> Self:
         """Return object by API ID"""
 
         id = cls.db_id_from_api_id(id)
@@ -39,12 +41,12 @@ class BaseObject:
         return cls.get_by_id(id)
 
     @classmethod
-    def get_by_id(cls, id):
+    def get_by_id(cls, id: int) -> Self:
         """Return object by ID"""
         session = terrarun.database.Database.get_session()
         return session.query(cls).where(cls.id==id).first()
 
-    def __eq__(self, comp):
+    def __eq__(self, comp) -> bool:
         """Check if current object is equal to another, comparing API ID"""
         if isinstance(comp, BaseObject):
             return self.api_id == comp.api_id

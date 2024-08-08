@@ -8,6 +8,7 @@ import terrarun.models.organisation
 import terrarun.models.user
 import terrarun.workspace_execution_mode
 import terrarun.models.agent_pool
+import terrarun.auth_context
 
 from .base_entity import (
     BaseEntity,
@@ -32,7 +33,7 @@ class AgentPoolEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: 'terrarun.models.agent_pool.AgentPool', effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: 'terrarun.models.agent_pool.AgentPool', auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert object to agent pool entity"""
         return cls(
             id=obj.api_id,

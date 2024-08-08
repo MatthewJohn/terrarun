@@ -47,4 +47,4 @@ class RunQueue(Base, BaseObject):
     agent_id: Optional[int] = sqlalchemy.Column(sqlalchemy.ForeignKey("agent.id"), nullable=True)
     agent: Optional['terrarun.models.agent.Agent'] = sqlalchemy.orm.relationship("Agent")
 
-    user_token: Optional['terrarun.models.user_token.UserToken'] = sqlalchemy.orm.relationship("UserToken", uselist=False, backref="job")
+    user_token: Optional['terrarun.models.user_token.UserToken'] = sqlalchemy.orm.relationship("UserToken", uselist=False)
