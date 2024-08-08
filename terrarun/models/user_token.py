@@ -46,6 +46,7 @@ class UserToken(Base, BaseObject):
     user = sqlalchemy.orm.relationship("User", back_populates="user_tokens")
 
     job_id = sqlalchemy.Column(sqlalchemy.ForeignKey("run_queue.id"), nullable=True)
+    job = sqlalchemy.orm.relationship("RunQueue", back_populates="user_token", uselist=False)
 
     @classmethod
     def generate_token(cls):
@@ -103,7 +104,7 @@ class UserToken(Base, BaseObject):
         return token
 
     @classmethod
-    def get_by_token(cls, token):
+    def get_by_token(cls, token) -> 'UserToken':
         """Return token by token value"""
         session = Database.get_session()
         return session.query(cls).filter(

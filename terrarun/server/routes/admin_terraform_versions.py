@@ -4,6 +4,7 @@
 
 from flask import request
 
+import terrarun.auth_context
 from terrarun.api_entities.terraform_version import (
     TerraformVersionCreateEntity,
     TerraformVersionUpdateEntity,
@@ -70,11 +71,11 @@ class ApiAdminTerraformVersionsBase(AuthenticatedEndpoint):
 class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
     """Interface to view/create terraform versions"""
 
-    def check_permissions_get(self, current_user, current_job):
+    def check_permissions_get(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Can only be access by site admins"""
-        return current_user.site_admin
+        return auth_context.user and auth_context.user.site_admin
 
-    def _get(self, current_user, current_job):
+    def _get(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Provide list of terraform versions"""
         version_filter = request.args.get("filter[version]", None)
         version_search = request.args.get("search[version]", None)
@@ -94,15 +95,15 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         )
         view = TerraformVersionListView.from_object(
             obj=tool_list,
-            effective_user=current_user
+            auth_context=auth_context
         )
         return view.to_response()
 
-    def check_permissions_post(self, current_user, current_job):
+    def check_permissions_post(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Can only be access by site admins"""
-        return current_user.site_admin
+        return auth_context.user and auth_context.user.site_admin
 
-    def _post(self, current_user, current_job):
+    def _post(self, auth_context: 'terrarun.auth_context.AuthContext'):
         """Create terraform version"""
         err, create_entity = TerraformVersionCreateEntity.from_request(request.json)
         if err:
@@ -116,7 +117,7 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
         )
 
         view = TerraformVersionView.from_object(
-            tool, effective_user=current_user
+            tool, auth_context=auth_context
         )
         return view.to_response()
 
@@ -124,25 +125,25 @@ class ApiAdminTerraformVersions(ApiAdminTerraformVersionsBase):
 class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
     """Interface to view terraform version"""
 
-    def check_permissions_get(self, current_user, current_job, tool_id):
+    def check_permissions_get(self, auth_context: 'terrarun.auth_context.AuthContext', tool_id):
         """Can only be access by site admins"""
-        return current_user.site_admin
+        return auth_context.user and auth_context.user.site_admin
 
-    def _get(self, current_user, current_job, tool_id):
+    def _get(self, auth_context: 'terrarun.auth_context.AuthContext', tool_id):
         """Provide details about terraform version"""
         tool = Tool.get_by_api_id(tool_id)
         
         if tool is None:
             raise ApiError("Tool not found", "Tool not found", status = 404)
 
-        view = TerraformVersionView.from_object(tool, effective_user=current_user)
+        view = TerraformVersionView.from_object(tool, auth_context=auth_context)
         return view.to_response()
 
-    def check_permissions_patch(self, current_user, current_job, tool_id):
+    def check_permissions_patch(self, auth_context: 'terrarun.auth_context.AuthContext', tool_id):
         """Can only be access by site admins"""
-        return current_user.site_admin
+        return auth_context.user and auth_context.user.site_admin
 
-    def _patch(self, current_user, current_job, tool_id):
+    def _patch(self, auth_context: 'terrarun.auth_context.AuthContext', tool_id):
         """Update attributes of terraform version"""
         tool = Tool.get_by_api_id(tool_id)
         
@@ -159,15 +160,15 @@ class ApiAdminTerraformVersionsItem(ApiAdminTerraformVersionsBase):
         )
 
         view = TerraformVersionView.from_object(
-            tool, effective_user=current_user
+            tool, auth_context=auth_context
         )
         return view.to_response()
 
-    def check_permissions_delete(self, current_user, current_job, tool_id):
+    def check_permissions_delete(self, auth_context: 'terrarun.auth_context.AuthContext', tool_id):
         """Can only be access by site admins"""
-        return current_user.site_admin
+        return auth_context.user and auth_context.user.site_admin
 
-    def _delete(self, current_user, current_job, tool_id):
+    def _delete(self, auth_context: 'terrarun.auth_context.AuthContext', tool_id):
         """Delete terraform version"""
 
         tool = Tool.get_by_api_id(tool_id)

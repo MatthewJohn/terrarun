@@ -7,10 +7,11 @@ import re
 from flask import request, session
 from flask_restful import Resource
 
-from terrarun.api_entities.base_entity import ApiErrorView
 import terrarun.database
-from terrarun.errors import ApiError
 import terrarun.models.user_token
+import terrarun.auth_context
+from terrarun.api_entities.base_entity import ApiErrorView
+from terrarun.errors import ApiError
 from terrarun.logger import get_logger
 
 logger = get_logger(__name__)
@@ -19,7 +20,7 @@ logger = get_logger(__name__)
 class AuthenticatedEndpoint(Resource):
     """Authenticated endpoint"""
 
-    def _get_current_user(self):
+    def _get_auth_context(self) -> 'terrarun.auth_context.AuthContext':
         """Obtain current user based on API token key in request"""
         authorization_header = request.headers.get('Authorization', '')
         if not authorization_header:
@@ -29,8 +30,9 @@ class AuthenticatedEndpoint(Resource):
         auth_token = re.sub(r'^Bearer ', '', authorization_header)
         user_token = terrarun.models.user_token.UserToken.get_by_token(auth_token)
         if not user_token:
-            return None, None
-        return user_token.user, user_token.job
+            return terrarun.auth_context.AuthContext(user=None, job=None)
+
+        return terrarun.auth_context.AuthContext(user=user_token.user, job=user_token.job)
 
     def _error_catching_call(self, method, args, kwargs):
         """Call method, catching exceptions"""
@@ -46,6 +48,30 @@ class AuthenticatedEndpoint(Resource):
 
             raise
 
+    def _validate_authentication(self, auth_context: 'terrarun.auth_context.AuthContext') -> bool:
+        """Validate authentication"""
+        if auth_context.user is None and auth_context.job is None:
+            logger.warning('Unauthenticated request.')
+            return False
+        return True
+
+    def handle_request(self, method_name: str, args, kwargs):
+        """Handle method"""
+        if method_name not in ["get", "post", "put", "patch", "delete"]:
+            raise NotImplementedError
+
+        auth_context = self._get_auth_context()
+        if not self._validate_authentication(auth_context=auth_context):
+            return {}, 403
+
+        check_permissions_method = f"check_permissions_{method_name}"
+        if not getattr(self, check_permissions_method)(*args, auth_context=auth_context, **kwargs):
+            return {}, 404
+
+        kwargs.update(auth_context=auth_context)
+        method_function_name = f"_{method_name}"
+        return self._error_catching_call(getattr(self, method_function_name), args, kwargs)
+
     def _get(self, *args, **kwargs):
         """Handle GET request method to re-implemented by overriding class."""
         raise NotImplementedError
@@ -56,17 +82,7 @@ class AuthenticatedEndpoint(Resource):
 
     def get(self, *args, **kwargs):
         """Handle GET request"""
-        current_user, job = self._get_current_user()
-        if not current_user and not job:
-            logger.warning('Unauthenticated GET request.')
-            return {}, 403
-
-        if not self.check_permissions_get(*args, current_job=job, current_user=current_user, **kwargs):
-            return {}, 404
-
-        kwargs.update(current_user=current_user)
-        kwargs.update(current_job=job)
-        return self._error_catching_call(self._get, args, kwargs)
+        return self.handle_request("get", args, kwargs)
 
     def _post(self, *args, **kwargs):
         """Handle POST request method to re-implemented by overriding class."""
@@ -78,17 +94,7 @@ class AuthenticatedEndpoint(Resource):
 
     def post(self, *args, **kwargs):
         """Handle POST request"""
-        current_user, job = self._get_current_user()
-        if not current_user and not job:
-            logger.warning('Unauthenticated POST request.')
-            return {}, 403
-
-        if not self.check_permissions_post(*args, current_job=job, current_user=current_user, **kwargs):
-            return {}, 404
-
-        kwargs.update(current_user=current_user)
-        kwargs.update(current_job=job)
-        return self._error_catching_call(self._post, args, kwargs)
+        return self.handle_request("post", args, kwargs)
 
     def _patch(self, *args, **kwargs):
         """Handle PATCH request method to re-implemented by overriding class."""
@@ -100,17 +106,7 @@ class AuthenticatedEndpoint(Resource):
 
     def patch(self, *args, **kwargs):
         """Handle PATCH request"""
-        current_user, job = self._get_current_user()
-        if not current_user and not job:
-            logger.warning('Unauthenticated PATCH request.')
-            return {}, 403
-
-        if not self.check_permissions_patch(*args, current_job=job, current_user=current_user, **kwargs):
-            return {}, 404
-
-        kwargs.update(current_user=current_user)
-        kwargs.update(current_job=job)
-        return self._error_catching_call(self._patch, args, kwargs)
+        return self.handle_request("patch", args, kwargs)
 
     def _put(self, *args, **kwargs):
         """Handle PUT request method to re-implemented by overriding class."""
@@ -122,17 +118,7 @@ class AuthenticatedEndpoint(Resource):
 
     def put(self, *args, **kwargs):
         """Handle PUT request"""
-        current_user, job = self._get_current_user()
-        if not current_user and not job:
-            logger.warning('Unauthenticated PUT request.')
-            return {}, 403
-
-        if not self.check_permissions_put(*args, current_job=job, current_user=current_user, **kwargs):
-            return {}, 404
-
-        kwargs.update(current_user=current_user)
-        kwargs.update(current_job=job)
-        return self._error_catching_call(self._put, args, kwargs)
+        return self.handle_request("put", args, kwargs)
 
     def _delete(self, *args, **kwargs):
         """Handle DELETE request method to re-implemented by overriding class."""
@@ -144,14 +130,4 @@ class AuthenticatedEndpoint(Resource):
 
     def delete(self, *args, **kwargs):
         """Handle PUT request"""
-        current_user, job = self._get_current_user()
-        if not current_user and not job:
-            logger.warning('Unauthenticated DELETE request.')
-            return {}, 403
-
-        if not self.check_permissions_delete(*args, current_job=job, current_user=current_user, **kwargs):
-            return {}, 404
-
-        kwargs.update(current_user=current_user)
-        kwargs.update(current_job=job)
-        return self._error_catching_call(self._delete, args, kwargs)
+        return self.handle_request("delete", args, kwargs)

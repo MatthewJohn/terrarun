@@ -4,7 +4,7 @@
 import json
 import os
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 import sqlalchemy
 import sqlalchemy.orm
@@ -20,6 +20,8 @@ import terrarun.models.tool
 import terrarun.utils
 import terrarun.models.configuration
 import terrarun.models.user
+import terrarun.models.task_stage
+import terrarun.auth_context
 from terrarun.models.workspace_task import WorkspaceTaskEnforcementLevel, WorkspaceTaskStage
 from terrarun.api_request import ApiRequest
 from terrarun.database import Base, Database
@@ -95,7 +97,7 @@ class Run(Base, BaseObject):
     configuration_version_id: int = sqlalchemy.Column(sqlalchemy.ForeignKey("configuration_version.id"), nullable=False)
     configuration_version: 'terrarun.models.configuration.ConfigurationVersion' = sqlalchemy.orm.relationship("ConfigurationVersion", back_populates="runs")
 
-    state_versions = sqlalchemy.orm.relationship("StateVersion", back_populates="run")
+    state_versions: List['terrarun.models.state_version.StateVersion'] = sqlalchemy.orm.relationship("StateVersion", back_populates="run")
     plans = sqlalchemy.orm.relationship("Plan", back_populates="run")
 
     run_queue = sqlalchemy.orm.relationship("RunQueue", back_populates="run", uselist=False)
@@ -121,7 +123,7 @@ class Run(Base, BaseObject):
     created_by_id = sqlalchemy.Column(sqlalchemy.ForeignKey("user.id", name="run_created_by_id_user_id"), nullable=True)
     created_by = sqlalchemy.orm.relationship("User", foreign_keys=[created_by_id])
 
-    task_stages = sqlalchemy.orm.relationship("TaskStage", back_populates="run")
+    task_stages: List['terrarun.models.task_stage.TaskStage'] = sqlalchemy.orm.relationship("TaskStage", back_populates="run")
 
     @property
     def replace_addrs(self):
@@ -510,7 +512,7 @@ class Run(Base, BaseObject):
             return self.plans[-1]
         return None
 
-    def get_api_details(self, effective_user: terrarun.models.user.User, api_request: ApiRequest | None = None):
+    def get_api_details(self, auth_context: 'terrarun.auth_context.AuthContext', api_request: ApiRequest | None = None):
         """Return API details."""
         # Get status change audit events
         session = Database.get_session()
@@ -524,7 +526,7 @@ class Run(Base, BaseObject):
 
         # @TODO Remove check for api_request object once all APIs use this methodology
         if api_request and api_request.has_include(ApiRequest.Includes.CONFIGURATION_VERSION) and self.configuration_version:
-            api_request.add_included(self.configuration_version.get_api_details(api_request=api_request, effective_user=effective_user))
+            api_request.add_included(self.configuration_version.get_api_details(api_request=api_request, auth_context=auth_context))
 
         return {
             "id": self.api_id,

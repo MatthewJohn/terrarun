@@ -10,6 +10,7 @@ import terrarun.models.user
 import terrarun.permissions.organisation
 import terrarun.workspace_execution_mode
 import terrarun.models.agent_pool
+import terrarun.auth_context
 
 from .base_entity import (
     BaseEntity,
@@ -59,9 +60,9 @@ class OrganizationEntity(BaseEntity):
         )
 
     @classmethod
-    def _from_object(cls, obj: 'terrarun.models.organisation.Organisation', effective_user: 'terrarun.models.user.User'):
+    def _from_object(cls, obj: 'terrarun.models.organisation.Organisation', auth_context: 'terrarun.auth_context.AuthContext'):
         """Convert object to organisation entity"""
-        permission = terrarun.permissions.organisation.OrganisationPermissions(current_user=effective_user, organisation=obj)
+        permission = terrarun.permissions.organisation.OrganisationPermissions(current_user=auth_context.user, organisation=obj)
         return cls(
             id=obj.name_id,
             attributes={
@@ -176,6 +177,7 @@ class EntitlementSetRelationship(RelatedWithDataRelationshipView):
 class DefaultAgentPoolRelationship(DataRelationshipView):
 
     TYPE = "agent-pools"
+    OPTIONAL = True
 
     @classmethod
     def get_id_from_object(cls, obj: 'terrarun.models.organisation.Organisation') -> Optional[str]:
