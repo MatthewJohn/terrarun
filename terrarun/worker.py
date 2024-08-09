@@ -10,7 +10,7 @@ from time import sleep
 from terrarun.database import Database
 from terrarun.job_processor import JobProcessor
 from terrarun.logger import get_logger
-from terrarun.models.run import RunStatus
+from terrarun.models.run_flow import RunStatus
 from terrarun.models.state_version import StateVersion
 
 logger = get_logger(__name__)
