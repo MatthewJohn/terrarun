@@ -14,6 +14,14 @@ class UserPermissions:
         CAN_CHANGE_EMAIL = "can-change-email"
         CAN_CHANGE_USERNAME = "can-change-username"
         CAN_MANAGE_USER_TOKENS = "can-manage-user-tokens"
+        CAN_VIEW_SETTINGS =  "can-view-settings"
+        CAN_VIEW_PROFILE =  "can-view-profile"
+        CAN_CHANGE_PASSWORD =  "can-change-password"
+        CAN_MANAGE_SESSIONS =  "can-manage-sessions"
+        CAN_MANAGE_SSO_IDENTITIES =  "can-manage-sso-identities"
+        CAN_UPDATE_USER =  "can-update-user"
+        CAN_REENABLE_2FA_BY_UNLINKING =  "can-reenable-2fa-by-unlinking"
+        CAN_MANAGE_HCP_ACCOUNT =  "can-manage-hcp-account"
 
     def __init__(self, current_user, user):
         """Store member variables"""
