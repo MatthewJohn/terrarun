@@ -1,10 +1,10 @@
 terraform {
   cloud {
     organization = "smoke-test-org"
-    hostname = "terrarun"
+    hostname     = "terrarun"
 
     workspaces {
-      name = "smoketest-dev"
+      name = "smoketestproject-testenv"
     }
   }
 }

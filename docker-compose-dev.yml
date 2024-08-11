@@ -1,7 +1,4 @@
-version: '3.9'
-
 services:
-
   traefik:
     extends:
       file: docker-compose.yml
@@ -18,12 +15,12 @@ services:
       - ./ui/src:/app/src
     labels: !override
       - "traefik.enable=true"
+      - "traefik.project=${COMPOSE_PROJECT_NAME}"
       - "traefik.http.routers.terrarun-ui.rule=Host(`$DOMAIN`)"
       - "traefik.http.routers.terrarun-ui.entrypoints=websecure"
       - "traefik.http.routers.terrarun-ui.tls=true"
       - "traefik.http.services.terrarun-ui.loadbalancer.server.port=3000"
       - "traefik.http.routers.terrarun-ui.service=terrarun-ui"
-
 
   api:
     extends:
@@ -69,14 +66,11 @@ services:
   agent:
     extends:
       file: docker-compose.yml
+      service: agent
     # Don't start agent for local development, as self-generated SSL certificates
     # are not being injected
     profiles:
       - donotstart
-
-    # Only for local development
-    volumes:
-      - ./:/app
 
   # Example run task application
   tfsec-task:

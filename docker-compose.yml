@@ -1,11 +1,11 @@
-version: '3.9'
+name: terrarun
 
 services:
 
   traefik:
     image: traefik:v2.8
     restart: always
-    command: --providers.docker=true --providers.file.filename=/etc/traefik/dynamic_conf/conf.yml --api.insecure=true --entrypoints.web.address=:80 --entrypoints.websecure.address=:443 --accesslog=true
+    command: --providers.docker=true --providers.docker.exposedByDefault=false --providers.docker.constraints="Label(`traefik.project`, `${COMPOSE_PROJECT_NAME}`)" --providers.file.filename=/etc/traefik/dynamic_conf/conf.yml --api.insecure=true --entrypoints.web.address=:80 --entrypoints.websecure.address=:443 --accesslog=true
     hostname: $DOMAIN
     ports:
       # Open traefik http [80] and https [443] ports.
@@ -29,6 +29,7 @@ services:
       - web
     labels:
       - "traefik.enable=true"
+      - "traefik.project=${COMPOSE_PROJECT_NAME}"
       - "traefik.http.routers.terrarun-ui.rule=Host(`$DOMAIN`)"
       - "traefik.http.routers.terrarun-ui.entrypoints=websecure"
       - "traefik.http.routers.terrarun-ui.tls=true"
@@ -42,80 +43,81 @@ services:
       - web
     labels:
       - "traefik.enable=true"
+      - "traefik.project=${COMPOSE_PROJECT_NAME}"
       - "traefik.http.routers.terrarun-api.rule=Host(`$DOMAIN`) && (PathPrefix(`/.well-known`) || PathPrefix(`/api`)) || PathPrefix(`/auth`)"
       - "traefik.http.routers.terrarun-api.entrypoints=websecure"
       - "traefik.http.routers.terrarun-api.tls=true"
       - "traefik.http.services.terrarun-api.loadbalancer.server.port=5000"
       - "traefik.http.routers.terrarun-api.service=terrarun-api"
-
+    environment:
+      DATABASE_URL: $DATABASE_URL
+      AWS_ENDPOINT: $AWS_ENDPOINT
+      AWS_BUCKET_NAME: $AWS_BUCKET_NAME
+      AWS_ACCESS_KEY_ID: $AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+      AWS_REGION: $AWS_REGION
+      AGENT_IMAGE_FILENAME: $AGENT_IMAGE_FILENAME
+      AGENT_PRESIGN_ENCRYPTION_KEY: $AGENT_PRESIGN_ENCRYPTION_KEY
     depends_on:
       - db
       - minio
     links:
       - db
       - minio
-    env_file:
-      - ./.env
 
     entrypoint: ["python", "-u", "terrarun.py"]
 
   worker:
     restart: unless-stopped
-    build: .
+    image: "${COMPOSE_PROJECT_NAME}-api:latest"
     networks:
       - web
-    labels:
-      - "traefik.enable=false"
-
     depends_on:
+      - api
       - db
       - minio
     links:
       - db
       - minio
       - tfsec-task
-    env_file:
-      - ./.env
 
     entrypoint: ["python", "-u", "worker.py"]
 
   cron-tasks:
     restart: unless-stopped
-    build: .
+    image: "${COMPOSE_PROJECT_NAME}-api:latest"
     networks:
       - web
     depends_on:
+      - api
       - db
       - minio
     links:
       - db
       - minio
-    env_file:
-      - ./.env
     entrypoint: ["python", "-u", "./cron_tasks.py"]
 
   db:
     image: mariadb
     restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: $MARIADB_ROOT_PASSWORD
+      MARIADB_USER: $MARIADB_USER
+      MARIADB_PASSWORD: $MARIADB_PASSWORD
+      MARIADB_DATABASE: $MARIADB_DATABASE
     networks:
       - web
-    env_file:
-      - ./.env
-    labels:
-      - "traefik.enable=false"
     volumes:
      - mysqldata:/var/lib/mysql
 
   minio:
     image: minio/minio
-    ports:
-     - 9000:9000
-     - 9001:9001
+    expose:
+     - 9000
+     - 9001
     networks:
       - web
       - default
-    env_file:
-     - .env
     environment:
       MINIO_ACCESS_KEY: $AWS_ACCESS_KEY_ID
       MINIO_SECRET_KEY: $AWS_SECRET_ACCESS_KEY
@@ -127,8 +129,6 @@ services:
       - minio
     networks:
       - web
-    env_file:
-     - .env
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc config host add jmonminio $AWS_ENDPOINT $AWS_ACCESS_KEY_ID $AWS_SECRET_ACCESS_KEY;
@@ -145,9 +145,12 @@ services:
     depends_on:
       - traefik
       - api
-    env_file:
-      - ./.env
-    entrypoint: ["-address", "https://$DOMAIN", "-token", "$AGENT_TOKEN"]
+    environment:
+      TFC_AGENT_TOKEN: $TFC_AGENT_TOKEN
+      TFC_AGENT_ACCEPT: plan,apply
+      TFC_ADDRESS: https://$DOMAIN
+    links:
+      - "traefik:$DOMAIN"
 
   # Example run task application
   tfsec-task:
@@ -160,7 +163,7 @@ volumes:
 
 networks:
   web: 
-    name: terrun-web
+    name: "${COMPOSE_PROJECT_NAME}-web"
   default:
-    name: terrarun-default
+    name: "${COMPOSE_PROJECT_NAME}-default"
     driver: bridge

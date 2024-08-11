@@ -1,21 +1,51 @@
-version: '3.9'
+name: terrarun-tests
 
 services:
-  # Override traefik config to build custom image
-  # The custom image has SSL certs and traefik config
-  # baked in.
-  # Disable mounts from main docker-compose, as these
-  # are difficult to predict since the docker-comopose
-  # is being spun up in dind and the underlying source code
-  # is held on a docker volume, making it hard to mount
-  # the directories to a path inside traefik
-  traefik:
+  certs:
     build:
-      context: ./
-      dockerfile: tests/e2e/Dockerfile.traefik
+      context: ./tests/e2e
+      dockerfile: Dockerfile.certs
+    working_dir: /tmp
+    volumes:
+      - certs:/certs
+
+  traefik:
+    image: !reset null
+    build:
+      dockerfile: ./tests/e2e/Dockerfile.traefik
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    ports: !reset []
     volumes: !override
+      - certs:/ssl:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    expose:
+      - 443
+
+  test-runner:
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    build:
+      context: ./tests/e2e
+      dockerfile: Dockerfile.tests
+    entrypoint: ["/bin/sh", "-c"]
+    command: tail -f /dev/null
+    init: true
+    tty: true
+    links:
+      - "traefik:terrarun"
+    volumes:
+      - certs:/etc/ssl/certs:ro
 
   agent:
-    profiles:
-      - donotstart
+    volumes:
+      - certs:/etc/ssl/certs:ro
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+
+
+volumes:
+  certs:
