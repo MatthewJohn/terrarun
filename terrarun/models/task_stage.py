@@ -9,6 +9,7 @@ import sqlalchemy
 import sqlalchemy.orm
 
 import terrarun.models.run
+import terrarun.models.run_flow
 import terrarun.terraform_command
 import terrarun.utils
 import terrarun.models.task_result
@@ -86,7 +87,7 @@ class TaskStage(Base, BaseObject):
             # check is mandatory, move to complete
             if task_result.status is TaskResultStatus.CANCELED and is_mandatory:
                 update_object_status(self, TaskStageStatus.CANCELED)
-                self.run.update_status(terrarun.models.run.RunStatus.CANCELED)
+                self.run.update_status(terrarun.models.run_flow.RunStatus.CANCELED)
                 if self.stage is WorkspaceTaskStage.PRE_PLAN:
                     # Since plan already exists, mark as failed
                     self.run.plan.append_output(b'Plan was not executed due to cancellation of mandatory pre-plan task(s)')
@@ -147,7 +148,7 @@ class TaskStage(Base, BaseObject):
         if self.stage is WorkspaceTaskStage.PRE_PLAN:
             self.run.plan.append_output(b'Plan was not executed due to failure of mandatory pre-plan task(s)')
             self.run.plan.update_status(terrarun.terraform_command.TerraformCommandState.CANCELED)
-        self.run.update_status(terrarun.models.run.RunStatus.ERRORED)
+        self.run.update_status(terrarun.models.run_flow.RunStatus.ERRORED)
 
     def get_relationship(self):
         """Return relationship data for tag."""
