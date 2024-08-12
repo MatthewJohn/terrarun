@@ -83,21 +83,42 @@ class ConfigurationVersion(Base, BaseObject):
         return cv
 
     @classmethod
-    def generate_from_vcs(cls, workspace, speculative, commit_ref=None, branch=None, user=None, tag=None):
+    def generate_from_vcs(cls,
+                          workspace,
+                          # Speculative is set to override speculative state.
+                          # Used when commit_ref is generated outside of this function,
+                          # i.e. during cron job that knows the commit ref, but knows
+                          # whether it should be speculative (because it's monitoring)
+                          # the main branch.
+                          # If set to None, speculative will be determined based
+                          # on whether the branch is the default branch, or if a tag
+                          # is used for tag-configured workspaces
+                          speculative=None,
+                          commit_ref=None, branch=None, user=None, tag=None):
         """Create configuration version from VCS"""
         service_provider = workspace.authorised_repo.oauth_token.oauth_client.service_provider_instance
 
+        # @TODO Handle creating commit from tag
         if commit_ref is None:
             # Obtain branch from workspace,
             # if not specified
             if branch is None:
                 branch = workspace.get_branch()
+
             if not branch:
                 return None
+
+            # If the default branch is used, set speculative to False
+            speculative = speculative if speculative is not None else (branch != workspace.get_branch())
 
             commit_ref = service_provider.get_latest_commit_ref(
                 authorised_repo=workspace.authorised_repo, branch=branch
             )
+        else:
+            # If a commit ref was passed and speculative was not set,
+            # default to True
+            speculative = speculative if speculative is not None else True
+
         if commit_ref is None:
             return None
 
