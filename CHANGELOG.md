@@ -1,5 +1,18 @@
 # Changelog
 
+# [0.64.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.63.0...v0.64.0) (2024-08-12)
+
+
+### Bug Fixes
+
+* Align status timestamps for run to API docs for Terraform cloud ([6d331b9](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/6d331b93d9cb00cca4ffec0315094b13fde3b1e1)), closes [#204](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/204)
+
+
+### Features
+
+* Add permissions to run API response that align with user permissions ([69c0830](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/69c0830ea46115e79742bdb6d7b393081d52bfe7)), closes [#204](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/204)
+* Create run flow classes and update run actions based on current state ([d09604c](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/d09604c75bd2ab86d43a94ecc8fb8b89a7eceae7)), closes [#204](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/204)
+
 # [0.63.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.62.4...v0.63.0) (2024-08-08)
 
 
