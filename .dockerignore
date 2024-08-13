@@ -1,0 +1,6 @@
+# @TODO Remove tests from api image?
+# tests
+example
+Dockerfile
+docker-compose-dev.yml
+docker-compose.yml

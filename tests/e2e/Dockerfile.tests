@@ -1,0 +1,7 @@
+FROM hashicorp/terraform
+
+RUN apk add --no-cache curl jq
+
+COPY . /tests
+
+RUN chmod 0755 /tests/scripts/*.sh
