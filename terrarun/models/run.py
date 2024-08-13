@@ -191,6 +191,14 @@ class Run(Base, BaseObject):
 
         session.commit()
         session.refresh(run)
+
+        # Add remaining attributes that are stored as blobs
+        run.replace_addrs = attributes.get("replace_addrs")
+        run.target_addrs = attributes.get("target_addrs")
+        run.variables = attributes.get("variables")
+        session.add(run)
+        session.commit()
+
         # Generate API ID, so that it can't be performed silently on multiple
         # duplicate requests, causing the API ID to be generated twice and
         # different values returned in different responses
@@ -507,7 +515,7 @@ class Run(Base, BaseObject):
                 "refresh": self.refresh,
                 "refresh-only": self.refresh_only,
                 "replace-addrs": self.replace_addrs,
-                "variables": []
+                "variables": self.variables,
             },
             "relationships": {
                 "apply": {'data': {'id': self.plan.apply.api_id, 'type': 'applies'}} if self.plan is not None and self.plan.apply is not None else {},
