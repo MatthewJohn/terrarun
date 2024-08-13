@@ -3482,9 +3482,11 @@ class ApiAgentJobs(Resource, AgentEndpoint):
                     "destroy": job.run.is_destroy,
                     "target_addrs": job.run.target_addrs,
                     "refresh_only": job.run.refresh_only,
+                    "skip_refresh": not job.run.refresh,
+                    "tfvars": job.run.variables,
                     "timeout": "{}s".format(terrarun.config.Config().AGENT_JOB_TIMEOUT),
                     "json_plan_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-output",
-                    "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas"
+                    "json_provider_schemas_url": f"{terrarun.config.Config().BASE_URL}/api/v2/plans/{job.run.plan.api_id}/json-providers-schemas",
                 }
             }, 200
 
