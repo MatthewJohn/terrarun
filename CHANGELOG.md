@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.64.1](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.64.0...v0.64.1) (2024-08-14)
+
+
+### Bug Fixes
+
+* Add variables to API repsonse of run and ensure variables, targets and replace addresses are added correctly to run ([ee8b9dd](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/ee8b9ddfbdcdb150b7805653fcf709858649af6f)), closes [#205](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/205)
+* Remove setting of blobs, as this is not required, as the values are being set already ([2e833b9](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/commit/2e833b93137c51d9d24b5c4e3b5f27cb0bd178dc)), closes [#205](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/issues/205)
+
 # [0.64.0](https://gitlab.dockstudios.co.uk/pub/terra/terrarun/compare/v0.63.0...v0.64.0) (2024-08-12)
 
 
