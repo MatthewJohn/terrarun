@@ -6,6 +6,7 @@ import re
 
 from flask import request, session
 from flask_restful import Resource
+from werkzeug.exceptions import MethodNotAllowed
 
 import terrarun.database
 import terrarun.models.user_token
@@ -58,7 +59,7 @@ class AuthenticatedEndpoint(Resource):
     def handle_request(self, method_name: str, args, kwargs):
         """Handle method"""
         if method_name not in ["get", "post", "put", "patch", "delete"]:
-            raise NotImplementedError
+            raise MethodNotAllowed()
 
         auth_context = self._get_auth_context()
         if not self._validate_authentication(auth_context=auth_context):
@@ -74,11 +75,11 @@ class AuthenticatedEndpoint(Resource):
 
     def _get(self, *args, **kwargs):
         """Handle GET request method to re-implemented by overriding class."""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def check_permissions_get(self, *args, **kwargs):
         """Function to check permissions, must be implemented by overriding class."""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def get(self, *args, **kwargs):
         """Handle GET request"""
@@ -86,11 +87,11 @@ class AuthenticatedEndpoint(Resource):
 
     def _post(self, *args, **kwargs):
         """Handle POST request method to re-implemented by overriding class."""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def check_permissions_post(self, *args, **kwargs):
         """Function to check permissions, must be set by implementer"""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def post(self, *args, **kwargs):
         """Handle POST request"""
@@ -98,11 +99,11 @@ class AuthenticatedEndpoint(Resource):
 
     def _patch(self, *args, **kwargs):
         """Handle PATCH request method to re-implemented by overriding class."""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def check_permissions_patch(self, *args, **kwargs):
         """Function to check permissions, must be set by implementer"""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def patch(self, *args, **kwargs):
         """Handle PATCH request"""
@@ -110,11 +111,11 @@ class AuthenticatedEndpoint(Resource):
 
     def _put(self, *args, **kwargs):
         """Handle PUT request method to re-implemented by overriding class."""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def check_permissions_put(self, *args, **kwargs):
         """Function to check permissions, must be set by implementer"""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def put(self, *args, **kwargs):
         """Handle PUT request"""
@@ -122,11 +123,11 @@ class AuthenticatedEndpoint(Resource):
 
     def _delete(self, *args, **kwargs):
         """Handle DELETE request method to re-implemented by overriding class."""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def check_permissions_delete(self, *args, **kwargs):
         """Function to check permissions, must be set by implementer"""
-        raise NotImplementedError
+        raise MethodNotAllowed()
 
     def delete(self, *args, **kwargs):
         """Handle PUT request"""
